@@ -55,6 +55,11 @@ import {
   validateOfferExpiry,
 } from '../public.ts';
 import { JobsStore } from './store.ts';
+// MKT-027: the field-execution (visit) operations — composed INTO the same
+// /jobs module API (one authority, no second module; the visit store and
+// decision logic live in their own internal files exactly like the offer
+// settlement helpers live in this file).
+import { createVisitOperations } from './visit-module.ts';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HUMAN_TASK_NODE_TYPE = 'human_task';
@@ -86,6 +91,12 @@ function outcomeFingerprintOf(
 export function createJobsModule(deps: JobsModuleDeps): JobsModuleApi {
   const store = new JobsStore(deps.db, deps.clock, deps.ids);
   const { workflows, fieldAgents, evidence } = deps;
+  // MKT-027: the field-execution surface (visit lifecycle, structured
+  // outcomes, evidence capture, follow-up, continuity) — the SAME deps
+  // (db/clock/ids/workflows/fieldAgents/evidence), the SAME store
+  // instance for job-row locking (job-first lock ordering across every
+  // /jobs mutation path), composed into this one module API.
+  const visits = createVisitOperations(deps, store);
 
   // -------------------------------------------------------------------------
   // Internal helpers
@@ -735,5 +746,8 @@ export function createJobsModule(deps: JobsModuleDeps): JobsModuleApi {
       if (!UUID_PATTERN.test(jobId)) return Promise.resolve(null);
       return store.getJobOutcome(jobId);
     },
+    // MKT-027: the field-execution (visit) surface — same module, same
+    // authority, same lock ordering; see visit-module.ts.
+    ...visits,
   };
 }

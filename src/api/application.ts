@@ -47,7 +47,14 @@
  * AGENT-001 — provider-neutral reusable capability declarations with
  * platform/agency scope, register/list/read/retire and the append-only
  * lifecycle history).
- */
+ *
+ * MKT-027 additions: /jobs field execution (JOB-001 field subset +
+ * EVID-001 field subset, JOB-AC-03..04, EVID-AC-01..03 field subset —
+ * the visit lifecycle, structured outcomes, evidence capture, follow-up
+ * and the policy-gated continuity lookup ride the SAME /jobs module
+ * contract: the JobsModuleApi interface is extended in place; NO new
+ * module, NO new dependency). */
+
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
 // MKT-020: /agents module contract (logical Agent/Capability contracts).
@@ -97,6 +104,9 @@ export interface ApplicationModules {
   // MKT-026: the Human Job lifecycle authority (Task projections,
   // candidate-specific offers, concurrency-safe acceptance, outcome
   // submission with server-derived provenance).
+  // MKT-027: the SAME /jobs authority now also exposes the field-execution
+  // surface (visits, structured outcomes, evidence capture, follow-up,
+  // continuity) through this same contract — one authority, one type.
   readonly jobs: JobsModuleApi;
 
   // MKT-020: logical Agent/Capability contracts authority (AGENT-001).
