@@ -41,9 +41,17 @@
  * governed Task projections, candidate-specific Offers, the
  * concurrency-safe acceptance claim and provenance-preserving outcome
  * submission; Workflow authority preserved: the jobs module consumes
- * /workflows READ-ONLY). */
+ * /workflows READ-ONLY).
+ *
+ * MKT-020 additions: /agents (logical Agent/Capability contracts,
+ * AGENT-001 — provider-neutral reusable capability declarations with
+ * platform/agency scope, register/list/read/retire and the append-only
+ * lifecycle history).
+ */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
+// MKT-020: /agents module contract (logical Agent/Capability contracts).
+import type { AgentsModuleApi } from '../modules/agents/public.ts';
 import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
 import type { AuditModuleApi } from '../modules/audit/public.ts';
 import type { AuthModuleApi } from '../modules/auth/public.ts';
@@ -89,4 +97,8 @@ export interface ApplicationModules {
   // MKT-026: the Human Job lifecycle authority (Task projections,
   // candidate-specific offers, concurrency-safe acceptance, outcome
   // submission with server-derived provenance).
-  readonly jobs: JobsModuleApi;}
+  readonly jobs: JobsModuleApi;
+
+  // MKT-020: logical Agent/Capability contracts authority (AGENT-001).
+  readonly agents: AgentsModuleApi;
+}

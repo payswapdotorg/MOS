@@ -129,6 +129,18 @@
  *     evaluation framework (MKT-019), NO provider adapters/SDKs and NO
  *     model invocation are wired (the pooled runtime stays untouched).
 
+ * MKT-020 additions (logical Agent/Capability contracts, AGENT-001):
+ *   - the /agents module is constructed here with PLATFORM PORTS ONLY
+ *     (db/clock/ids): the frozen matrix allows /agents ──→ /executions,
+ *     /ai-runtime, /policies, but the logical capability contract needs
+ *     NONE of them — the logical Agent owns no tenant data, no workflow
+ *     state, no deployment state and no infrastructure (architecture.md
+ *     §12). It owns the provider-neutral reusable capability declaration
+ *     registry (platform/agency scope, register/list/read/retire, §8-style
+ *     registration fences, append-only lifecycle history). NO execution
+ *     engine, NO dispatch, NO invocation, NO human/field agents (MKT-025)
+ *     and NO provider adapters are wired.
+ *
  * MKT-025 additions (Human Agent foundation, FIELD-001 + HUMAN-001):
  *   - the /field-agents module is constructed here as the GENERIC Human
  *     Agent authority (module-dependency-v1.3: /human-agents is represented
@@ -207,7 +219,11 @@ import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';
 import { createFieldAgentsModule } from './modules/field-agents/public.ts';
 // MKT-026: /jobs module (JOB-001).
 import { createJobsModule } from './modules/jobs/public.ts';
+// MKT-020: /agents — logical Agent/Capability contracts (AGENT-001).
+import { createAgentsModule } from './modules/agents/public.ts';
+
 import type { ApplicationModules } from './api/application.ts';
+
 export interface AppOptions {
   /** Additional observability sinks (e.g., test collectors). */
   readonly extraSinks?: ReadonlyArray<ObservabilitySink> | undefined;
@@ -367,6 +383,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // /field-agents); no execution dispatch (the runtime is MKT-011+); /jobs
   // never mutates workflow state.
   const jobs = createJobsModule({ db, clock, ids, workflows, fieldAgents, evidence });
+
+  // MKT-020: /agents — the logical Agent/Capability contracts authority
+  // (AGENT-001). PLATFORM PORTS ONLY: the frozen matrix allows
+  // /agents ──→ /executions, /ai-runtime, /policies, but the reusable
+  // capability declaration composes none of them (architecture.md §12:
+  // the logical Agent owns no tenant data, workflow state, deployment
+  // state or infrastructure). The ownership scope arrives as server-
+  // derived data resolved by the routes from canonical agency ownership
+  // state; the migration-022 fences, scope immutability and FK are the
+  // backstops.
+  const agents = createAgentsModule({ db, clock, ids });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -393,7 +420,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents },
   };
 }
 
