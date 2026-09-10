@@ -35,7 +35,13 @@
 
  * MKT-025 additions: /field-agents (generic Human Agent profile authority,
  * FIELD-001 + HUMAN-001 — the generalized /field-agents authority of
- * spec/module-dependency-v1.3.md; no second human-execution module). */
+ * spec/module-dependency-v1.3.md; no second human-execution module).
+
+ * MKT-026 additions: /jobs (Human Job lifecycle authority, JOB-001 —
+ * governed Task projections, candidate-specific Offers, the
+ * concurrency-safe acceptance claim and provenance-preserving outcome
+ * submission; Workflow authority preserved: the jobs module consumes
+ * /workflows READ-ONLY). */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
 import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
@@ -47,6 +53,8 @@ import type { CredentialsModuleApi } from '../modules/credentials/public.ts';
 import type { EvidenceModuleApi } from '../modules/evidence/public.ts';
 import type { ExecutionsModuleApi } from '../modules/executions/public.ts';
 import type { FieldAgentsModuleApi } from '../modules/field-agents/public.ts';
+// MKT-026: /jobs module contract.
+import type { JobsModuleApi } from '../modules/jobs/public.ts';
 import type { GoalsModuleApi } from '../modules/goals/public.ts';
 // MKT-014: /metrics module contract.
 import type { MetricsModuleApi } from '../modules/metrics/public.ts';
@@ -76,4 +84,9 @@ export interface ApplicationModules {
 
   // MKT-025: the generic Human Agent profile authority (platform identity,
   // specializations as capability metadata, eligibility data).
-  readonly fieldAgents: FieldAgentsModuleApi;}
+  readonly fieldAgents: FieldAgentsModuleApi;
+
+  // MKT-026: the Human Job lifecycle authority (Task projections,
+  // candidate-specific offers, concurrency-safe acceptance, outcome
+  // submission with server-derived provenance).
+  readonly jobs: JobsModuleApi;}
