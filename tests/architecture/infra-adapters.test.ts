@@ -446,6 +446,13 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // step tables with the §8-style fences, append-only triggers and
     // scope-chain backstops (AI-002).
     '020_ai_routing.sql',
+    // MKT-026 (Job marketplace boundary) appends the jobs migration (023 —
+    // the number is RESERVED for this Work Item; 021/022 are reserved for
+    // sibling Work Items): the jobs/job_offers/job_outcomes tables with
+    // the JOB-AC-01 task-reference + scope-chain triggers, the
+    // exactly-one-winner acceptance fence and the append-only
+    // provenance-preserving outcome history (JOB-001, JOB-AC-01..03).
+    '023_jobs.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

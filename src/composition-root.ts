@@ -141,6 +141,20 @@
  *     layer (the frozen matrix does not allow /field-agents → /agencies).
  *     NO job/execution engine is wired (HUMAN-AC-02: the Job authority is
  *     /jobs, MKT-026).
+
+ * MKT-026 additions (Job marketplace boundary, JOB-001):
+ *   - the /jobs module is constructed here (frozen matrix: /jobs ──→
+ *     /workflows, /executions, /field-agents, /clients, /evidence,
+ *     /policies; this Work Item consumes exactly /workflows READ-ONLY +
+ *     /field-agents + /evidence) owning governed Task projections,
+ *     candidate-specific Offers with the exactly-one-winner acceptance
+ *     claim and provenance-preserving outcome submission. Workflow
+ *     authority is PRESERVED: /jobs consumes /workflows' public contract
+ *     read-only and never mutates instance state. Agency membership/role
+ *     authorization stays at the route layer (the matrix gives /jobs no
+ *     /agencies module dependency). No dispatch/execution engine is wired
+ *     (HUMAN-AC-02: /jobs is not a second workflow engine — no graph, no
+ *     node/edge semantics, no downstream scheduling).
  */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -191,6 +205,8 @@ import { createMetricsModule } from './modules/metrics/public.ts';
 // usage telemetry — AI-001).
 import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';
 import { createFieldAgentsModule } from './modules/field-agents/public.ts';
+// MKT-026: /jobs module (JOB-001).
+import { createJobsModule } from './modules/jobs/public.ts';
 import type { ApplicationModules } from './api/application.ts';
 export interface AppOptions {
   /** Additional observability sinks (e.g., test collectors). */
@@ -340,6 +356,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // wired here — agency linkage is the existing /agencies membership
   // authority, composed at the route layer.
   const fieldAgents = createFieldAgentsModule({ db, clock, ids, users });
+
+  // MKT-026 (Job marketplace boundary): the /jobs authority — governed Task
+  // projections, candidate-specific offers, the concurrency-safe acceptance
+  // claim and outcome submission with server-derived provenance. Frozen
+  // matrix dependencies wired: /workflows (READ-ONLY Task-reference +
+  // ownership resolution), /field-agents (candidate profiles + the pure
+  // eligibility matcher), /evidence (outcome evidence-reference validation).
+  // No /agencies dependency (route-layer composition, exactly like
+  // /field-agents); no execution dispatch (the runtime is MKT-011+); /jobs
+  // never mutates workflow state.
+  const jobs = createJobsModule({ db, clock, ids, workflows, fieldAgents, evidence });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -366,7 +393,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs },
   };
 }
 
