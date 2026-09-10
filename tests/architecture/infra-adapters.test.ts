@@ -431,6 +431,10 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // MKT-017 appends the AI runtime registry migration (016 — the number is
     // reserved for this Work Item; sibling workers use other numbers).
     '016_ai_runtime.sql',
+    // MKT-025 (Human Agent foundation) appends the human_agents profile
+    // migration (017 — the number is reserved for MKT-025; 015/016 are
+    // reserved for sibling Work Items).
+    '017_field_agents.sql',  
     // MKT-014 appends the metric normalization migration (018 — the number
     // is RESERVED for this Work Item; siblings use 016/017): the
     // append-only metric observation ledger with the source/timestamp/

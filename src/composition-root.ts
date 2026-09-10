@@ -127,8 +127,21 @@
  *     normalized model registry with append-only observations, and usage
  *     telemetry records. NO routing/cascade engine (MKT-018), NO
  *     evaluation framework (MKT-019), NO provider adapters/SDKs and NO
- *     model invocation are wired (the pooled runtime stays untouched). */
+ *     model invocation are wired (the pooled runtime stays untouched).
 
+ * MKT-025 additions (Human Agent foundation, FIELD-001 + HUMAN-001):
+ *   - the /field-agents module is constructed here as the GENERIC Human
+ *     Agent authority (module-dependency-v1.3: /human-agents is represented
+ *     by the existing /field-agents authority generalized — a second
+ *     human-execution module is FORBIDDEN). It owns the human_agents
+ *     profile table (platform identity link, specializations as capability
+ *     metadata, availability/territories, relationship-continuity and the
+ *     authorization/contract state) with platform ports + the allowed
+ *     /users dependency only; eligibility composition happens at the route
+ *     layer (the frozen matrix does not allow /field-agents → /agencies).
+ *     NO job/execution engine is wired (HUMAN-AC-02: the Job authority is
+ *     /jobs, MKT-026).
+ */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
 import { SystemClock } from './platform/clock/clock.ts';
@@ -176,8 +189,9 @@ import { createMetricsModule } from './modules/metrics/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
-import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';import type { ApplicationModules } from './api/application.ts';
-
+import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';
+import { createFieldAgentsModule } from './modules/field-agents/public.ts';
+import type { ApplicationModules } from './api/application.ts';
 export interface AppOptions {
   /** Additional observability sinks (e.g., test collectors). */
   readonly extraSinks?: ReadonlyArray<ObservabilitySink> | undefined;
@@ -318,6 +332,14 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // workspace scope arrives as server-derived data resolved by the routes
   // and DB-backstopped by the migration-016 scope-chain triggers).
   const aiRuntime = createAiRuntimeModule({ db, clock, ids, executions });
+
+  // MKT-025 (Human Agent foundation): the generalized /field-agents authority.
+  // Platform ports + the /users identity dependency only (frozen matrix:
+  // /field-agents ──→ /users, /clients, /policies; the /clients and /policies
+  // allowances belong to the Work Items that own them). No tenant linkage is
+  // wired here — agency linkage is the existing /agencies membership
+  // authority, composed at the route layer.
+  const fieldAgents = createFieldAgentsModule({ db, clock, ids, users });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -344,7 +366,8 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime },  };
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents },
+  };
 }
 
 export async function buildAppServices(config: AppConfig, options: AppOptions = {}): Promise<AppServices> {
