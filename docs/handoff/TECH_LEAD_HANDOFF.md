@@ -10,12 +10,13 @@ Take the repository from its current accepted implementation state to complete i
 
 The Tech Lead is an orchestrator, not an architecture editor. Workers implement bounded Work Items. The Architect/reviewer independently verifies evidence and accepts or rejects the resulting PR.
 
-## Current state
+## Current state at handoff
 
+- The repository is now `payswapdotorg/MOS`.
 - `main` is the authoritative integration branch.
-- MKT-001..MKT-012 are accepted and merged.
-- MKT-009 history-ledger consistency correction is merged.
-- MKT-013 (Evidence and provenance) is the current in-flight item when this handoff was authored; inspect the actual PR and branch state before making any decision.
+- MKT-001..MKT-012 are accepted and merged in the inherited baseline.
+- MKT-009 history-ledger consistency correction is accepted and merged in the inherited baseline.
+- The source repository previously had an MKT-013 Evidence/provenance PR, but the destination repository currently has **no open PR** and only the `main` branch; therefore MKT-013 is explicitly `RECONCILE`, not accepted or in-flight.
 - Effective frozen backlog ends at MKT-040.
 
 Never infer completion from this document alone. Reconcile it with `main`, open PRs, implementation docs, and actual code/tests at takeover.
@@ -30,17 +31,21 @@ Read first:
 4. `spec/architecture.md`
 5. `spec/architecture-lock.md`
 6. `spec/architecture-lock-v1.4.md`
-7. applicable v1.2/v1.3/v1.4 addenda and change requests
-8. `spec/requirements.md`
-9. `spec/requirements-v1.3.md`
-10. `spec/requirements-v1.4.md`
-11. `spec/implementation-contract.md` plus later explicit overrides
-12. `spec/state-machines.md` plus applicable corrections
-13. `spec/effective-backlog-v1.4.md`
-14. applicable dependency, traceability, security and work-item matrices
-15. `docs/architecture/IMPLEMENTATION-GOVERNANCE.md`
-16. this handoff and `IMPLEMENTATION-STATE.md`
-17. the exact Work Item being implemented
+7. `spec/change-request-004.md`
+8. `spec/preflight-v1.4.md`
+9. applicable v1.2/v1.3 addenda and corrections
+10. `spec/requirements.md`
+11. `spec/requirements-v1.3.md`
+12. `spec/requirements-v1.4.md`
+13. `spec/implementation-contract.md` plus later explicit overrides
+14. `spec/state-machines.md` plus applicable corrections
+15. `spec/effective-backlog-v1.4.md`
+16. applicable dependency, traceability, security and work-item matrices
+17. `docs/architecture/IMPLEMENTATION-GOVERNANCE.md`
+18. `docs/handoff/IMPLEMENTATION-STATE.md`
+19. `docs/handoff/EXECUTION-PLAN.md`
+20. `docs/handoff/WORKER-CONTRACT.md`
+21. the exact Work Item being implemented
 
 Later frozen documents supersede earlier clauses only where they explicitly say so. Do not locally redesign ambiguous architecture.
 
@@ -49,8 +54,8 @@ Later frozen documents supersede earlier clauses only where they explicitly say 
 1. Inspect git status, `main`, open PRs and recent commits.
 2. Confirm the effective frozen version is v1.4.
 3. Reconcile `IMPLEMENTATION-STATE.md` against actual repository state.
-4. Identify any in-flight PR and review it before dispatching dependent work.
-5. Compute the ready set from the effective dependency graph.
+4. Resolve the MKT-013 `RECONCILE` state before dispatching downstream evidence-dependent work.
+5. Compute the READY set from `EXECUTION-PLAN.md` and the effective dependency graph.
 6. Dispatch no more than three non-conflicting Workers.
 7. Each Worker implements exactly one Work Item unless the Architect explicitly authorizes a corrective split.
 8. Review worker evidence against actual code before accepting the PR into the integration sequence.
