@@ -118,7 +118,16 @@
  *     /metrics' declared STRUCTURAL PORTS (the public-contract instances
  *     satisfy them structurally — no forbidden module import; the frozen
  *     matrix stays intact while ownership resolution stays server-side).
- */
+
+ * MKT-017 additions (AI task profile and model registry, AI-001):
+ *   - the /ai-runtime module is constructed here with platform ports plus
+ *     EXACTLY the frozen-matrix dependency /ai-runtime ──→ /executions (the
+ *     /executions public API validates telemetry execution references);
+ *     it owns the REGISTRY LAYER ONLY — provider-neutral TaskProfiles, the
+ *     normalized model registry with append-only observations, and usage
+ *     telemetry records. NO routing/cascade engine (MKT-018), NO
+ *     evaluation framework (MKT-019), NO provider adapters/SDKs and NO
+ *     model invocation are wired (the pooled runtime stays untouched). */
 
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -164,7 +173,10 @@ import { createExecutionsModule } from './modules/executions/public.ts';
 import { createEvidenceModule } from './modules/evidence/public.ts';
 // MKT-014: /metrics module (METRIC-001).
 import { createMetricsModule } from './modules/metrics/public.ts';
-import type { ApplicationModules } from './api/application.ts';
+
+// MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
+// usage telemetry — AI-001).
+import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';import type { ApplicationModules } from './api/application.ts';
 
 export interface AppOptions {
   /** Additional observability sinks (e.g., test collectors). */
@@ -300,6 +312,12 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // InMemoryMetrics instance also wired below.)
   const metricsModule = createMetricsModule({ db, clock, ids, evidence, clients, workspaces });
 
+  // MKT-017: /ai-runtime — the REGISTRY LAYER of the AI Runtime authority
+  // (dependency matrix: /ai-runtime ──→ /executions — used exactly for
+  // telemetry execution-reference validation; nothing else is imported:
+  // workspace scope arrives as server-derived data resolved by the routes
+  // and DB-backstopped by the migration-016 scope-chain triggers).
+  const aiRuntime = createAiRuntimeModule({ db, clock, ids, executions });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -326,8 +344,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule },
-  };
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime },  };
 }
 
 export async function buildAppServices(config: AppConfig, options: AppOptions = {}): Promise<AppServices> {
