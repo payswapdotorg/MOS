@@ -102,6 +102,22 @@
  *     quality taxonomy, server-derived provenance as a separate dimension
  *     from confidence, immutable rows with DB-backstopped append-only
  *     triggers, and the single-correction supersession graph.
+ *
+ * MKT-014 additions:
+ *   - the /metrics module is constructed here (dependency matrix: /metrics
+ *     ──→ /evidence, /integrations — /evidence is the merged authority
+ *     consumed for evidence_ref validation; /integrations is MKT-023/024,
+ *     and /metrics owns NO provider state either way) owning the
+ *     append-only METRIC OBSERVATION LEDGER (METRIC-001): normalized
+ *     source-tagged observations with source/timestamp/reference mapping
+ *     (observed_at vs server-stamped retrieved_at), the closed 5-value
+ *     data-quality posture set, server-derived provenance, DB-backstopped
+ *     append-only triggers, optional workspace scope INSIDE the owning
+ *     Client and optional same-Client /evidence linkage. The REQUIRED
+ *     /clients + /workspaces canonical owner resolution arrives through
+ *     /metrics' declared STRUCTURAL PORTS (the public-contract instances
+ *     satisfy them structurally — no forbidden module import; the frozen
+ *     matrix stays intact while ownership resolution stays server-side).
  */
 
 import fs from 'node:fs';
@@ -146,6 +162,8 @@ import { createWorkflowsModule } from './modules/workflows/public.ts';
 import { createExecutionsModule } from './modules/executions/public.ts';
 // MKT-013: /evidence module (EVID-001).
 import { createEvidenceModule } from './modules/evidence/public.ts';
+// MKT-014: /metrics module (METRIC-001).
+import { createMetricsModule } from './modules/metrics/public.ts';
 import type { ApplicationModules } from './api/application.ts';
 
 export interface AppOptions {
@@ -269,6 +287,18 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // the /clients + /workspaces subset — /executions references evidence,
   // not the other way around, architecture.md §11).
   const evidence = createEvidenceModule({ db, clock, ids, clients, workspaces });
+  // MKT-014: /metrics — platform ports + the allowed /evidence dependency
+  // (frozen matrix: /metrics ──→ /evidence, /integrations; /integrations is
+  // MKT-023/024 — provider data ARRIVES as normalized observations, so
+  // /metrics owns NO provider state) + the /clients and /workspaces
+  // canonical-ownership authorities injected through /metrics' declared
+  // STRUCTURAL PORTS: the real public-contract instances satisfy the port
+  // types structurally (TypeScript structural typing), so ownership
+  // resolution still executes THROUGH the exact /clients + /workspaces
+  // public-contract methods, server-side, with no forbidden module import.
+  // (Named metricsModule to stay distinct from the platform observability
+  // InMemoryMetrics instance also wired below.)
+  const metricsModule = createMetricsModule({ db, clock, ids, evidence, clients, workspaces });
 
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
@@ -296,7 +326,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule },
   };
 }
 
