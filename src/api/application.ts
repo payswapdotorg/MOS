@@ -35,9 +35,17 @@
 
  * MKT-025 additions: /field-agents (generic Human Agent profile authority,
  * FIELD-001 + HUMAN-001 — the generalized /field-agents authority of
- * spec/module-dependency-v1.3.md; no second human-execution module). */
+ * spec/module-dependency-v1.3.md; no second human-execution module).
+ *
+ * MKT-020 additions: /agents (logical Agent/Capability contracts,
+ * AGENT-001 — provider-neutral reusable capability declarations with
+ * platform/agency scope, register/list/read/retire and the append-only
+ * lifecycle history).
+ */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
+// MKT-020: /agents module contract (logical Agent/Capability contracts).
+import type { AgentsModuleApi } from '../modules/agents/public.ts';
 import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
 import type { AuditModuleApi } from '../modules/audit/public.ts';
 import type { AuthModuleApi } from '../modules/auth/public.ts';
@@ -76,4 +84,8 @@ export interface ApplicationModules {
 
   // MKT-025: the generic Human Agent profile authority (platform identity,
   // specializations as capability metadata, eligibility data).
-  readonly fieldAgents: FieldAgentsModuleApi;}
+  readonly fieldAgents: FieldAgentsModuleApi;
+
+  // MKT-020: logical Agent/Capability contracts authority (AGENT-001).
+  readonly agents: AgentsModuleApi;
+}

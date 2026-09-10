@@ -6,10 +6,10 @@
  * Workflow instance state machine routes + MKT-010 Execution lifecycle
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
  * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
- * registry routes — TaskProfiles, model registry, usage telemetry).
-
- * routes + MKT-012 Sandbox lifecycle routes + MKT-025 Human Agent
- * profile routes). *
+ * registry routes — TaskProfiles, model registry, usage telemetry,
+ * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes +
+ * MKT-020 logical Agent/Capability contract routes).
+ *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
  * and modules; the entrypoint calls this builder.
@@ -41,6 +41,10 @@ import { registerMetricsRoutes } from './metrics-routes.ts';
 // MKT-017: /ai-runtime registry routes (TaskProfiles, model registry,
 // usage telemetry — AI-001).
 import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
+// MKT-020: /agents routes (logical Agent/Capability contracts — AGENT-001:
+// platform + agency scoped registration, catalog reads, the single
+// retire edge and the append-only lifecycle history surface).
+import { registerAgentsRoutes } from './agents-routes.ts';
 
 // MKT-025: the generic Human Agent profile routes (FIELD-001 + HUMAN-001).
 import { registerFieldAgentsRoutes } from './field-agents-routes.ts';
@@ -70,5 +74,11 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
 
   // MKT-025: Human Agent profiles + availability/territory declaration +
   // job-eligibility lookup (profile data only — no Client data routes).
-  registerFieldAgentsRoutes(router, services, modules);  return router;
+  registerFieldAgentsRoutes(router, services, modules);
+
+  // MKT-020: logical Agent/Capability surfaces (register / list / read /
+  // retire / lifecycle history — the provider-neutral capability contract,
+  // AGENT-001).
+  registerAgentsRoutes(router, services, modules);
+  return router;
 }
