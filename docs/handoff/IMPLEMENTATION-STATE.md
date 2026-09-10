@@ -11,7 +11,7 @@ This is not an architectural authority. Actual Git history, PRs, code and verifi
 |---|---|---|
 | MKT-001..MKT-012 | ACCEPTED/MERGED | Foundation through sandbox/runtime lifecycle accepted before the v1.4 continuation. |
 | MKT-009 correction | ACCEPTED/MERGED | Workflow-instance history consistency backstop accepted and merged. |
-| MKT-013 | RECONCILE | Prior source repository had an open MKT-013 PR, but the new `payswapdotorg/MOS` repository currently has no open PR. The Tech Lead must inspect branches/commits and either restore/recreate the implementation PR or dispatch the Work Item from the frozen contract. |
+| MKT-013 | ACCEPTED/MERGED | Reconciled: no prior PR existed in this repository. Dispatched fresh from the frozen contract (worker session mkt-013, GLM-5.3 agents tab, Full-Stack). PR #1 squash-merged at ee246d1d3596 after full Tech Lead verification: lint 0, tsc 0, arch:check 0 violations, unit 292/292, architecture 115/115, integration 308/308 vs real PostgreSQL. |
 | MKT-014..MKT-040 | PENDING | Recompute READY set from the effective dependency graph after reconciliation and each accepted merge. |
 
 ## Status meanings
