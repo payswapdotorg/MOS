@@ -7,7 +7,9 @@
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
  * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
  * registry routes — TaskProfiles, model registry, usage telemetry).
- *
+
+ * routes + MKT-012 Sandbox lifecycle routes + MKT-025 Human Agent
+ * profile routes). *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
  * and modules; the entrypoint calls this builder.
@@ -40,6 +42,8 @@ import { registerMetricsRoutes } from './metrics-routes.ts';
 // usage telemetry — AI-001).
 import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
 
+// MKT-025: the generic Human Agent profile routes (FIELD-001 + HUMAN-001).
+import { registerFieldAgentsRoutes } from './field-agents-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -63,5 +67,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   registerMetricsRoutes(router, services, modules);
   // MKT-017: AI runtime registry surfaces.
   registerAiRuntimeRoutes(router, services, modules);
-  return router;
+
+  // MKT-025: Human Agent profiles + availability/territory declaration +
+  // job-eligibility lookup (profile data only — no Client data routes).
+  registerFieldAgentsRoutes(router, services, modules);  return router;
 }
