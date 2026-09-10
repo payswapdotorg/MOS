@@ -3,8 +3,9 @@
  * tenancy routes (MKT-003), Workspace boundary routes (MKT-004), Goal
  * domain routes (MKT-006), credential-reference routes (MKT-005), Playbook
  * domain routes (MKT-007), Workflow definition routes (MKT-008), Execution
- * lifecycle routes (MKT-010), Sandbox lifecycle routes (MKT-012) and
- * Evidence/provenance routes (MKT-013).
+ * lifecycle routes (MKT-010), Sandbox lifecycle routes (MKT-012),
+ * Evidence/provenance routes (MKT-013) and Metric normalization routes
+ * (MKT-014).
  *
  * Every check resolves the caller's authorization context FRESH from durable
  * state (users + agency memberships in PostgreSQL) — headers, body fields or
@@ -36,6 +37,8 @@ import type { CredentialRecord } from '../modules/credentials/public.ts';
 import type { EvidenceOwnerContext } from '../modules/evidence/public.ts';
 import type { ExecutionOwnerContext, SandboxOwnerContext } from '../modules/executions/public.ts';
 import type { GoalOwnerContext } from '../modules/goals/public.ts';
+// MKT-014: /metrics canonical owner context (metric observations).
+import type { MetricOwnerContext } from '../modules/metrics/public.ts';
 import type { PlaybookOwnerContext } from '../modules/playbooks/public.ts';
 import type { WorkflowOwnerContext } from '../modules/workflows/public.ts';
 import type { WorkspaceOwnerContext } from '../modules/workspaces/public.ts';
@@ -638,6 +641,53 @@ export async function requireEvidenceAccess(
   }
   if (membership.membershipStatus !== 'active') {
     throw new ForbiddenError('Active membership in the evidence client agency required');
+  }
+  if (roles !== undefined && !roles.includes(membership.role)) {
+    throw new ForbiddenError('This operation requires a different agency role');
+  }
+  return ownership;
+}
+
+/**
+ * MKT-014: canonical metric-observation access check. Resolves the
+ * observation's owning Client through the /metrics module's canonical
+ * owner chain (observation → /clients → /agencies) from durable state
+ * BEFORE any dependent traversal, then enforces the same hard-boundary
+ * posture as evidence: a foreign observation identifier is
+ * indistinguishable from an unknown one (uniform 404 — no cross-tenant
+ * oracle), while intra-tenant failures (suspended membership, wrong role)
+ * are 403s exactly like every other scoped authority.
+ */
+export async function requireMetricAccess(
+  modules: ApplicationModules,
+  principal: Principal,
+  observationId: string,
+  roles?: ReadonlyArray<AgencyRoleKey>,
+): Promise<MetricOwnerContext> {
+  const ownership = await modules.metrics.resolveMetricObservationOwnership(observationId);
+  if (ownership === null) {
+    throw new NotFoundError('metric observation', observationId);
+  }
+
+  if (principal.kind === 'service') return ownership;
+
+  const context = await resolveContext(modules, principal);
+  if (context === null || context.principal.status !== 'active') {
+    throw new ForbiddenError('Active user identity required');
+  }
+  if (context.platformRoles.includes('platform_administrator')) return ownership;
+
+  const membership = context.memberships.find(
+    (entry) => entry.agencyId === ownership.clientOwnership.client.agencyId,
+  );
+  if (membership === undefined) {
+    // Hard boundary: not a member of the agency owning the record's CLIENT
+    // → indistinguishable from an unknown record (uniform 404, no
+    // cross-tenant oracle; rejection BEFORE any dependent traversal).
+    throw new NotFoundError('metric observation', observationId);
+  }
+  if (membership.membershipStatus !== 'active') {
+    throw new ForbiddenError('Active membership in the metric observation client agency required');
   }
   if (roles !== undefined && !roles.includes(membership.role)) {
     throw new ForbiddenError('This operation requires a different agency role');

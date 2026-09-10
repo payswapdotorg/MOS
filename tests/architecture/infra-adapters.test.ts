@@ -428,6 +428,11 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // append-only evidence ledger with the supersession fence and the
     // EVID-AC-03 tier backstop.
     '015_evidence.sql',
+    // MKT-014 appends the metric normalization migration (018 — the number
+    // is RESERVED for this Work Item; siblings use 016/017): the
+    // append-only metric observation ledger with the source/timestamp/
+    // reference mapping and the cross-tenant backstops.
+    '018_metrics.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
