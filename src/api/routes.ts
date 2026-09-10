@@ -6,7 +6,8 @@
  * Workflow instance state machine routes + MKT-010 Execution lifecycle
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
  * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
- * registry routes — TaskProfiles, model registry, usage telemetry).
+ * registry routes — TaskProfiles, model registry, usage telemetry +
+ * MKT-020 logical Agent/Capability contract routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -39,6 +40,10 @@ import { registerMetricsRoutes } from './metrics-routes.ts';
 // MKT-017: /ai-runtime registry routes (TaskProfiles, model registry,
 // usage telemetry — AI-001).
 import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
+// MKT-020: /agents routes (logical Agent/Capability contracts — AGENT-001:
+// platform + agency scoped registration, catalog reads, the single
+// retire edge and the append-only lifecycle history surface).
+import { registerAgentsRoutes } from './agents-routes.ts';
 
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
@@ -63,5 +68,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   registerMetricsRoutes(router, services, modules);
   // MKT-017: AI runtime registry surfaces.
   registerAiRuntimeRoutes(router, services, modules);
+  // MKT-020: logical Agent/Capability surfaces (register / list / read /
+  // retire / lifecycle history — the provider-neutral capability contract,
+  // AGENT-001).
+  registerAgentsRoutes(router, services, modules);
   return router;
 }

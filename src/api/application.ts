@@ -32,9 +32,16 @@
  * MKT-017 additions: /ai-runtime (AI task profile and model registry,
  * AI-001 — provider-neutral TaskProfiles, normalized model registry,
  * usage telemetry records).
+ *
+ * MKT-020 additions: /agents (logical Agent/Capability contracts,
+ * AGENT-001 — provider-neutral reusable capability declarations with
+ * platform/agency scope, register/list/read/retire and the append-only
+ * lifecycle history).
  */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
+// MKT-020: /agents module contract (logical Agent/Capability contracts).
+import type { AgentsModuleApi } from '../modules/agents/public.ts';
 import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
 import type { AuditModuleApi } from '../modules/audit/public.ts';
 import type { AuthModuleApi } from '../modules/auth/public.ts';
@@ -69,4 +76,6 @@ export interface ApplicationModules {
   readonly metrics: MetricsModuleApi;
   // MKT-017: AI runtime registry authority (AI-001).
   readonly aiRuntime: AiRuntimeModuleApi;
+  // MKT-020: logical Agent/Capability contracts authority (AGENT-001).
+  readonly agents: AgentsModuleApi;
 }

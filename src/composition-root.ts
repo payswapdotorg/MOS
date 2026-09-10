@@ -127,7 +127,20 @@
  *     normalized model registry with append-only observations, and usage
  *     telemetry records. NO routing/cascade engine (MKT-018), NO
  *     evaluation framework (MKT-019), NO provider adapters/SDKs and NO
- *     model invocation are wired (the pooled runtime stays untouched). */
+ *     model invocation are wired (the pooled runtime stays untouched).
+ *
+ * MKT-020 additions (logical Agent/Capability contracts, AGENT-001):
+ *   - the /agents module is constructed here with PLATFORM PORTS ONLY
+ *     (db/clock/ids): the frozen matrix allows /agents ──→ /executions,
+ *     /ai-runtime, /policies, but the logical capability contract needs
+ *     NONE of them — the logical Agent owns no tenant data, no workflow
+ *     state, no deployment state and no infrastructure (architecture.md
+ *     §12). It owns the provider-neutral reusable capability declaration
+ *     registry (platform/agency scope, register/list/read/retire, §8-style
+ *     registration fences, append-only lifecycle history). NO execution
+ *     engine, NO dispatch, NO invocation, NO human/field agents (MKT-025)
+ *     and NO provider adapters are wired.
+ */
 
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -176,7 +189,9 @@ import { createMetricsModule } from './modules/metrics/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
-import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';import type { ApplicationModules } from './api/application.ts';
+import { createAiRuntimeModule } from './modules/ai-runtime/public.ts';
+// MKT-020: /agents — logical Agent/Capability contracts (AGENT-001).
+import { createAgentsModule } from './modules/agents/public.ts';import type { ApplicationModules } from './api/application.ts';
 
 export interface AppOptions {
   /** Additional observability sinks (e.g., test collectors). */
@@ -318,6 +333,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // workspace scope arrives as server-derived data resolved by the routes
   // and DB-backstopped by the migration-016 scope-chain triggers).
   const aiRuntime = createAiRuntimeModule({ db, clock, ids, executions });
+
+  // MKT-020: /agents — the logical Agent/Capability contracts authority
+  // (AGENT-001). PLATFORM PORTS ONLY: the frozen matrix allows
+  // /agents ──→ /executions, /ai-runtime, /policies, but the reusable
+  // capability declaration composes none of them (architecture.md §12:
+  // the logical Agent owns no tenant data, workflow state, deployment
+  // state or infrastructure). The ownership scope arrives as server-
+  // derived data resolved by the routes from canonical agency ownership
+  // state; the migration-022 fences, scope immutability and FK are the
+  // backstops.
+  const agents = createAgentsModule({ db, clock, ids });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -344,7 +370,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime },  };
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, agents },  };
 }
 
 export async function buildAppServices(config: AppConfig, options: AppOptions = {}): Promise<AppServices> {
