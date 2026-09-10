@@ -428,6 +428,9 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // append-only evidence ledger with the supersession fence and the
     // EVID-AC-03 tier backstop.
     '015_evidence.sql',
+    // MKT-017 appends the AI runtime registry migration (016 — the number is
+    // reserved for this Work Item; sibling workers use other numbers).
+    '016_ai_runtime.sql',
     // MKT-014 appends the metric normalization migration (018 — the number
     // is RESERVED for this Work Item; siblings use 016/017): the
     // append-only metric observation ledger with the source/timestamp/

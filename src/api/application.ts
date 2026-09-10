@@ -28,9 +28,14 @@
  * MKT-014 additions: /metrics (Metric normalization, METRIC-001) — the
  * append-only metric observation ledger with source/timestamp/reference
  * mapping, server-derived provenance and NO provider state.
+ *
+ * MKT-017 additions: /ai-runtime (AI task profile and model registry,
+ * AI-001 — provider-neutral TaskProfiles, normalized model registry,
+ * usage telemetry records).
  */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
+import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
 import type { AuditModuleApi } from '../modules/audit/public.ts';
 import type { AuthModuleApi } from '../modules/auth/public.ts';
 import type { ClientsModuleApi } from '../modules/clients/public.ts';
@@ -62,4 +67,6 @@ export interface ApplicationModules {
   readonly evidence: EvidenceModuleApi;
   // MKT-014: metric normalization authority (METRIC-001).
   readonly metrics: MetricsModuleApi;
+  // MKT-017: AI runtime registry authority (AI-001).
+  readonly aiRuntime: AiRuntimeModuleApi;
 }

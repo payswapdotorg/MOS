@@ -5,7 +5,8 @@
  * Playbook domain routes + MKT-008 Workflow definition routes + MKT-009
  * Workflow instance state machine routes + MKT-010 Execution lifecycle
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
- * routes + MKT-014 Metric normalization routes).
+ * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
+ * registry routes — TaskProfiles, model registry, usage telemetry).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -35,6 +36,9 @@ import { registerSandboxRoutes } from './sandbox-routes.ts';
 import { registerEvidenceRoutes } from './evidence-routes.ts';
 // MKT-014: metric normalization routes (METRIC-001).
 import { registerMetricsRoutes } from './metrics-routes.ts';
+// MKT-017: /ai-runtime registry routes (TaskProfiles, model registry,
+// usage telemetry — AI-001).
+import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
 
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
@@ -57,5 +61,7 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // routes: observations are append-only, METRIC-001; corrections are new
   // rows).
   registerMetricsRoutes(router, services, modules);
+  // MKT-017: AI runtime registry surfaces.
+  registerAiRuntimeRoutes(router, services, modules);
   return router;
 }
