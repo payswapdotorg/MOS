@@ -41,7 +41,14 @@
  * governed Task projections, candidate-specific Offers, the
  * concurrency-safe acceptance claim and provenance-preserving outcome
  * submission; Workflow authority preserved: the jobs module consumes
- * /workflows READ-ONLY). */
+ * /workflows READ-ONLY).
+
+ * MKT-027 additions: /jobs field execution (JOB-001 field subset +
+ * EVID-001 field subset, JOB-AC-03..04, EVID-AC-01..03 field subset —
+ * the visit lifecycle, structured outcomes, evidence capture, follow-up
+ * and the policy-gated continuity lookup ride the SAME /jobs module
+ * contract: the JobsModuleApi interface is extended in place; NO new
+ * module, NO new dependency). */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
 import type { AiRuntimeModuleApi } from '../modules/ai-runtime/public.ts';
@@ -89,4 +96,7 @@ export interface ApplicationModules {
   // MKT-026: the Human Job lifecycle authority (Task projections,
   // candidate-specific offers, concurrency-safe acceptance, outcome
   // submission with server-derived provenance).
+  // MKT-027: the SAME /jobs authority now also exposes the field-execution
+  // surface (visits, structured outcomes, evidence capture, follow-up,
+  // continuity) through this same contract — one authority, one type.
   readonly jobs: JobsModuleApi;}

@@ -155,6 +155,20 @@
  *     /agencies module dependency). No dispatch/execution engine is wired
  *     (HUMAN-AC-02: /jobs is not a second workflow engine — no graph, no
  *     node/edge semantics, no downstream scheduling).
+
+ * MKT-027 additions (Field execution and evidence, JOB-001 field subset +
+ * EVID-001 field subset):
+ *   - NO new module and NO new dependency is wired: the field-execution
+ *     surface (visit lifecycle, structured outcomes, evidence capture,
+ *     follow-up, continuity) is composed INSIDE the same /jobs module
+ *     from the SAME deps (db/clock/ids/workflows/fieldAgents/evidence) —
+ *     the frozen matrix is untouched. The continuity policy checkpoint
+ *     consumes the merged /field-agents profile relationship-continuity
+ *     block through the existing /field-agents public contract (the
+ *     declared swap point for the future /policies authority, MKT-021).
+ *     The /api registration adds jobs-visits-routes.ts under the same
+ *     /api/jobs prefix. Migration 024_field_execution.sql is reserved for
+ *     this Work Item (019/022 belong to sibling workers).
  */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -367,6 +381,10 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // /field-agents); no execution dispatch (the runtime is MKT-011+); /jobs
   // never mutates workflow state.
   const jobs = createJobsModule({ db, clock, ids, workflows, fieldAgents, evidence });
+  // MKT-027: the field-execution surface (visits, structured outcomes,
+  // evidence capture, follow-up, continuity) is composed inside the SAME
+  // createJobsModule call — same deps, same lock ordering, same authority;
+  // nothing further to wire here (see modules/jobs/internal/visit-module.ts).
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([

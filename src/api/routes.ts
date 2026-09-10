@@ -51,6 +51,12 @@ import { registerFieldAgentsRoutes } from './field-agents-routes.ts';
 // projections, candidate-specific offers, the concurrency-safe acceptance
 // claim, outcome submission with server-derived provenance).
 import { registerJobsRoutes } from './jobs-routes.ts';
+// MKT-027: the /jobs FIELD EXECUTION routes (visit lifecycle, structured
+// outcomes, evidence capture, follow-up and the policy-gated continuity
+// lookup — JOB-001 field subset + EVID-001 field subset, JOB-AC-03..04).
+// Same /api/jobs surface prefix, same authorization composition (the
+// shared posture helpers are exported from jobs-routes.ts).
+import { registerJobsVisitsRoutes } from './jobs-visits-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -84,5 +90,16 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // (descriptors to ELIGIBLE agents only — no Client data), candidate
   // offers + accept/decline (the concurrency-safe claim), outcome
   // submission (server-derived provenance) and outcome reads.
-  registerJobsRoutes(router, services, modules);  return router;
+  registerJobsRoutes(router, services, modules);
+
+  // MKT-027: the field-execution surface of the SAME /jobs authority —
+  // visit open/start/cancel/complete with the structured outcome,
+  // evidence capture from the field (through the /evidence public
+  // contract), the append-only transition history and the DERIVED
+  // policy-gated continuity lookup (JOB-AC-04). Registered AFTER the
+  // jobs marketplace routes: all paths are deeper than the literal
+  // /api/jobs/marketplace and /api/jobs/offers segments, so no shadowing
+  // is possible either way.
+  registerJobsVisitsRoutes(router, services, modules);
+  return router;
 }
