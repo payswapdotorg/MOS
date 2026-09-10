@@ -591,7 +591,7 @@ test('the shared registration files wire the /agents module (application modules
     'the /agents module is wired with PLATFORM PORTS ONLY (db/clock/ids)',
   );
   assert.ok(
-    /aiRuntime, agents \}/.test(root),
+    /modules: \{[^}]*\bagents\b[^}]*\}/.test(root),
     'the agents module is part of the application modules wiring',
   );
 });
