@@ -11,8 +11,8 @@ This is not an architectural authority. Actual Git history, PRs, code and verifi
 |---|---|---|
 | MKT-001..MKT-012 | ACCEPTED/MERGED | Foundation through sandbox/runtime lifecycle accepted before the v1.4 continuation. |
 | MKT-009 correction | ACCEPTED/MERGED | Workflow-instance history consistency backstop accepted and merged. |
-| MKT-013 | IN_FLIGHT | Evidence/provenance PR must be independently reviewed against actual code and CI before merge. |
-| MKT-014..MKT-040 | PENDING | Recompute READY set from the effective dependency graph after each accepted merge. |
+| MKT-013 | RECONCILE | Prior source repository had an open MKT-013 PR, but the new `payswapdotorg/MOS` repository currently has no open PR. The Tech Lead must inspect branches/commits and either restore/recreate the implementation PR or dispatch the Work Item from the frozen contract. |
+| MKT-014..MKT-040 | PENDING | Recompute READY set from the effective dependency graph after reconciliation and each accepted merge. |
 
 ## Status meanings
 
