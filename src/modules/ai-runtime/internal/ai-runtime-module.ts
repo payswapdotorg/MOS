@@ -1,27 +1,40 @@
 /**
- * /ai-runtime module implementation (MKT-017, AI-001).
+ * /ai-runtime module implementation (MKT-017, AI-001 + MKT-018, AI-002).
  *
- * Implements the REGISTRY LAYER of the AI Runtime authority:
- * provider-neutral TaskProfiles, the normalized model registry with its
- * append-only availability/telemetry observations, and the append-oriented
- * usage telemetry record — the neutral contracts that routing (MKT-018),
- * evaluation (MKT-019) and provider adapters (later Work Items) consume.
+ * Implements the AI Runtime authority:
+ *   - REGISTRY LAYER (MKT-017): provider-neutral TaskProfiles, the
+ *     normalized model registry with its append-only availability/telemetry
+ *     observations, and the append-oriented usage telemetry record — the
+ *     neutral contracts that routing (MKT-018), evaluation (MKT-019) and
+ *     provider adapters consume;
+ *   - ROUTING LAYER (MKT-018): hard-eligibility filtering, performance
+ *     ranking, cost/latency tradeoff, cheap-first cascade with escalation,
+ *     provider-neutral adapter contract, and authoritative selection
+ *     telemetry (spec/ai-runtime-and-routing.md §4/§5/§6/§9). The router
+ *     is the /ai-runtime module itself (AI-AC-03) — OpenRouter is pluggable
+ *     as an ADAPTER behind the provider-neutral contract.
  *
- * What this implementation deliberately does NOT contain (MKT-017 scope
- * bounds, asserted by architecture tests): no routing/eligibility/cascade
- * policy, no evaluation execution, no provider SDK imports, no model
- * invocation, no credentials. The module's ONLY cross-module dependency is
- * the frozen-matrix-sanctioned /executions public API (telemetry execution
- * reference validation); scope chains arrive as server-derived data resolved
- * by the caller (routes resolve canonical ownership BEFORE authorize) and
- * are DB-backstopped by the migration-016 scope-chain triggers.
+ * What this implementation deliberately does NOT contain: no evaluation
+ * framework (MKT-019), no provider SDK imports (the OpenRouter adapter
+ * uses the platform's HttpCallPort — fetch-based, never an SDK; AI-AC-02),
+ * no credentials (routing-time credential resolution is the composition
+ * root's job — the adapter takes the API key, never the TaskProfile), no
+ * domain-module consumption of routing (that stays via TaskProfiles).
+ *
+ * The module's ONLY cross-module dependency is the frozen-matrix-
+ * sanctioned /executions public API (telemetry execution reference
+ * validation); scope chains arrive as server-derived data resolved by
+ * the caller (routes resolve canonical ownership BEFORE authorize) and
+ * are DB-backstopped by the migration-016/020 scope-chain triggers.
  *
  * Convergence discipline (§8-style, exactly the MKT-009/MKT-010 pattern):
- * TaskProfile creates and telemetry appends carry a LOGICAL idempotency key
- * whose uniqueness the DATABASE enforces — a duplicate of the same command
- * (same create fingerprint) converges to the existing row (replayed=true);
- * a key reused for a different command is a ConflictError. History is
- * append-only: corrections create new records, never overwrites.
+ * TaskProfile creates, telemetry appends, routing-policy creates, selection-
+ * decision appends and cascade-run starts all carry a LOGICAL idempotency
+ * key whose uniqueness the DATABASE enforces — a duplicate of the same
+ * command (same create fingerprint) converges to the existing row
+ * (replayed=true); a key reused for a different command is a
+ * ConflictError. History is append-only: corrections create new records,
+ * never overwrites.
  */
 
 import { createHash } from 'node:crypto';
@@ -29,6 +42,8 @@ import { ConflictError, IdempotencyConflictError, NotFoundError } from '../../..
 import type {
   AiRuntimeModuleApi,
   AiRuntimeModuleDeps,
+  RoutingOutcome,
+  SelectionDecisionRecord,
   TaskProfileInput,
   UsageTelemetryInput,
 } from '../public.ts';
@@ -36,10 +51,32 @@ import {
   assertValidIdempotencyKey,
   assertValidModelObservationInput,
   assertValidModelRegistrationInput,
+  assertValidRoutingPolicyInput,
   assertValidTaskProfileInput,
   assertValidUsageTelemetryInput,
   AiRuntimeStore,
 } from './ai-runtime-store.ts';
+import {
+  AiRoutingStore,
+  assertRoutingScopeIds,
+  fingerprintRoutingPolicyCreate,
+  fingerprintSelectionDecisionAppend,
+  fingerprintCascadeRunStart,
+} from './ai-routing-store.ts';
+import type { CascadeRunRow, CascadeStepRow } from './ai-routing-store.ts';
+import {
+  interpretPolicy,
+  selectModel,
+} from './routing/policy.ts';
+import { runCascade } from './routing/cascade.ts';
+import type {
+  CascadeRunRecord,
+  CascadeRunStatus,
+  CascadeStepRecord,
+  CascadeStepType,
+  UsageTelemetryOutcome,
+  ValidatorResult,
+} from '../public.ts';
 
 const SCOPE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -116,6 +153,9 @@ function fingerprintUsageTelemetryAppend(workspaceId: string, usage: UsageTeleme
 
 export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModuleApi {
   const store = new AiRuntimeStore(deps.db, deps.clock, deps.ids);
+  // MKT-018: the routing store (selection decisions, cascade runs/steps,
+  // routing policies). Same module authority, deeper scope.
+  const routingStore = new AiRoutingStore(deps.db, deps.clock, deps.ids);
   const { executions } = deps;
 
   return {
@@ -384,6 +424,482 @@ export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModul
     async listUsageTelemetry(workspaceId, limit) {
       const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
       return store.listUsageTelemetry(workspaceId, bounded);
+    },
+
+    // ----- Routing policies (MKT-018, AI-002) -----------------------------
+
+    async createRoutingPolicy(input) {
+      assertValidRoutingPolicyInput(input.policy);
+      assertValidIdempotencyKey(input.idempotencyKey);
+      assertRoutingScopeIds({
+        workspaceId: input.workspaceId,
+        clientId: input.clientId,
+        agencyId: input.agencyId,
+      });
+
+      const createFingerprint = fingerprintRoutingPolicyCreate(input.workspaceId, input.policy);
+
+      return deps.db.transaction(async (tx) => {
+        const inserted = await routingStore.insertRoutingPolicy(tx, {
+          policy: input.policy,
+          workspaceId: input.workspaceId,
+          clientId: input.clientId,
+          agencyId: input.agencyId,
+          idempotencyKey: input.idempotencyKey,
+          createFingerprint,
+          actorId: input.actorId,
+        });
+        if (inserted === 'name-taken') {
+          throw new ConflictError(
+            `an ACTIVE routing policy named '${input.policy.policyName}' already exists in this Workspace`,
+          );
+        }
+        if (inserted !== 'fence') {
+          return { routingPolicy: inserted, replayed: false };
+        }
+        // The §8-style fence fired: converge on the recorded command or
+        // reject the key reuse.
+        const existing = await routingStore.findRoutingPolicyByIdempotencyKey(
+          tx,
+          input.workspaceId,
+          input.idempotencyKey,
+        );
+        if (existing === null) {
+          throw new ConflictError(
+            `routing policy idempotency key '${input.idempotencyKey}' fence fired but no record resolved`,
+          );
+        }
+        if (existing.createFingerprint !== createFingerprint) {
+          throw new IdempotencyConflictError(input.idempotencyKey);
+        }
+        return { routingPolicy: existing, replayed: true };
+      });
+    },
+
+    async getRoutingPolicy(routingPolicyId) {
+      return routingStore.getRoutingPolicy(routingPolicyId);
+    },
+
+    async listRoutingPolicies(workspaceId) {
+      return routingStore.listRoutingPolicies(workspaceId);
+    },
+
+    async retireRoutingPolicy(input) {
+      return deps.db.transaction(async (tx) => {
+        const current = await routingStore.lockRoutingPolicy(tx, input.routingPolicyId);
+        if (current === null) {
+          throw new NotFoundError('routing-policy', input.routingPolicyId);
+        }
+        if (current.version !== input.expectedVersion) {
+          throw new ConflictError(
+            `routing policy version mismatch: current version is ${current.version}`,
+          );
+        }
+        if (current.status === 'retired') {
+          throw new ConflictError(
+            `routing policy ${input.routingPolicyId} is retired and terminal — corrections register a NEW policy`,
+          );
+        }
+        const outcome = await routingStore.updateRoutingPolicyStatus(tx, {
+          routingPolicyId: input.routingPolicyId,
+          expectedVersion: input.expectedVersion,
+        });
+        if (outcome !== 'ok') {
+          throw new ConflictError('routing policy retire lost the version race');
+        }
+        const updated = await routingStore.lockRoutingPolicy(tx, input.routingPolicyId);
+        if (updated === null) {
+          throw new Error(`retired routing policy ${input.routingPolicyId} could not be read back`);
+        }
+        return updated;
+      });
+    },
+
+    // ----- Routing decision (selection + cascade) -------------------------
+
+    async routeTask(input) {
+      assertValidIdempotencyKey(input.idempotencyKey);
+      assertRoutingScopeIds({
+        workspaceId: input.workspaceId,
+        clientId: input.clientId,
+        agencyId: input.agencyId,
+      });
+      if (typeof input.correlationId !== 'string' || input.correlationId.length < 1 || input.correlationId.length > 128) {
+        throw new ConflictError('correlationId must be the server-derived ambient correlation identity');
+      }
+
+      // REFERENCE pre-checks (clean uniform errors; the migration-020
+      // scope-chain trigger is the backstop):
+      //   - the TaskProfile must exist AND belong to the SAME Workspace;
+      //   - the routing policy, when present, must exist AND belong to the
+      //     SAME Workspace.
+      const profile = await store.getTaskProfile(input.taskProfileId);
+      if (profile === null || profile.workspaceId !== input.workspaceId) {
+        throw new NotFoundError('task-profile', input.taskProfileId);
+      }
+      let policyRecord = null;
+      if (input.routingPolicyId !== null) {
+        policyRecord = await routingStore.getRoutingPolicy(input.routingPolicyId);
+        if (policyRecord === null || policyRecord.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('routing-policy', input.routingPolicyId);
+        }
+      }
+
+      // Load the registry models (the routing operates on the ACTIVE
+      // registry entries — retired entries are tombstones, not candidates).
+      const models = await store.listModels();
+
+      // Apply the routing policy (§4: eligibility → ranking → tradeoff →
+      // selection). The policy is interpreted from the declarative JSON
+      // content; the routing core depends on the PURE functions in
+      // routing/policy.ts — no provider SDK is imported.
+      const interpreted = interpretPolicy(policyRecord);
+      const selection = selectModel({
+        taskProfile: profile,
+        models,
+        policy: interpreted,
+      });
+
+      // The eligible models (the routing-decision eligible set).
+      const eligibleModels = models.filter((m) =>
+        selection.eligibleSet.some(
+          (d) => d.modelRegistryId === m.modelRegistryId && d.eligible,
+        ),
+      );
+
+      // Run the cheap-first cascade with the supplied adapter + validator
+      // (§5). The cascade is the AI-AC-05 proof — validator failure
+      // escalates to the stronger model.
+      const cascadeRunFingerprint = fingerprintCascadeRunStart(input.workspaceId, {
+        taskProfileId: input.taskProfileId,
+        routingPolicyId: input.routingPolicyId,
+        maxEscalations: interpreted.maxEscalations,
+      });
+
+      return deps.db.transaction(async (tx) => {
+        // Start the cascade run (fenced by the §8-style key).
+        let cascadeRun = await routingStore.insertCascadeRun(tx, {
+          workspaceId: input.workspaceId,
+          clientId: input.clientId,
+          agencyId: input.agencyId,
+          taskProfileId: input.taskProfileId,
+          routingPolicyId: input.routingPolicyId,
+          maxEscalations: interpreted.maxEscalations,
+          correlationId: input.correlationId,
+          idempotencyKey: input.idempotencyKey,
+          createFingerprint: cascadeRunFingerprint,
+          actorId: input.actorId,
+        });
+        let replayed = false;
+        if (cascadeRun === 'fence') {
+          // The §8-style fence fired: converge on the recorded cascade run.
+          const existing = await routingStore.findCascadeRunByIdempotencyKey(
+            tx,
+            input.workspaceId,
+            input.idempotencyKey,
+          );
+          if (existing === null) {
+            throw new ConflictError(
+              `cascade run idempotency key '${input.idempotencyKey}' fence fired but no record resolved`,
+            );
+          }
+          if (existing.createFingerprint !== cascadeRunFingerprint) {
+            throw new IdempotencyConflictError(input.idempotencyKey);
+          }
+          // Replay: return the existing cascade run + the recorded
+          // selection decision (if any).
+          cascadeRun = existing;
+          replayed = true;
+          const existingSelection = await routingStore.findSelectionDecisionByIdempotencyKey(
+            tx,
+            input.workspaceId,
+            `cascade:${input.idempotencyKey}`,
+          );
+          if (existingSelection !== null) {
+            return {
+              selection: existingSelection,
+              cascadeRun: cascadeRun,
+              finalOutput: null,
+            } satisfies RoutingOutcome;
+          }
+          // The fence fired but no selection decision was recorded —
+          // fall through to record a fresh selection decision (the cascade
+          // run was started but the routing decision was not persisted
+          // before the failure; this is a recovery path).
+        }
+
+        // Run the cascade (the AI-AC-05 proof).
+        const cascadeResult = await runCascade({
+          taskProfile: profile,
+          policy: interpreted,
+          eligibleModels,
+          selection,
+          adapter: input.adapter,
+          validator: input.validator,
+          invocationInput: input.invocationInput,
+        });
+
+        // Persist the cascade steps (append-only history) and collect the
+        // inserted records (the store uses the transaction connection, so
+        // the read-back must share the transaction — we collect the inserted
+        // records here rather than re-reading through this.db, which would
+        // not see the uncommitted changes).
+        for (const step of cascadeResult.steps) {
+          await routingStore.insertCascadeStep(tx, {
+            cascadeRunId: cascadeRun.cascadeRunId,
+            step,
+          });
+        }
+        // Re-read the cascade steps through the transaction so the final
+        // record includes the just-inserted rows (the store's listCascadeSteps
+        // uses this.db; we need a tx-aware read here).
+        const finalSteps = await tx.query<CascadeStepRow>(
+          `SELECT cascade_step_id, cascade_run_id, step_index, model_registry_id, step_type,
+                  validator_result, validator_reason, observed_latency_ms, observed_cost_amount,
+                  evaluation_ref, outcome, created_at
+           FROM ai_cascade_steps WHERE cascade_run_id = $1 ORDER BY step_index, cascade_step_id`,
+          [cascadeRun.cascadeRunId],
+        );
+        const cascadeStepRecords: CascadeStepRecord[] = finalSteps.rows.map((row) => ({
+          cascadeStepId: row.cascade_step_id,
+          cascadeRunId: row.cascade_run_id,
+          stepIndex: Number(row.step_index),
+          modelRegistryId: row.model_registry_id ?? '',
+          stepType: row.step_type as CascadeStepType,
+          validatorResult: row.validator_result as ValidatorResult,
+          validatorReason: row.validator_reason,
+          observedLatencyMs: row.observed_latency_ms === null ? null : Number(row.observed_latency_ms),
+          observedCostAmount: row.observed_cost_amount === null ? null : Number(row.observed_cost_amount),
+          evaluationRef: row.evaluation_ref,
+          outcome: row.outcome as UsageTelemetryOutcome,
+          createdAt: row.created_at.toISOString(),
+        }));
+
+        // Update the cascade run state (CAS on the version).
+        const updateOutcome = await routingStore.updateCascadeRunStatus(tx, {
+          cascadeRunId: cascadeRun.cascadeRunId,
+          expectedVersion: cascadeRun.version,
+          status: cascadeResult.status,
+          finalModelRegistryId: cascadeResult.finalModelRegistryId,
+          escalationCount: cascadeResult.escalationCount,
+        });
+        if (updateOutcome !== 'ok') {
+          throw new ConflictError('cascade run state update lost the version race');
+        }
+
+        // Re-read the cascade run row through the transaction (the run row
+        // was just updated; we need the updated version and updated_at).
+        const finalRunRow = await tx.query<CascadeRunRow>(
+          `SELECT cascade_run_id, workspace_id, client_id, agency_id, task_profile_id, routing_policy_id,
+                  status, final_model_registry_id, escalation_count, max_escalations, correlation_id,
+                  idempotency_key, create_fingerprint, created_by, version, created_at, updated_at
+           FROM ai_cascade_runs WHERE cascade_run_id = $1`,
+          [cascadeRun.cascadeRunId],
+        );
+        const finalRunRowData = finalRunRow.rows[0];
+        if (finalRunRowData === undefined) {
+          throw new Error(`cascade run ${cascadeRun.cascadeRunId} could not be read back after update`);
+        }
+        const finalCascadeRun: CascadeRunRecord = {
+          cascadeRunId: finalRunRowData.cascade_run_id,
+          workspaceId: finalRunRowData.workspace_id,
+          clientId: finalRunRowData.client_id,
+          agencyId: finalRunRowData.agency_id,
+          taskProfileId: finalRunRowData.task_profile_id,
+          routingPolicyId: finalRunRowData.routing_policy_id,
+          status: finalRunRowData.status as CascadeRunStatus,
+          finalModelRegistryId: finalRunRowData.final_model_registry_id,
+          escalationCount: Number(finalRunRowData.escalation_count),
+          maxEscalations: Number(finalRunRowData.max_escalations),
+          correlationId: finalRunRowData.correlation_id,
+          idempotencyKey: finalRunRowData.idempotency_key,
+          createFingerprint: finalRunRowData.create_fingerprint,
+          createdBy: finalRunRowData.created_by,
+          version: Number(finalRunRowData.version),
+          createdAt: finalRunRowData.created_at.toISOString(),
+          updatedAt: finalRunRowData.updated_at.toISOString(),
+          cascadeSteps: cascadeStepRecords,
+        };
+
+        // Compute the authoritative observed cost/latency telemetry from
+        // the cascade steps (the AI-AC-06 telemetry payload).
+        const observedLatencyMs = cascadeResult.steps.reduce(
+          (sum, s) => sum + (s.observedLatencyMs ?? 0),
+          0,
+        );
+        const observedCostAmount = cascadeResult.steps.reduce(
+          (sum, s) => sum + (s.observedCostAmount ?? 0),
+          0,
+        );
+
+        // Persist the selection decision (AUTHORITATIVE — the cascade
+        // invoked models and observed cost/latency). The idempotency key
+        // is namespaced with 'cascade:' to keep the decision fence
+        // separate from the cascade-run fence.
+        const selectionFingerprint = fingerprintSelectionDecisionAppend(input.workspaceId, {
+          taskProfileId: input.taskProfileId,
+          routingPolicyId: input.routingPolicyId,
+          chosenModelRegistryId: selection.chosenModelRegistryId,
+          cascadeRunId: cascadeRun.cascadeRunId,
+          authoritative: true,
+        });
+        const selectionIdempotencyKey = `cascade:${input.idempotencyKey}`;
+        const insertedSelection = await routingStore.insertSelectionDecision(tx, {
+          workspaceId: input.workspaceId,
+          clientId: input.clientId,
+          agencyId: input.agencyId,
+          taskProfileId: input.taskProfileId,
+          routingPolicyId: input.routingPolicyId,
+          eligibleSet: selection.eligibleSet,
+          ranking: selection.ranking,
+          tradeoff: selection.tradeoff,
+          chosenModelRegistryId: selection.chosenModelRegistryId,
+          cascadeRunId: cascadeRun.cascadeRunId,
+          phaseTrace: selection.phaseTrace,
+          authoritative: true,
+          observedLatencyMs,
+          observedCostAmount,
+          evaluationRef: null, // placeholder until MKT-019
+          correlationId: input.correlationId,
+          idempotencyKey: selectionIdempotencyKey,
+          createFingerprint: selectionFingerprint,
+          actorId: input.actorId,
+        });
+        let finalSelection: SelectionDecisionRecord;
+        if (insertedSelection !== 'fence') {
+          finalSelection = insertedSelection;
+        } else {
+          // The selection-decision fence fired: converge on the recorded
+          // decision (the cascade run was a replay, and the decision was
+          // already recorded).
+          const existing = await routingStore.findSelectionDecisionByIdempotencyKey(
+            tx,
+            input.workspaceId,
+            selectionIdempotencyKey,
+          );
+          if (existing === null) {
+            throw new ConflictError(
+              `selection decision idempotency key '${selectionIdempotencyKey}' fence fired but no record resolved`,
+            );
+          }
+          if (existing.createFingerprint !== selectionFingerprint) {
+            throw new IdempotencyConflictError(selectionIdempotencyKey);
+          }
+          finalSelection = existing;
+        }
+
+        // Re-read the cascade run to get the updated state (with steps).
+        // (Already constructed as finalCascadeRun above — no re-read needed.)
+
+        void replayed; // the replayed flag is implicit in the persisted records
+
+        return {
+          selection: finalSelection,
+          cascadeRun: finalCascadeRun,
+          finalOutput: cascadeResult.finalOutput,
+        } satisfies RoutingOutcome;
+      });
+    },
+
+    async previewRouting(input) {
+      assertValidIdempotencyKey(input.idempotencyKey);
+      assertRoutingScopeIds({
+        workspaceId: input.workspaceId,
+        clientId: input.clientId,
+        agencyId: input.agencyId,
+      });
+      if (typeof input.correlationId !== 'string' || input.correlationId.length < 1 || input.correlationId.length > 128) {
+        throw new ConflictError('correlationId must be the server-derived ambient correlation identity');
+      }
+
+      // REFERENCE pre-checks (same posture as routeTask).
+      const profile = await store.getTaskProfile(input.taskProfileId);
+      if (profile === null || profile.workspaceId !== input.workspaceId) {
+        throw new NotFoundError('task-profile', input.taskProfileId);
+      }
+      let policyRecord = null;
+      if (input.routingPolicyId !== null) {
+        policyRecord = await routingStore.getRoutingPolicy(input.routingPolicyId);
+        if (policyRecord === null || policyRecord.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('routing-policy', input.routingPolicyId);
+        }
+      }
+
+      const models = await store.listModels();
+      const interpreted = interpretPolicy(policyRecord);
+      const selection = selectModel({
+        taskProfile: profile,
+        models,
+        policy: interpreted,
+      });
+
+      const selectionFingerprint = fingerprintSelectionDecisionAppend(input.workspaceId, {
+        taskProfileId: input.taskProfileId,
+        routingPolicyId: input.routingPolicyId,
+        chosenModelRegistryId: selection.chosenModelRegistryId,
+        cascadeRunId: null,
+        authoritative: false,
+      });
+      const selectionIdempotencyKey = `preview:${input.idempotencyKey}`;
+
+      return deps.db.transaction(async (tx) => {
+        const inserted = await routingStore.insertSelectionDecision(tx, {
+          workspaceId: input.workspaceId,
+          clientId: input.clientId,
+          agencyId: input.agencyId,
+          taskProfileId: input.taskProfileId,
+          routingPolicyId: input.routingPolicyId,
+          eligibleSet: selection.eligibleSet,
+          ranking: selection.ranking,
+          tradeoff: selection.tradeoff,
+          chosenModelRegistryId: selection.chosenModelRegistryId,
+          cascadeRunId: null,
+          phaseTrace: selection.phaseTrace,
+          authoritative: false,
+          observedLatencyMs: null,
+          observedCostAmount: null,
+          evaluationRef: null,
+          correlationId: input.correlationId,
+          idempotencyKey: selectionIdempotencyKey,
+          createFingerprint: selectionFingerprint,
+          actorId: input.actorId,
+        });
+        if (inserted !== 'fence') {
+          return inserted;
+        }
+        const existing = await routingStore.findSelectionDecisionByIdempotencyKey(
+          tx,
+          input.workspaceId,
+          selectionIdempotencyKey,
+        );
+        if (existing === null) {
+          throw new ConflictError(
+            `selection decision idempotency key '${selectionIdempotencyKey}' fence fired but no record resolved`,
+          );
+        }
+        if (existing.createFingerprint !== selectionFingerprint) {
+          throw new IdempotencyConflictError(selectionIdempotencyKey);
+        }
+        return existing;
+      });
+    },
+
+    async getSelectionDecision(selectionId) {
+      return routingStore.getSelectionDecision(selectionId);
+    },
+
+    async listSelectionDecisions(workspaceId, limit) {
+      const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
+      return routingStore.listSelectionDecisions(workspaceId, bounded);
+    },
+
+    async getCascadeRun(cascadeRunId) {
+      return routingStore.getCascadeRun(cascadeRunId);
+    },
+
+    async listCascadeRuns(workspaceId, limit) {
+      const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
+      return routingStore.listCascadeRuns(workspaceId, bounded);
     },
   };
 }

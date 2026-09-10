@@ -67,13 +67,19 @@ import type { AgencyRoleKey } from '../modules/agencies/public.ts';
 import { requirePlatformAdministrator, requireWorkspaceAccess } from './authorize.ts';
 import { recordMutationAudit } from './audit-emit.ts';
 import type {
+  CascadeRunRecord,
+  CascadeStepRecord,
   ModelObservationRecord,
   ModelRegistryRecord,
+  RoutingPolicyRecord,
+  SelectionDecisionRecord,
   TaskProfileRecord,
   UsageTelemetryRecord,
 } from '../modules/ai-runtime/public.ts';
 import {
   MODEL_REGISTRATION_FORBIDDEN_INPUT_KEYS,
+  ROUTING_POLICY_FORBIDDEN_INPUT_KEYS,
+  SELECTION_DECISION_FORBIDDEN_INPUT_KEYS,
   TASK_PROFILE_FORBIDDEN_INPUT_KEYS,
   USAGE_TELEMETRY_FORBIDDEN_INPUT_KEYS,
 } from '../modules/ai-runtime/public.ts';
@@ -232,6 +238,91 @@ function serializeUsageTelemetry(record: UsageTelemetryRecord): Record<string, u
     idempotencyKey: record.idempotencyKey,
     ...(record.createdBy === null ? {} : { createdBy: record.createdBy }),
     createdAt: record.createdAt,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MKT-018 (AI-002) routing serializers
+// ---------------------------------------------------------------------------
+
+function serializeRoutingPolicy(policy: RoutingPolicyRecord): Record<string, unknown> {
+  return {
+    routingPolicyId: policy.routingPolicyId,
+    policyName: policy.policyName,
+    policyContent: policy.policyContent,
+    workspaceId: policy.workspaceId,
+    clientId: policy.clientId,
+    agencyId: policy.agencyId,
+    status: policy.status,
+    idempotencyKey: policy.idempotencyKey,
+    version: policy.version,
+    ...(policy.createdBy === null ? {} : { createdBy: policy.createdBy }),
+    createdAt: policy.createdAt,
+    updatedAt: policy.updatedAt,
+  };
+}
+
+function serializeSelectionDecision(decision: SelectionDecisionRecord): Record<string, unknown> {
+  return {
+    selectionId: decision.selectionId,
+    workspaceId: decision.workspaceId,
+    clientId: decision.clientId,
+    agencyId: decision.agencyId,
+    taskProfileId: decision.taskProfileId,
+    ...(decision.routingPolicyId === null ? {} : { routingPolicyId: decision.routingPolicyId }),
+    eligibleSet: decision.eligibleSet,
+    ranking: decision.ranking,
+    tradeoff: decision.tradeoff,
+    chosenModelRegistryId: decision.chosenModelRegistryId,
+    ...(decision.cascadeRunId === null ? {} : { cascadeRunId: decision.cascadeRunId }),
+    phaseTrace: decision.phaseTrace,
+    authoritative: decision.authoritative,
+    ...(decision.observedLatencyMs === null ? {} : { observedLatencyMs: decision.observedLatencyMs }),
+    ...(decision.observedCostAmount === null ? {} : { observedCostAmount: decision.observedCostAmount }),
+    ...(decision.evaluationRef === null ? {} : { evaluationRef: decision.evaluationRef }),
+    correlationId: decision.correlationId,
+    idempotencyKey: decision.idempotencyKey,
+    ...(decision.createdBy === null ? {} : { createdBy: decision.createdBy }),
+    createdAt: decision.createdAt,
+  };
+}
+
+function serializeCascadeStep(step: CascadeStepRecord): Record<string, unknown> {
+  return {
+    cascadeStepId: step.cascadeStepId,
+    cascadeRunId: step.cascadeRunId,
+    stepIndex: step.stepIndex,
+    modelRegistryId: step.modelRegistryId,
+    stepType: step.stepType,
+    validatorResult: step.validatorResult,
+    ...(step.validatorReason === null ? {} : { validatorReason: step.validatorReason }),
+    ...(step.observedLatencyMs === null ? {} : { observedLatencyMs: step.observedLatencyMs }),
+    ...(step.observedCostAmount === null ? {} : { observedCostAmount: step.observedCostAmount }),
+    ...(step.evaluationRef === null ? {} : { evaluationRef: step.evaluationRef }),
+    outcome: step.outcome,
+    createdAt: step.createdAt,
+  };
+}
+
+function serializeCascadeRun(run: CascadeRunRecord): Record<string, unknown> {
+  return {
+    cascadeRunId: run.cascadeRunId,
+    workspaceId: run.workspaceId,
+    clientId: run.clientId,
+    agencyId: run.agencyId,
+    taskProfileId: run.taskProfileId,
+    ...(run.routingPolicyId === null ? {} : { routingPolicyId: run.routingPolicyId }),
+    status: run.status,
+    ...(run.finalModelRegistryId === null ? {} : { finalModelRegistryId: run.finalModelRegistryId }),
+    escalationCount: run.escalationCount,
+    maxEscalations: run.maxEscalations,
+    correlationId: run.correlationId,
+    idempotencyKey: run.idempotencyKey,
+    version: run.version,
+    ...(run.createdBy === null ? {} : { createdBy: run.createdBy }),
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+    cascadeSteps: run.cascadeSteps.map(serializeCascadeStep),
   };
 }
 
@@ -882,6 +973,382 @@ export function registerAiRuntimeRoutes(
         return record;
       },
       respond: (ctx) => jsonResponse(200, serializeUsageTelemetry(ctx.result)),
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // MKT-018 (AI-002) routing routes — policy administration + selection/
+  // cascade records + routing preview. Same tenant isolation + DTO
+  // authority-field rejection as the registry routes.
+  //
+  // The routeTask operation (which requires the provider adapter) is NOT a
+  // route here — the adapter is supplied by the caller at route time (the
+  // composition root wires the OpenRouter adapter; the integration test
+  // supplies a fake). The routing preview route runs the routing policy
+  // WITHOUT the cascade (no adapter required) — useful for previewing the
+  // routing decision before committing to a cascade.
+  // -------------------------------------------------------------------------
+
+  /** Fields always server-derived on routing-policy CREATE (authority fields). */
+  const ROUTING_POLICY_RETIRE_AUTHORITY_FIELDS = [
+    'routingPolicyId',
+    'workspaceId',
+    'clientId',
+    'agencyId',
+    'policyName',
+    'policyContent',
+    'status',
+    'createFingerprint',
+    'createdBy',
+    'createdAt',
+    'updatedAt',
+  ] as const;
+
+  /** Routing-policy-scoped access check (same posture as TaskProfile). */
+  async function requireRoutingPolicyAccess(
+    principal: Principal,
+    routingPolicyId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<RoutingPolicyRecord> {
+    const policy = await modules.aiRuntime.getRoutingPolicy(routingPolicyId);
+    if (policy === null) {
+      throw new NotFoundError('routing-policy', routingPolicyId);
+    }
+    await requireWorkspaceAccess(modules, principal, policy.workspaceId, roles);
+    return policy;
+  }
+
+  /** Selection-decision-scoped access check. */
+  async function requireSelectionDecisionAccess(
+    principal: Principal,
+    selectionId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<SelectionDecisionRecord> {
+    const decision = await modules.aiRuntime.getSelectionDecision(selectionId);
+    if (decision === null) {
+      throw new NotFoundError('selection-decision', selectionId);
+    }
+    await requireWorkspaceAccess(modules, principal, decision.workspaceId, roles);
+    return decision;
+  }
+
+  /** Cascade-run-scoped access check. */
+  async function requireCascadeRunAccess(
+    principal: Principal,
+    cascadeRunId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<CascadeRunRecord> {
+    const run = await modules.aiRuntime.getCascadeRun(cascadeRunId);
+    if (run === null) {
+      throw new NotFoundError('cascade-run', cascadeRunId);
+    }
+    await requireWorkspaceAccess(modules, principal, run.workspaceId, roles);
+    return run;
+  }
+
+  // POST /api/workspaces/:workspaceId/ai/routing-policies — register the
+  // routing policy (owner|admin). The §8-style idempotency key is REQUIRED.
+  router.add(
+    'POST',
+    '/api/workspaces/:workspaceId/ai/routing-policies',
+    defineMutationRoute<
+      { workspaceId: string },
+      { routingPolicy: RoutingPolicyRecord; replayed: boolean }
+    >({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => workspaceOwner(params.workspaceId),
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: ROUTING_POLICY_FORBIDDEN_INPUT_KEYS,
+          fields: {
+            policyName: stringField({ minLength: 1, maxLength: 100 }),
+            policyContent: recordField({ maxDepthKeys: 64 }),
+            idempotencyKey: stringField({ minLength: 1, maxLength: 200 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const ownership = await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+        assertActiveBoundaries(ownership, 'creating a routing policy');
+        const body = ctx.validated as Record<string, unknown>;
+        return modules.aiRuntime.createRoutingPolicy({
+          workspaceId: ctx.params.workspaceId,
+          clientId: ownership.scope.clientId,
+          agencyId: ownership.scope.agencyId,
+          policy: {
+            policyName: body['policyName'] as string,
+            policyContent: body['policyContent'] as Record<string, unknown>,
+          },
+          idempotencyKey: body['idempotencyKey'] as string,
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.routing_policy.created', undefined, {
+          routing_policy_id: ctx.result.routingPolicy.routingPolicyId,
+          policy_name: ctx.result.routingPolicy.policyName,
+          workspace_id: ctx.result.routingPolicy.workspaceId,
+          replayed: ctx.result.replayed,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.routing_policy.created',
+          targetType: 'ai_routing_policy',
+          targetId: ctx.result.routingPolicy.routingPolicyId,
+          afterVersion: ctx.result.routingPolicy.version,
+          idempotencyKey: `ai_runtime.routing_policy.created:${ctx.result.routingPolicy.routingPolicyId}`,
+          details: { policyName: ctx.result.routingPolicy.policyName, replayed: ctx.result.replayed },
+        });
+      },
+      respond: (ctx) =>
+        jsonResponse(ctx.result.replayed ? 200 : 201, {
+          routingPolicy: serializeRoutingPolicy(ctx.result.routingPolicy),
+          replayed: ctx.result.replayed,
+        }),
+    }),
+  );
+
+  // GET /api/workspaces/:workspaceId/ai/routing-policies — list the
+  // Workspace's routing policies in ALL states (any active member).
+  router.add(
+    'GET',
+    '/api/workspaces/:workspaceId/ai/routing-policies',
+    defineQueryRoute<{ workspaceId: string }, readonly RoutingPolicyRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+      },
+      execute: async (ctx) => modules.aiRuntime.listRoutingPolicies(ctx.params.workspaceId),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          workspaceId: ctx.params.workspaceId,
+          routingPolicies: ctx.result.map(serializeRoutingPolicy),
+        }),
+    }),
+  );
+
+  // GET /api/ai/routing-policies/:routingPolicyId — read one.
+  router.add(
+    'GET',
+    '/api/ai/routing-policies/:routingPolicyId',
+    defineQueryRoute<{ routingPolicyId: string }, RoutingPolicyRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireRoutingPolicyAccess(ctx.principal, ctx.params.routingPolicyId);
+      },
+      execute: async (ctx) => {
+        const policy = await modules.aiRuntime.getRoutingPolicy(ctx.params.routingPolicyId);
+        if (policy === null) {
+          throw new NotFoundError('routing-policy', ctx.params.routingPolicyId);
+        }
+        return policy;
+      },
+      respond: (ctx) => jsonResponse(200, serializeRoutingPolicy(ctx.result)),
+    }),
+  );
+
+  // POST /api/ai/routing-policies/:routingPolicyId/retire — the single
+  // lifecycle edge (active → retired, terminal), CAS (owner|admin).
+  router.add(
+    'POST',
+    '/api/ai/routing-policies/:routingPolicyId/retire',
+    defineMutationRoute<{ routingPolicyId: string }, RoutingPolicyRecord>({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => {
+        const policy = await modules.aiRuntime.getRoutingPolicy(params.routingPolicyId);
+        if (policy === null) {
+          throw new NotFoundError('routing-policy', params.routingPolicyId);
+        }
+        return {
+          kind: 'workspace',
+          agencyId: policy.agencyId,
+          clientId: policy.clientId,
+          workspaceId: policy.workspaceId,
+        };
+      },
+      authorize: async (ctx) => {
+        await requireRoutingPolicyAccess(ctx.principal, ctx.params.routingPolicyId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<{ version: number }>(ctx.request.body, {
+          forbiddenKeys: ROUTING_POLICY_RETIRE_AUTHORITY_FIELDS,
+          fields: {
+            version: intField({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+          },
+        }),
+      execute: async (ctx) => {
+        const body = ctx.validated as { version: number };
+        return modules.aiRuntime.retireRoutingPolicy({
+          routingPolicyId: ctx.params.routingPolicyId,
+          expectedVersion: body.version,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.routing_policy.retired', undefined, {
+          routing_policy_id: ctx.result.routingPolicyId,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.routing_policy.retired',
+          targetType: 'ai_routing_policy',
+          targetId: ctx.result.routingPolicyId,
+          beforeVersion: ctx.result.version - 1,
+          afterVersion: ctx.result.version,
+          idempotencyKey: `ai_runtime.routing_policy.retired:${ctx.result.routingPolicyId}:${ctx.result.version}`,
+          details: { policyName: ctx.result.policyName },
+        });
+      },
+      respond: (ctx) => jsonResponse(200, serializeRoutingPolicy(ctx.result)),
+    }),
+  );
+
+  // POST /api/workspaces/:workspaceId/ai/routing/preview — preview the
+  // routing decision (no cascade, no adapter — just the routing policy
+  // applied to the TaskProfile). The §8-style idempotency key is REQUIRED.
+  router.add(
+    'POST',
+    '/api/workspaces/:workspaceId/ai/routing/preview',
+    defineMutationRoute<{ workspaceId: string }, SelectionDecisionRecord>({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => workspaceOwner(params.workspaceId),
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: SELECTION_DECISION_FORBIDDEN_INPUT_KEYS,
+          fields: {
+            taskProfileId: stringField({ minLength: 36, maxLength: 36 }),
+            routingPolicyId: optionalString({ minLength: 36, maxLength: 36 }),
+            idempotencyKey: stringField({ minLength: 1, maxLength: 200 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const ownership = await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+        const body = ctx.validated as Record<string, unknown>;
+        const correlation = currentCorrelation();
+        return modules.aiRuntime.previewRouting({
+          workspaceId: ctx.params.workspaceId,
+          clientId: ownership.scope.clientId,
+          agencyId: ownership.scope.agencyId,
+          taskProfileId: body['taskProfileId'] as string,
+          routingPolicyId: (body['routingPolicyId'] as string | undefined) ?? null,
+          idempotencyKey: body['idempotencyKey'] as string,
+          correlationId: correlation.correlationId,
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.routing.previewed', undefined, {
+          selection_id: ctx.result.selectionId,
+          task_profile_id: ctx.result.taskProfileId,
+          chosen_model_registry_id: ctx.result.chosenModelRegistryId,
+          authoritative: ctx.result.authoritative,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.routing.previewed',
+          targetType: 'ai_selection_decision',
+          targetId: ctx.result.selectionId,
+          idempotencyKey: `ai_runtime.routing.previewed:${ctx.result.selectionId}`,
+          details: {
+            taskProfileId: ctx.result.taskProfileId,
+            chosenModelRegistryId: ctx.result.chosenModelRegistryId,
+            authoritative: ctx.result.authoritative,
+          },
+        });
+      },
+      respond: (ctx) => jsonResponse(201, serializeSelectionDecision(ctx.result)),
+    }),
+  );
+
+  // GET /api/workspaces/:workspaceId/ai/selection-decisions — list the
+  // Workspace's selection decisions, newest first (any active member).
+  router.add(
+    'GET',
+    '/api/workspaces/:workspaceId/ai/selection-decisions',
+    defineQueryRoute<{ workspaceId: string }, readonly SelectionDecisionRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+      },
+      execute: async (ctx) =>
+        modules.aiRuntime.listSelectionDecisions(ctx.params.workspaceId, 500),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          workspaceId: ctx.params.workspaceId,
+          selectionDecisions: ctx.result.map(serializeSelectionDecision),
+        }),
+    }),
+  );
+
+  // GET /api/ai/selection-decisions/:selectionId — read one.
+  router.add(
+    'GET',
+    '/api/ai/selection-decisions/:selectionId',
+    defineQueryRoute<{ selectionId: string }, SelectionDecisionRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireSelectionDecisionAccess(ctx.principal, ctx.params.selectionId);
+      },
+      execute: async (ctx) => {
+        const decision = await modules.aiRuntime.getSelectionDecision(ctx.params.selectionId);
+        if (decision === null) {
+          throw new NotFoundError('selection-decision', ctx.params.selectionId);
+        }
+        return decision;
+      },
+      respond: (ctx) => jsonResponse(200, serializeSelectionDecision(ctx.result)),
+    }),
+  );
+
+  // GET /api/workspaces/:workspaceId/ai/cascade-runs — list the Workspace's
+  // cascade runs, newest first (any active member).
+  router.add(
+    'GET',
+    '/api/workspaces/:workspaceId/ai/cascade-runs',
+    defineQueryRoute<{ workspaceId: string }, readonly CascadeRunRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+      },
+      execute: async (ctx) => modules.aiRuntime.listCascadeRuns(ctx.params.workspaceId, 500),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          workspaceId: ctx.params.workspaceId,
+          cascadeRuns: ctx.result.map(serializeCascadeRun),
+        }),
+    }),
+  );
+
+  // GET /api/ai/cascade-runs/:cascadeRunId — read one (with steps).
+  router.add(
+    'GET',
+    '/api/ai/cascade-runs/:cascadeRunId',
+    defineQueryRoute<{ cascadeRunId: string }, CascadeRunRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireCascadeRunAccess(ctx.principal, ctx.params.cascadeRunId);
+      },
+      execute: async (ctx) => {
+        const run = await modules.aiRuntime.getCascadeRun(ctx.params.cascadeRunId);
+        if (run === null) {
+          throw new NotFoundError('cascade-run', ctx.params.cascadeRunId);
+        }
+        return run;
+      },
+      respond: (ctx) => jsonResponse(200, serializeCascadeRun(ctx.result)),
     }),
   );
 }
