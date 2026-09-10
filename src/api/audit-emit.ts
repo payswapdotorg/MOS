@@ -69,7 +69,9 @@ function ownerScopeAuditFields(owner: OwnerScope): {
               ? owner.clientId
               : owner.kind === 'sandbox'
                 ? owner.clientId
-                : null,
+                : owner.kind === 'evidence' // MKT-013: evidence is Client-owned (optional workspace scope).
+                  ? owner.clientId
+                  : null,
     workspaceId:
       owner.kind === 'workspace'
         ? owner.workspaceId
@@ -81,7 +83,9 @@ function ownerScopeAuditFields(owner: OwnerScope): {
               ? owner.workspaceId
               : owner.kind === 'sandbox'
                 ? owner.workspaceId
-                : null,
+                : owner.kind === 'evidence' // MKT-013: workspace scope when the record is workspace-scoped.
+                  ? owner.workspaceId
+                  : null,
   };
 }
 

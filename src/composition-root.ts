@@ -92,6 +92,16 @@
  *     ENGINE is wired: no dispatch, no queue consumption, no workers, no
  *     sandbox lifecycle (MKT-011/MKT-012); /workflows does not call
  *     /executions yet (that arrives with the runtime engine).
+ *
+ * MKT-013 additions:
+ *   - the /evidence module is constructed here (dependency matrix subset:
+ *     /evidence ──→ /clients, /workspaces) owning the append-only,
+ *     server-owned EVIDENCE LEDGER (EVID-001): the 8 frozen evidence
+ *     classes with their two authority tiers (claims are never
+ *     auto-promoted to authoritative classes — EVID-AC-03), the A..F
+ *     quality taxonomy, server-derived provenance as a separate dimension
+ *     from confidence, immutable rows with DB-backstopped append-only
+ *     triggers, and the single-correction supersession graph.
  */
 
 import fs from 'node:fs';
@@ -134,6 +144,8 @@ import { createGoalsModule } from './modules/goals/public.ts';
 import { createPlaybooksModule } from './modules/playbooks/public.ts';
 import { createWorkflowsModule } from './modules/workflows/public.ts';
 import { createExecutionsModule } from './modules/executions/public.ts';
+// MKT-013: /evidence module (EVID-001).
+import { createEvidenceModule } from './modules/evidence/public.ts';
 import type { ApplicationModules } from './api/application.ts';
 
 export interface AppOptions {
@@ -251,6 +263,12 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   const playbooks = createPlaybooksModule({ db, clock, ids, agencies, clients, goals });
   const workflows = createWorkflowsModule({ db, clock, ids, workspaces, playbooks });
   const executions = createExecutionsModule({ db, clock, ids, workspaces, sandboxDriver });
+  // MKT-013: /evidence — platform ports + the allowed /clients +
+  // /workspaces canonical-ownership dependencies (frozen matrix:
+  // /evidence ──→ /clients, /workspaces, /executions; this Work Item uses
+  // the /clients + /workspaces subset — /executions references evidence,
+  // not the other way around, architecture.md §11).
+  const evidence = createEvidenceModule({ db, clock, ids, clients, workspaces });
 
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
@@ -278,7 +296,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence },
   };
 }
 
