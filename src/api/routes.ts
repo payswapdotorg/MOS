@@ -7,8 +7,9 @@
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
  * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
  * registry routes — TaskProfiles, model registry, usage telemetry,
- * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes +
- * MKT-020 logical Agent/Capability contract routes).
+ * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes,
+ * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
+ * Capability contract routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -48,6 +49,11 @@ import { registerAgentsRoutes } from './agents-routes.ts';
 
 // MKT-025: the generic Human Agent profile routes (FIELD-001 + HUMAN-001).
 import { registerFieldAgentsRoutes } from './field-agents-routes.ts';
+
+// MKT-026: the Job marketplace boundary routes (JOB-001 — governed Task
+// projections, candidate-specific offers, the concurrency-safe acceptance
+// claim, outcome submission with server-derived provenance).
+import { registerJobsRoutes } from './jobs-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -75,6 +81,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-025: Human Agent profiles + availability/territory declaration +
   // job-eligibility lookup (profile data only — no Client data routes).
   registerFieldAgentsRoutes(router, services, modules);
+
+  // MKT-026: the Job marketplace boundary — Task projections (POST under
+  // the workflow-instance path), the eligibility-gated marketplace listing
+  // (descriptors to ELIGIBLE agents only — no Client data), candidate
+  // offers + accept/decline (the concurrency-safe claim), outcome
+  // submission (server-derived provenance) and outcome reads.
+  registerJobsRoutes(router, services, modules);
 
   // MKT-020: logical Agent/Capability surfaces (register / list / read /
   // retire / lifecycle history — the provider-neutral capability contract,
