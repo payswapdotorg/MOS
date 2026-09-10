@@ -361,7 +361,7 @@ function serializeOutcome(outcome: JobOutcomeRecord): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 /** The job row, or the uniform 404 (malformed identifiers included). */
-async function requireJob(modules: ApplicationModules, jobId: string): Promise<JobRecord> {
+export async function requireJob(modules: ApplicationModules, jobId: string): Promise<JobRecord> {
   if (!UUID_PATTERN.test(jobId)) {
     throw new NotFoundError('job', jobId);
   }
@@ -389,7 +389,7 @@ async function requireOffer(
 }
 
 /** Job-scoped owner scope (the audit event target's tenant scope). */
-async function jobOwnerScope(modules: ApplicationModules, jobId: string): Promise<OwnerScope> {
+export async function jobOwnerScope(modules: ApplicationModules, jobId: string): Promise<OwnerScope> {
   const job = await requireJob(modules, jobId);
   return { kind: 'client', agencyId: job.agencyId, clientId: job.clientId };
 }
@@ -403,7 +403,7 @@ async function jobOwnerScope(modules: ApplicationModules, jobId: string): Promis
  *   - the ACCEPTED agent (the current authorized Job scope — HUMAN-AC-03).
  * Everyone else: uniform 404 (no existence oracle).
  */
-async function canReadFullJob(
+export async function canReadFullJob(
   modules: ApplicationModules,
   principal: Principal,
   job: JobRecord,
@@ -458,7 +458,7 @@ function outcomeProvenance(principal: Principal, jobId: string) {
   };
 }
 
-function actorUserId(principal: Principal): string {
+export function actorUserId(principal: Principal): string {
   if (principal.kind !== 'user') {
     throw new ForbiddenError('This operation requires a user identity');
   }

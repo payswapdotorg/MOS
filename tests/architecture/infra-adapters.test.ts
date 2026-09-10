@@ -461,6 +461,22 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // exactly-one-winner acceptance fence and the append-only
     // provenance-preserving outcome history (JOB-001, JOB-AC-01..03).
     '023_jobs.sql',
+    // MKT-027 (Field execution and evidence) appends the field-execution
+    // migration (024 — the first unreserved number AFTER 023): the
+    // job_visits/job_visit_transitions/job_visit_outcomes/
+    // job_visit_evidence tables with the frozen visit state machine, the
+    // inherited scope-chain + acceptance-window triggers, the follow-up
+    // relationship fence and the append-only + same-Client evidence
+    // backstops (JOB-001 field subset, EVID-001 field subset,
+    // JOB-AC-03..04).
+    //
+    // NUMBERING DISCLOSURE (MKT-027 worker → Tech Lead): the dispatch
+    // reserved 021 for this Work Item, but 021 sorts BEFORE 023_jobs.sql
+    // (which creates the `jobs` table the visit tables FK-reference) in
+    // the runner's lexicographic order — a 021 numbering cannot apply at
+    // all. 024 is the first unreserved number after 023; the integration
+    // station may renumber if desired.
+    '024_field_execution.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
