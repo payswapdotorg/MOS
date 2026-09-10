@@ -646,6 +646,113 @@ export interface AiRuntimeModuleApi {
    * remains queryable through the module API).
    */
   listUsageTelemetry(workspaceId: string, limit?: number): Promise<readonly UsageTelemetryRecord[]>;
+
+  // ----- Routing policy (MKT-018, AI-002 — extends the same module) -------
+  //
+  // The routing layer extends the REGISTRY layer (MKT-017) with hard
+  // eligibility, performance ranking, cost/latency tradeoff and cheap-first
+  // cascade execution (spec/ai-runtime-and-routing.md §4/§5). The router is
+  // the /ai-runtime module itself (AI-AC-03) — OpenRouter is pluggable as an
+  // ADAPTER behind the provider-neutral contract (§6, §9). Domain modules
+  // never import adapters; routing depends on the adapter CONTRACT (ports),
+  // not implementations (the architecture test guards the boundary).
+
+  /**
+   * Registers a WORKSPACE-scoped routing policy — the admin-managed
+   * declarative policy interpreted by the routing core (hard-eligibility
+   * filters, ranking weights, cost/latency tradeoff weights, cascade
+   * order). Born ACTIVE with content IMMUTABLE from creation (corrections
+   * register a NEW policy; retiring is the single lifecycle edge, terminal).
+   * The (workspace_id, idempotency_key) §8-style fence converges duplicates;
+   * a key reused for a DIFFERENT command is a ConflictError. The
+   * (workspace_id, policy_name) pair is unique among ACTIVE entries.
+   */
+  createRoutingPolicy(input: {
+    readonly workspaceId: string;
+    readonly clientId: string;
+    readonly agencyId: string;
+    readonly policy: RoutingPolicyInput;
+    readonly idempotencyKey: string;
+    readonly actorId: string | null;
+  }): Promise<RoutingPolicyCreateOutcome>;
+  /** Raw record by id (retired tombstones included) — module/route internal reads. */
+  getRoutingPolicy(routingPolicyId: string): Promise<RoutingPolicyRecord | null>;
+  /** The routing policies of one Workspace in EVERY lifecycle state, oldest first. */
+  listRoutingPolicies(workspaceId: string): Promise<readonly RoutingPolicyRecord[]>;
+  /**
+   * The single lifecycle transition: ACTIVE → RETIRED (terminal). CAS on
+   * the presented version; the DB terminal/immutability triggers are the
+   * backstops.
+   */
+  retireRoutingPolicy(input: {
+    readonly routingPolicyId: string;
+    readonly expectedVersion: number;
+  }): Promise<RoutingPolicyRecord>;
+
+  // ----- Routing decision (selection + cascade) -------------------------
+  //
+  // The routing decision API: routeTask applies the routing policy to a
+  // TaskProfile (eligibility → ranking → tradeoff → selection), runs the
+  // cheap-first cascade with the supplied adapter + validator, persists the
+  // selection decision and cascade run/steps, and returns the cascade
+  // outcome. The caller supplies the adapter (the composition root wires
+  // the OpenRouter adapter; tests supply fakes) and the validator (the
+  // default validator is the output-schema validator; domain modules may
+  // supply custom validators when MKT-019 lands).
+
+  /**
+   * Routes a TaskProfile: applies the routing policy (or the default
+   * policy when no policy is supplied), runs the cheap-first cascade with
+   * the supplied adapter and validator, persists the selection decision
+   * (AUTHORITATIVE — the cascade invoked models and observed cost/latency)
+   * and the cascade run/steps, and returns the outcome. The §8-style
+   * idempotency key is REQUIRED and DB-fenced per workspace.
+   */
+  routeTask(input: {
+    readonly workspaceId: string;
+    readonly clientId: string;
+    readonly agencyId: string;
+    readonly taskProfileId: string;
+    readonly routingPolicyId: string | null;
+    readonly adapter: ProviderAdapter;
+    readonly validator: CascadeValidator;
+    readonly invocationInput: Readonly<Record<string, unknown>>;
+    readonly idempotencyKey: string;
+    readonly correlationId: string;
+    readonly actorId: string | null;
+  }): Promise<RoutingOutcome>;
+
+  /**
+   * Routes a TaskProfile SPECULATIVELY: applies the routing policy and
+   * records the selection decision (eligible set + ranking + tradeoff +
+   * chosen model + phase trace) but does NOT invoke the cascade — the
+   * decision is recorded as NON-AUTHORITATIVE (no observed cost/latency/
+   * evaluation telemetry). Useful for previewing the routing decision
+   * before committing to a cascade (AI-AC-04 phase-order proof, used by
+   * the routing regression matrix).
+   */
+  previewRouting(input: {
+    readonly workspaceId: string;
+    readonly clientId: string;
+    readonly agencyId: string;
+    readonly taskProfileId: string;
+    readonly routingPolicyId: string | null;
+    readonly idempotencyKey: string;
+    readonly correlationId: string;
+    readonly actorId: string | null;
+  }): Promise<SelectionDecisionRecord>;
+
+  /** Raw selection-decision record by id — module/route internal reads. */
+  getSelectionDecision(selectionId: string): Promise<SelectionDecisionRecord | null>;
+  /** The selection decisions of one Workspace, newest first (bounded). */
+  listSelectionDecisions(
+    workspaceId: string,
+    limit?: number,
+  ): Promise<readonly SelectionDecisionRecord[]>;
+  /** Raw cascade-run record by id (steps included) — module/route internal reads. */
+  getCascadeRun(cascadeRunId: string): Promise<CascadeRunRecord | null>;
+  /** The cascade runs of one Workspace, newest first (bounded). */
+  listCascadeRuns(workspaceId: string, limit?: number): Promise<readonly CascadeRunRecord[]>;
 }
 
 export interface AiRuntimeModuleDeps {
@@ -658,8 +765,457 @@ export interface AiRuntimeModuleDeps {
    * validate telemetry execution references (existence + same-Workspace
    * scope) BEFORE the write. Nothing else is imported: profile scope is
    * carried as immutable server-derived data, DB-backstopped.
+   *
+   * MKT-018 (AI-002) extends the same module in place (same authority,
+   * deeper scope): the routing layer adds NO new module-to-module
+   * dependency — it operates on the merged REGISTRY layer (TaskProfiles,
+   * model registry) and the new ROUTING tables (migration 020). The
+   * adapter (OpenRouter or a fake) is supplied by the caller at route
+   * time; the routing core depends on the adapter CONTRACT (ports), not
+   * implementations (AI-AC-03 — provider independence §9).
    */
   readonly executions: ExecutionsModuleApi;
+}
+
+// ---------------------------------------------------------------------------
+// Routing policy — the admin-managed declarative policy (MKT-018, §4)
+// ---------------------------------------------------------------------------
+
+/**
+ * The routing-policy lifecycle. Registry content is immutable; the single
+ * lifecycle edge is `active → retired` and `retired` is TERMINAL.
+ */
+export type RoutingPolicyStatus = 'active' | 'retired';
+
+export const ROUTING_POLICY_TRANSITIONS: Readonly<
+  Record<RoutingPolicyStatus, readonly RoutingPolicyStatus[]>
+> = {
+  active: ['retired'],
+  retired: [],
+};
+
+export function isLegalRoutingPolicyTransition(
+  from: RoutingPolicyStatus,
+  to: RoutingPolicyStatus,
+): boolean {
+  return ROUTING_POLICY_TRANSITIONS[from].includes(to);
+}
+
+/**
+ * Input keys that can NEVER appear in a caller-supplied routing-policy
+ * payload: server-derived identity/scope/lifecycle/provenance fields PLUS
+ * provider/model/credential-shaped keys. A routing policy is DATA — it
+ * carries declarative weights and label allow/deny lists (interpreted by
+ * the routing core), never provider SDKs, adapter configurations or
+ * credentials.
+ */
+export const ROUTING_POLICY_FORBIDDEN_INPUT_KEYS = [
+  // Server-derived authority fields.
+  'routingPolicyId',
+  'workspaceId',
+  'clientId',
+  'agencyId',
+  'status',
+  'version',
+  'createFingerprint',
+  'createdBy',
+  'createdAt',
+  'updatedAt',
+  // SDK/adapter/credential-shaped keys — never routing policy data.
+  'sdk',
+  'sdkPackage',
+  'clientLibrary',
+  'adapter',
+  'adapterConfig',
+  'credential',
+  'credentialId',
+  'secretHandle',
+  'secret',
+  'secretMaterial',
+  'material',
+  'apiKey',
+  'api_key',
+  'token',
+  'password',
+] as const;
+
+/**
+ * The routing-policy input: a name + a bounded JSON `policyContent` object
+ * interpreted by the routing core. The content shape is intentionally
+ * permissive (a bounded JSON object) so the policy can evolve without
+ * schema migrations; the routing core reads known keys and ignores
+ * unknown keys (forward-compatible).
+ */
+export interface RoutingPolicyInput {
+  readonly policyName: string;
+  readonly policyContent: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Immutable storage shape of one persisted routing policy.
+ */
+export interface RoutingPolicyRecord {
+  readonly routingPolicyId: string;
+  readonly policyName: string;
+  readonly policyContent: Readonly<Record<string, unknown>>;
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly status: RoutingPolicyStatus;
+  readonly idempotencyKey: string;
+  readonly createFingerprint: string;
+  readonly createdBy: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface RoutingPolicyCreateOutcome {
+  readonly routingPolicy: RoutingPolicyRecord;
+  readonly replayed: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Routing decision — eligibility, ranking, tradeoff, selection (§4)
+// ---------------------------------------------------------------------------
+
+/**
+ * The hard-eligibility reason vocabulary (§4 + the closed-routing-policy
+ * interpretation). An INELIGIBLE model carries one of these reasons; an
+ * ELIGIBLE model carries `null`. The vocabulary is CLOSED so the routing
+ * regression matrix can enumerate every phase 1 case.
+ */
+export const ELIGIBILITY_REASONS = [
+  'privacy',
+  'policy',
+  'capability',
+  'quota',
+  'subscription',
+  'availability',
+] as const;
+export type EligibilityReason = (typeof ELIGIBILITY_REASONS)[number];
+
+/**
+ * The routing phase vocabulary (§4 — the AI-AC-04 phase-order proof). The
+ * phases execute in this exact order: hard eligibility FIRST, then
+ * performance ranking, then cost/latency tradeoff, then selection. The
+ * phase trace recorded on a selection decision is an ordered array of
+ * these labels.
+ */
+export const ROUTING_PHASES = ['eligibility', 'ranking', 'tradeoff', 'selection'] as const;
+export type RoutingPhase = (typeof ROUTING_PHASES)[number];
+
+/**
+ * One hard-eligibility decision: a model + eligible flag + reason (when
+ * ineligible). The eligible set is the array of decisions with
+ * `eligible === true`.
+ */
+export interface EligibilityDecision {
+  readonly modelRegistryId: string;
+  readonly eligible: boolean;
+  readonly reason: EligibilityReason | null;
+}
+
+/**
+ * One performance-ranking score: a model + the normalized score (0..1) +
+ * the per-component breakdown (the raw quality signal, the normalized
+ * value). Ranking math uses the model's declared qualitySignals — it
+ * NEVER mutates the registry's capability record (AI-AC-07: capability
+ * clipping happens in ranking math only, never by mutating the registry).
+ */
+export interface RankingScore {
+  readonly modelRegistryId: string;
+  readonly score: number;
+  readonly components: Readonly<Record<string, number>>;
+}
+
+/**
+ * One cost/latency tradeoff score: a model + the tradeoff score (a
+ * weighted sum of the quality, cost and latency components) + the
+ * per-component breakdown.
+ */
+export interface TradeoffScore {
+  readonly modelRegistryId: string;
+  readonly score: number;
+  readonly costComponent: number;
+  readonly latencyComponent: number;
+  readonly qualityComponent: number;
+}
+
+/**
+ * The full routing-decision payload: the eligible set snapshot, the
+ * ranking, the tradeoff, the chosen model and the phase trace. The
+ * selection decision is the AI-AC-04 phase-order proof (eligibility →
+ * ranking → tradeoff → selection) AND the AI-AC-06 telemetry payload
+ * (eligible-set snapshot, ranking, tradeoff, chosen model, cascade step).
+ */
+export interface SelectionDecisionPayload {
+  readonly eligibleSet: readonly EligibilityDecision[];
+  readonly ranking: readonly RankingScore[];
+  readonly tradeoff: readonly TradeoffScore[];
+  readonly chosenModelRegistryId: string;
+  readonly phaseTrace: readonly RoutingPhase[];
+}
+
+/**
+ * Immutable storage shape of one persisted selection decision (the
+ * authoritative routing-decision record, AI-AC-06). The payload columns
+ * mirror SelectionDecisionPayload; the `authoritative` flag records
+ * whether the decision was AUTHORITATIVE (the cascade invoked models and
+ * observed cost/latency) or SPECULATIVE (a preview without invocation).
+ */
+export interface SelectionDecisionRecord {
+  readonly selectionId: string;
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly taskProfileId: string;
+  readonly routingPolicyId: string | null;
+  readonly eligibleSet: readonly EligibilityDecision[];
+  readonly ranking: readonly RankingScore[];
+  readonly tradeoff: readonly TradeoffScore[];
+  readonly chosenModelRegistryId: string;
+  readonly cascadeRunId: string | null;
+  readonly phaseTrace: readonly RoutingPhase[];
+  readonly authoritative: boolean;
+  readonly observedLatencyMs: number | null;
+  readonly observedCostAmount: number | null;
+  readonly evaluationRef: string | null;
+  readonly correlationId: string;
+  readonly idempotencyKey: string;
+  readonly createFingerprint: string;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+}
+
+/**
+ * Input keys that can NEVER appear in a caller-supplied selection-decision
+ * payload: every server-derived authority field is rejected (the decision
+ * is recorded by the module, never caller-supplied). Exposed for the
+ * route DTO forbidden-key contract (AI-AC-06 — the authoritative record is
+ * server-derived, never a caller fabrication).
+ */
+export const SELECTION_DECISION_FORBIDDEN_INPUT_KEYS = [
+  'selectionId',
+  'workspaceId',
+  'clientId',
+  'agencyId',
+  'eligibleSet',
+  'ranking',
+  'tradeoff',
+  'chosenModelRegistryId',
+  'cascadeRunId',
+  'phaseTrace',
+  'authoritative',
+  'observedLatencyMs',
+  'observedCostAmount',
+  'evaluationRef',
+  'correlationId',
+  'createFingerprint',
+  'createdBy',
+  'createdAt',
+  // Provider/model authority — the chosen model is server-derived from
+  // routing, never caller-supplied.
+  'provider',
+  'providerLabel',
+  'model',
+  'modelName',
+  'modelKey',
+  // Credential-shaped keys.
+  'credential',
+  'credentialId',
+  'secretHandle',
+  'secret',
+  'secretMaterial',
+  'material',
+  'apiKey',
+  'api_key',
+  'token',
+  'password',
+] as const;
+
+// ---------------------------------------------------------------------------
+// Cascade — the recorded, replayable cheap-first structure (§5)
+// ---------------------------------------------------------------------------
+
+/**
+ * The cascade-step type vocabulary (§5): cheap/deterministic first, fan-
+ * out (several inexpensive candidates evaluated before escalating),
+ * escalate (stronger model on validator failure), frontier (frontier model
+ * escalation), human (human escalation).
+ */
+export const CASCADE_STEP_TYPES = [
+  'cheap-first',
+  'fan-out',
+  'escalate',
+  'frontier',
+  'human',
+] as const;
+export type CascadeStepType = (typeof CASCADE_STEP_TYPES)[number];
+
+/**
+ * The validator result vocabulary. `pending` is the initial state;
+ * `passed` means the validator accepted the output; `failed` means the
+ * validator rejected the output (and the cascade escalates); `unknown`
+ * follows the frozen UNKNOWN semantics (the validator could not prove
+ * pass or fail — never auto-resolved to success).
+ */
+export const VALIDATOR_RESULTS = ['pending', 'passed', 'failed', 'unknown'] as const;
+export type ValidatorResult = (typeof VALIDATOR_RESULTS)[number];
+
+/**
+ * The cascade-run status vocabulary. `running` is the initial state;
+ * `completed` means a step's validator passed (success); `escalated`
+ * means the cascade exhausted the escalation budget and escalated to a
+ * frontier/human step; `failed` means the cascade exhausted all options
+ * without a passing validator; `unknown` follows the frozen UNKNOWN
+ * semantics (the cascade outcome could not be proven — never success).
+ */
+export const CASCADE_RUN_STATUSES = [
+  'running',
+  'completed',
+  'escalated',
+  'failed',
+  'unknown',
+] as const;
+export type CascadeRunStatus = (typeof CASCADE_RUN_STATUSES)[number];
+
+/**
+ * One cascade step (the per-step record inside one cascade run).
+ */
+export interface CascadeStepRecord {
+  readonly cascadeStepId: string;
+  readonly cascadeRunId: string;
+  readonly stepIndex: number;
+  readonly modelRegistryId: string;
+  readonly stepType: CascadeStepType;
+  readonly validatorResult: ValidatorResult;
+  readonly validatorReason: string | null;
+  readonly observedLatencyMs: number | null;
+  readonly observedCostAmount: number | null;
+  readonly evaluationRef: string | null;
+  readonly outcome: UsageTelemetryOutcome;
+  readonly createdAt: string;
+}
+
+/**
+ * One cascade run (the recorded, replayable cascade structure). The run
+ * holds the overall state (status, final model, escalation count) and the
+ * per-step history (cascadeSteps, ordered by stepIndex).
+ */
+export interface CascadeRunRecord {
+  readonly cascadeRunId: string;
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly taskProfileId: string;
+  readonly routingPolicyId: string | null;
+  readonly status: CascadeRunStatus;
+  readonly finalModelRegistryId: string | null;
+  readonly escalationCount: number;
+  readonly maxEscalations: number;
+  readonly correlationId: string;
+  readonly idempotencyKey: string;
+  readonly createFingerprint: string;
+  readonly createdBy: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly cascadeSteps: readonly CascadeStepRecord[];
+}
+
+/**
+ * The cascade validator contract: a function that decides whether the
+ * adapter's output satisfies the TaskProfile's output contract. The
+ * default validator (provided by the routing core) checks the output
+ * against the TaskProfile's outputSchema; domain modules may supply
+ * custom validators (MKT-019 will supply evaluation-framework validators).
+ *
+ * The validator returns:
+ *   - `passed` — the output satisfies the contract (the cascade completes);
+ *   - `failed` — the output does not satisfy the contract (the cascade
+ *     escalates to the next model);
+ *   - `unknown` — the validator could not prove pass or fail (the cascade
+ *     records the step as `unknown` and escalates — UNKNOWN is never
+ *     auto-resolved to success, per the frozen UNKNOWN semantics).
+ */
+export interface CascadeValidator {
+  (input: {
+    readonly taskProfile: TaskProfileRecord;
+    readonly output: Readonly<Record<string, unknown>> | null;
+    readonly adapterError: string | null;
+  }): Promise<{ readonly result: ValidatorResult; readonly reason: string | null }>;
+}
+
+// ---------------------------------------------------------------------------
+// Provider adapter contract — the provider-neutral port (§6, §9)
+// ---------------------------------------------------------------------------
+
+/**
+ * The provider-neutral adapter request: the model ref (registry entry id +
+ * provider/model labels as DATA — never an SDK call), the TaskProfile
+ * (the provider-neutral request contract), the invocation input, the
+ * tool requirements and the budget. The adapter translates this into a
+ * provider-specific call (HTTP for OpenRouter) and returns the response.
+ */
+export interface AdapterRequest {
+  readonly modelRegistryId: string;
+  readonly providerLabel: string;
+  readonly modelKey: string;
+  readonly taskProfile: TaskProfileRecord;
+  readonly input: Readonly<Record<string, unknown>>;
+  readonly budget: {
+    readonly maxCostPerInvocation: number;
+    readonly latencyTargetMs: number;
+  };
+}
+
+/**
+ * The provider-neutral adapter response: ok flag, output (when ok),
+ * error (when not ok), and the observed cost/latency/tokens telemetry. The
+ * adapter NEVER throws for invocation-level outcomes — transport failures,
+ * provider errors and timeouts are RETURNED as data (ok=false with an
+ * error string), so the cascade can decide whether to escalate.
+ */
+export interface AdapterResponse {
+  readonly ok: boolean;
+  readonly output: Readonly<Record<string, unknown>> | null;
+  readonly error: string | null;
+  readonly latencyMs: number;
+  readonly costAmount: number;
+  readonly tokensIn: number | null;
+  readonly tokensOut: number | null;
+}
+
+/**
+ * The provider-neutral adapter PORT (§9 — provider independence). Every
+ * provider (OpenRouter, a direct provider, an in-house adapter) implements
+ * this interface. The routing core depends on the PORT, not on any
+ * implementation — the composition root wires the implementation, and
+ * tests supply fakes. Domain modules never import adapters (AI-AC-03 —
+ * the routing authority is the /ai-runtime module itself).
+ */
+export interface ProviderAdapter {
+  /** The provider LABEL this adapter handles (matches the registry's providerLabel). */
+  readonly providerLabel: string;
+  /** Invokes one model through the provider. NEVER throws for invocation outcomes. */
+  invoke(request: AdapterRequest): Promise<AdapterResponse>;
+}
+
+// ---------------------------------------------------------------------------
+// Routing outcome — the result of routeTask (the cascade result + telemetry)
+// ---------------------------------------------------------------------------
+
+/**
+ * The outcome of routeTask: the cascade run (with steps), the selection
+ * decision record, and the final output (when the cascade completed).
+ * UNKNOWN outcomes stay unresolved (the cascade status is `unknown` —
+ * never auto-resolved to success).
+ */
+export interface RoutingOutcome {
+  readonly selection: SelectionDecisionRecord;
+  readonly cascadeRun: CascadeRunRecord;
+  readonly finalOutput: Readonly<Record<string, unknown>> | null;
 }
 
 export { createAiRuntimeModule } from './internal/ai-runtime-module.ts';
@@ -667,6 +1223,9 @@ export { createAiRuntimeModule } from './internal/ai-runtime-module.ts';
  * The input guards (validation + provider-neutrality + authority-field
  * rejection) — exported for unit tests and future server-side callers so
  * the guard semantics are part of the module contract. Pure functions.
+ *
+ * MKT-018 (AI-002) adds `assertValidRoutingPolicyInput` (the routing-policy
+ * input guard, same posture as the registry guards).
  */
 export {
   assertValidIdempotencyKey,
@@ -674,4 +1233,37 @@ export {
   assertValidModelRegistrationInput,
   assertValidModelObservationInput,
   assertValidUsageTelemetryInput,
+  assertValidRoutingPolicyInput,
 } from './internal/ai-runtime-store.ts';
+/**
+ * The routing policy pure functions (MKT-018, AI-AC-04 phase-order proof +
+ * AI-AC-07 capability non-clipping proof). The routing core depends on
+ * these pure functions; the cascade executor (runCascade) orchestrates
+ * them in the §4/§5 phase order. Exported for unit tests and the routing
+ * regression matrix.
+ */
+export {
+  interpretPolicy,
+  computeEligibility,
+  computeRanking,
+  computeTradeoff,
+  selectModel,
+  ROUTING_PHASE_ORDER,
+  ELIGIBILITY_REASON_PRIORITY,
+  type InterpretedPolicy,
+} from './internal/routing/policy.ts';
+/**
+ * The cascade executor (MKT-018, AI-AC-05 cheap-first cascade escalation
+ * proof). The executor is a pure async function — it takes the adapter
+ * (the provider-neutral port) and the validator and returns the cascade
+ * outcome; the caller (the module's routeTask method) persists the
+ * outcome. Exported for unit tests and integration tests (which supply
+ * fake adapters).
+ */
+export {
+  runCascade,
+  defaultValidator,
+  type CascadeStepOutcome,
+  type CascadeExecutorInput,
+  type CascadeExecutorResult,
+} from './internal/routing/cascade.ts';

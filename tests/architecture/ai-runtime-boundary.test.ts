@@ -445,15 +445,26 @@ test('no provider SDK dependency is declared in package.json (AI-AC-02)', () => 
 test('the /ai-runtime module domain code imports ONLY platform ports, its own module and the matrix-sanctioned /executions public entry (AI-AC-02)', () => {
   const moduleDir = join(repoRoot, 'src', 'modules', 'ai-runtime');
   const files = collectTsFiles(moduleDir);
+  // MKT-017 ships the registry layer (3 files). MKT-018 extends the same
+  // module in place with the routing layer (additional files under
+  // internal/routing/ and internal/adapters/), grouped and commented
+  // with MKT-018. The file set is enumerated explicitly so a future
+  // addition is a deliberate change.
   const expectedFiles = [
     join('src', 'modules', 'ai-runtime', 'public.ts'),
     join('src', 'modules', 'ai-runtime', 'internal', 'ai-runtime-module.ts'),
     join('src', 'modules', 'ai-runtime', 'internal', 'ai-runtime-store.ts'),
+    // MKT-018 (AI-002) routing layer.
+    join('src', 'modules', 'ai-runtime', 'internal', 'ai-routing-store.ts'),
+    join('src', 'modules', 'ai-runtime', 'internal', 'routing', 'policy.ts'),
+    join('src', 'modules', 'ai-runtime', 'internal', 'routing', 'cascade.ts'),
+    join('src', 'modules', 'ai-runtime', 'internal', 'adapters', 'adapter-contract.ts'),
+    join('src', 'modules', 'ai-runtime', 'internal', 'adapters', 'openrouter-adapter.ts'),
   ].map((rel) => join(repoRoot, rel));
   assert.deepEqual(
     files.map((file) => file).sort(),
     expectedFiles.sort(),
-    'MKT-017 ships exactly the module contract + implementation + store — no adapter files (the pooled runtime stays untouched)',
+    'the /ai-runtime module ships exactly the registry layer (MKT-017) + the routing layer (MKT-018) — the adapter directory is the only sanctioned home for provider adapters',
   );
 
   for (const file of files) {
@@ -482,7 +493,9 @@ test('the /ai-runtime module domain code imports ONLY platform ports, its own mo
   // Belt and suspenders over the arch-check's global proof, at the module
   // source level: no /workspaces, /clients, /agencies, /policies,
   // /credentials or /evidence imports (NOT in the frozen matrix row used
-  // by MKT-017).
+  // by MKT-017; MKT-018 keeps the same import surface — the routing layer
+  // operates on the merged registry layer and the new routing tables, with
+  // the adapter supplied by the caller at route time).
   for (const source of [aiRuntimePublic, aiRuntimeModule, aiRuntimeStore]) {
     assert.ok(!/from\s+'\.\.\/(workspaces|clients|agencies|policies|credentials|evidence)\//.test(source));
   }
@@ -518,40 +531,72 @@ test('migration 016 creates EXACTLY the four registry-layer tables — no routin
   }
 });
 
-test('the module API is the REGISTRY layer only — no routing/invocation authority methods (MKT-017 bounds)', () => {
-  const methodNames = [...aiRuntimePublic.matchAll(/^ {2}(?:async )?([a-z][a-zA-Z0-9]+)\(/gm)].map(
+test('the module API is the REGISTRY + ROUTING layers — no evaluation/invocation authority methods (MKT-017/MKT-018 bounds)', () => {
+  // Extract the AiRuntimeModuleApi interface block (the test must not pick
+  // up methods from other interfaces like ProviderAdapter, which has its own
+  // `invoke` method — that is the adapter PORT, not the module API).
+  const apiStart = aiRuntimePublic.indexOf('export interface AiRuntimeModuleApi {');
+  assert.ok(apiStart >= 0, 'AiRuntimeModuleApi interface must exist');
+  let depth = 0;
+  let apiEnd = apiStart;
+  for (let i = apiStart; i < aiRuntimePublic.length; i++) {
+    const ch = aiRuntimePublic[i];
+    if (ch === '{') depth++;
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        apiEnd = i;
+        break;
+      }
+    }
+  }
+  assert.ok(apiEnd > apiStart, 'AiRuntimeModuleApi interface must terminate');
+  const apiBlock = aiRuntimePublic.slice(apiStart, apiEnd);
+  const methodNames = [...apiBlock.matchAll(/^ {2}(?:async )?([a-z][a-zA-Z0-9]+)\(/gm)].map(
     (match) => match[1]!,
   );
+  // MKT-017 (registry layer) + MKT-018 (routing layer) methods. The routing
+  // methods are the AI-002 surface (routeTask, previewRouting, selection
+  // decisions, cascade runs, routing policies). The evaluation/invocation
+  // methods (MKT-019, later) and the model invocation methods are NOT here.
   assert.deepEqual(
     methodNames.filter((name) => !name.startsWith('assertValid')).sort(),
     [
       'appendModelObservation',
       'appendUsageTelemetry',
+      'createRoutingPolicy',
       'createTaskProfile',
+      'getCascadeRun',
       'getModel',
+      'getRoutingPolicy',
+      'getSelectionDecision',
       'getTaskProfile',
       'getUsageTelemetry',
+      'listCascadeRuns',
       'listModelObservations',
       'listModels',
+      'listRoutingPolicies',
+      'listSelectionDecisions',
       'listTaskProfiles',
       'listUsageTelemetry',
+      'previewRouting',
       'registerModel',
       'retireModel',
+      'retireRoutingPolicy',
       'retireTaskProfile',
+      'routeTask',
     ],
-    'the AiRuntimeModuleApi carries exactly the registry operations — no route/select/eligible/cascade/invoke/evaluate methods',
+    'the AiRuntimeModuleApi carries exactly the registry operations (MKT-017) + the routing operations (MKT-018) — no evaluate/invoke methods',
   );
+  // The forbidden methods (MKT-019 evaluation, future model invocation) are
+  // still absent.
   for (const forbidden of [
-    'routeTask',
-    'selectModel',
-    'eligibleModels',
-    'runCascade',
-    'invokeModel',
     'evaluate',
+    'invokeModel',
   ]) {
     assert.ok(
       !methodNames.includes(forbidden),
-      `'${forbidden}' must not exist on the MKT-017 module API (MKT-018/MKT-019 scope)`,
+      `'${forbidden}' must not exist on the MKT-017/MKT-018 module API (MKT-019 scope)`,
     );
   }
 });

@@ -436,6 +436,12 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // append-only metric observation ledger with the source/timestamp/
     // reference mapping and the cross-tenant backstops.
     '018_metrics.sql',
+    // MKT-018 appends the AI routing and cascades migration (020 — the
+    // number is RESERVED for this Work Item; sibling workers use other
+    // numbers): the routing-policy/selection-decision/cascade-run/cascade-
+    // step tables with the §8-style fences, append-only triggers and
+    // scope-chain backstops (AI-002).
+    '020_ai_routing.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

@@ -44,6 +44,7 @@ import type {
   ModelObservationRecord,
   ModelRegistrationInput,
   ModelRegistryRecord,
+  RoutingPolicyInput,
   TaskProfileInput,
   TaskProfileRecord,
   TaskProfileRiskClass,
@@ -55,6 +56,7 @@ import type {
 import {
   MODEL_AVAILABILITY_STATES,
   MODEL_REGISTRATION_FORBIDDEN_INPUT_KEYS,
+  ROUTING_POLICY_FORBIDDEN_INPUT_KEYS,
   TASK_PROFILE_FORBIDDEN_INPUT_KEYS,
   TASK_PROFILE_PRIVACY_CLASSES,
   TASK_PROFILE_RISK_CLASSES,
@@ -985,4 +987,28 @@ function toUsageTelemetryRecord(row: UsageTelemetryRow): UsageTelemetryRecord {
     createdBy: row.created_by,
     createdAt: row.created_at.toISOString(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// MKT-018 (AI-002) routing-policy input guard
+// ---------------------------------------------------------------------------
+
+const POLICY_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9 ._-]{0,99}$/;
+
+/**
+ * The routing-policy input guard (MKT-018 module-side authority): validates
+ * the policy name and the bounded policy-content object, and REJECTS SDK/
+ * adapter/credential-shaped keys — the routing policy is DATA (declarative
+ * weights and label allow/deny lists), never an SDK import, an adapter
+ * configuration or a credential.
+ */
+export function assertValidRoutingPolicyInput(policy: RoutingPolicyInput): void {
+  rejectForbiddenKeys(policy, ROUTING_POLICY_FORBIDDEN_INPUT_KEYS, 'routing policy');
+  requireString(policy.policyName, 'policyName', 1, 100);
+  if (!POLICY_NAME_PATTERN.test(policy.policyName)) {
+    problem('policyName is not a valid normalized label', [
+      'policyName: must be 1..100 chars of letters, digits, spaces, dots, dashes or underscores',
+    ]);
+  }
+  requireJsonObject(policy.policyContent, 'policyContent', JSON_CONTRACT_MAX_BYTES);
 }
