@@ -255,6 +255,8 @@ import { createExecutionsModule } from './modules/executions/public.ts';
 import { createEvidenceModule } from './modules/evidence/public.ts';
 // MKT-014: /metrics module (METRIC-001).
 import { createMetricsModule } from './modules/metrics/public.ts';
+// MKT-015: /experiments module (EXP-001 — experiment design records).
+import { createExperimentsModule } from './modules/experiments/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -406,6 +408,20 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // InMemoryMetrics instance also wired below.)
   const metricsModule = createMetricsModule({ db, clock, ids, evidence, clients, workspaces });
 
+  // MKT-015: /experiments — platform ports + the allowed /evidence
+  // dependency (frozen matrix: /experiments ──→ /evidence, /metrics,
+  // /goals; /evidence is the merged authority this Work Item consumes for
+  // conclusion evidence-citation validation — /metrics and /goals stay
+  // unused allowed directions: the frozen Experiment contract identifies
+  // metrics BY NAME + DIMENSIONS and needs no goal linkage) + the /clients
+  // and /workspaces canonical-ownership authorities injected through
+  // /experiments' declared STRUCTURAL PORTS: the real public-contract
+  // instances satisfy the port types structurally (TypeScript structural
+  // typing), so ownership resolution still executes THROUGH the exact
+  // /clients + /workspaces public-contract methods, server-side, with no
+  // forbidden module import.
+  const experiments = createExperimentsModule({ db, clock, ids, evidence, clients, workspaces });
+
   // MKT-017: /ai-runtime — the REGISTRY LAYER of the AI Runtime authority
   // (dependency matrix: /ai-runtime ──→ /executions — used exactly for
   // telemetry execution-reference validation; nothing else is imported:
@@ -496,7 +512,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
   };
 }
 

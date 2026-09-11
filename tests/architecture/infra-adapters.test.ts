@@ -440,6 +440,15 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // append-only metric observation ledger with the source/timestamp/
     // reference mapping and the cross-tenant backstops.
     '018_metrics.sql',
+    // MKT-015 appends the experiment model migration (019 — the number is
+    // RESERVED for this Work Item): the experiments + experiment_transitions
+    // tables with the full frozen §16 Experiment contract, the closed
+    // conclusion-type taxonomy with the causal-evidence-standard row CHECK,
+    // the frozen lifecycle state machine, the design-immutability and
+    // legal-successor triggers, the append-only history and the
+    // workspace-scope + cross-tenant evidence-citation fences (EXP-001,
+    // EXP-AC-01..03).
+    '019_experiments.sql',
     // MKT-018 appends the AI routing and cascades migration (020 — the
     // number is RESERVED for this Work Item; sibling workers use other
     // numbers): the routing-policy/selection-decision/cascade-run/cascade-
