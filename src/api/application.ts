@@ -64,6 +64,13 @@
  * with server-derived provenance; CRED-001 reference-only evaluation
  * posture).
  *
+ * MKT-022 additions: /extensions (extension registry and manifest
+ * contract, EXT-001 — the immutable versioned manifest registry, the
+ * install/configure lifecycle with least-privilege granted scopes and
+ * credential-reference secret bindings, the fail-closed invocation
+ * policy gate and the short-lived invocation context with the
+ * append-only invocation ledger).
+ *
  * MKT-027 additions: /jobs field execution (JOB-001 field subset +
  * EVID-001 field subset, JOB-AC-03..04, EVID-AC-01..03 field subset —
  * the visit lifecycle, structured outcomes, evidence capture, follow-up
@@ -94,6 +101,9 @@ import type { ExperimentsModuleApi } from '../modules/experiments/public.ts';
 import type { PlaybooksModuleApi } from '../modules/playbooks/public.ts';
 // MKT-021: /policies module contract (execution policy engine).
 import type { PoliciesModuleApi } from '../modules/policies/public.ts';
+// MKT-022: /extensions module contract (extension registry and manifest
+// contract).
+import type { ExtensionsModuleApi } from '../modules/extensions/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -138,4 +148,10 @@ export interface ApplicationModules {
   // policy boundaries, the fail-closed decision engine and the
   // append-only decision records).
   readonly policies: PoliciesModuleApi;
+
+  // MKT-022: extension registry and manifest contract authority
+  // (EXT-001 — the immutable versioned manifest registry, the
+  // install/configure lifecycle, the short-lived invocation context
+  // and the append-only invocation ledger).
+  readonly extensions: ExtensionsModuleApi;
 }

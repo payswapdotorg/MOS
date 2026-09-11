@@ -10,7 +10,9 @@
  * registry routes — TaskProfiles, model registry, usage telemetry,
  * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes,
  * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
- * Capability contract routes + MKT-021 execution policy engine routes).
+ * Capability contract routes + MKT-021 execution policy engine routes
+ * + MKT-022 extension registry and manifest contract routes
+ * + MKT-031 Field Agent work-queue routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -63,12 +65,23 @@ import { registerJobsRoutes } from './jobs-routes.ts';
 // administration (platform/agency/client scope) + the fail-closed
 // evaluation endpoint + the append-only decision ledger).
 import { registerPoliciesRoutes } from './policies-routes.ts';
+// MKT-022: the /extensions routes (EXT-001 — extension registry and
+// manifest contract: versioned immutable manifests, the install/configure
+// lifecycle, the short-lived invocation context and the append-only
+// invocation ledger).
+import { registerExtensionsRoutes } from './extensions-routes.ts';
 // MKT-027: the /jobs FIELD EXECUTION routes (visit lifecycle, structured
 // outcomes, evidence capture, follow-up and the policy-gated continuity
 // lookup — JOB-001 field subset + EVID-001 field subset, JOB-AC-03..04).
 // Same /api/jobs surface prefix, same authorization composition (the
 // shared posture helpers are exported from jobs-routes.ts).
 import { registerJobsVisitsRoutes } from './jobs-visits-routes.ts';
+// MKT-031: the /jobs FIELD AGENT WORK QUEUE routes (UI-002 — MY QUEUE,
+// territory/job discovery, queue acceptance/decline by offer id alone;
+// UI-AC-01..02). Thin delegation over the SAME /jobs + /field-agents
+// public contracts; registered BEFORE the :jobId-parameterized routes
+// because the literal 'queue' segment sits in the :jobId position.
+import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -102,6 +115,18 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // job-eligibility lookup (profile data only — no Client data routes).
   registerFieldAgentsRoutes(router, services, modules);
 
+  // MKT-031: the Field Agent work-queue surface — MY QUEUE (open offers +
+  // accepted jobs with live status and derived evidence/outcome
+  // obligations), territory/job discovery (declared service areas + the
+  // eligibility-gated marketplace descriptors) and the queue claim
+  // surfaces (accept/decline by offer id alone, converging exactly with
+  // the direct /jobs surface). Registered BEFORE the /api/jobs/:jobId
+  // routes: the literal 'queue' segment sits in the :jobId position and
+  // the router resolves first-match-wins (exactly like marketplace and
+  // offers — /api/jobs/queue and /api/jobs/queue/offers/:offerId/accept
+  // must never be captured by the :jobId patterns).
+  registerJobsQueueRoutes(router, services, modules);
+
   // MKT-026: the Job marketplace boundary — Task projections (POST under
   // the workflow-instance path), the eligibility-gated marketplace listing
   // (descriptors to ELIGIBLE agents only — no Client data), candidate
@@ -130,5 +155,16 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // evaluation endpoints (agency/client-scoped POST, decisions recorded
   // append-only) + the decision-ledger audit reads.
   registerPoliciesRoutes(router, services, modules);
+
+  // MKT-022: the /extensions surfaces — the immutable versioned manifest
+  // registry (publish/list/read), the install/configure lifecycle (the
+  // frozen install state machine, least-privilege granted scopes,
+  // config-contract validation, secret bindings as credential
+  // references), the FAIL-CLOSED invocation endpoints (the short-lived
+  // context derived from the execution's canonical owner + policy
+  // posture) and the append-only invocation ledger (Observe). NO update
+  // or delete routes: registry versions and invocation history are
+  // immutable.
+  registerExtensionsRoutes(router, services, modules);
   return router;
 }

@@ -494,6 +494,16 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // closed outcome/reason-code vocabulary and cross-tenant scope fences
     // (POL-001, CRED-001).
     '025_policies.sql',
+    // MKT-022 (Extension registry and manifest contract) appends the
+    // extensions migration (028 — the number is RESERVED for this Work
+    // Item; 026/027 are reserved for siblings): the immutable versioned
+    // manifest registry (publisher/key/version fence, closed capability
+    // category / permission action / data-scope CHECKs, §21 material-key
+    // backstops), the install lifecycle records (scope-chain fences,
+    // frozen state machine, terminal uninstall) and the append-only
+    // invocation ledger with the execution-scope consistency fence and
+    // the TTL bound (EXT-001, EXT-AC-01..04).
+    '028_extensions.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
