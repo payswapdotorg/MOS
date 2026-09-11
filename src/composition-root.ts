@@ -198,6 +198,18 @@
  *     The /api registration adds jobs-visits-routes.ts under the same
  *     /api/jobs prefix. Migration 024_field_execution.sql is reserved for
  *     this Work Item (019/022 belong to sibling workers).
+ *
+ * MKT-031 additions (Field Agent work queue, UI-002 — UI-AC-01..02):
+ *   - NO new module and NO new dependency is wired: the work-queue API
+ *     surface (MY QUEUE, territory/job discovery, queue
+ *     acceptance/decline by offer id alone) is a THIN ROUTE-LAYER
+ *     composition over the SAME /jobs + /field-agents public contracts —
+ *     no queue engine, no state machine, no second matcher, no second
+ *     authority. The /api registration adds jobs-queue-routes.ts under
+ *     the same /api/jobs prefix (registered before the :jobId routes;
+ *     the shared posture helpers and serializers are exported from
+ *     jobs-routes.ts so both surfaces of the ONE /jobs authority answer
+ *     identically).
  */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
