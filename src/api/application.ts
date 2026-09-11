@@ -29,6 +29,16 @@
  * append-only metric observation ledger with source/timestamp/reference
  * mapping, server-derived provenance and NO provider state.
  *
+ * MKT-015 additions: /experiments (Experiment model, EXP-001) — the
+ * experiment design authority: the full frozen §16 Experiment contract
+ * (hypothesis, decision target, population/unit, treatment/comparison,
+ * primary metric by name+dimensions, guardrails, assignment method,
+ * analysis method/version, design type, expected direction, start/stop
+ * criteria, minimum evidence requirement, declared uncertainty
+ * representation), the frozen lifecycle state machine with append-only
+ * transition history, the closed conclusion-type taxonomy with the
+ * causal evidence standard, and uncertainty/analysis-metadata retention.
+ *
  * MKT-017 additions: /ai-runtime (AI task profile and model registry,
  * AI-001 — provider-neutral TaskProfiles, normalized model registry,
  * usage telemetry records).
@@ -79,6 +89,8 @@ import type { JobsModuleApi } from '../modules/jobs/public.ts';
 import type { GoalsModuleApi } from '../modules/goals/public.ts';
 // MKT-014: /metrics module contract.
 import type { MetricsModuleApi } from '../modules/metrics/public.ts';
+// MKT-015: /experiments module contract (experiment design records).
+import type { ExperimentsModuleApi } from '../modules/experiments/public.ts';
 import type { PlaybooksModuleApi } from '../modules/playbooks/public.ts';
 // MKT-021: /policies module contract (execution policy engine).
 import type { PoliciesModuleApi } from '../modules/policies/public.ts';
@@ -102,6 +114,8 @@ export interface ApplicationModules {
   readonly evidence: EvidenceModuleApi;
   // MKT-014: metric normalization authority (METRIC-001).
   readonly metrics: MetricsModuleApi;
+  // MKT-015: experiment model authority (EXP-001).
+  readonly experiments: ExperimentsModuleApi;
   // MKT-017: AI runtime registry authority (AI-001).
   readonly aiRuntime: AiRuntimeModuleApi;
 
