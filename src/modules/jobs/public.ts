@@ -87,13 +87,67 @@
  * stays at the route layer exactly like MKT-003/004/005/025: the frozen
  * matrix gives /jobs no /agencies dependency, so agency membership is
  * composed by ROUTES, never re-imported here.
+ *
+ * MKT-027 (Field execution and evidence — JOB-001 field subset + EVID-001
+ * field subset; JOB-AC-03..04; EVID-AC-01..03 field subset) EXTENDS this
+ * same module with the FIELD EXECUTION surface (spec/work-items.md
+ * "enable visit/field execution, structured outcomes, evidence capture,
+ * follow-up and continuity"). This module additionally owns:
+ *
+ *   - the VISIT: the /jobs-owned field execution record of ONE accepted
+ *     Job — planned → in_progress → completed | cancelled (frozen machine,
+ *     terminal states immutable). A visit exists only inside the
+ *     acceptance window (the job is 'accepted'), belongs to exactly ONE
+ *     Job, and its scope chain (workspace/client/agency) is INHERITED
+ *     from the Job — never caller-provided (DB-fenced by the migration-024
+ *     scope-chain trigger). Only the job's ACCEPTED agent may open or
+ *     transition a visit (the server-derived actor). Visits are NOT a
+ *     second workflow/execution engine: they carry no task linkage of
+ *     their own (the Task reference stays on the Job), no dispatch/queue/
+ *     sandbox/runtime semantics and no downstream scheduling — /workflows
+ *     stays the single workflow authority and /jobs still never mutates
+ *     instance state;
+ *   - the append-only VISIT TRANSITION HISTORY with full server-derived
+ *     provenance on every applied lifecycle event;
+ *   - the STRUCTURED VISIT OUTCOME (JOB-AC-03 field subset): a frozen
+ *     field-result vocabulary (succeeded | partial | no_contact | failed),
+ *     an explicit follow_up_required declaration, bounded notes, a
+ *     structured observations payload (non-empty JSON object) and a
+ *     REQUIRED evidence reference validated through the /evidence public
+ *     contract (same-Client, uniform 404) — append-only, exactly one per
+ *     visit, with actor + provenance SERVER-DERIVED and PRESERVED;
+ *   - FIELD EVIDENCE CAPTURE: the accepted agent appends /evidence
+ *     records THROUGH this module's surface with a server-derived scope
+ *     (the job's Client/Workspace — never caller input) and server-derived
+ *     provenance (recordedVia 'field-agent', causation the visit id).
+ *     Human-submitted observations are actor-attributed submissions
+ *     (human-agent-v1.3.md §5): the submitting agent can never
+ *     self-authorize provenance promotion or causal conclusions — there
+ *     is NO class-mutation path anywhere in this module, so claims stay
+ *     claims (EVID-AC-03);
+ *   - FOLLOW-UP: a visit may declare follow_up_of_visit_id — the prior
+ *     COMPLETED visit of the SAME relationship it follows up on
+ *     (DB-fenced);
+ *   - CONTINUITY (JOB-AC-04): the derived relationship chain — the prior
+ *     COMPLETED visits of the same (agency, client, target identity). It
+ *     is DERIVED data (a read; history is never rewritten) and it is
+ *     gated by the EXISTING policy checkpoint: the merged /field-agents
+ *     profile relationship-continuity block (the single pure predicate
+ *     visitContinuityExposedToAgent is the swap point for the future
+ *     /policies authority — MKT-021; NO second policy engine is created
+ *     here). The commissioning side always sees the full chain through
+ *     its client scope.
  */
 
 import type { Clock } from '../../platform/clock/clock.ts';
 import type { Db } from '../../platform/db/contract.ts';
 import type { IdGenerator } from '../../platform/ids/ids.ts';
 import type { EvidenceModuleApi } from '../evidence/public.ts';
-import type { FieldAgentsModuleApi, JobEligibilitySpec } from '../field-agents/public.ts';
+import type {
+  FieldAgentsModuleApi,
+  JobEligibilitySpec,
+  RelationshipContinuity,
+} from '../field-agents/public.ts';
 import type {
   WorkflowAgencySummary,
   WorkflowClientRow,
@@ -682,6 +736,415 @@ export function composeJobOwnerContext(
 }
 
 // ---------------------------------------------------------------------------
+// MKT-027: Visit status machine (the frozen field-execution lifecycle)
+// ---------------------------------------------------------------------------
+
+/**
+ * The frozen MKT-027 visit lifecycle:
+ *
+ *   planned → in_progress → completed | cancelled
+ *   planned → cancelled
+ *
+ * `planned`: the visit is opened (planned, target identity declared).
+ * `in_progress`: the accepted agent has STARTED the field visit.
+ * `completed`: the visit finished and its structured outcome was
+ * submitted. `cancelled`: the visit was abandoned (before or during
+ * execution). `completed` and `cancelled` are TERMINAL (frozen
+ * field-execution history; migration 024 rejects every outgoing
+ * transition).
+ */
+export type VisitStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
+
+export const VISIT_STATUSES: readonly VisitStatus[] = [
+  'planned',
+  'in_progress',
+  'completed',
+  'cancelled',
+];
+
+/** The frozen transition table (exhaustive; unit-tested byte for byte). */
+export const VISIT_TRANSITIONS: Readonly<Record<VisitStatus, readonly VisitStatus[]>> = {
+  planned: ['in_progress', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+};
+
+export function isLegalVisitTransition(from: VisitStatus, to: VisitStatus): boolean {
+  return VISIT_TRANSITIONS[from].includes(to);
+}
+
+export const VISIT_TERMINAL_STATUSES: readonly VisitStatus[] = ['completed', 'cancelled'];
+
+export function isTerminalVisitStatus(status: VisitStatus): boolean {
+  return VISIT_TERMINAL_STATUSES.includes(status);
+}
+
+// ---------------------------------------------------------------------------
+// MKT-027: Structured visit outcome vocabulary
+// ---------------------------------------------------------------------------
+
+/**
+ * The frozen field-result vocabulary — field-specific granularity beyond
+ * the job-level succeeded|failed (spec/work-items.md MKT-027 "structured
+ * outcomes"):
+ *   succeeded  — the visit fully achieved its purpose;
+ *   partial    — the visit achieved part of its purpose;
+ *   no_contact — the target was not reachable (the classic follow-up case);
+ *   failed     — the visit did not achieve its purpose.
+ */
+export type VisitResult = 'succeeded' | 'partial' | 'no_contact' | 'failed';
+
+export const VISIT_RESULTS: readonly VisitResult[] = [
+  'succeeded',
+  'partial',
+  'no_contact',
+  'failed',
+];
+
+// ---------------------------------------------------------------------------
+// MKT-027: Visit records (durable shapes)
+// ---------------------------------------------------------------------------
+
+/** Immutable storage shape of one persisted visit. */
+export interface VisitRecord {
+  readonly visitId: string;
+  readonly jobId: string;
+  /** Per-job sequence (1-based) — the visit order within the Job. */
+  readonly visitSeq: number;
+  /** INHERITED from the Job (server-derived; never caller-provided). */
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  /** The relationship target identity (venue/person/location key). */
+  readonly targetIdentity: string;
+  readonly status: VisitStatus;
+  readonly scheduledAt: string | null;
+  readonly startedAt: string | null;
+  readonly completedAt: string | null;
+  readonly cancelledAt: string | null;
+  /** The prior COMPLETED visit of the same relationship this visit follows up. */
+  readonly followUpOfVisitId: string | null;
+  /** The accepted agent's platform user (server-derived from the job claim). */
+  readonly createdBy: string | null;
+  /** Open-event provenance (SERVER-DERIVED — never a DTO field). */
+  readonly provenance: VisitRecordedProvenance;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** One append-only applied lifecycle transition with full provenance. */
+export interface VisitTransitionRecord {
+  readonly transitionId: string;
+  readonly visitId: string;
+  readonly fromStatus: VisitStatus;
+  readonly toStatus: VisitStatus;
+  readonly reason: string;
+  readonly createdBy: string | null;
+  readonly provenance: VisitRecordedProvenance;
+  readonly createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// MKT-027: Visit provenance (SERVER-DERIVED — the dimension callers never
+// supply; the JOB-AC-03 pattern extended to every visit lifecycle event)
+// ---------------------------------------------------------------------------
+
+/**
+ * SERVER-DERIVED provenance of one visit lifecycle event. Built
+ * exclusively by server code from the authenticated principal, the
+ * ambient correlation context and the module clock — never from a
+ * request body (route validation rejects provenance-shaped authority
+ * fields; this type is a separate module-API argument so no DTO can
+ * feed it structurally, the /evidence provenance pattern).
+ */
+export interface VisitProvenance {
+  /** Server-derived actor label: 'user:<uuid>'. */
+  readonly actor: string;
+  /** Server-derived recording surface label ('api'). */
+  readonly recordedVia: string;
+  /** Correlation identity of the logical flow that recorded the event. */
+  readonly correlationId: string;
+  /** Causation identity (the job id) when the event was worker-caused. */
+  readonly causationId: string | null;
+}
+
+/** Provenance block as persisted on the immutable record. */
+export interface VisitRecordedProvenance extends VisitProvenance {
+  /** Server-stamped recording time (module clock, never caller input). */
+  readonly recordedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// MKT-027: Structured visit outcome record
+// ---------------------------------------------------------------------------
+
+/** The structured visit outcome as persisted (append-only, one per visit). */
+export interface VisitOutcomeRecord {
+  readonly visitOutcomeId: string;
+  readonly visitId: string;
+  readonly result: VisitResult;
+  readonly followUpRequired: boolean;
+  readonly notes: string;
+  /** The structured observation payload (non-empty JSON object). */
+  readonly observations: Readonly<Record<string, unknown>>;
+  /** The /evidence record backing the outcome (same-Client, DB-fenced). */
+  readonly evidenceRef: string;
+  readonly provenance: VisitRecordedProvenance & {
+    /** The accepted agent's platform user (server-derived from the principal). */
+    readonly submittedBy: string | null;
+    /** Server-stamped submission time (module clock, never caller input). */
+    readonly submittedAt: string;
+  };
+  readonly createdAt: string;
+}
+
+/** The result of a visit completion: the records AFTER + replay flag. */
+export interface VisitCompletionOutcome {
+  readonly visit: VisitRecord;
+  readonly outcome: VisitOutcomeRecord;
+  /** True when the duplicate submission converged to the recorded outcome. */
+  readonly replayed: boolean;
+}
+
+/** One captured-evidence link (the visit side of the /evidence append). */
+export interface VisitEvidenceLinkRecord {
+  readonly visitId: string;
+  readonly evidenceId: string;
+  readonly capturedBy: string | null;
+  readonly provenance: VisitRecordedProvenance;
+}
+
+// ---------------------------------------------------------------------------
+// MKT-027: Continuity (JOB-AC-04) — the derived relationship chain
+// ---------------------------------------------------------------------------
+
+/**
+ * The relationship coordinates of a visit (JOB-AC-04): the commissioning
+ * Agency + Client + the visit's target identity. Repeated visits over the
+ * same coordinates form the relationship whose continuity is preserved.
+ */
+export interface VisitRelationship {
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly targetIdentity: string;
+}
+
+/** One entry of the derived continuity chain (prior completed visit). */
+export interface VisitContinuityEntry {
+  readonly visit: VisitRecord;
+  /** The structured outcome when the prior visit completed with one. */
+  readonly outcome: VisitOutcomeRecord | null;
+}
+
+/** The derived continuity view of one visit (JOB-AC-04 — a READ). */
+export interface VisitContinuityView {
+  readonly visit: VisitRecord;
+  readonly relationship: VisitRelationship;
+  /**
+   * The prior COMPLETED visits of the SAME relationship, oldest first.
+   * DERIVED data: the chain is computed from durable state; history is
+   * never rewritten.
+   */
+  readonly priorVisits: readonly VisitContinuityEntry[];
+  /**
+   * The visiting agent's frozen relationship-continuity policy block
+   * (resolved server-side through /field-agents) — the POLICY INPUT the
+   * route-level checkpoint evaluates with visitContinuityExposedToAgent.
+   */
+  readonly agentContinuityPolicy: RelationshipContinuity | null;
+}
+
+/**
+ * The CONTINUITY POLICY CHECKPOINT (JOB-AC-04 "subject to policy"): is
+ * the derived continuity chain exposed to the EXECUTING (accepted) agent?
+ *
+ * This is the single pure gate over the EXISTING policy data — the merged
+ * /field-agents profile relationship-continuity block
+ * (human-agent-v1.3.md §1: "relationship-continuity preferences", frozen
+ * profile data the jobs authority consumes). The chain is exposed to the
+ * accepted agent only when the agent's policy data opts INTO repeat
+ * relationships (prefersRepeatClients) with a continuity preference
+ * beyond 'any'. The commissioning side is NOT gated here (client scope
+ * owns the data).
+ *
+ * This function is the DECLARED SWAP POINT for the /policies authority
+ * (MKT-021, not merged at base be8505b): when a policy engine lands, the
+ * gate's decision moves there without touching any other call site. NO
+ * second policy engine is created here — this predicate only reads
+ * frozen profile data. Fails closed: unknown/absent policy data → false.
+ */
+export function visitContinuityExposedToAgent(
+  policy: RelationshipContinuity | null,
+): boolean {
+  if (policy === null) return false;
+  if (policy.prefersRepeatClients !== true) return false;
+  return policy.continuity === 'preferred' || policy.continuity === 'required';
+}
+
+// ---------------------------------------------------------------------------
+// MKT-027: Pure validation and decision functions (single-sourced
+// semantics; unit-tested)
+// ---------------------------------------------------------------------------
+
+/** Maximum visit outcome notes length. */
+export const MAX_VISIT_NOTES_LENGTH = 2000;
+/** Maximum visit cancel reason length. */
+export const MAX_VISIT_REASON_LENGTH = 2000;
+/** Target identity pattern: 1..200 chars, printable identifier shape. */
+export const TARGET_IDENTITY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ,.\-:/_]{0,199}$/;
+
+/**
+ * Pure validation of a visit OPEN (single source of truth for the DTO
+ * shape; the module throws InvalidRequestError with these problems and
+ * migration 024 backstops the type/cardinality fences). Returns the list
+ * of problems (empty = valid).
+ */
+export function validateVisitOpen(input: {
+  readonly targetIdentity: string;
+  readonly scheduledAtIso: string | null;
+  readonly followUpOfVisitId: string | null;
+}): ReadonlyArray<string> {
+  const problems: string[] = [];
+  if (
+    typeof input.targetIdentity !== 'string' ||
+    !TARGET_IDENTITY_PATTERN.test(input.targetIdentity)
+  ) {
+    problems.push(
+      'targetIdentity: must be 1..200 characters (letters, digits, spaces, commas, dots, dashes, colons, slashes, underscores; must start alphanumeric)',
+    );
+  }
+  if (input.scheduledAtIso !== null) {
+    if (typeof input.scheduledAtIso !== 'string' || Number.isNaN(Date.parse(input.scheduledAtIso))) {
+      problems.push('scheduledAt: must be an ISO-8601 timestamp when present');
+    }
+  }
+  if (input.followUpOfVisitId !== null) {
+    if (typeof input.followUpOfVisitId !== 'string' || input.followUpOfVisitId.length < 1) {
+      problems.push('followUpOfVisitId: must be a visit identifier when present');
+    }
+  }
+  return problems;
+}
+
+/**
+ * Pure validation of a structured visit outcome submission. The
+ * observations payload must be a non-empty JSON object (the §21
+ * material-key guard runs in the module — containsMaterialKey from the
+ * /evidence public contract). Returns the list of problems (empty =
+ * valid).
+ */
+export function validateVisitOutcome(input: {
+  readonly result: string;
+  readonly followUpRequired: boolean;
+  readonly notes: string;
+  readonly observations: unknown;
+  readonly evidenceRef: string;
+}): ReadonlyArray<string> {
+  const problems: string[] = [];
+  if (!(VISIT_RESULTS as readonly string[]).includes(input.result)) {
+    problems.push(
+      `result: must be one of the frozen field results (succeeded | partial | no_contact | failed)`,
+    );
+  }
+  if (typeof input.followUpRequired !== 'boolean') {
+    problems.push('followUpRequired: must be a boolean');
+  }
+  if (typeof input.notes !== 'string' || input.notes.length > MAX_VISIT_NOTES_LENGTH) {
+    problems.push(`notes: must be a string of at most ${MAX_VISIT_NOTES_LENGTH} characters`);
+  }
+  if (
+    input.observations === null ||
+    typeof input.observations !== 'object' ||
+    Array.isArray(input.observations) ||
+    Object.keys(input.observations as Record<string, unknown>).length === 0
+  ) {
+    problems.push('observations: must be a non-empty JSON object of structured field observations');
+  }
+  if (typeof input.evidenceRef !== 'string' || input.evidenceRef.trim() === '') {
+    problems.push('evidenceRef: the /evidence record backing the outcome is required');
+  }
+  return problems;
+}
+
+/**
+ * The outcome of evaluating a START/CANCEL/COMPLETE request against the
+ * durable visit state (pure — the module applies what this decides):
+ *
+ *   - `apply` — the transition is legal, apply it;
+ *   - `replay` — the visit is ALREADY in the target state: the duplicate
+ *     request converges to the recorded state with no state change;
+ *   - `terminal` — the visit is completed/cancelled (terminal): the
+ *     request conflicts cleanly (frozen history);
+ *   - `illegal` — the transition is not an edge of the frozen machine
+ *     (conflict — never a partial state).
+ */
+export type VisitTransitionDecision =
+  | { readonly kind: 'apply' }
+  | { readonly kind: 'replay' }
+  | { readonly kind: 'terminal'; readonly status: VisitStatus }
+  | { readonly kind: 'illegal'; readonly from: VisitStatus; readonly to: VisitStatus };
+
+export function evaluateVisitTransition(
+  from: VisitStatus,
+  to: VisitStatus,
+): VisitTransitionDecision {
+  if (from === to) return { kind: 'replay' };
+  if (isTerminalVisitStatus(from)) return { kind: 'terminal', status: from };
+  if (isLegalVisitTransition(from, to)) return { kind: 'apply' };
+  return { kind: 'illegal', from, to };
+}
+
+/**
+ * Pure outcome-fingerprint equality (the replay convergence check): two
+ * visit outcome submissions are the SAME logical command when the result,
+ * follow-up declaration, notes, observation payload, evidence reference
+ * and submitting actor match — provenance bookkeeping (correlation ids)
+ * is deliberately excluded (a replay converges to the ORIGINALLY
+ * recorded provenance). Observation payloads compare SEMANTICALLY
+ * (JSON key order does not matter): a retried submission of the same
+ * content with keys serialized in a different order converges.
+ */
+export function isSameVisitOutcomeSubmission(
+  existing: {
+    readonly result: VisitResult;
+    readonly followUpRequired: boolean;
+    readonly notes: string;
+    readonly observations: Readonly<Record<string, unknown>>;
+    readonly evidenceRef: string;
+    readonly submittedBy: string | null;
+  },
+  candidate: {
+    readonly result: VisitResult;
+    readonly followUpRequired: boolean;
+    readonly notes: string;
+    readonly observations: Readonly<Record<string, unknown>>;
+    readonly evidenceRef: string;
+    readonly submittedBy: string | null;
+  },
+): boolean {
+  return (
+    existing.result === candidate.result &&
+    existing.followUpRequired === candidate.followUpRequired &&
+    existing.notes === candidate.notes &&
+    canonicalJson(existing.observations) === canonicalJson(candidate.observations) &&
+    existing.evidenceRef === candidate.evidenceRef &&
+    existing.submittedBy === candidate.submittedBy
+  );
+}
+
+/** Canonical JSON: object keys sorted at every level (order-insensitive equality). */
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([key]) => Object.prototype.hasOwnProperty.call(value, key))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries.map(([key, val]) => `${JSON.stringify(key)}:${canonicalJson(val)}`).join(',')}}`;
+}
+
+// ---------------------------------------------------------------------------
 // Operation outcomes
 // ---------------------------------------------------------------------------
 
@@ -850,6 +1313,149 @@ export interface JobsModuleApi {
   }): Promise<OutcomeSubmissionOutcome>;
   /** The submitted outcome of one job (null when none — unresolved stays unresolved). */
   getJobOutcome(jobId: string): Promise<JobOutcomeRecord | null>;
+
+  // -------------------------------------------------------------------------
+  // MKT-027: Field execution (visit lifecycle, structured outcomes,
+  // evidence capture, follow-up and continuity). Every operation is scoped
+  // by the Job authority: the visit's scope chain is INHERITED from the
+  // Job, the actor is verified to be the Job's ACCEPTED agent, and no
+  // workflow state is ever mutated.
+  // -------------------------------------------------------------------------
+
+  /**
+   * OPENS one visit on an accepted Job (MKT-027): the accepted agent
+   * declares the relationship TARGET identity (the continuity
+   * coordinate), an optional scheduled time and an optional follow-up
+   * link. The Job must be in its acceptance window ('accepted' —
+   * ConflictError otherwise; migration 024 DB-backstops the window); the
+   * caller MUST be the job's accepted agent (uniform NotFoundError
+   * otherwise — no existence oracle). The visit's scope chain is
+   * INHERITED from the Job (never caller input; DB-fenced). The
+   * follow-up reference is resolved BEFORE any write: unknown or
+   * cross-relationship visits are a uniform NotFoundError; a
+   * same-relationship visit that is not COMPLETED is a ConflictError.
+   * `provenance` is SERVER-DERIVED (a separate module-API argument no
+   * DTO feeds) and is preserved on the visit row and the transition
+   * history.
+   */
+  openVisit(input: {
+    readonly jobId: string;
+    readonly targetIdentity: string;
+    readonly scheduledAtIso: string | null;
+    readonly followUpOfVisitId: string | null;
+    readonly actorUserId: string;
+    readonly actorId: string | null;
+    readonly provenance: VisitProvenance;
+  }): Promise<VisitRecord>;
+  /** The raw visit record (must belong to the given job) — null when absent. */
+  getVisit(jobId: string, visitId: string): Promise<VisitRecord | null>;
+  /** All visits of one Job (oldest first) — commissioning/agent read surface. */
+  listVisitsForJob(jobId: string): Promise<readonly VisitRecord[]>;
+  /** The append-only lifecycle history of one visit (oldest first). */
+  listVisitTransitions(visitId: string): Promise<readonly VisitTransitionRecord[]>;
+  /**
+   * STARTS the visit (planned → in_progress): the accepted agent only.
+   * Repeated start of an in_progress visit converges idempotently
+   * (replayed=true); a terminal visit conflicts (frozen history).
+   */
+  startVisit(input: {
+    readonly jobId: string;
+    readonly visitId: string;
+    readonly actorUserId: string;
+    readonly actorId: string | null;
+    readonly provenance: VisitProvenance;
+  }): Promise<{ readonly visit: VisitRecord; readonly replayed: boolean }>;
+  /**
+   * CANCELS the visit (planned | in_progress → cancelled) with a bounded
+   * reason: the accepted agent only. Repeated cancel converges
+   * idempotently (replayed=true); a completed visit can never be
+   * cancelled (the outcome stands — ConflictError).
+   */
+  cancelVisit(input: {
+    readonly jobId: string;
+    readonly visitId: string;
+    readonly reason: string;
+    readonly actorUserId: string;
+    readonly actorId: string | null;
+    readonly provenance: VisitProvenance;
+  }): Promise<{ readonly visit: VisitRecord; readonly replayed: boolean }>;
+  /**
+   * COMPLETES the visit with its STRUCTURED OUTCOME (in_progress →
+   * completed; JOB-AC-03 field subset): the accepted agent reports the
+   * field result (succeeded | partial | no_contact | failed), the
+   * explicit follow-up declaration, bounded notes, the structured
+   * observations payload and a REQUIRED evidence reference. The
+   * evidence reference is resolved THROUGH the /evidence public contract
+   * before any write: unknown, foreign or cross-Client references are a
+   * uniform NotFoundError (a foreign evidence id is not a traversal
+   * oracle), and the migration-024 same-Client trigger is the DB
+   * backstop. The observations payload is guarded (non-empty object;
+   * material-shaped keys rejected at every nesting level — §21).
+   * `provenance` is SERVER-DERIVED and preserved on the append-only
+   * outcome row (with submittedBy/submittedAt). Exactly one outcome
+   * exists per visit — a duplicate of the SAME logical submission
+   * converges (replayed=true, the ORIGINALLY recorded provenance); a
+   * different submission is a ConflictError. The caller MUST be the
+   * accepted agent (uniform NotFoundError otherwise). The Job's own
+   * MKT-026 outcome submission stays a separate surface — the job state
+   * machine is never touched here.
+   */
+  completeVisit(input: {
+    readonly jobId: string;
+    readonly visitId: string;
+    readonly result: VisitResult;
+    readonly followUpRequired: boolean;
+    readonly notes: string;
+    readonly observations: Readonly<Record<string, unknown>>;
+    readonly evidenceRef: string;
+    readonly actorUserId: string;
+    readonly actorId: string | null;
+    readonly provenance: VisitProvenance;
+  }): Promise<VisitCompletionOutcome>;
+  /** The structured outcome of one visit (null when none — unresolved stays unresolved). */
+  getVisitOutcome(visitId: string): Promise<VisitOutcomeRecord | null>;
+  /**
+   * CAPTURES one evidence record from the field (EVID-AC-01..03 field
+   * subset; human-agent-v1.3.md §5): the accepted agent appends an
+   * immutable /evidence record THROUGH the /evidence public contract
+   * with a SERVER-DERIVED scope (the job's Client + Workspace — never
+   * caller input) and SERVER-DERIVED provenance (actor from the
+   * principal, recordedVia 'field-agent', correlation ambient, causation
+   * the visit id). The visit must be in_progress (evidence is captured
+   * during execution; ConflictError otherwise); the caller MUST be the
+   * accepted agent (uniform NotFoundError otherwise). The declared
+   * class/quality/content shape is validated by the /evidence append
+   * guard — claims stay claims: NO code path anywhere mutates an
+   * evidence record, so the submitting agent can never self-authorize
+   * provenance promotion or causal conclusions (EVID-AC-03).
+   */
+  captureVisitEvidence(input: {
+    readonly jobId: string;
+    readonly visitId: string;
+    readonly class: string;
+    readonly quality: string;
+    readonly observedAtIso: string;
+    readonly sourceRef: string | null;
+    readonly content: Readonly<Record<string, unknown>>;
+    readonly contentRef: string | null;
+    readonly confidence: number | null;
+    readonly actorUserId: string;
+    readonly actorId: string | null;
+    readonly provenance: VisitProvenance;
+  }): Promise<VisitEvidenceLinkRecord>;
+  /** The evidence records captured through one visit (oldest first). */
+  listVisitEvidence(visitId: string): Promise<readonly VisitEvidenceLinkRecord[]>;
+  /**
+   * The DERIVED continuity view (JOB-AC-04): the prior COMPLETED visits
+   * of the SAME relationship (agency + client + target identity), oldest
+   * first, with their structured outcomes — plus the visiting agent's
+   * frozen relationship-continuity policy block resolved server-side
+   * through /field-agents (the POLICY INPUT for the route-level
+   * checkpoint visitContinuityExposedToAgent). DERIVED data: history is
+   * never rewritten. Null when the visit does not exist (uniform 404
+   * upstream).
+   */
+  getVisitContinuity(visitId: string): Promise<VisitContinuityView | null>;
 }
 
 export interface JobsModuleDeps {
