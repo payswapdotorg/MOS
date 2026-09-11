@@ -9,7 +9,7 @@
  * registry routes — TaskProfiles, model registry, usage telemetry,
  * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes,
  * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
- * Capability contract routes).
+ * Capability contract routes + MKT-021 execution policy engine routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -54,6 +54,11 @@ import { registerFieldAgentsRoutes } from './field-agents-routes.ts';
 // projections, candidate-specific offers, the concurrency-safe acceptance
 // claim, outcome submission with server-derived provenance).
 import { registerJobsRoutes } from './jobs-routes.ts';
+
+// MKT-021: the execution policy engine routes (POL-001 — policy version
+// administration (platform/agency/client scope) + the fail-closed
+// evaluation endpoint + the append-only decision ledger).
+import { registerPoliciesRoutes } from './policies-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -93,5 +98,12 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // retire / lifecycle history — the provider-neutral capability contract,
   // AGENT-001).
   registerAgentsRoutes(router, services, modules);
+
+  // MKT-021: the execution policy engine surfaces — policy version
+  // administration (declare/supersede/list/read — NO update or delete
+  // routes: policy history is append-oriented) + the FAIL-CLOSED
+  // evaluation endpoints (agency/client-scoped POST, decisions recorded
+  // append-only) + the decision-ledger audit reads.
+  registerPoliciesRoutes(router, services, modules);
   return router;
 }

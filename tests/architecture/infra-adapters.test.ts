@@ -461,6 +461,14 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // exactly-one-winner acceptance fence and the append-only
     // provenance-preserving outcome history (JOB-001, JOB-AC-01..03).
     '023_jobs.sql',
+    // MKT-021 (Execution policy engine) appends the policies migration
+    // (025 — the number is RESERVED for this Work Item; 024 is reserved
+    // for a sibling): the policies version registry (closed 7-dimension
+    // CHECK, ACTIVE + version-seq fences, content immutability, terminal
+    // supersession) and the append-only policy_decisions ledger with the
+    // closed outcome/reason-code vocabulary and cross-tenant scope fences
+    // (POL-001, CRED-001).
+    '025_policies.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

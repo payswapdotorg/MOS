@@ -167,6 +167,23 @@
  *     /agencies module dependency). No dispatch/execution engine is wired
  *     (HUMAN-AC-02: /jobs is not a second workflow engine — no graph, no
  *     node/edge semantics, no downstream scheduling).
+ *
+ * MKT-021 additions (Execution policy engine, POL-001):
+ *   - the /policies module is constructed here (frozen matrix:
+ *     /policies ──→ /clients, /agencies — both consumed DIRECTLY for
+ *     canonical scope resolution: agency/client ownership validation on
+ *     administration writes and scope re-validation before every policy
+ *     read) owning the append-oriented policy VERSION records, the
+ *     FAIL-CLOSED decision engine and the append-only decision records.
+ *     The CRED-001 reference lookup arrives through the module's declared
+ *     REFERENCE-ONLY STRUCTURAL PORT: the concrete /credentials
+ *     public-contract instance satisfies the port structurally (the
+ *     /metrics ownership-port precedent — the frozen matrix allows
+ *     /credentials ──→ /policies, not the reverse, so no /credentials
+ *     import exists inside src/modules/policies); the engine evaluates
+ *     access PROPOSALS and never sees secret material or handles. NO
+ *     enforcement hooks are wired: consuming modules wire enforcement in
+ *     later Work Items (this engine decides and records only).
  */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -221,6 +238,8 @@ import { createFieldAgentsModule } from './modules/field-agents/public.ts';
 import { createJobsModule } from './modules/jobs/public.ts';
 // MKT-020: /agents — logical Agent/Capability contracts (AGENT-001).
 import { createAgentsModule } from './modules/agents/public.ts';
+// MKT-021: /policies — the execution policy engine (POL-001).
+import { createPoliciesModule } from './modules/policies/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -394,6 +413,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // state; the migration-022 fences, scope immutability and FK are the
   // backstops.
   const agents = createAgentsModule({ db, clock, ids });
+
+  // MKT-021: /policies — the execution policy engine (POL-001). Frozen
+  // matrix dependencies wired: /agencies + /clients (canonical scope
+  // resolution — agency/client ownership validation on administration
+  // writes; scope re-validation before every policy read). The CRED-001
+  // reference lookup arrives through the module's REFERENCE-ONLY
+  // structural port: the concrete /credentials public-contract instance
+  // (getCredentialReference returns reference records WITHOUT material)
+  // satisfies the port structurally — the engine evaluates access
+  // proposals, never material. No enforcement hooks (later Work Items).
+  const policies = createPoliciesModule({ db, clock, ids, agencies, clients, credentialReferences: credentials });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -420,7 +450,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies },
   };
 }
 

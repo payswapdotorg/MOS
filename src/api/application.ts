@@ -47,6 +47,12 @@
  * AGENT-001 — provider-neutral reusable capability declarations with
  * platform/agency scope, register/list/read/retire and the append-only
  * lifecycle history).
+ *
+ * MKT-021 additions: /policies (execution policy engine, POL-001 —
+ * append-oriented policy versions with platform/agency/client scope,
+ * the fail-closed decision engine and the append-only decision ledger
+ * with server-derived provenance; CRED-001 reference-only evaluation
+ * posture).
  */
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
@@ -67,6 +73,8 @@ import type { GoalsModuleApi } from '../modules/goals/public.ts';
 // MKT-014: /metrics module contract.
 import type { MetricsModuleApi } from '../modules/metrics/public.ts';
 import type { PlaybooksModuleApi } from '../modules/playbooks/public.ts';
+// MKT-021: /policies module contract (execution policy engine).
+import type { PoliciesModuleApi } from '../modules/policies/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -101,4 +109,9 @@ export interface ApplicationModules {
 
   // MKT-020: logical Agent/Capability contracts authority (AGENT-001).
   readonly agents: AgentsModuleApi;
+
+  // MKT-021: execution policy engine authority (POL-001 — the declared
+  // policy boundaries, the fail-closed decision engine and the
+  // append-only decision records).
+  readonly policies: PoliciesModuleApi;
 }
