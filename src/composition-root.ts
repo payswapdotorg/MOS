@@ -254,6 +254,9 @@ import { createJobsModule } from './modules/jobs/public.ts';
 import { createAgentsModule } from './modules/agents/public.ts';
 // MKT-021: /policies — the execution policy engine (POL-001).
 import { createPoliciesModule } from './modules/policies/public.ts';
+// MKT-022: /extensions — the extension registry and manifest contract
+// (EXT-001).
+import { createExtensionsModule } from './modules/extensions/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -443,6 +446,18 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // satisfies the port structurally — the engine evaluates access
   // proposals, never material. No enforcement hooks (later Work Items).
   const policies = createPoliciesModule({ db, clock, ids, agencies, clients, credentialReferences: credentials });
+
+  // MKT-022: /extensions — the extension registry and manifest contract
+  // (EXT-001). Frozen matrix dependencies wired: /executions (canonical
+  // execution ownership resolution for the invocation contract — the
+  // scope of every invocation context is the execution's canonical
+  // owner), /policies (the fail-closed extension-dimension 'install' and
+  // 'invoke' gates — only an explicit recorded 'allow' proceeds) and
+  // /credentials (configure-time secret-binding REFERENCE resolution —
+  // references only, never material). The module holds NO /workflows and
+  // NO /evidence dependency: workflow state and evidence provenance are
+  // structurally unreachable from /extensions (EXT-AC-03/EXT-AC-04).
+  const extensions = createExtensionsModule({ db, clock, ids, executions, policies, credentials });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -469,7 +484,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
   };
 }
 
