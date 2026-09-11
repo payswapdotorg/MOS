@@ -477,6 +477,14 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // all. 024 is the first unreserved number after 023; the integration
     // station may renumber if desired.
     '024_field_execution.sql',
+    // MKT-021 (Execution policy engine) appends the policies migration
+    // (025 — the number is RESERVED for this Work Item; 024 is reserved
+    // for a sibling): the policies version registry (closed 7-dimension
+    // CHECK, ACTIVE + version-seq fences, content immutability, terminal
+    // supersession) and the append-only policy_decisions ledger with the
+    // closed outcome/reason-code vocabulary and cross-tenant scope fences
+    // (POL-001, CRED-001).
+    '025_policies.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
