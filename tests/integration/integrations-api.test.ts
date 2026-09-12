@@ -488,17 +488,33 @@ async function connectAndAwait(connectionId: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Route-level surface (the real HTTP stack; the deployment registry is
-// EMPTY in MKT-023 — the composition root registers no first-party
-// adapters until MKT-024)
+// Route-level surface (the real HTTP stack; the deployment registry now
+// carries the MKT-024 FIRST-PARTY CONNECTORS — meta-ads, google-ads,
+// generic-analytics, crm, commerce-cms — registered as DATA at the
+// composition root. The deeper behavioral proof of THOSE adapters against
+// a sandbox provider lives in integrations-connectors.test.ts.)
 // ---------------------------------------------------------------------------
 
-test('INT-001 ROUTE: the adapter registry surface is honest data — empty in the MKT-023 deployment', async () => {
+test('INT-001 ROUTE: the adapter registry surface is honest data — the MKT-024 first-party set', async () => {
   const response = await apiCall(port(), '/api/integrations/adapters', {
     token: aliceTokenValue,
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(response.body['adapters'], []);
+  const adapters = response.body['adapters'] as Record<string, unknown>[];
+  // Exactly the five first-party connectors, no more (the registry is
+  // injected DATA; the MKT-023 stubs never reach the deployment registry).
+  assert.deepEqual(
+    adapters.map((adapter) => adapter['adapterKey']).sort(),
+    ['commerce-cms', 'crm', 'generic-analytics', 'google-ads', 'meta-ads'],
+  );
+  // Every entry is the provider-neutral honest shape: label + description
+  // + capabilities (the discovery surface callers pick from).
+  for (const adapter of adapters) {
+    assert.equal(typeof adapter['providerLabel'], 'string');
+    assert.equal(typeof adapter['description'], 'string');
+    assert.ok(Array.isArray(adapter['capabilities']));
+    assert.ok((adapter['capabilities'] as unknown[]).length > 0);
+  }
 });
 
 test('INT-001 ROUTE: registering against an unknown adapter is a uniform 404 (registry is data)', async () => {
