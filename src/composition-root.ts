@@ -538,6 +538,8 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     clientOwnership: clients,
     evidenceSink: evidence,
     adapters: [],
+  });
+
   // MKT-022: /extensions — the extension registry and manifest contract
   // (EXT-001). Frozen matrix dependencies wired: /executions (canonical
   // execution ownership resolution for the invocation contract — the
@@ -614,8 +616,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies, integrations },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, extensions, domainPacks, reporting },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, reporting },
   };
 }
 

@@ -91,7 +91,8 @@
  * injected data, the fail-closed policy-gated provider execution
  * surface and the append-only webhook/event ingestion ledger; no
  * provider is a system of record for workflow/deployment/evidence/
- * policy/execution state). */
+ * policy/execution state).
+ *
  * MKT-030 additions: /reporting (read-side reporting, UI-001 — the Client
  * Decision Room read model: a PURE LIVE AGGREGATION over the /goals,
  * /workflows, /evidence, /experiments and /learnings public contracts;
