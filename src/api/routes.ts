@@ -74,6 +74,12 @@ import { registerPoliciesRoutes } from './policies-routes.ts';
 // lifecycle, the short-lived invocation context and the append-only
 // invocation ledger).
 import { registerExtensionsRoutes } from './extensions-routes.ts';
+// MKT-036: the /domain-packs routes (PACK-001 — versioned Domain Pack
+// framework: the immutable versioned pack registry, the installed-version
+// records against the authorized Workspace/Client context, and the
+// artifact scope surface with the §5 explicit Client/Agency-reusable
+// distinction).
+import { registerDomainPacksRoutes } from './domain-packs-routes.ts';
 // MKT-027: the /jobs FIELD EXECUTION routes (visit lifecycle, structured
 // outcomes, evidence capture, follow-up and the policy-gated continuity
 // lookup — JOB-001 field subset + EVID-001 field subset, JOB-AC-03..04).
@@ -176,5 +182,16 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // or delete routes: registry versions and invocation history are
   // immutable.
   registerExtensionsRoutes(router, services, modules);
+
+  // MKT-036: the /domain-packs surfaces — the immutable versioned pack
+  // registry (publish/list/read with §4 workflow-template conformance at
+  // publication), the install lifecycle (installed ⇄ disabled + terminal
+  // uninstall, scope server-derived from the canonical workspace
+  // ownership, dependency checks, idempotent install convergence) and the
+  // artifact scope surface (workspace listing, the agency-reusable-only
+  // agency listing, and the boundary-checked by-id read). NO update or
+  // delete routes: registry versions, install history and artifact scope
+  // records are immutable/append-only.
+  registerDomainPacksRoutes(router, services, modules);
   return router;
 }
