@@ -106,6 +106,16 @@ import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
 // (the jobs-visits-routes.ts precedent: one authority, multiple route
 // families — the agency-scoped Command Center family arrives with MKT-029).
 import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-routes.ts';
+// MKT-037: the CREATOR OPERATIONS DOMAIN PACK routes (CREATOR-001 — the
+// pack-owned Client-scoped subject surface, the approval-gated outbound
+// conversation sends and content publication, the human approval records,
+// the observation mapping into the common evidence/metric ledgers, the
+// TaskProfile provisioning through the /ai-runtime authority and the
+// frozen pack-manifest publication through the /domain-packs framework —
+// CREATOR-AC-01..06). Thin delegation over the SAME composition-root-wired
+// pack service; every mutation resolves the canonical owner from durable
+// pack-owned rows BEFORE authorize/validate/execute.
+import { registerCreatorOperationsRoutes } from './creator-operations-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -227,5 +237,6 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // ever appear in this family (the decision room is a read surface, not
   // a write authority — UI-AC-02).
   registerReportingDecisionRoomRoutes(router, services, modules);
+  registerCreatorOperationsRoutes(router, services, modules);
   return router;
 }

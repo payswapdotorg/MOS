@@ -293,6 +293,10 @@ import { createExtensionsModule } from './modules/extensions/public.ts';
 // MKT-036: /domain-packs — the versioned Domain Pack framework
 // (PACK-001).
 import { createDomainPacksModule } from './modules/domain-packs/public.ts';
+// MKT-037: the Creator Operations Domain Pack (CREATOR-001) — composed
+// through the /domain-packs public entry (the pack's structural ports are
+// satisfied by the concrete module public-contract instances here).
+import { createCreatorOperationsPack } from './modules/domain-packs/public.ts';
 // MKT-030: /reporting — read-side reporting (UI-001 — the Client Decision
 // Room live aggregation over the composed authorities' public contracts).
 import { createReportingModule } from './modules/reporting/public.ts';
@@ -592,6 +596,33 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // architecture tests).
   const domainPacks = createDomainPacksModule({ db, clock, ids });
 
+  // MKT-037: the Creator Operations Domain Pack (CREATOR-001) — the first
+  // business pack composed through the framework. The pack service composes
+  // the platform authorities through the NARROW STRUCTURAL PORTS of its
+  // contract (the /metrics ownership-port precedent): canonical /clients
+  // ownership resolution before every write, the /evidence + /metrics append
+  // surfaces for the §7 observation mapping (the pack owns the mapping, not a
+  // parallel store), the /policies fail-closed evaluation surface for the
+  // CREATOR-AC-06 conversation-send/content-publish approval gates, the
+  // /ai-runtime TaskProfile creation surface for the §5 AI task classes
+  // (consumed through the platform AI Router, never provider model calls)
+  // and the SAME-MODULE /domain-packs framework authority for the frozen
+  // pack-manifest publication. The wiring here is the type-level proof that
+  // the real public-contract instances satisfy the ports. The pack-owned
+  // subject rows live in migration 031 (the number reserved for
+  // this Work Item); no second tenant/authority table is created anywhere.
+  const creatorOperations = createCreatorOperationsPack({
+    db,
+    clock,
+    ids,
+    domainPacks,
+    clients,
+    evidence,
+    metrics: metricsModule,
+    policies,
+    aiRuntime,
+  });
+
   // MKT-030: /reporting — the read-side Client Decision Room (UI-001). A
   // PURE LIVE AGGREGATION over the composed authorities' public contracts:
   // platform clock + the frozen-matrix-allowed /goals, /workflows,
@@ -599,7 +630,8 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // and /metrics stay unused allowed directions — the MKT-029 agency-scoped
   // family may compose them later through the same public entry). The
   // module owns NO durable state: no projection tables, nothing to migrate
-  // or rebuild (migration 031 stays RESERVED and unused by design), and no
+  // or rebuild (migration 032 stays RESERVED for a future Work Item — 031
+  // is the Creator Operations pack schema of MKT-037), and no
   // db/ids are wired because there is no write path of any kind. The
   // Client/Workspace scope arrives as SERVER-DERIVED data resolved by the
   // route layer (canonical /clients ownership + /workspaces enumeration —
@@ -639,7 +671,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, reporting },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting },
   };
 }
 
