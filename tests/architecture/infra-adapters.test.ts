@@ -534,6 +534,19 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // with the structural client/agency-reusable distinction and the
     // append-only + consistency fences (PACK-001, PACK-AC-01..03).
     '030_domain_packs.sql',
+    // MKT-037 (Creator Operations Domain Pack) appends the
+    // creator-operations migration (031 — the number is RESERVED for this
+    // Work Item): the pack-owned, Client-scoped subject tables of the
+    // Creator Operations Domain Pack (creator profiles/accounts/fans/
+    // conversations + messages/content assets/offers) plus the
+    // append-only creator_operation_approvals human-approval records —
+    // every row FK-scoped to the EXISTING agencies/clients tables with
+    // scope-chain triggers, append-only/immutability triggers, the frozen
+    // lifecycle tables and the §21 material-key backstops; NO tenant,
+    // workflow, execution, evidence, metric, credential, job, policy or
+    // audit table is created (the pack maps observations into the COMMON
+    // /evidence + /metrics authorities — CREATOR-AC-01/AC-02/AC-06).
+    '031_creator_operations.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

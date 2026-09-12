@@ -593,3 +593,147 @@ export {
   domainPackCreateFingerprint,
   payloadHasNoDomainPackMaterialKeys,
 } from './internal/store.ts';
+
+// ---------------------------------------------------------------------------
+// MKT-037: the Creator Operations Domain Pack (CREATOR-001)
+// ---------------------------------------------------------------------------
+
+/**
+ * The Creator Operations Domain Pack — the first business pack composed
+ * through this framework (creator-operations-v1.3.md, FROZEN). Its
+ * surface is re-exported through THIS public entry (the module's only
+ * importable contract): the pack lives under internal/packs/ (pack-owned
+ * code, never a peer module), composes the platform authorities through
+ * the NARROW STRUCTURAL PORTS declared in its contract (satisfied by the
+ * concrete public-contract instances at the composition root — the
+ * /metrics ownership-port precedent) and publishes its frozen manifest
+ * through the framework surface above. The framework itself stays
+ * execution-machinery-free: pack workflows materialize as Workflow
+ * Definitions only through the /workflows authority and execute only
+ * through the existing Workflow/Execution authorities; pack AI tasks
+ * register as TaskProfiles of the /ai-runtime authority; pack human work
+ * rides the generic Human Agent Job model of /jobs; pack observations
+ * map into the common evidence and metric ledgers; sensitive side
+ * effects pass the fail-closed policy gate with configurable pack-owned
+ * human approval records (CREATOR-AC-01..06).
+ */
+export { createCreatorOperationsPack } from './internal/packs/creator-operations/module.ts';
+export {
+  CREATOR_OPERATIONS_PACK_MANIFEST,
+  CREATOR_PACK_SPECIALIZATIONS,
+  CREATOR_TASK_PROFILE_DECLARATIONS,
+  CREATOR_WORKFLOW_TEMPLATES,
+} from './internal/packs/creator-operations/manifest.ts';
+export {
+  creatorEnforcementOutcome,
+  isLegalCreatorAccountTransition,
+  isLegalCreatorContentTransition,
+  isLegalCreatorConversationTransition,
+  isLegalCreatorFanTransition,
+  isLegalCreatorOfferTransition,
+} from './internal/packs/creator-operations/contract.ts';
+export {
+  CREATOR_ACCOUNT_STATUSES,
+  CREATOR_ACCOUNT_TERMINAL_STATUSES,
+  CREATOR_ACCOUNT_TRANSITIONS,
+  CREATOR_APPROVAL_DECISIONS,
+  CREATOR_CONTENT_KINDS,
+  CREATOR_CONTENT_STATUSES,
+  CREATOR_CONTENT_TERMINAL_STATUSES,
+  CREATOR_CONTENT_TRANSITIONS,
+  CREATOR_CONVERSATION_CHANNELS,
+  CREATOR_CONVERSATION_STATUSES,
+  CREATOR_CONVERSATION_TERMINAL_STATUSES,
+  CREATOR_CONVERSATION_TRANSITIONS,
+  CREATOR_FAN_STATUSES,
+  CREATOR_FAN_TERMINAL_STATUSES,
+  CREATOR_FAN_TIERS,
+  CREATOR_FAN_TRANSITIONS,
+  CREATOR_GATE_APPROVAL_ATTRIBUTE,
+  CREATOR_GATE_APPROVAL_STATUSES,
+  CREATOR_GATE_OPERATIONS,
+  CREATOR_GATE_POLICY_DIMENSION,
+  CREATOR_HUMAN_SPECIALIZATION_MIRROR,
+  CREATOR_METRIC_NAMES,
+  CREATOR_OBSERVATION_SUBJECT_KINDS,
+  CREATOR_OFFER_KINDS,
+  CREATOR_OFFER_STATUSES,
+  CREATOR_OFFER_TERMINAL_STATUSES,
+  CREATOR_OFFER_TRANSITIONS,
+  CREATOR_ROLE_SPECIALIZATIONS,
+} from './internal/packs/creator-operations/contract.ts';
+export type {
+  CreatorAccountRecord,
+  CreatorAccountRecordInput,
+  CreatorAccountStatus,
+  CreatorAiRuntimePort,
+  CreatorApprovalDecision,
+  CreatorApprovalRecordInput,
+  CreatorClientsPort,
+  CreatorClientOwnershipSnapshot,
+  CreatorContentAssetRecord,
+  CreatorContentAssetRecordInput,
+  CreatorContentKind,
+  CreatorContentStatus,
+  CreatorConversationChannel,
+  CreatorConversationRecord,
+  CreatorConversationOpenInput,
+  CreatorConversationStatus,
+  CreatorEvidencePort,
+  CreatorEvidenceReceipt,
+  CreatorFanRecord,
+  CreatorFanRecordInput,
+  CreatorFanStatus,
+  CreatorFanTier,
+  CreatorGateApprovalStatus,
+  CreatorGateOperation,
+  CreatorHumanSpecialization,
+  CreatorMessageRecord,
+  CreatorMessageSendInput,
+  CreatorMetricName,
+  CreatorMetricReceipt,
+  CreatorMetricsPort,
+  CreatorObservationInput,
+  CreatorObservationReceipt,
+  CreatorObservationSubjectKind,
+  CreatorOfferRecord,
+  CreatorOfferRecordInput,
+  CreatorOfferStatus,
+  CreatorOfferKind,
+  CreatorOperationApprovalRecord,
+  CreatorOperationsPackApi,
+  CreatorOperationsPackDeps,
+  CreatorPolicyDecisionSnapshot,
+  CreatorPoliciesPort,
+  CreatorProfileRecord,
+  CreatorProfileRecordInput,
+  CreatorProvenance,
+  CreatorTaskProfileDeclaration,
+  CreatorTaskProfileProvisionReceipt,
+  CreatorTaskProfileReceipt,
+} from './internal/packs/creator-operations/contract.ts';
+/**
+ * The Creator Operations input guards (subject/lifecycle/observation/
+ * approval/provision validation with the §21 material-key backstop on
+ * every pack payload) — exported for unit tests and the route layer so
+ * the guard semantics are part of the pack contract. Pure functions.
+ */
+export {
+  assertValidCreatorAccountInput,
+  assertValidCreatorAccountStatusInput,
+  assertValidCreatorApprovalInput,
+  assertValidCreatorContentAssetInput,
+  assertValidCreatorContentTransitionInput,
+  assertValidCreatorConversationInput,
+  assertValidCreatorConversationStatusInput,
+  assertValidCreatorFanInput,
+  assertValidCreatorFanStatusInput,
+  assertValidCreatorMessageInput,
+  assertValidCreatorObservationInput,
+  assertValidCreatorOfferInput,
+  assertValidCreatorOfferStatusInput,
+  assertValidCreatorProfileInput,
+  assertValidCreatorProvenance,
+  assertValidCreatorTaskProfileProvisionInput,
+  creatorPayloadHasNoMaterialKeys,
+} from './internal/packs/creator-operations/guards.ts';

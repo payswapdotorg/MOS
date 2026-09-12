@@ -132,6 +132,11 @@ import type { ExtensionsModuleApi } from '../modules/extensions/public.ts';
 // MKT-036: /domain-packs module contract (versioned Domain Pack
 // framework — PACK-001).
 import type { DomainPacksModuleApi } from '../modules/domain-packs/public.ts';
+// MKT-037: the Creator Operations Domain Pack contract (CREATOR-001) —
+// the first business pack composed through the framework, exposed through
+// the same module public entry (pack service over the platform authorities
+// via the structural ports wired at the composition root).
+import type { CreatorOperationsPackApi } from '../modules/domain-packs/public.ts';
 // MKT-030: /reporting module contract (read-side reporting — the Client
 // Decision Room live aggregation over the composed authorities).
 import type { ReportingModuleApi } from '../modules/reporting/public.ts';
@@ -199,6 +204,13 @@ export interface ApplicationModules {
   // scope records with the §5 explicit Client/Agency-reusable
   // distinction).
   readonly domainPacks: DomainPacksModuleApi;
+
+  // MKT-037: the Creator Operations Domain Pack (CREATOR-001 — the
+  // pack-owned Client-scoped subject surface, the observation mapping
+  // into the common evidence/metric ledgers, the approval-gated outbound
+  // side effects, the AI TaskProfile declarations and the frozen pack
+  // manifest publication through the framework above).
+  readonly creatorOperations: CreatorOperationsPackApi;
 
   // MKT-030: read-side reporting authority (UI-001 — the Client Decision
   // Room live aggregation; the agency-scoped Command Center family of the
