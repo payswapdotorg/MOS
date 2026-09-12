@@ -140,6 +140,10 @@ import type { CreatorOperationsPackApi } from '../modules/domain-packs/public.ts
 // MKT-030: /reporting module contract (read-side reporting — the Client
 // Decision Room live aggregation over the composed authorities).
 import type { ReportingModuleApi } from '../modules/reporting/public.ts';
+// MKT-040: /deployments module contract (Marketing Cloud Deployment
+// control plane — DEPLOY-002; the structural-port wiring happens at the
+// composition root).
+import type { DeploymentsModuleApi } from '../modules/deployments/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -216,4 +220,13 @@ export interface ApplicationModules {
   // Room live aggregation; the agency-scoped Command Center family of the
   // SAME authority arrives with MKT-029). READ-ONLY by construction.
   readonly reporting: ReportingModuleApi;
+
+  // MKT-040: the Marketing Cloud Deployment control-plane authority
+  // (DEPLOY-002 — deployment intent/lifecycle: the immutable
+  // Playbook/Workflow version binding to authorized Client Workspaces,
+  // the activation gate, pause/resume/redeploy/rollback and the
+  // append-only deployment history; request-execution through the
+  // /executions public contract only — never a second workflow/execution
+  // engine).
+  readonly deployments: DeploymentsModuleApi;
 }

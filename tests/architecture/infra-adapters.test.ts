@@ -547,6 +547,20 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // audit table is created (the pack maps observations into the COMMON
     // /evidence + /metrics authorities — CREATOR-AC-01/AC-02/AC-06).
     '031_creator_operations.sql',
+    // MKT-040 (Marketing Cloud Deployment) appends the deployments
+    // migration (034 — the number is RESERVED for this Work Item; 032/033
+    // are reserved for sibling deliveries): the deployment identity
+    // records (scope chain + pinned immutable playbook/workflow version
+    // selection + policy reference + the closed runtime-class
+    // requirements with the infrastructure-identity backstop + trigger
+    // configuration) and the append-only deployment_events ledger
+    // (lifecycle/selection/validation/execution-request history with the
+    // idempotency fence) — the frozen lifecycle transition table, the
+    // version-selection-change fence (redeploy/rollback completion edges
+    // only) and the §21 material-key backstops are trigger-enforced; NO
+    // workflow, execution, evidence, policy or credential table is
+    // created (DEPLOY-002, DEPLOY-AC-03/05/06/09).
+    '034_deployments.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
