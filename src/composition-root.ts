@@ -277,6 +277,9 @@ import { createExtensionsModule } from './modules/extensions/public.ts';
 // MKT-036: /domain-packs — the versioned Domain Pack framework
 // (PACK-001).
 import { createDomainPacksModule } from './modules/domain-packs/public.ts';
+// MKT-030: /reporting — read-side reporting (UI-001 — the Client Decision
+// Room live aggregation over the composed authorities' public contracts).
+import { createReportingModule } from './modules/reporting/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -532,6 +535,28 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // NO execution path of its own (PACK-AC-02 — asserted by the static
   // architecture tests).
   const domainPacks = createDomainPacksModule({ db, clock, ids });
+
+  // MKT-030: /reporting — the read-side Client Decision Room (UI-001). A
+  // PURE LIVE AGGREGATION over the composed authorities' public contracts:
+  // platform clock + the frozen-matrix-allowed /goals, /workflows,
+  // /evidence, /experiments and /learnings dependencies ONLY (/executions
+  // and /metrics stay unused allowed directions — the MKT-029 agency-scoped
+  // family may compose them later through the same public entry). The
+  // module owns NO durable state: no projection tables, nothing to migrate
+  // or rebuild (migration 031 stays RESERVED and unused by design), and no
+  // db/ids are wired because there is no write path of any kind. The
+  // Client/Workspace scope arrives as SERVER-DERIVED data resolved by the
+  // route layer (canonical /clients ownership + /workspaces enumeration —
+  // matrix directions /reporting does not hold; the /agents and
+  // /domain-packs scope-as-data posture).
+  const reporting = createReportingModule({
+    clock,
+    goals,
+    workflows,
+    evidence,
+    experiments,
+    learnings,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -558,7 +583,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, extensions, domainPacks },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, extensions, domainPacks, reporting },
   };
 }
 
