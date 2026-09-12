@@ -12,7 +12,8 @@
  * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
  * Capability contract routes + MKT-021 execution policy engine routes
  * + MKT-022 extension registry and manifest contract routes
- * + MKT-031 Field Agent work-queue routes).
+ * + MKT-031 Field Agent work-queue routes + MKT-032 Extension Developer
+ * Portal routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -106,6 +107,16 @@ import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
 // (the jobs-visits-routes.ts precedent: one authority, multiple route
 // families — the agency-scoped Command Center family arrives with MKT-029).
 import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-routes.ts';
+// MKT-032: the EXTENSION DEVELOPER PORTAL routes (UI-003 — the developer/
+// reviewer/installer surface family over the SAME /extensions authority
+// (MKT-022) composed with the /policies permission-approval authority:
+// publication, version history/compatibility, the testing hook (the
+// authority's invocation path), permission review (delegated
+// extension-dimension policy declarations), the workspace install family
+// and version management (pinning structural, explicit upgrades). Thin
+// delegation only — the jobs-queue-routes.ts precedent: one authority,
+// multiple route families; the portal owns NO state of its own).
+import { registerExtensionPortalRoutes } from './extension-portal-routes.ts';
 // MKT-037: the CREATOR OPERATIONS DOMAIN PACK routes (CREATOR-001 — the
 // pack-owned Client-scoped subject surface, the approval-gated outbound
 // conversation sends and content publication, the human approval records,
@@ -237,6 +248,23 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // ever appear in this family (the decision room is a read surface, not
   // a write authority — UI-AC-02).
   registerReportingDecisionRoomRoutes(router, services, modules);
+
+  // MKT-032: the EXTENSION DEVELOPER PORTAL surface family over the
+  // /extensions authority (MKT-022) + the /policies permission-approval
+  // authority — publication (the frozen platform_developer role), the
+  // developer catalog/version history/compatibility records, the TESTING
+  // hook (a thin pass-through to beginExtensionInvocation — never a
+  // second execution engine), the permission-review view + reviewer
+  // actions (delegated extension-dimension policy declarations; the
+  // surface never evaluates permissions), the workspace install/configure/
+  // authorize/disable/uninstall family (converging with the direct
+  // MKT-022 surface) and version management (structural pinning + the
+  // explicit, disclosed-as-non-atomic upgrade orchestration). NO update
+  // or delete routes: registry versions, review history and invocation
+  // history are immutable/append-only at the authorities.
+  registerExtensionPortalRoutes(router, services, modules);
+  // MKT-037: the Creator Operations pack surface (thin delegation — see
+  // the import block above).
   registerCreatorOperationsRoutes(router, services, modules);
   return router;
 }
