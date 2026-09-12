@@ -104,6 +104,9 @@ import type { PoliciesModuleApi } from '../modules/policies/public.ts';
 // MKT-022: /extensions module contract (extension registry and manifest
 // contract).
 import type { ExtensionsModuleApi } from '../modules/extensions/public.ts';
+// MKT-036: /domain-packs module contract (versioned Domain Pack
+// framework — PACK-001).
+import type { DomainPacksModuleApi } from '../modules/domain-packs/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -154,4 +157,11 @@ export interface ApplicationModules {
   // install/configure lifecycle, the short-lived invocation context
   // and the append-only invocation ledger).
   readonly extensions: ExtensionsModuleApi;
+
+  // MKT-036: Domain Pack registry/composition authority (PACK-001 — the
+  // immutable versioned pack registry, the installed-version records
+  // against the authorized Workspace/Client context, and the artifact
+  // scope records with the §5 explicit Client/Agency-reusable
+  // distinction).
+  readonly domainPacks: DomainPacksModuleApi;
 }

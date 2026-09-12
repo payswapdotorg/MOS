@@ -271,6 +271,9 @@ import { createPoliciesModule } from './modules/policies/public.ts';
 // MKT-022: /extensions — the extension registry and manifest contract
 // (EXT-001).
 import { createExtensionsModule } from './modules/extensions/public.ts';
+// MKT-036: /domain-packs — the versioned Domain Pack framework
+// (PACK-001).
+import { createDomainPacksModule } from './modules/domain-packs/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -486,6 +489,23 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // NO /evidence dependency: workflow state and evidence provenance are
   // structurally unreachable from /extensions (EXT-AC-03/EXT-AC-04).
   const extensions = createExtensionsModule({ db, clock, ids, executions, policies, credentials });
+
+  // MKT-036: /domain-packs — the versioned Domain Pack framework
+  // (PACK-001). The frozen matrix allows /domain-packs sixteen module
+  // dependencies, but the FRAMEWORK composes NONE at module level (the
+  // /agents precedent of deliberately-unused allowances): the install
+  // scope arrives as SERVER-DERIVED data from the routes (canonical
+  // /workspaces owner resolution, exactly the /extensions scope-as-data
+  // posture), and pack workflow-template conformance is validated
+  // through the PURE /workflows §4 definition validator imported inside
+  // the module's store (the ONLY cross-module import — matrix-allowed).
+  // Runtime composition with the Execution, Evidence, AI Router,
+  // Credential, Policy and Audit authorities happens when pack workflows
+  // EXECUTE through /workflows + /executions (MKT-008/MKT-010/MKT-017/
+  // MKT-005/MKT-021/MKT-006), never inside the framework: the module has
+  // NO execution path of its own (PACK-AC-02 — asserted by the static
+  // architecture tests).
+  const domainPacks = createDomainPacksModule({ db, clock, ids });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -512,7 +532,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, aiRuntime, fieldAgents, jobs, agents, policies, extensions, domainPacks },
   };
 }
 

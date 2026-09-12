@@ -504,6 +504,16 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // invocation ledger with the execution-scope consistency fence and
     // the TTL bound (EXT-001, EXT-AC-01..04).
     '028_extensions.sql',
+    // MKT-036 (Versioned Domain Pack framework) appends the domain-pack
+    // migration (030 — the number is RESERVED for this Work Item; 029 is
+    // reserved for a sibling): the immutable versioned pack registry
+    // (publisher/key/version fence, closed 14-kind artifact + §5 scope
+    // CHECKs, §21 material-key backstops), the installed-version records
+    // (scope-chain fences, frozen installed ⇄ disabled + terminal
+    // uninstall lifecycle) and the per-install artifact scope records
+    // with the structural client/agency-reusable distinction and the
+    // append-only + consistency fences (PACK-001, PACK-AC-01..03).
+    '030_domain_packs.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
