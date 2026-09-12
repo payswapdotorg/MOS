@@ -490,22 +490,26 @@ async function connectAndAwait(connectionId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Route-level surface (the real HTTP stack; the deployment registry now
 // carries the MKT-024 FIRST-PARTY CONNECTORS — meta-ads, google-ads,
-// generic-analytics, crm, commerce-cms — registered as DATA at the
-// composition root. The deeper behavioral proof of THOSE adapters against
-// a sandbox provider lives in integrations-connectors.test.ts.)
+// generic-analytics, crm, commerce-cms — plus the MKT-038 creator-platform
+// connector, all registered as DATA at the composition root. The deeper
+// behavioral proof of THOSE adapters against a sandbox provider lives in
+// integrations-connectors.test.ts and creator-operations-provider-e2e.test.ts.)
 // ---------------------------------------------------------------------------
 
-test('INT-001 ROUTE: the adapter registry surface is honest data — the MKT-024 first-party set', async () => {
+test('INT-001 ROUTE: the adapter registry surface is honest data — the first-party set (MKT-024 five + the MKT-038 creator connector)', async () => {
   const response = await apiCall(port(), '/api/integrations/adapters', {
     token: aliceTokenValue,
   });
   assert.equal(response.status, 200);
   const adapters = response.body['adapters'] as Record<string, unknown>[];
-  // Exactly the five first-party connectors, no more (the registry is
+  // Exactly the six first-party connectors, no more (the registry is
   // injected DATA; the MKT-023 stubs never reach the deployment registry).
+  // MKT-038 appends the creator-platform connector to the MKT-024 five —
+  // the additive composition-root DATA evolution the frozen boundary
+  // documents.
   assert.deepEqual(
     adapters.map((adapter) => adapter['adapterKey']).sort(),
-    ['commerce-cms', 'crm', 'generic-analytics', 'google-ads', 'meta-ads'],
+    ['commerce-cms', 'creator-platform', 'crm', 'generic-analytics', 'google-ads', 'meta-ads'],
   );
   // Every entry is the provider-neutral honest shape: label + description
   // + capabilities (the discovery surface callers pick from).

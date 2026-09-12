@@ -55,12 +55,21 @@
  *      every DTO rejects identity/scope/lifecycle/provenance authority
  *      fields and material-shaped keys, and the approver identity of
  *      every human approval is SERVER-DERIVED from the authenticated
- *      principal.
+ *      principal;
+ *   8. MKT-038 CREATOR-AC-05 (static, extended): the creator-platform
+ *      provider adapter seam — the provider-specific logic (URLs, fetch
+ *      egress, payload munging, the signature header) lives ONLY inside
+ *      the adapter subtree behind the /integrations boundary and is
+ *      wired ONLY at the composition root as DATA; the adapter declares
+ *      EXACTLY the seven §6 normalized capabilities the pack declared
+ *      (the binding ↔ capability mapping is data); the pack, the routes
+ *      and every core domain import only contracts — nothing imports the
+ *      concrete adapter outside the composition root.
  */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -506,3 +515,179 @@ test('every creator mutation route audits and the pack module resolves the Clien
   assert.ok(packModule.includes('resolveClientChain('));
   assert.ok(packModule.includes('ownership.client.status !== \'active\''));
 });
+
+// ---------------------------------------------------------------------------
+// 8. MKT-038 — CREATOR-AC-05 (static, extended): the creator-platform
+//    provider adapter seam. The provider-specific creator-platform logic
+//    (URLs, fetch egress, payload munging, signature verification shapes)
+//    exists ONLY inside the adapter subtree behind the /integrations
+//    boundary; the pack and every core domain import/reroute only
+//    contracts and label DATA.
+// ---------------------------------------------------------------------------
+
+const repoSrc = join(repoRoot, 'src');
+const creatorAdapterDir = join(repoSrc, 'modules', 'integrations', 'internal', 'adapters', 'creator-platform');
+const creatorAdapterFile = join(creatorAdapterDir, 'creator-platform-adapter.ts');
+
+/** Walks every .ts file under src/ (node_modules/.git excluded). */
+function walkSrc(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkSrc(abs));
+    else if (entry.name.endsWith('.ts')) out.push(abs);
+  }
+  return out;
+}
+
+/** Strips comments so token checks never match documentation examples. */
+function stripSourceComments(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/([^:'" ])\/\/[^\n]*/g, '$1');
+}
+
+test('MKT-038 CREATOR-AC-05 static: the creator-platform connector exists under the sanctioned adapter home and implements the generic port with ONLY allowed imports', () => {
+  assert.ok(existsSync(creatorAdapterDir), 'the creator-platform connector subtree exists under internal/adapters/creator-platform/');
+  const adapterSource = readFileSync(creatorAdapterFile, 'utf8');
+  assert.ok(
+    adapterSource.includes('implements IntegrationAdapter'),
+    'the creator-platform connector implements the generic IntegrationAdapter port',
+  );
+  // The exact allowed import set of the MKT-024 connector pattern: the
+  // /integrations PUBLIC entry (the PORT), the shared provider-neutral
+  // adapter support module and the platform HttpCallPort — nothing else
+  // (no provider SDK, no cross-module import, no application-layer import,
+  // no adapter→adapter import).
+  const allowedImports = new Set([
+    '../../../public.ts',
+    '../../adapter-support.ts',
+    '../../../../../platform/http/outbound.ts',
+  ]);
+  for (const specifier of importSpecifiers(adapterSource)) {
+    if (specifier.startsWith('node:')) continue;
+    assert.ok(
+      allowedImports.has(specifier),
+      `the creator-platform adapter may import ONLY the port contract, the shared adapter support and the platform HttpCallPort — found '${specifier}'`,
+    );
+  }
+  // Egress rides the shared bounded JSON helper over the platform
+  // HttpCallPort (no provider SDK, no raw fetch).
+  assert.ok(adapterSource.includes('callProviderJson'), 'provider egress flows through the shared bounded HttpCallPort helper');
+  assert.ok(!adapterSource.includes('fetch('), 'the adapter never performs raw fetch calls');
+  // Webhook authenticity rides the shared HMAC primitive with the
+  // provider-specific header name + normalized event type as the ONLY
+  // provider specifics (the shared first-party convention).
+  assert.ok(adapterSource.includes('verifyHmacWebhookDelivery'));
+  assert.ok(adapterSource.includes("'x-creator-signature'"));
+});
+
+test('MKT-038 CREATOR-AC-05 static: the adapter declares EXACTLY the seven §6 normalized capabilities the pack declared — the §6 binding ↔ capability mapping is DATA', () => {
+  const adapterSource = readFileSync(creatorAdapterFile, 'utf8');
+  const packManifestSource = read(
+    'src', 'modules', 'domain-packs', 'internal', 'packs', 'creator-operations', 'manifest.ts',
+  );
+  // The frozen one-to-one mapping: every §6 integration-binding artifact of
+  // the pack maps to an adapter capabilityKey (name-for-name, snake_case ↔
+  // kebab-case) — the pack carries provider-neutral labels, the adapter
+  // carries the provider shapes behind the boundary.
+  const packBindingToAdapterCapability: ReadonlyArray<readonly [string, string]> = [
+    ['read_creator_account_metrics', 'read-creator-account-metrics'],
+    ['read_audience_fan_records', 'read-audience-fan-records'],
+    ['read_conversations_events', 'read-conversations-events'],
+    ['send_approved_communication', 'send-approved-communication'],
+    ['publish_approved_content', 'publish-approved-content'],
+    ['read_monetization_observations', 'read-monetization-observations'],
+    ['receive_provider_events', 'receive-provider-events'],
+  ];
+  for (const [binding, capabilityKey] of packBindingToAdapterCapability) {
+    assert.ok(
+      packManifestSource.includes(`name: '${binding}'`),
+      `the pack declares the §6 integration-binding '${binding}'`,
+    );
+    assert.ok(
+      adapterSource.includes(`capabilityKey: '${capabilityKey}'`),
+      `the creator-platform adapter declares the matching capability '${capabilityKey}'`,
+    );
+  }
+  // Exactly seven capabilities — no more, no less.
+  assert.equal((adapterSource.match(/capabilityKey: '/g) ?? []).length, 7);
+  // The two outbound capabilities carry the gate labels of the pack's
+  // CREATOR-AC-06 sensitive actions in their DATA (the provider halves of
+  // the approval-gated side effects).
+  assert.ok(adapterSource.includes("operations: ['sendConversationMessage']"));
+  assert.ok(adapterSource.includes("operations: ['publishContentAsset']"));
+});
+
+test('MKT-038 CREATOR-AC-05 static: provider-shaped logic (adapter key, provider operations, provider URL shapes, signature header) lives ONLY inside the adapter subtree + the composition-root wiring', () => {
+  const allFiles = walkSrc(repoSrc);
+  const creatorProviderShapes = [
+    "'creator-platform'",
+    'sendConversationMessage',
+    'publishContentAsset',
+    'readAccountMetrics',
+    'readMonetizationEvents',
+    "'x-creator-signature'",
+    '/v1/creator/',
+    'creatorplatform.example.com',
+  ];
+  for (const file of allFiles) {
+    const relative = file.slice(repoSrc.length + 1);
+    const isAdapterFile = file.startsWith(join(repoSrc, 'modules', 'integrations', 'internal', 'adapters'));
+    const isCompositionRoot = relative === join('composition-root.ts');
+    // The adapter-contract re-export home documents the internal/adapters
+    // purpose (mentions the adapter home, never a provider shape).
+    if (isAdapterFile || isCompositionRoot) continue;
+    const code = stripSourceComments(readFileSync(file, 'utf8'));
+    for (const shape of creatorProviderShapes) {
+      assert.ok(
+        !code.includes(shape),
+        `${file}: creator-platform provider shape '${shape}' may exist only inside the adapter subtree (or the composition-root wiring)`,
+      );
+    }
+  }
+  // The composition root wires the connector as DATA on the platform
+  // HttpCallPort (the sixth first-party adapter — appended, no branch).
+  const wiring = read('src', 'composition-root.ts');
+  assert.ok(
+    wiring.includes('internal/adapters/creator-platform/creator-platform-adapter.ts'),
+    'the composition root imports the creator-platform connector (the sole sanctioned importer)',
+  );
+  assert.ok(
+    wiring.includes('new CreatorPlatformAdapter({ http: httpCalls })'),
+    'the composition root constructs the creator-platform adapter on the platform HttpCallPort and injects it as DATA',
+  );
+});
+
+test('MKT-038 CREATOR-AC-05 static: the pack, the creator routes and every core domain import ONLY contracts — nothing imports the creator adapter outside the composition root', () => {
+  const allFiles = walkSrc(repoSrc);
+  for (const file of allFiles) {
+    const relative = file.slice(repoSrc.length + 1);
+    if (relative === join('composition-root.ts')) continue;
+    for (const specifier of importSpecifiers(readFileSync(file, 'utf8'))) {
+      assert.ok(
+        !specifier.includes('creator-platform-adapter'),
+        `${file}: the concrete creator-platform adapter is importable only by the composition root — found '${specifier}'`,
+      );
+    }
+  }
+  // The pack itself carries zero provider coupling beyond the §6 label
+  // data: no integrations import of ANY kind (public or internal), no
+  // adapter reference, no connection/mutation surface.
+  for (const file of packFiles) {
+    const source = readFileSync(file, 'utf8');
+    assert.ok(
+      !source.includes('integrations/public.ts') && !source.includes('internal/adapters'),
+      `${file}: the pack never touches the integration boundary — the §6 bindings are label data, composed at the composition root`,
+    );
+  }
+  // No creator-platform adapterKey token in the pack or the routes (the
+  // registry key is injected data, never a code branch there).
+  for (const source of [packModule, packContract, creatorRoutes]) {
+    const code = stripSourceComments(source);
+    assert.ok(!code.includes("'creator-platform'"), 'the pack/routes must not branch on the creator-platform adapter key');
+  }
+});
+

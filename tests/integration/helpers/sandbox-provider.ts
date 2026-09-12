@@ -1,15 +1,17 @@
 /**
  * MKT-024 sandbox provider harness — an in-process loopback HTTP server
  * that stands in for the five first-party connector providers (Meta,
- * Google Ads, generic analytics, CRM, commerce/CMS).
+ * Google Ads, generic analytics, CRM, commerce/CMS) plus the MKT-038
+ * creator-platform connector.
  *
- * This is the "sandbox provider" of the MKT-024 acceptance ("real/sandbox
- * provider integration tests per connector"): NO real provider SDK, NO
- * external network. The REAL first-party adapter classes (wired in the
- * spawned API process by the composition root) make REAL HTTP calls
- * (fetch-based platform HttpCallPort, loopback permitted by the port
- * contract) against this server, which serves REPRESENTATIVE payload
- * fixtures shaped like the providers' responses.
+ * This is the "sandbox provider" of the MKT-024/MKT-038 acceptance
+ * ("real/sandbox provider integration tests per connector"; the MKT-038
+ * work order: "real or sandboxed"): NO real provider SDK, NO external
+ * network. The REAL first-party adapter classes (wired in the spawned API
+ * process by the composition root) make REAL HTTP calls (fetch-based
+ * platform HttpCallPort, loopback permitted by the port contract) against
+ * this server, which serves REPRESENTATIVE payload fixtures shaped like
+ * the providers' responses.
  *
  * Capabilities:
  *   - per-provider endpoints (probe + read + mutation + fixtures) with
@@ -26,7 +28,11 @@
  *     ZERO provider traffic);
  *   - HMAC signature helpers producing the webhook signature headers the
  *     adapters verify (X-Hub-Signature-256 / X-Analytics-Signature /
- *     X-Commerce-Signature).
+ *     X-Commerce-Signature / X-Creator-Signature);
+ *   - the MKT-038 creator-platform surface: fixture-backed account-metric /
+ *     fan / conversation / monetization reads, the send/publish mutation
+ *     endpoints (every received side effect is RECORDED so the E2E proof
+ *     asserts the exact provider-visible outcome of APPROVED operations).
  */
 
 import { createHmac } from 'node:crypto';
@@ -47,11 +53,15 @@ export interface SandboxProvider {
   setMode(provider: SandboxProviderName, mode: SandboxMode): void;
   /** The CRM upsert calls received (body + auth presence). */
   crmUpserts(): readonly { body: Record<string, unknown> }[];
+  /** The creator-platform message sends received (the provider-visible side effect). */
+  creatorSends(): readonly { path: string; body: Record<string, unknown> }[];
+  /** The creator-platform content publishes received (the provider-visible side effect). */
+  creatorPublishes(): readonly { body: Record<string, unknown> }[];
   /** Closes the server. */
   close(): Promise<void>;
 }
 
-export type SandboxProviderName = 'meta' | 'google-ads' | 'analytics' | 'crm' | 'commerce-cms';
+export type SandboxProviderName = 'meta' | 'google-ads' | 'analytics' | 'crm' | 'commerce-cms' | 'creator-platform';
 
 /** The expected bearer token per provider (set by the test; never logged). */
 export interface SandboxAuth {
@@ -60,13 +70,14 @@ export interface SandboxAuth {
 
 /** The webhook signature header for one provider's delivery shape. */
 export function sandboxWebhookSignature(
-  provider: 'meta' | 'analytics' | 'commerce-cms',
+  provider: 'meta' | 'analytics' | 'commerce-cms' | 'creator-platform',
   secret: string,
   payload: Record<string, unknown>,
 ): Record<string, string> {
   const mac = createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
   if (provider === 'meta') return { 'x-hub-signature-256': `sha256=${mac}` };
   if (provider === 'analytics') return { 'x-analytics-signature': mac };
+  if (provider === 'creator-platform') return { 'x-creator-signature': mac };
   return { 'x-commerce-signature': mac };
 }
 
@@ -166,6 +177,49 @@ export const SANDBOX_FIXTURES = {
       },
     ],
   },
+  // ----- MKT-038 creator-platform fixtures (representative shapes) -------
+  creatorAccountMetrics: {
+    rows: [
+      {
+        observedAt: '2026-04-01T00:00:00.000Z',
+        followerCount: 12480,
+        engagementCount: 3120,
+        revenueTotalCents: 485_000,
+      },
+    ],
+  },
+  creatorFans: {
+    fans: [
+      {
+        id: 'fan_771',
+        alias: 'top-fan-1',
+        tier: 'top_fan',
+        status: 'subscribed',
+        updatedAt: '2026-04-02T10:15:00.000Z',
+      },
+    ],
+  },
+  creatorConversations: {
+    conversations: [
+      {
+        id: 'conv_551',
+        fanId: 'fan_771',
+        channel: 'dm',
+        status: 'open',
+        lastMessageAt: '2026-04-03T08:44:00.000Z',
+        updatedAt: '2026-04-03T08:44:00.000Z',
+      },
+    ],
+  },
+  creatorMonetization: {
+    rows: [
+      {
+        observedAt: '2026-04-03T09:02:00.000Z',
+        amountCents: 19_99,
+        kind: 'tip',
+      },
+    ],
+  },
 } as const;
 
 const RATE_LIMIT_HEADERS: Record<string, string> = {
@@ -194,6 +248,8 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
   const requestCounts: Record<string, number> = {};
   const modes: Record<string, SandboxMode> = {};
   const upserts: { body: Record<string, unknown> }[] = [];
+  const creatorSendsLog: { path: string; body: Record<string, unknown> }[] = [];
+  const creatorPublishesLog: { body: Record<string, unknown> }[] = [];
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1');
@@ -208,7 +264,9 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
             ? 'crm'
             : path.startsWith('/commerce-cms/')
               ? 'commerce-cms'
-              : 'unknown';
+              : path.startsWith('/creator-platform/')
+                ? 'creator-platform'
+                : 'unknown';
     if (provider !== 'unknown') {
       requestCounts[provider] = (requestCounts[provider] ?? 0) + 1;
     }
@@ -226,7 +284,7 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
 
     const mode = modes[provider] ?? 'ok';
 
-    if (req.method === 'GET' && (path === '/meta/me' || path === '/analytics/health' || path === '/crm/v1/ping' || path === '/commerce-cms/health' || /^\/google-ads\/v16\/customers\/[^/]+$/.test(path))) {
+    if (req.method === 'GET' && (path === '/meta/me' || path === '/analytics/health' || path === '/crm/v1/ping' || path === '/commerce-cms/health' || /^\/google-ads\/v16\/customers\/[^/]+$/.test(path) || path === '/creator-platform/v1/creator/health')) {
       json(res, 200, { ok: true, id: 'sandbox' });
       return;
     }
@@ -302,6 +360,60 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
       return;
     }
 
+    // ----- MKT-038 creator-platform endpoints ------------------------------
+    // Reads: fixture-backed provider records (the exact normalized mapping
+    // is asserted by the E2E source-mapping stage).
+    if (req.method === 'GET' && /^\/creator-platform\/v1\/creator\/accounts\/[^/]+\/metrics$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { rows: [{ observedAt: '2026-04-01T00:00:00.000Z', followerCount: 'NaN' }] } : SANDBOX_FIXTURES.creatorAccountMetrics);
+      return;
+    }
+    if (req.method === 'GET' && /^\/creator-platform\/v1\/creator\/accounts\/[^/]+\/fans$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { fans: [{ alias: 'no-id' }] } : SANDBOX_FIXTURES.creatorFans);
+      return;
+    }
+    if (req.method === 'GET' && /^\/creator-platform\/v1\/creator\/accounts\/[^/]+\/conversations$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { conversations: [{ nope: 1 }] } : SANDBOX_FIXTURES.creatorConversations);
+      return;
+    }
+    if (req.method === 'GET' && /^\/creator-platform\/v1\/creator\/accounts\/[^/]+\/monetization$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { rows: [{ observedAt: 'not-a-date', amountCents: 100 }] } : SANDBOX_FIXTURES.creatorMonetization);
+      return;
+    }
+    // Mutations: the provider-visible APPROVED side effects — every
+    // received send/publish is RECORDED so the E2E proof asserts the exact
+    // provider-visible outcome (and the fail-closed negatives prove zero
+    // side effects happen without approval/policy allow).
+    if (req.method === 'POST' && /^\/creator-platform\/v1\/creator\/conversations\/[^/]+\/messages$/.test(path)) {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', () => {
+        let body: Record<string, unknown>;
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+        } catch {
+          body = { unparseable: true };
+        }
+        creatorSendsLog.push({ path, body });
+        json(res, 200, { id: `msg_${creatorSendsLog.length}`, status: 'delivered' });
+      });
+      return;
+    }
+    if (req.method === 'POST' && path === '/creator-platform/v1/creator/content') {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', () => {
+        let body: Record<string, unknown>;
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+        } catch {
+          body = { unparseable: true };
+        }
+        creatorPublishesLog.push({ body });
+        json(res, 200, { id: `post_${creatorPublishesLog.length + 880}`, status: 'published' });
+      });
+      return;
+    }
+
     json(res, 404, { error: 'unknown sandbox endpoint', path });
   });
 
@@ -317,6 +429,8 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
       modes[provider] = mode;
     },
     crmUpserts: () => [...upserts],
+    creatorSends: () => [...creatorSendsLog],
+    creatorPublishes: () => [...creatorPublishesLog],
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.close((error) => (error === undefined ? resolve() : reject(error)));

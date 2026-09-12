@@ -294,6 +294,20 @@ import { GoogleAdsAdapter } from './modules/integrations/internal/adapters/googl
 import { GenericAnalyticsAdapter } from './modules/integrations/internal/adapters/analytics/analytics-adapter.ts';
 import { CrmAdapter } from './modules/integrations/internal/adapters/crm/crm-adapter.ts';
 import { CommerceCmsAdapter } from './modules/integrations/internal/adapters/commerce/commerce-adapter.ts';
+// MKT-038: the CREATOR-PLATFORM CONNECTOR — the Creator Operations provider
+// integration proof (CREATOR-AC-05 + E2E-AC-02). The same first-party pattern
+// as the MKT-024 five: a concrete adapter under the sanctioned
+// internal/adapters/** home, imported HERE ONLY (CONCRETE_ADAPTER_ACCESS),
+// constructed on the platform HttpCallPort, injected as DATA below. The
+// adapter exposes the seven normalized creator capabilities the MKT-037
+// pack declared as §6 integration-bindings (the pack carries the
+// provider-neutral labels; the provider shapes live only in the adapter
+// subtree); its two mutation capabilities are the provider halves of the
+// pack's CREATOR-AC-06 approval-gated side effects and are themselves
+// fail-closed policy-gated by the /integrations module on every invocation.
+// Sandboxed/loopback endpoints arrive as non-secret providerConfig data
+// exactly like the MKT-024 connectors.
+import { CreatorPlatformAdapter } from './modules/integrations/internal/adapters/creator-platform/creator-platform-adapter.ts';
 // MKT-022: /extensions — the extension registry and manifest contract
 // (EXT-001).
 import { createExtensionsModule } from './modules/extensions/public.ts';
@@ -584,11 +598,13 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // integrations — verified by tools/arch-check). The ADAPTER SET is
   // injected DATA: MKT-024 registers the FIRST-PARTY CONNECTORS — Meta
   // (Marketing API), Google Ads, generic analytics, CRM (with the
-  // contact-sync mutation) and commerce/CMS — all constructed on the
-  // platform HttpCallPort (httpCalls, fetch-based, NO provider SDK). The
-  // registry is validated at construction and contains no provider
+  // contact-sync mutation) and commerce/CMS — and MKT-038 appends the
+  // CREATOR-PLATFORM CONNECTOR (the creator-operations provider seam the
+  // MKT-037 pack's §6 integration-bindings bind to) — all constructed on
+  // the platform HttpCallPort (httpCalls, fetch-based, NO provider SDK).
+  // The registry is validated at construction and contains no provider
   // branches; later Work Items add connectors by appending DATA here
-  // (MKT-022 extension-registry integrations, MKT-038 creator providers).
+  // (MKT-022 extension-registry integrations).
   const integrations = createIntegrationsModule({
     db,
     clock,
@@ -603,6 +619,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       new GenericAnalyticsAdapter({ http: httpCalls }),
       new CrmAdapter({ http: httpCalls }),
       new CommerceCmsAdapter({ http: httpCalls }),
+      new CreatorPlatformAdapter({ http: httpCalls }),
     ],
   });
 
