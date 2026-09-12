@@ -1,0 +1,47 @@
+{
+  "architectureVersion": "1.5",
+  "status": "FROZEN",
+  "supersedes": "1.4",
+  "product": "MOS",
+  "newCapabilities": [
+    "operating-graph",
+    "decision-ledger",
+    "profit-intelligence",
+    "client-operating-memory",
+    "ai-operator",
+    "sales-to-delivery-continuity",
+    "app-ecosystem"
+  ],
+  "singularAuthorities": [
+    "client",
+    "workspace",
+    "goal",
+    "playbook",
+    "deployment",
+    "workflow",
+    "task",
+    "execution",
+    "evidence",
+    "experiment",
+    "learning",
+    "policy",
+    "credential",
+    "job"
+  ],
+  "appRules": {
+    "publishedVersionsImmutable": true,
+    "boundedAppStateAllowed": true,
+    "directCoreDatabaseWrites": false,
+    "serverDerivedPermissions": true,
+    "historicalInvocationsKeepVersion": true,
+    "communityPublishing": true,
+    "certificationLevels": ["UNVERIFIED", "COMMUNITY_VERIFIED", "MOS_CERTIFIED"]
+  },
+  "requiredDocuments": [
+    "spec/change-request-005.md",
+    "spec/architecture-lock-v1.5.md",
+    "spec/mos-app-ecosystem-v1.5.md",
+    "spec/operating-graph-v1.5.md",
+    "spec/effective-backlog-v1.5.md"
+  ]
+}
