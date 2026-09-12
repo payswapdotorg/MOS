@@ -230,9 +230,12 @@ const nullableTerritoryField: FieldSpec<{ kind: string; value: string } | null> 
 //   2. the FULL record (commissioning member | accepted agent): the
 //      governed scope, because the commissioning side owns it and the
 //      accepted agent holds the current authorized Job scope.
+// Exported for the MKT-031 work-queue surface (jobs-queue-routes.ts): the
+// queue composes the SAME serializers so its responses are byte-identical
+// to the direct surface's — one /jobs authority, one response vocabulary.
 // ---------------------------------------------------------------------------
 
-function serializeDescriptor(job: JobRecord): Record<string, unknown> {
+export function serializeDescriptor(job: JobRecord): Record<string, unknown> {
   return {
     jobId: job.jobId,
     title: job.title,
@@ -258,7 +261,7 @@ function serializeTerritory(territory: { kind: string; value: string }): Record<
   return { kind: territory.kind, value: territory.value };
 }
 
-function serializeJob(job: JobRecord): Record<string, unknown> {
+export function serializeJob(job: JobRecord): Record<string, unknown> {
   return {
     jobId: job.jobId,
     workflowInstanceId: job.workflowInstanceId,
@@ -298,8 +301,8 @@ function serializeJob(job: JobRecord): Record<string, unknown> {
   };
 }
 
-/** The commissioning-side offer view (candidate identity included). */
-function serializeOfferForCommissioning(offer: JobOfferRecord): Record<string, unknown> {
+/** The commissioning-side offer view (candidate identity included; shared by the MKT-031 queue claim responses). */
+export function serializeOfferForCommissioning(offer: JobOfferRecord): Record<string, unknown> {
   return {
     offerId: offer.jobOfferId,
     jobId: offer.jobId,
@@ -317,7 +320,7 @@ function serializeOfferForCommissioning(offer: JobOfferRecord): Record<string, u
 }
 
 /** The candidate-side offer view: offer terms + the job DESCRIPTOR only. */
-function serializeOfferForCandidate(
+export function serializeOfferForCandidate(
   offer: JobOfferRecord,
   job: JobRecord,
 ): Record<string, unknown> {
@@ -429,8 +432,11 @@ export async function canReadFullJob(
  * holding a Human Agent profile (resolved through the merged /field-agents
  * authority). Returns the profile's agent id (null when absent — the
  * caller throws the 403: the agent surface requires the agent identity).
+ * Exported for the MKT-031 work-queue surface (jobs-queue-routes.ts): the
+ * queue composes the SAME agent posture as the marketplace (one /jobs
+ * authorization surface, never a second permission engine).
  */
-async function activeAgentIdFor(
+export async function activeAgentIdFor(
   modules: ApplicationModules,
   principal: Principal,
 ): Promise<string | null> {

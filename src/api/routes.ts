@@ -5,11 +5,14 @@
  * Playbook domain routes + MKT-008 Workflow definition routes + MKT-009
  * Workflow instance state machine routes + MKT-010 Execution lifecycle
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
- * routes + MKT-014 Metric normalization routes + MKT-017 AI runtime
+ * routes + MKT-014 Metric normalization routes + MKT-015 Experiment model
+ * routes + MKT-016 Learning model routes + MKT-017 AI runtime
  * registry routes — TaskProfiles, model registry, usage telemetry,
  * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes,
  * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
- * Capability contract routes + MKT-021 execution policy engine routes).
+ * Capability contract routes + MKT-021 execution policy engine routes
+ * + MKT-022 extension registry and manifest contract routes
+ * + MKT-031 Field Agent work-queue routes).
  *
  * One Router instance serves every module surface; each register* function
  * owns its /api/<module>/* prefix. The composition root builds the services
@@ -39,6 +42,13 @@ import { registerSandboxRoutes } from './sandbox-routes.ts';
 import { registerEvidenceRoutes } from './evidence-routes.ts';
 // MKT-014: metric normalization routes (METRIC-001).
 import { registerMetricsRoutes } from './metrics-routes.ts';
+// MKT-015: experiment model routes (EXP-001 — declaration, reads and the
+// frozen lifecycle transitions with the conclusion payload).
+import { registerExperimentsRoutes } from './experiments-routes.ts';
+// MKT-016: Learning model routes (LEARN-001 — appends, reads, the
+// contradiction/supersession/retirement relationships and the
+// append-only relationship history).
+import { registerLearningsRoutes } from './learnings-routes.ts';
 // MKT-017: /ai-runtime registry routes (TaskProfiles, model registry,
 // usage telemetry — AI-001).
 import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
@@ -65,12 +75,37 @@ import { registerPoliciesRoutes } from './policies-routes.ts';
 // normalized read/mutation execution surface through the adapter port,
 // and the append-only webhook/event ingestion surface + reads).
 import { registerIntegrationsRoutes } from './integrations-routes.ts';
+// MKT-022: the /extensions routes (EXT-001 — extension registry and
+// manifest contract: versioned immutable manifests, the install/configure
+// lifecycle, the short-lived invocation context and the append-only
+// invocation ledger).
+import { registerExtensionsRoutes } from './extensions-routes.ts';
+// MKT-036: the /domain-packs routes (PACK-001 — versioned Domain Pack
+// framework: the immutable versioned pack registry, the installed-version
+// records against the authorized Workspace/Client context, and the
+// artifact scope surface with the §5 explicit Client/Agency-reusable
+// distinction).
+import { registerDomainPacksRoutes } from './domain-packs-routes.ts';
 // MKT-027: the /jobs FIELD EXECUTION routes (visit lifecycle, structured
 // outcomes, evidence capture, follow-up and the policy-gated continuity
 // lookup — JOB-001 field subset + EVID-001 field subset, JOB-AC-03..04).
 // Same /api/jobs surface prefix, same authorization composition (the
 // shared posture helpers are exported from jobs-routes.ts).
 import { registerJobsVisitsRoutes } from './jobs-visits-routes.ts';
+// MKT-031: the /jobs FIELD AGENT WORK QUEUE routes (UI-002 — MY QUEUE,
+// territory/job discovery, queue acceptance/decline by offer id alone;
+// UI-AC-01..02). Thin delegation over the SAME /jobs + /field-agents
+// public contracts; registered BEFORE the :jobId-parameterized routes
+// because the literal 'queue' segment sits in the :jobId position.
+import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
+// MKT-030: the /reporting CLIENT DECISION ROOM routes (UI-001 — the
+// client-scoped read surface of the /reporting authority: WHAT HAPPENED,
+// WHY, EVIDENCE QUALITY, EXPERIMENTS, RECOMMENDATIONS and APPROVALS over
+// authoritative backend state; UI-AC-01..02). READ-ONLY by construction —
+// exactly one GET route, no body, no authority fields, scope server-derived
+// (the jobs-visits-routes.ts precedent: one authority, multiple route
+// families — the agency-scoped Command Center family arrives with MKT-029).
+import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -92,12 +127,35 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // routes: observations are append-only, METRIC-001; corrections are new
   // rows).
   registerMetricsRoutes(router, services, modules);
+  // MKT-015: experiments surface (declare / read / list + the explicit
+  // lifecycle transitions and the append-only history — NO update or
+  // delete routes: the declared design is immutable and lifecycle moves
+  // only through the frozen state machine, EXP-001).
+  registerExperimentsRoutes(router, services, modules);
+  // MKT-016: learnings surface (append / read / list + the explicit
+  // contradiction/supersession/retirement relationships and the
+  // append-only relationship history — NO update or delete routes:
+  // Learning rows are fully immutable and state changes are NEW
+  // relationship rows, LEARN-001/LEARN-AC-02).
+  registerLearningsRoutes(router, services, modules);
   // MKT-017: AI runtime registry surfaces.
   registerAiRuntimeRoutes(router, services, modules);
 
   // MKT-025: Human Agent profiles + availability/territory declaration +
   // job-eligibility lookup (profile data only — no Client data routes).
   registerFieldAgentsRoutes(router, services, modules);
+
+  // MKT-031: the Field Agent work-queue surface — MY QUEUE (open offers +
+  // accepted jobs with live status and derived evidence/outcome
+  // obligations), territory/job discovery (declared service areas + the
+  // eligibility-gated marketplace descriptors) and the queue claim
+  // surfaces (accept/decline by offer id alone, converging exactly with
+  // the direct /jobs surface). Registered BEFORE the /api/jobs/:jobId
+  // routes: the literal 'queue' segment sits in the :jobId position and
+  // the router resolves first-match-wins (exactly like marketplace and
+  // offers — /api/jobs/queue and /api/jobs/queue/offers/:offerId/accept
+  // must never be captured by the :jobId patterns).
+  registerJobsQueueRoutes(router, services, modules);
 
   // MKT-026: the Job marketplace boundary — Task projections (POST under
   // the workflow-instance path), the eligibility-gated marketplace listing
@@ -139,5 +197,35 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // ingested-event reads. NO delete route: the connection lifecycle has
   // no terminal state.
   registerIntegrationsRoutes(router, services, modules);
+  // MKT-022: the /extensions surfaces — the immutable versioned manifest
+  // registry (publish/list/read), the install/configure lifecycle (the
+  // frozen install state machine, least-privilege granted scopes,
+  // config-contract validation, secret bindings as credential
+  // references), the FAIL-CLOSED invocation endpoints (the short-lived
+  // context derived from the execution's canonical owner + policy
+  // posture) and the append-only invocation ledger (Observe). NO update
+  // or delete routes: registry versions and invocation history are
+  // immutable.
+  registerExtensionsRoutes(router, services, modules);
+
+  // MKT-036: the /domain-packs surfaces — the immutable versioned pack
+  // registry (publish/list/read with §4 workflow-template conformance at
+  // publication), the install lifecycle (installed ⇄ disabled + terminal
+  // uninstall, scope server-derived from the canonical workspace
+  // ownership, dependency checks, idempotent install convergence) and the
+  // artifact scope surface (workspace listing, the agency-reusable-only
+  // agency listing, and the boundary-checked by-id read). NO update or
+  // delete routes: registry versions, install history and artifact scope
+  // records are immutable/append-only.
+  registerDomainPacksRoutes(router, services, modules);
+
+  // MKT-030: the CLIENT DECISION ROOM surface of the /reporting authority
+  // — one GET route presenting the live-aggregated authoritative state
+  // (goals, learnings, evidence quality, experiments + decisions,
+  // approvals) for a client-scoped caller. Every mutating verb 405s at
+  // the router; the route reads no body; NO update/delete/POST routes can
+  // ever appear in this family (the decision room is a read surface, not
+  // a write authority — UI-AC-02).
+  registerReportingDecisionRoomRoutes(router, services, modules);
   return router;
 }

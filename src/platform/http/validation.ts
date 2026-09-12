@@ -68,7 +68,7 @@ export function optionalString(options: {
 }
 
 export function optionalRecordField(
-  options: { maxDepthKeys?: number } = {},
+  options: { maxDepthKeys?: number; forbiddenKeys?: ReadonlyArray<string> } = {},
 ): FieldSpec<Record<string, unknown> | undefined> {
   return {
     required: false,
@@ -79,7 +79,15 @@ export function optionalRecordField(
   };
 }
 
-export function recordField(options: { maxDepthKeys?: number } = {}): FieldSpec<Record<string, unknown>> {
+/**
+ * Free-form JSON object field (arbitrary keys preserved — e.g. contract or
+ * payload objects). Optional top-level `forbiddenKeys` rejection keeps
+ * authority/material-shaped keys out of otherwise-free payloads (the same
+ * rejection message as validateObject).
+ */
+export function recordField(
+  options: { maxDepthKeys?: number; forbiddenKeys?: ReadonlyArray<string> } = {},
+): FieldSpec<Record<string, unknown>> {
   return {
     required: true,
     parse: (value, problems) => {
@@ -90,6 +98,15 @@ export function recordField(options: { maxDepthKeys?: number } = {}): FieldSpec<
       const record = value as Record<string, unknown>;
       if (options.maxDepthKeys !== undefined && Object.keys(record).length > options.maxDepthKeys) {
         problems.push(`must have at most ${options.maxDepthKeys} keys`);
+      }
+      if (options.forbiddenKeys !== undefined) {
+        for (const forbidden of options.forbiddenKeys) {
+          if (forbidden in record) {
+            problems.push(
+              `${forbidden}: forbidden authority field; this value is derived server-side and must not be supplied`,
+            );
+          }
+        }
       }
       return record;
     },

@@ -198,6 +198,18 @@
  *     The /api registration adds jobs-visits-routes.ts under the same
  *     /api/jobs prefix. Migration 024_field_execution.sql is reserved for
  *     this Work Item (019/022 belong to sibling workers).
+ *
+ * MKT-031 additions (Field Agent work queue, UI-002 — UI-AC-01..02):
+ *   - NO new module and NO new dependency is wired: the work-queue API
+ *     surface (MY QUEUE, territory/job discovery, queue
+ *     acceptance/decline by offer id alone) is a THIN ROUTE-LAYER
+ *     composition over the SAME /jobs + /field-agents public contracts —
+ *     no queue engine, no state machine, no second matcher, no second
+ *     authority. The /api registration adds jobs-queue-routes.ts under
+ *     the same /api/jobs prefix (registered before the :jobId routes;
+ *     the shared posture helpers and serializers are exported from
+ *     jobs-routes.ts so both surfaces of the ONE /jobs authority answer
+ *     identically).
  */
 import fs from 'node:fs';
 import { loadConfig, type AppConfig } from './platform/config/config.ts';
@@ -243,6 +255,11 @@ import { createExecutionsModule } from './modules/executions/public.ts';
 import { createEvidenceModule } from './modules/evidence/public.ts';
 // MKT-014: /metrics module (METRIC-001).
 import { createMetricsModule } from './modules/metrics/public.ts';
+// MKT-015: /experiments module (EXP-001 — experiment design records).
+import { createExperimentsModule } from './modules/experiments/public.ts';
+// MKT-016: /learnings module (LEARN-001 — Learning records + the
+// contradiction/supersession/retirement relationship history).
+import { createLearningModule } from './modules/learnings/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -256,6 +273,15 @@ import { createAgentsModule } from './modules/agents/public.ts';
 import { createPoliciesModule } from './modules/policies/public.ts';
 // MKT-023: /integrations module (the provider integration boundary).
 import { createIntegrationsModule } from './modules/integrations/public.ts';
+// MKT-022: /extensions — the extension registry and manifest contract
+// (EXT-001).
+import { createExtensionsModule } from './modules/extensions/public.ts';
+// MKT-036: /domain-packs — the versioned Domain Pack framework
+// (PACK-001).
+import { createDomainPacksModule } from './modules/domain-packs/public.ts';
+// MKT-030: /reporting — read-side reporting (UI-001 — the Client Decision
+// Room live aggregation over the composed authorities' public contracts).
+import { createReportingModule } from './modules/reporting/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -393,6 +419,43 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // InMemoryMetrics instance also wired below.)
   const metricsModule = createMetricsModule({ db, clock, ids, evidence, clients, workspaces });
 
+  // MKT-015: /experiments — platform ports + the allowed /evidence
+  // dependency (frozen matrix: /experiments ──→ /evidence, /metrics,
+  // /goals; /evidence is the merged authority this Work Item consumes for
+  // conclusion evidence-citation validation — /metrics and /goals stay
+  // unused allowed directions: the frozen Experiment contract identifies
+  // metrics BY NAME + DIMENSIONS and needs no goal linkage) + the /clients
+  // and /workspaces canonical-ownership authorities injected through
+  // /experiments' declared STRUCTURAL PORTS: the real public-contract
+  // instances satisfy the port types structurally (TypeScript structural
+  // typing), so ownership resolution still executes THROUGH the exact
+  // /clients + /workspaces public-contract methods, server-side, with no
+  // forbidden module import.
+  const experiments = createExperimentsModule({ db, clock, ids, evidence, clients, workspaces });
+
+  // MKT-016: /learnings — platform ports + the allowed /evidence and
+  // /experiments dependencies (frozen matrix: /learnings ──→ /evidence,
+  // /experiments, /goals; the two merged authorities this Work Item
+  // consumes for supporting-reference validation — /evidence for the
+  // evidence citations + the shared §21 material-key backstop,
+  // /experiments for the CONCLUDED outcome references; /goals stays an
+  // unused allowed direction) + the /clients and /workspaces
+  // canonical-ownership authorities injected through /learnings'
+  // declared STRUCTURAL PORTS: the real public-contract instances satisfy
+  // the port types structurally (TypeScript structural typing), so
+  // ownership resolution still executes THROUGH the exact /clients +
+  // /workspaces public-contract methods, server-side, with no forbidden
+  // module import.
+  const learnings = createLearningModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    experiments,
+    clients,
+    workspaces,
+  });
+
   // MKT-017: /ai-runtime — the REGISTRY LAYER of the AI Runtime authority
   // (dependency matrix: /ai-runtime ──→ /executions — used exactly for
   // telemetry execution-reference validation; nothing else is imported:
@@ -475,6 +538,55 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     clientOwnership: clients,
     evidenceSink: evidence,
     adapters: [],
+  // MKT-022: /extensions — the extension registry and manifest contract
+  // (EXT-001). Frozen matrix dependencies wired: /executions (canonical
+  // execution ownership resolution for the invocation contract — the
+  // scope of every invocation context is the execution's canonical
+  // owner), /policies (the fail-closed extension-dimension 'install' and
+  // 'invoke' gates — only an explicit recorded 'allow' proceeds) and
+  // /credentials (configure-time secret-binding REFERENCE resolution —
+  // references only, never material). The module holds NO /workflows and
+  // NO /evidence dependency: workflow state and evidence provenance are
+  // structurally unreachable from /extensions (EXT-AC-03/EXT-AC-04).
+  const extensions = createExtensionsModule({ db, clock, ids, executions, policies, credentials });
+
+  // MKT-036: /domain-packs — the versioned Domain Pack framework
+  // (PACK-001). The frozen matrix allows /domain-packs sixteen module
+  // dependencies, but the FRAMEWORK composes NONE at module level (the
+  // /agents precedent of deliberately-unused allowances): the install
+  // scope arrives as SERVER-DERIVED data from the routes (canonical
+  // /workspaces owner resolution, exactly the /extensions scope-as-data
+  // posture), and pack workflow-template conformance is validated
+  // through the PURE /workflows §4 definition validator imported inside
+  // the module's store (the ONLY cross-module import — matrix-allowed).
+  // Runtime composition with the Execution, Evidence, AI Router,
+  // Credential, Policy and Audit authorities happens when pack workflows
+  // EXECUTE through /workflows + /executions (MKT-008/MKT-010/MKT-017/
+  // MKT-005/MKT-021/MKT-006), never inside the framework: the module has
+  // NO execution path of its own (PACK-AC-02 — asserted by the static
+  // architecture tests).
+  const domainPacks = createDomainPacksModule({ db, clock, ids });
+
+  // MKT-030: /reporting — the read-side Client Decision Room (UI-001). A
+  // PURE LIVE AGGREGATION over the composed authorities' public contracts:
+  // platform clock + the frozen-matrix-allowed /goals, /workflows,
+  // /evidence, /experiments and /learnings dependencies ONLY (/executions
+  // and /metrics stay unused allowed directions — the MKT-029 agency-scoped
+  // family may compose them later through the same public entry). The
+  // module owns NO durable state: no projection tables, nothing to migrate
+  // or rebuild (migration 031 stays RESERVED and unused by design), and no
+  // db/ids are wired because there is no write path of any kind. The
+  // Client/Workspace scope arrives as SERVER-DERIVED data resolved by the
+  // route layer (canonical /clients ownership + /workspaces enumeration —
+  // matrix directions /reporting does not hold; the /agents and
+  // /domain-packs scope-as-data posture).
+  const reporting = createReportingModule({
+    clock,
+    goals,
+    workflows,
+    evidence,
+    experiments,
+    learnings,
   });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
@@ -503,6 +615,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       },
     },
     modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies, integrations },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, extensions, domainPacks, reporting },
   };
 }
 

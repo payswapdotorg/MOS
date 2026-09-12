@@ -440,6 +440,15 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // append-only metric observation ledger with the source/timestamp/
     // reference mapping and the cross-tenant backstops.
     '018_metrics.sql',
+    // MKT-015 appends the experiment model migration (019 — the number is
+    // RESERVED for this Work Item): the experiments + experiment_transitions
+    // tables with the full frozen §16 Experiment contract, the closed
+    // conclusion-type taxonomy with the causal-evidence-standard row CHECK,
+    // the frozen lifecycle state machine, the design-immutability and
+    // legal-successor triggers, the append-only history and the
+    // workspace-scope + cross-tenant evidence-citation fences (EXP-001,
+    // EXP-AC-01..03).
+    '019_experiments.sql',
     // MKT-018 appends the AI routing and cascades migration (020 — the
     // number is RESERVED for this Work Item; sibling workers use other
     // numbers): the routing-policy/selection-decision/cascade-run/cascade-
@@ -494,6 +503,37 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // and the append-only integration_events ledger with cross-tenant
     // scope + evidence-linkage backstops (INT-001).
     '029_integrations.sql',
+    // MKT-016 (Learning model) appends the learnings migration (027 — the
+    // number is RESERVED for this Work Item; 026 is reserved for a
+    // sibling): the fully-immutable learnings table (statement,
+    // applicability conditions, supporting evidence/experiment-outcome
+    // references, descriptive confidence — NO stored state column) and the
+    // append-only learning_relationships history (contradicts/supersedes/
+    // retires) from which the §17 Learning state is DERIVED, with the
+    // single-supersession/single-retirement fences, the terminal-target
+    // backstop and the cross-tenant relationship + reference fences
+    // (LEARN-001, LEARN-AC-01..02).
+    '027_learnings.sql',
+    // MKT-022 (Extension registry and manifest contract) appends the
+    // extensions migration (028 — the number is RESERVED for this Work
+    // Item; 026/027 are reserved for siblings): the immutable versioned
+    // manifest registry (publisher/key/version fence, closed capability
+    // category / permission action / data-scope CHECKs, §21 material-key
+    // backstops), the install lifecycle records (scope-chain fences,
+    // frozen state machine, terminal uninstall) and the append-only
+    // invocation ledger with the execution-scope consistency fence and
+    // the TTL bound (EXT-001, EXT-AC-01..04).
+    '028_extensions.sql',
+    // MKT-036 (Versioned Domain Pack framework) appends the domain-pack
+    // migration (030 — the number is RESERVED for this Work Item; 029 is
+    // reserved for a sibling): the immutable versioned pack registry
+    // (publisher/key/version fence, closed 14-kind artifact + §5 scope
+    // CHECKs, §21 material-key backstops), the installed-version records
+    // (scope-chain fences, frozen installed ⇄ disabled + terminal
+    // uninstall lifecycle) and the per-install artifact scope records
+    // with the structural client/agency-reusable distinction and the
+    // append-only + consistency fences (PACK-001, PACK-AC-01..03).
+    '030_domain_packs.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
