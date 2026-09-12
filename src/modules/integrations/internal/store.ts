@@ -442,6 +442,27 @@ export interface EventInsertRow {
   readonly evidenceRef: string | null;
 }
 
+/**
+ * Serializes one normalized rate-limit state for the durable row: the
+ * DB CHECK (integration_connections_rate_limit_valid →
+ * integration_rate_limit_valid) accepts null, or an object whose PRESENT
+ * keys are exactly the closed contract with correctly typed values —
+ * a JSON null VALUE for a present key fails the type test. The module
+ * contract (NormalizedRateLimit) models "not observed" as null FIELDS;
+ * the durable shape models it as ABSENT keys (only the observed values
+ * are stored). The read-back casts the row jsonb back — an absent key
+ * and a null field are the same "not observed" answer for every
+ * consumer (§20: the state is advisory operational metadata).
+ */
+function serializeRateLimitForStorage(rateLimit: NormalizedRateLimit): string {
+  const durable: Record<string, number | string> = {};
+  if (rateLimit.limitRemaining !== null) durable['limitRemaining'] = rateLimit.limitRemaining;
+  if (rateLimit.limitResetAt !== null) durable['limitResetAt'] = rateLimit.limitResetAt;
+  if (rateLimit.backoffUntil !== null) durable['backoffUntil'] = rateLimit.backoffUntil;
+  if (rateLimit.retryAfterSeconds !== null) durable['retryAfterSeconds'] = rateLimit.retryAfterSeconds;
+  return JSON.stringify(durable);
+}
+
 export class IntegrationsStore {
   private readonly db: Db;
   private readonly clock: Clock;
@@ -483,7 +504,7 @@ export class IntegrationsStore {
         [
           patch.status,
           patch.health,
-          patch.rateLimit === null ? null : JSON.stringify(patch.rateLimit),
+          patch.rateLimit === null ? null : serializeRateLimitForStorage(patch.rateLimit),
           patch.lastError === null ? null : patch.lastError.slice(0, MAX_LAST_ERROR_LENGTH),
           now,
           connectionId,
@@ -584,7 +605,7 @@ export class IntegrationsStore {
         [
           patch.status,
           patch.health,
-          patch.rateLimit === null ? null : JSON.stringify(patch.rateLimit),
+          patch.rateLimit === null ? null : serializeRateLimitForStorage(patch.rateLimit),
           patch.lastError === null ? null : patch.lastError.slice(0, MAX_LAST_ERROR_LENGTH),
           now,
           connectionId,

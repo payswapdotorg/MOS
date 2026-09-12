@@ -20,6 +20,12 @@
  *   MODULE_STRUCTURE              file under a module outside public.ts and internal/
  *   FORBIDDEN_MODULE_DEPENDENCY  module→module import not allowed by the frozen matrix
  *   CROSS_MODULE_INTERNAL_ACCESS import of another module's non-public file
+ *                                 (EXCEPT: the composition root wiring a concrete
+ *                                 module-internal ADAPTER — the frozen matrix
+ *                                 "Composition root" provision: "external
+ *                                 integration adapters are wired at the composition
+ *                                 root"; CONCRETE_ADAPTER_ACCESS allows exactly the
+ *                                 composition root and tests)
  *   PLATFORM_IMPORTS_MODULE      src/platform importing a domain module
  *   MODULE_IMPORTS_APPLICATION   module importing api/workers/entrypoints
  *   CONCRETE_ADAPTER_ACCESS      adapter imported outside the composition root/tests
@@ -262,10 +268,23 @@ function checkRelative(
 
   // Module-internal access is possible only from within the same module.
   // (Tests get the dedicated TEST_MODULE_INTERNAL_IMPORT rule below.)
+  //
+  // ONE sanctioned exception, exactly as the frozen architecture
+  // prescribes: the composition root may import a concrete MODULE-INTERNAL
+  // ADAPTER file (module-dependency-matrix.md "Composition root":
+  // "Provider SDKs, concrete queue/storage clients, sandbox drivers,
+  // browser drivers and external integration adapters are wired at the
+  // composition root"; the CONCRETE_ADAPTER_ACCESS rule message allows
+  // exactly the composition root and tests). Module-internal adapters are
+  // the /ai-runtime and /integrations first-party connector homes; the
+  // composition root is where they become module DATA. Every other
+  // module-internal import from a non-test importer — including api/workers
+  // /entrypoints and every OTHER module — remains forbidden.
   if (target.area === 'modules' && target.module !== null && cls.area !== 'tests') {
     const sameModule = cls.area === 'modules' && cls.module === target.module;
     const targetIsPublic = path.basename(targetRel) === 'public.ts' && targetRel === path.join('src', 'modules', target.module, 'public.ts');
-    if (!sameModule && !targetIsPublic) {
+    const sanctionedCompositionRootAdapterWiring = cls.area === 'composition-root' && target.isAdapter;
+    if (!sameModule && !targetIsPublic && !sanctionedCompositionRootAdapterWiring) {
       push(
         'CROSS_MODULE_INTERNAL_ACCESS',
         file,

@@ -273,6 +273,20 @@ import { createAgentsModule } from './modules/agents/public.ts';
 import { createPoliciesModule } from './modules/policies/public.ts';
 // MKT-023: /integrations module (the provider integration boundary).
 import { createIntegrationsModule } from './modules/integrations/public.ts';
+// MKT-024: the FIRST-PARTY CONNECTORS (Meta, Google Ads, generic
+// analytics, CRM, commerce/CMS) — concrete adapter implementations under
+// the sanctioned internal/adapters/** home, imported HERE ONLY (the
+// composition root is the sole sanctioned importer per the static
+// architecture checker; CONCRETE_ADAPTER_ACCESS). All provider egress
+// flows through the platform HttpCallPort (fetch-based — zero provider
+// SDKs in src/); endpoints arrive as non-secret connection providerConfig
+// data (sandbox/loopback overrides), credential material resolves
+// in-process through /credentials after fail-closed /policies allows.
+import { MetaAdsAdapter } from './modules/integrations/internal/adapters/meta/meta-adapter.ts';
+import { GoogleAdsAdapter } from './modules/integrations/internal/adapters/google-ads/google-ads-adapter.ts';
+import { GenericAnalyticsAdapter } from './modules/integrations/internal/adapters/analytics/analytics-adapter.ts';
+import { CrmAdapter } from './modules/integrations/internal/adapters/crm/crm-adapter.ts';
+import { CommerceCmsAdapter } from './modules/integrations/internal/adapters/commerce/commerce-adapter.ts';
 // MKT-022: /extensions — the extension registry and manifest contract
 // (EXT-001).
 import { createExtensionsModule } from './modules/extensions/public.ts';
@@ -529,10 +543,13 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // those public contracts while the frozen import matrix stays intact
   // (no /clients or /evidence import exists inside src/modules/
   // integrations — verified by tools/arch-check). The ADAPTER SET is
-  // injected DATA: an empty registration in this Work Item (MKT-024 adds
-  // the first-party Meta/Google/analytics/CRM/commerce/CMS adapters;
-  // MKT-022 the extension-registry integrations) — the registry is
-  // validated at construction and contains no provider branches.
+  // injected DATA: MKT-024 registers the FIRST-PARTY CONNECTORS — Meta
+  // (Marketing API), Google Ads, generic analytics, CRM (with the
+  // contact-sync mutation) and commerce/CMS — all constructed on the
+  // platform HttpCallPort (httpCalls, fetch-based, NO provider SDK). The
+  // registry is validated at construction and contains no provider
+  // branches; later Work Items add connectors by appending DATA here
+  // (MKT-022 extension-registry integrations, MKT-038 creator providers).
   const integrations = createIntegrationsModule({
     db,
     clock,
@@ -541,7 +558,13 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     credentials,
     clientOwnership: clients,
     evidenceSink: evidence,
-    adapters: [],
+    adapters: [
+      new MetaAdsAdapter({ http: httpCalls }),
+      new GoogleAdsAdapter({ http: httpCalls }),
+      new GenericAnalyticsAdapter({ http: httpCalls }),
+      new CrmAdapter({ http: httpCalls }),
+      new CommerceCmsAdapter({ http: httpCalls }),
+    ],
   });
 
   // MKT-022: /extensions — the extension registry and manifest contract
