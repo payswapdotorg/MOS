@@ -485,6 +485,15 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // closed outcome/reason-code vocabulary and cross-tenant scope fences
     // (POL-001, CRED-001).
     '025_policies.sql',
+    // MKT-023 (Provider integration boundary) appends the integrations
+    // migration (029 — the number is RESERVED for this Work Item; the
+    // 026/027/028 range is reserved for sibling Work Items): the
+    // integration_connections table (connection/capability metadata with
+    // the frozen lifecycle transition trigger, identity immutability, the
+    // duplicate-registration fence and the §21 material-key backstops)
+    // and the append-only integration_events ledger with cross-tenant
+    // scope + evidence-linkage backstops (INT-001).
+    '029_integrations.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

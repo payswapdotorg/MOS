@@ -254,6 +254,8 @@ import { createJobsModule } from './modules/jobs/public.ts';
 import { createAgentsModule } from './modules/agents/public.ts';
 // MKT-021: /policies — the execution policy engine (POL-001).
 import { createPoliciesModule } from './modules/policies/public.ts';
+// MKT-023: /integrations module (the provider integration boundary).
+import { createIntegrationsModule } from './modules/integrations/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -443,6 +445,37 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // satisfies the port structurally — the engine evaluates access
   // proposals, never material. No enforcement hooks (later Work Items).
   const policies = createPoliciesModule({ db, clock, ids, agencies, clients, credentialReferences: credentials });
+
+  // MKT-023: /integrations — the provider integration boundary (INT-001:
+  // the generic integration ports + the first-party adapter mechanism).
+  // Frozen matrix dependencies wired DIRECTLY: /policies (the fail-closed
+  // decision engine consulted before every provider-touching action) and
+  // /credentials (credential REFERENCE validation on registration;
+  // MATERIAL resolution in the authorized-execution scope after a policy
+  // allow — in-process only). The REQUIRED canonical Client ownership
+  // resolution (implementation-contract §2) and the /evidence append flow
+  // for verified webhook events arrive through the module's declared
+  // STRUCTURAL PORTS: the concrete /clients and /evidence public-contract
+  // instances satisfy the narrow port types structurally (TypeScript
+  // structural typing — the metrics MKT-014 precedent), so ownership
+  // resolution and evidence appends still execute server-side THROUGH
+  // those public contracts while the frozen import matrix stays intact
+  // (no /clients or /evidence import exists inside src/modules/
+  // integrations — verified by tools/arch-check). The ADAPTER SET is
+  // injected DATA: an empty registration in this Work Item (MKT-024 adds
+  // the first-party Meta/Google/analytics/CRM/commerce/CMS adapters;
+  // MKT-022 the extension-registry integrations) — the registry is
+  // validated at construction and contains no provider branches.
+  const integrations = createIntegrationsModule({
+    db,
+    clock,
+    ids,
+    policies,
+    credentials,
+    clientOwnership: clients,
+    evidenceSink: evidence,
+    adapters: [],
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -469,7 +502,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, aiRuntime, fieldAgents, jobs, agents, policies, integrations },
   };
 }
 
