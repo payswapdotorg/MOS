@@ -53,23 +53,70 @@ export async function spawnApi(
     MOS_LOG_LEVEL: 'info',
     ...extraEnv,
   });
+  // Attach the line collector BEFORE waiting (MKT-033): startup records
+  // (config.effective, platform.migrations.verified, api.started) must all
+  // be captured, not just what arrives after the wait settles.
+  const wrapped = wrap(child);
   const started = await waitForLine(child, (line) => line.includes('"api.started"'), 60_000);
   const port = extractPort(started);
   if (port === null) {
     child.kill('SIGKILL');
     throw new Error(`api.started log line did not include a port: ${started}`);
   }
-  return { ...wrap(child), port };
+  return { ...wrapped, port };
+}
+
+/** Options for spawnWorker (MKT-033: continuous mode for crash-recovery tests). */
+export interface SpawnWorkerOptions {
+  /**
+   * Drain mode (default, unchanged legacy behavior): process jobs until the
+   * queue is empty, then exit 0. When false, the worker runs the CONTINUOUS
+   * production loop (claim/execute + pooled relay/recovery) and stays up —
+   * resolved once 'worker.started' is logged, so crash-recovery tests can
+   * kill it mid-job deterministically.
+   */
+  readonly drain?: boolean;
 }
 
 /** Spawns the worker entrypoint (drain mode exits 0 once the queue is empty). */
-export async function spawnWorker(env: TestStackEnv, extraEnv: Record<string, string> = {}): Promise<SpawnedProcess> {
-  const child = spawnNode(['src/entrypoints/worker.ts', '--drain'], env, {
-    MOS_LOG_LEVEL: 'info',
-    MOS_WORKER_POLL_INTERVAL_MS: '50',
-    ...extraEnv,
-  });
-  return wrap(child);
+export async function spawnWorker(
+  env: TestStackEnv,
+  extraEnv: Record<string, string> = {},
+  options: SpawnWorkerOptions = {},
+): Promise<SpawnedProcess> {
+  const drain = options.drain ?? true;
+  const child = spawnNode(
+    drain ? ['src/entrypoints/worker.ts', '--drain'] : ['src/entrypoints/worker.ts'],
+    env,
+    {
+      MOS_LOG_LEVEL: 'info',
+      MOS_WORKER_POLL_INTERVAL_MS: '50',
+      ...extraEnv,
+    },
+  );
+  if (drain) return wrap(child);
+  // Continuous mode: the line collector must be attached BEFORE waiting, so
+  // no early log record is lost; resolve only once the host loop is up.
+  const wrapped = wrap(child);
+  const state = await waitFor(
+    'continuous worker to log worker.started',
+    async () => ({
+      exited: child.exitCode !== null,
+      exitCode: child.exitCode,
+      line: wrapped.stdoutLines().find((line) => line.includes('"worker.started"')) ?? null,
+    }),
+    (s) => s.line !== null || s.exited,
+    60_000,
+    25,
+  );
+  if (state.line === null) {
+    child.kill('SIGKILL');
+    throw new Error(
+      `continuous worker exited (code ${state.exitCode}) before logging worker.started; ` +
+        `output: ${wrapped.stdoutLines().join('\n').slice(0, 2000)}`,
+    );
+  }
+  return wrapped;
 }
 
 function spawnNode(
@@ -96,6 +143,60 @@ function spawnNode(
     process.stderr.write(`[subprocess stderr] ${chunk.toString('utf8')}`);
   });
   return child as unknown as ChildProcessWithoutNullStreams;
+}
+
+/** The observed failure of an entrypoint that must REFUSE to start (MKT-033). */
+export interface StartupFailure {
+  readonly exitCode: number | null;
+  /** Raw stdout lines (a fail-fast startup may emit nothing here). */
+  readonly stdout: ReadonlyArray<string>;
+  /** Raw stderr text (the api/worker.startup.failed record lands here). */
+  readonly stderr: string;
+}
+
+/**
+ * MKT-033 (DEPLOY-AC-01 negative proof): spawns an entrypoint with the
+ * EXACT environment given — undefined/absent values are NOT inherited from
+ * the parent process (a missing MOS_DATABASE_URL must be genuinely
+ * missing, not rescued by ambient env) — and resolves once the process
+ * EXITS. The caller asserts a non-zero exit code and the structured
+ * *.startup.failed record on stderr.
+ */
+export async function spawnEntrypointExpectFailure(
+  entry: 'api' | 'worker',
+  env: Record<string, string | undefined>,
+  timeoutMs = 60_000,
+): Promise<StartupFailure> {
+  const cleanEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== undefined) cleanEnv[key] = value;
+  }
+  const child = spawn(
+    process.execPath,
+    [entry === 'api' ? 'src/entrypoints/api.ts' : 'src/entrypoints/worker.ts'],
+    { cwd: repoRoot, env: cleanEnv, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  const stdout: string[] = [];
+  let stderr = '';
+  child.stdout.on('data', (chunk: Buffer) => {
+    for (const line of chunk.toString('utf8').split('\n')) {
+      if (line.trim() !== '') stdout.push(line);
+    }
+  });
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr += chunk.toString('utf8');
+  });
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error(`entrypoint (${entry}) did not exit within ${timeoutMs}ms`));
+    }, timeoutMs);
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve(code);
+    });
+  });
+  return { exitCode, stdout, stderr };
 }
 
 function wrap(child: ChildProcessWithoutNullStreams): SpawnedProcess {

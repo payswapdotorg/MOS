@@ -8,7 +8,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadConfig } from '../../src/platform/config/config.ts';
+import { describeConfig, loadConfig } from '../../src/platform/config/config.ts';
 import { ConfigError } from '../../src/platform/errors/errors.ts';
 
 const VALID_URL = 'postgres://mos:mos@localhost:5432/mos';
@@ -353,4 +353,137 @@ test('MKT-005: secrets dir setting rejects blank values', () => {
   assertConfigProblem({ MOS_DATABASE_URL: VALID_URL, MOS_SECRETS_DIR: '   ' }, 'MOS_SECRETS_DIR must not be blank');
   const config = loadConfig({ MOS_DATABASE_URL: VALID_URL });
   assert.equal(config.secretsDir, './var/secrets');
+});
+
+// ---------------------------------------------------------------------------
+// MKT-033 (DEPLOY-001): AI Runtime provider-adapter configuration + the
+// auditable, REDACTED effective-config report (describeConfig).
+// ---------------------------------------------------------------------------
+
+const VALID_OPENROUTER = {
+  MOS_AI_PROVIDER: 'openrouter',
+  MOS_AI_OPENROUTER_ENDPOINT: 'https://openrouter.ai/api/v1',
+  MOS_AI_OPENROUTER_API_KEY: 'sk-or-test-key',
+} as const;
+
+test('MKT-033: the documented default AI provider is none (no adapter wired)', () => {
+  const config = loadConfig({ MOS_DATABASE_URL: VALID_URL });
+  assert.equal(config.aiRuntime, null, 'no provider adapter is wired by default');
+
+  // The explicit 'none' value behaves identically (documented default).
+  assert.equal(loadConfig({ MOS_DATABASE_URL: VALID_URL, MOS_AI_PROVIDER: 'none' }).aiRuntime, null);
+});
+
+test('MKT-033: openrouter provider requires endpoint + key together (complete-or-absent, fail fast)', () => {
+  // Missing both.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, MOS_AI_PROVIDER: 'openrouter' },
+    'MOS_AI_PROVIDER=openrouter requires MOS_AI_OPENROUTER_ENDPOINT, MOS_AI_OPENROUTER_API_KEY to be set',
+  );
+  // Missing the key only.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, MOS_AI_PROVIDER: 'openrouter', MOS_AI_OPENROUTER_ENDPOINT: 'https://openrouter.ai/api/v1' },
+    'MOS_AI_PROVIDER=openrouter requires MOS_AI_OPENROUTER_API_KEY to be set',
+  );
+  // Missing the endpoint only.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, MOS_AI_PROVIDER: 'openrouter', MOS_AI_OPENROUTER_API_KEY: 'sk-or-test-key' },
+    'MOS_AI_PROVIDER=openrouter requires MOS_AI_OPENROUTER_ENDPOINT to be set',
+  );
+  // Non-http endpoint.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, ...VALID_OPENROUTER, MOS_AI_OPENROUTER_ENDPOINT: 'ftp://nope' },
+    'MOS_AI_OPENROUTER_ENDPOINT must be an http:// or https:// URL',
+  );
+  // Unknown provider enum value.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, MOS_AI_PROVIDER: 'anthropic' },
+    'MOS_AI_PROVIDER must be one of: none, openrouter',
+  );
+  // Out-of-bounds timeout.
+  assertConfigProblem(
+    { MOS_DATABASE_URL: VALID_URL, ...VALID_OPENROUTER, MOS_AI_OPENROUTER_TIMEOUT_MS: '10' },
+    'MOS_AI_OPENROUTER_TIMEOUT_MS must be an integer between 100 and 600000',
+  );
+});
+
+test('MKT-033: a complete openrouter configuration parses with documented defaults', () => {
+  const config = loadConfig({ MOS_DATABASE_URL: VALID_URL, ...VALID_OPENROUTER });
+  assert.equal(config.aiRuntime?.provider, 'openrouter');
+  assert.equal(config.aiRuntime?.endpoint, 'https://openrouter.ai/api/v1');
+  assert.equal(config.aiRuntime?.apiKey, 'sk-or-test-key');
+  assert.equal(config.aiRuntime?.timeoutMs, 30_000, 'default timeout 30s');
+
+  const explicit = loadConfig({
+    MOS_DATABASE_URL: VALID_URL,
+    ...VALID_OPENROUTER,
+    MOS_AI_OPENROUTER_TIMEOUT_MS: '5000',
+  });
+  assert.equal(explicit.aiRuntime?.timeoutMs, 5_000);
+});
+
+test('MKT-033: describeConfig never echoes secret material (redaction contract)', async () => {
+  const config = loadConfig({
+    MOS_DATABASE_URL: 'postgres://user:supersecret@db.internal:5432/mos',
+    MOS_INTERNAL_API_TOKEN: 'internal-token-secret',
+    MOS_BOOTSTRAP_PLATFORM_ADMIN_EMAIL: 'admin@example.com',
+    MOS_BOOTSTRAP_PLATFORM_ADMIN_PASSWORD: 'bootstrap-password-secret',
+    MOS_OBJECT_STORE: 's3',
+    MOS_OBJECT_STORE_DIR: '/ignored',
+    MOS_S3_ENDPOINT: 'http://127.0.0.1:9000',
+    MOS_S3_BUCKET: 'mos-objects',
+    MOS_S3_ACCESS_KEY_ID: 'AKIAEXAMPLE',
+    MOS_S3_SECRET_ACCESS_KEY: 's3-secret-material',
+    MOS_REDIS_URL: 'rediss://cache:redis-password@redis.internal:6380',
+    ...VALID_OPENROUTER,
+  });
+
+  const report = JSON.stringify(describeConfig(config));
+  for (const secret of [
+    'supersecret',
+    'internal-token-secret',
+    'bootstrap-password-secret',
+    's3-secret-material',
+    'redis-password',
+    'sk-or-test-key',
+  ]) {
+    assert.ok(!report.includes(secret), `secret material must never appear in the config report: ${secret}`);
+  }
+
+  const described = describeConfig(config);
+  assert.equal((described['database'] as Record<string, unknown>)['connectionConfigured'], true);
+  const auth = described['auth'] as Record<string, unknown>;
+  assert.equal(auth['internalApiAuthConfigured'], true);
+  assert.equal(auth['bootstrapAdminConfigured'], true);
+  const s3 = described['objectStore'] as Record<string, unknown>;
+  assert.equal(s3['accessKeyConfigured'], true);
+  assert.equal(s3['signingKeyConfigured'], true);
+  const redis = described['redis'] as Record<string, unknown>;
+  assert.equal(redis['configured'], true);
+  assert.equal(redis['host'], 'redis.internal');
+  assert.equal(redis['port'], 6380);
+  assert.equal('password' in redis, false, 'the Redis password is never part of the report');
+  const ai = described['aiRuntime'] as Record<string, unknown>;
+  assert.equal(ai['provider'], 'openrouter');
+  assert.equal(ai['providerKeyConfigured'], true);
+  assert.equal(ai['endpoint'], 'https://openrouter.ai/api/v1', 'non-secret adapter wiring is auditable');
+
+  // The report's presence-flag names survive the observability layer's own
+  // secret-shaped-key scrubbing (defense-in-depth redaction in logger.ts),
+  // so the startup record stays answerable, not double-redacted to noise.
+  const { redactSecrets } = await import('../../src/platform/observability/logger.ts');
+  const throughLogger = redactSecrets(described) as Record<string, unknown>;
+  assert.equal(((throughLogger['auth'] as Record<string, unknown>)['internalApiAuthConfigured']), true);
+  assert.equal(((throughLogger['aiRuntime'] as Record<string, unknown>)['providerKeyConfigured']), true);
+});
+
+test('MKT-033: describeConfig of the minimal config shows the documented defaults', () => {
+  const described = describeConfig(loadConfig({ MOS_DATABASE_URL: VALID_URL }));
+  assert.equal(described['env'], 'dev');
+  assert.equal((described['database'] as Record<string, unknown>)['connectionConfigured'], true);
+  assert.equal((described['objectStore'] as Record<string, unknown>)['kind'], 'memory');
+  assert.equal((described['redis'] as Record<string, unknown>)['configured'], false);
+  assert.equal((described['auth'] as Record<string, unknown>)['internalApiAuthConfigured'], false, 'fail closed by default');
+  assert.equal((described['queue'] as Record<string, unknown>)['authority'], 'postgresql');
+  assert.equal((described['aiRuntime'] as Record<string, unknown>)['provider'], 'none');
 });

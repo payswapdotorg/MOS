@@ -212,7 +212,7 @@
  *     identically).
  */
 import fs from 'node:fs';
-import { loadConfig, type AppConfig } from './platform/config/config.ts';
+import { loadConfig, describeConfig, type AppConfig } from './platform/config/config.ts';
 import { SystemClock } from './platform/clock/clock.ts';
 import { CryptoIdGenerator } from './platform/ids/ids.ts';
 import { PgDb } from './platform/db/adapters/postgres/pg-db.ts';
@@ -234,6 +234,13 @@ import { InternalTokenAuthenticator } from './platform/http/auth/adapters/intern
 import { CompositeAuthenticator } from './platform/http/auth/adapters/composite/composite-authenticator.ts';
 import { FetchHttpCall } from './platform/http/outbound-fetch.ts';
 import { InProcessSandboxDriver } from './platform/sandboxes/adapters/in-process/in-process-sandbox-driver.ts';
+// MKT-033 (DEPLOY-001): the AI Runtime provider adapter — wired HERE ONLY
+// from the explicit MOS_AI_* configuration (the sanctioned composition-root
+// adapter home the static checker and the AI-AC-03 boundary tests reserve
+// for exactly this wiring). Behind the module boundary: no provider SDK is
+// imported anywhere (the adapter rides the platform HttpCallPort).
+import { OpenRouterAdapter } from './modules/ai-runtime/internal/adapters/openrouter-adapter.ts';
+import type { ProviderAdapter } from './modules/ai-runtime/public.ts';
 import { ConfigError } from './platform/errors/errors.ts';
 import type { AppServices } from './platform/app-services.ts';
 import type { ObservabilitySink } from './platform/observability/contract.ts';
@@ -310,9 +317,25 @@ export interface AppOptions {
   readonly primarySink?: ObservabilitySink | undefined;
 }
 
+/**
+ * Runtime wiring surfaced on the bootstrap result (MKT-033, DEPLOY-001):
+ * the composition-root-wired capability adapters that route-time callers
+ * consume. The AI provider adapter is the OpenRouterAdapter instance
+ * constructed from the EXPLICIT MOS_AI_* configuration (null when the
+ * documented default MOS_AI_PROVIDER=none applies). It stays BEHIND the
+ * module boundary (the ProviderAdapter contract) — callers supply it to
+ * /ai-runtime routeTask exactly as the MKT-018 route contract documents
+ * ("the composition root wires the OpenRouter adapter; the integration
+ * test supplies a fake").
+ */
+export interface RuntimeWiring {
+  readonly aiProvider: ProviderAdapter | null;
+}
+
 interface Core {
   readonly services: AppServices;
   readonly modules: ApplicationModules;
+  readonly runtime: RuntimeWiring;
 }
 
 function buildCore(config: AppConfig, options: AppOptions): Core {
@@ -381,6 +404,22 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // depends on the SandboxDriver contract, never on a concrete substrate
   // (real isolation substrates are later composition-root adapters).
   const sandboxDriver = new InProcessSandboxDriver();
+
+  // MKT-033 (DEPLOY-001): the AI Runtime provider adapter wired from the
+  // EXPLICIT MOS_AI_* configuration — complete-or-absent (config validation
+  // aborts startup on a half-configured provider; the documented default
+  // 'none' wires no adapter). The adapter rides the platform HttpCallPort
+  // (fetch — zero provider SDKs) and is consumed through the
+  // /ai-runtime ProviderAdapter contract only.
+  const aiProvider: ProviderAdapter | null =
+    config.aiRuntime === null
+      ? null
+      : new OpenRouterAdapter({
+          http: httpCalls,
+          endpoint: config.aiRuntime.endpoint,
+          apiKey: config.aiRuntime.apiKey,
+          timeoutMs: config.aiRuntime.timeoutMs,
+        });
 
   const primarySink = options.primarySink ?? new ConsoleSink();
   const sink =
@@ -672,6 +711,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       },
     },
     modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting },
+    runtime: { aiProvider },
   };
 }
 
@@ -721,15 +761,37 @@ export async function bootstrapApp(options: AppOptions = {}): Promise<AppService
 }
 
 /**
- * Full application bootstrap for the API process: services + identity
- * modules + migrations + (optionally) the bootstrap platform administrator.
+ * Full application bootstrap shared by EVERY entrypoint (control plane and
+ * workers — DEPLOY-AC-01's single auditable configuration surface):
+ * explicit config → wired services + modules → migrations → optional
+ * bootstrap administrator.
+ *
+ * Startup ordering (MKT-033, DEPLOY-001):
+ *   1. loadConfig — the explicit, validated configuration (fail-fast
+ *      ConfigError; missing/ambiguous config never falls back silently);
+ *   2. buildCore — every capability (db, queue, object storage, sandbox
+ *      driver, AI provider adapter, secrets, advisory Redis) constructed
+ *      from that config;
+ *   3. the REDACTED effective-configuration report logged once
+ *      ('config.effective') — the auditable record of what actually
+ *      started, with no secret material;
+ *   4. runMigrations — startup verifies the migration state (applies
+ *      missing migrations, fails on checksum drift of applied ones), then
+ *      logs 'platform.migrations.verified' with the applied count;
+ *   5. ensureBootstrapAdministrator (optional, idempotent).
  */
 export async function bootstrapApplication(
   options: AppOptions = {},
-): Promise<{ services: AppServices; modules: ApplicationModules }> {
+): Promise<{ services: AppServices; modules: ApplicationModules; runtime: RuntimeWiring }> {
   const config = loadConfig(process.env);
   const core = buildCore(config, options);
-  await runMigrations(core.services.db);
+  const startupLogger = core.services.observability.loggerFactory.forModule('platform.startup');
+  startupLogger.info('config.effective', undefined, { config: describeConfig(config) });
+  const applied = await runMigrations(core.services.db);
+  startupLogger.info('platform.migrations.verified', undefined, {
+    applied_count: applied.length,
+    latest: applied.length === 0 ? null : applied[applied.length - 1]!.name,
+  });
   const logger = core.services.observability.loggerFactory.forModule('identity.bootstrap');
   await ensureBootstrapAdministrator(config, core.modules, logger);
   return core;
