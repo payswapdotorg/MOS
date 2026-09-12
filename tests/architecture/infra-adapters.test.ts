@@ -515,6 +515,15 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // invocation ledger with the execution-scope consistency fence and
     // the TTL bound (EXT-001, EXT-AC-01..04).
     '028_extensions.sql',
+    // MKT-023 (Provider integration boundary) appends the integrations
+    // migration (029 — the number is RESERVED for this Work Item; the
+    // 026/027/028 range is reserved for sibling Work Items): the
+    // integration_connections table (connection/capability metadata with
+    // the frozen lifecycle transition trigger, identity immutability, the
+    // duplicate-registration fence and the §21 material-key backstops)
+    // and the append-only integration_events ledger with cross-tenant
+    // scope + evidence-linkage backstops (INT-001).
+    '029_integrations.sql',
     // MKT-036 (Versioned Domain Pack framework) appends the domain-pack
     // migration (030 — the number is RESERVED for this Work Item; 029 is
     // reserved for a sibling): the immutable versioned pack registry

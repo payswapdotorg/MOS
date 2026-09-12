@@ -85,6 +85,14 @@
  * contract: the JobsModuleApi interface is extended in place; NO new
  * module, NO new dependency).
  *
+ * MKT-023 additions: /integrations (Provider integration boundary,
+ * INT-001 — the generic integration ports + the first-party adapter
+ * mechanism: connection/capability metadata, the adapter registry as
+ * injected data, the fail-closed policy-gated provider execution
+ * surface and the append-only webhook/event ingestion ledger; no
+ * provider is a system of record for workflow/deployment/evidence/
+ * policy/execution state).
+ *
  * MKT-030 additions: /reporting (read-side reporting, UI-001 — the Client
  * Decision Room read model: a PURE LIVE AGGREGATION over the /goals,
  * /workflows, /evidence, /experiments and /learnings public contracts;
@@ -100,6 +108,8 @@ import type { AuditModuleApi } from '../modules/audit/public.ts';
 import type { AuthModuleApi } from '../modules/auth/public.ts';
 import type { ClientsModuleApi } from '../modules/clients/public.ts';
 import type { CredentialsModuleApi } from '../modules/credentials/public.ts';
+// MKT-023: /integrations module contract (provider integration boundary).
+import type { IntegrationsModuleApi } from '../modules/integrations/public.ts';
 // MKT-013: /evidence module contract.
 import type { EvidenceModuleApi } from '../modules/evidence/public.ts';
 import type { ExecutionsModuleApi } from '../modules/executions/public.ts';
@@ -172,6 +182,11 @@ export interface ApplicationModules {
   // append-only decision records).
   readonly policies: PoliciesModuleApi;
 
+  // MKT-023: the provider integration boundary authority (INT-001 — the
+  // generic integration ports, the first-party adapter registry as
+  // injected data, connection/capability metadata and the append-only
+  // webhook/event ingestion ledger).
+  readonly integrations: IntegrationsModuleApi;
   // MKT-022: extension registry and manifest contract authority
   // (EXT-001 — the immutable versioned manifest registry, the
   // install/configure lifecycle, the short-lived invocation context

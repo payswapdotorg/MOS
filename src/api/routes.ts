@@ -69,6 +69,12 @@ import { registerJobsRoutes } from './jobs-routes.ts';
 // administration (platform/agency/client scope) + the fail-closed
 // evaluation endpoint + the append-only decision ledger).
 import { registerPoliciesRoutes } from './policies-routes.ts';
+// MKT-023: the /integrations routes (INT-001 — the provider integration
+// boundary: the adapter registry data view, connection registration and
+// reads, the policy-gated connect probe + administrative suspend, the
+// normalized read/mutation execution surface through the adapter port,
+// and the append-only webhook/event ingestion surface + reads).
+import { registerIntegrationsRoutes } from './integrations-routes.ts';
 // MKT-022: the /extensions routes (EXT-001 — extension registry and
 // manifest contract: versioned immutable manifests, the install/configure
 // lifecycle, the short-lived invocation context and the append-only
@@ -180,6 +186,17 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // append-only) + the decision-ledger audit reads.
   registerPoliciesRoutes(router, services, modules);
 
+  // MKT-023: the provider integration boundary surfaces — the adapter
+  // REGISTRY as data (capability discovery; no tenant data), connection
+  // registration + reads (uniform 404 for foreign identifiers), the
+  // policy-gated connect probe and administrative suspend (CAS
+  // transitions), the normalized read/mutation execution surface through
+  // the generic adapter port (fail-closed /policies gates inside the
+  // module; outcomes are data), the webhook/event ingestion relay surface
+  // (adapter-verified, append-only, server-derived provenance) and the
+  // ingested-event reads. NO delete route: the connection lifecycle has
+  // no terminal state.
+  registerIntegrationsRoutes(router, services, modules);
   // MKT-022: the /extensions surfaces — the immutable versioned manifest
   // registry (publish/list/read), the install/configure lifecycle (the
   // frozen install state machine, least-privilege granted scopes,
