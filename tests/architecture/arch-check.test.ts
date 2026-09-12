@@ -96,10 +96,22 @@ test('negative fixture: forbidden imports and dependency directions are rejected
 
   // Every planted violation must be reported, and nothing else.
   const expected = [
+    // The fixture jobs service makes TWO forbidden module imports —
+    // /goals (the classic matrix violation) AND /integrations (the
+    // module-internal adapter import) — so the matrix rule fires twice.
     'FORBIDDEN_MODULE_DEPENDENCY|src/modules/jobs/internal/service.ts',
+    'FORBIDDEN_MODULE_DEPENDENCY|src/modules/jobs/internal/service.ts',
+    'CROSS_MODULE_INTERNAL_ACCESS|src/modules/jobs/internal/service.ts',
+    'CONCRETE_ADAPTER_ACCESS|src/modules/jobs/internal/service.ts',
     'CROSS_MODULE_INTERNAL_ACCESS|src/modules/workflows/internal/engine.ts',
     'PLATFORM_IMPORTS_MODULE|src/platform/queue/contract.ts',
+    // TWO adapter imports live in the fixture api/routes.ts — the
+    // platform pg-queue adapter AND the /integrations module-internal
+    // meta connector — so the adapter-import rule fires twice (once per
+    // import; the violation list is per-import, not per-file).
     'CONCRETE_ADAPTER_ACCESS|src/api/routes.ts',
+    'CONCRETE_ADAPTER_ACCESS|src/api/routes.ts',
+    'CROSS_MODULE_INTERNAL_ACCESS|src/api/routes.ts',
     'CONCRETE_ADAPTER_ACCESS|src/platform/queue/adapters/postgres/pg-queue.ts',
     'ADAPTER_COUPLING|src/platform/queue/adapters/postgres/pg-queue.ts',
     'EXTERNAL_PACKAGE_IN_SRC|src/workers/worker-host.ts',
@@ -113,6 +125,23 @@ test('negative fixture: forbidden imports and dependency directions are rejected
   ].sort();
 
   assert.deepEqual(actual, expected);
+});
+
+test('negative fixture: the composition root wiring a module-internal adapter is the SANCTIONED exception (no violation)', () => {
+  // The fixture composition root imports BOTH a platform adapter and the
+  // /integrations module-internal first-party connector adapter — exactly
+  // the frozen "Composition root" provision ("external integration
+  // adapters are wired at the composition root") and the
+  // CONCRETE_ADAPTER_ACCESS allowance. The fixture api/routes.ts and
+  // modules/jobs/internal/service.ts import the SAME adapter and are
+  // rejected in the exact-set test above — the exception is composition
+  // root ONLY.
+  const fixtureRoot = path.join(repoRoot, 'tests', 'architecture', 'fixtures', 'import-violations');
+  const result = checkArchitecture({ codeRoot: fixtureRoot, specDir });
+  const compositionRootViolations = result.violations.filter(
+    (violation) => violation.file === 'src/composition-root.ts',
+  );
+  assert.deepEqual(compositionRootViolations, []);
 });
 
 test('negative fixture: structure violations are rejected (unknown module dir, missing public entry, stray file, missing frozen modules)', () => {

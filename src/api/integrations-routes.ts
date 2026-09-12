@@ -73,8 +73,11 @@ import type {
   IntegrationMutationOutcome,
   IntegrationProvenance,
   IntegrationReadOutcome,
+  NormalizedProviderRecord,
+  NormalizedRateLimit,
   RegisteredAdapterInfo,
 } from '../modules/integrations/public.ts';
+import { deliverReadObservations, type RecordDeliveryReceipt } from './integration-observations.ts';
 
 const ADAPTER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
@@ -247,6 +250,37 @@ const WEBHOOK_INGEST_AUTHORITY_FIELDS = [
 ] as const;
 
 /**
+ * Fields always server-derived on the OBSERVATION SYNC (read + delivery)
+ * surface: the read outcome fields plus the delivery receipts — the
+ * evidence ids, observation ids and the server-stamped retrieval moment
+ * are computed server-side (never request-suppliable).
+ */
+const CONNECTION_SYNC_AUTHORITY_FIELDS = [
+  ...CONNECTION_EXECUTE_AUTHORITY_FIELDS,
+  'retrievedAt',
+  'receipts',
+  'evidence',
+  'evidenceId',
+  'observations',
+  'observationId',
+] as const;
+
+/** The sync outcome: the read outcome + the server-side delivery receipts. */
+interface IntegrationSyncObservationsOutcome {
+  readonly connectionId: string;
+  readonly adapterKey: string;
+  readonly operation: string;
+  readonly ok: boolean;
+  readonly records: readonly NormalizedProviderRecord[];
+  readonly error: string | null;
+  readonly rateLimit: NormalizedRateLimit | null;
+  readonly policyDecisionId: string;
+  readonly retrievedAt: string | null;
+  readonly receipts: readonly RecordDeliveryReceipt[];
+  readonly connection: IntegrationConnectionRecord;
+}
+
+/**
  * SERVER-DERIVED provenance for HTTP-surface integration mutations: actor
  * from the authenticated principal, correlation from the ambient
  * correlation context, recording surface 'api'. No value in here is
@@ -353,6 +387,32 @@ function serializeMutationOutcome(outcome: IntegrationMutationOutcome): Record<s
     ...(outcome.error === null ? {} : { error: outcome.error }),
     ...(outcome.rateLimit === null ? {} : { rateLimit: outcome.rateLimit }),
     policyDecisionId: outcome.policyDecisionId,
+    connection: serializeConnection(outcome.connection),
+  };
+}
+
+function serializeSyncOutcome(outcome: IntegrationSyncObservationsOutcome): Record<string, unknown> {
+  return {
+    connectionId: outcome.connectionId,
+    adapterKey: outcome.adapterKey,
+    operation: outcome.operation,
+    ok: outcome.ok,
+    records: outcome.records.map((record) => ({
+      providerRecordId: record.providerRecordId,
+      data: record.data,
+      ...(record.sourceTimestamp === null ? {} : { sourceTimestamp: record.sourceTimestamp }),
+      ...(record.etag === null ? {} : { etag: record.etag }),
+      ...(record.sourceVersion === null ? {} : { sourceVersion: record.sourceVersion }),
+    })),
+    ...(outcome.error === null ? {} : { error: outcome.error }),
+    ...(outcome.rateLimit === null ? {} : { rateLimit: outcome.rateLimit }),
+    ...(outcome.retrievedAt === null ? {} : { retrievedAt: outcome.retrievedAt }),
+    policyDecisionId: outcome.policyDecisionId,
+    receipts: outcome.receipts.map((receipt) => ({
+      providerRecordId: receipt.providerRecordId,
+      evidenceId: receipt.evidenceId,
+      ...(receipt.observationId === null ? {} : { observationId: receipt.observationId }),
+    })),
     connection: serializeConnection(outcome.connection),
   };
 }
@@ -571,6 +631,12 @@ export function registerIntegrationsRoutes(
         }),
       execute: async (ctx) => {
         const body = ctx.validated as { expectedVersion: number };
+        // The connection must belong to THIS Client path: a foreign or
+        // unknown connection id under an accessible Client's path is the
+        // SAME uniform 404 as everywhere else (no cross-tenant oracle,
+        // no acting on another Client's connection through one's own
+        // authorized path).
+        await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
         return modules.integrations.connectConnection(
           {
             connectionId: ctx.params.connectionId,
@@ -629,6 +695,9 @@ export function registerIntegrationsRoutes(
         }),
       execute: async (ctx) => {
         const body = ctx.validated as { expectedVersion: number; reason?: string };
+        // Uniform-404 ownership fence: the connection belongs to THIS
+        // Client path (same as every other connection-scoped route).
+        await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
         return modules.integrations.suspendConnection(
           {
             connectionId: ctx.params.connectionId,
@@ -697,6 +766,10 @@ export function registerIntegrationsRoutes(
         }),
       execute: async (ctx) => {
         const body = ctx.validated as { operation: string; parameters: Record<string, unknown> };
+        // Uniform-404 ownership fence: the connection belongs to THIS
+        // Client path — a foreign connection id under an authorized
+        // Client's path must never execute (no cross-tenant reads).
+        await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
         return modules.integrations.executeRead(
           {
             connectionId: ctx.params.connectionId,
@@ -764,6 +837,10 @@ export function registerIntegrationsRoutes(
         }),
       execute: async (ctx) => {
         const body = ctx.validated as { operation: string; parameters: Record<string, unknown> };
+        // Uniform-404 ownership fence: the connection belongs to THIS
+        // Client path — a foreign connection id under an authorized
+        // Client's path must never execute (no cross-tenant mutations).
+        await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
         return modules.integrations.executeMutation(
           {
             connectionId: ctx.params.connectionId,
@@ -796,6 +873,140 @@ export function registerIntegrationsRoutes(
         });
       },
       respond: (ctx) => jsonResponse(200, serializeMutationOutcome(ctx.result)),
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // Observation sync (the MKT-024 server-side integration emitter)
+  // -------------------------------------------------------------------------
+
+  // POST /api/clients/:clientId/connections/:connectionId/sync — execute
+  // one normalized READ through the adapter port AND deliver the normalized
+  // observations to the domain authorities through their public contracts
+  // (METRIC-001): every record's source fact → /evidence (class/quality/
+  // provenance pinned server-side), metric-shaped envelopes → /metrics
+  // observations with the source/timestamp/reference mapping (provider
+  // record id → source.ref; sourceTimestamp → observedAt; the
+  // server-stamped retrieval moment → retrievedAt; the source fact →
+  // evidenceRef). The read itself runs the module's FULL fail-closed gate
+  // (ownership → live pipe → capability discovery → network-dimension
+  // policy → secrets-dimension policy → credential material resolution →
+  // adapter); a failed read delivers NOTHING (the honest failure data is
+  // returned). A malformed envelope is a 422 BEFORE any append (fail
+  // closed — no partial deliveries). The route layer is the sanctioned
+  // composition point: the frozen matrix allows /metrics ──→
+  // /evidence,/integrations, never the reverse, so the /integrations
+  // module itself cannot import /metrics — the emitter composes the
+  // public contracts here exactly like every other cross-module flow.
+  router.add(
+    'POST',
+    '/api/clients/:clientId/connections/:connectionId/sync',
+    defineMutationRoute<
+      { clientId: string; connectionId: string },
+      IntegrationSyncObservationsOutcome
+    >({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => clientOwner(params.clientId),
+      authorize: async (ctx) => {
+        // Member-level, consistent with the read route and the
+        // /metrics + /evidence append routes: the /policies engine is the
+        // provider-egress authority (the module's fail-closed gate); the
+        // appends are honest records of what the platform retrieved.
+        await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
+      },
+      validate: (ctx) =>
+        validateObject<{
+          operation: string;
+          parameters: Record<string, unknown>;
+        }>(ctx.request.body, {
+          forbiddenKeys: CONNECTION_SYNC_AUTHORITY_FIELDS,
+          fields: {
+            operation: stringField({ minLength: 1, maxLength: 64 }),
+            parameters: recordField({ maxDepthKeys: 32 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const body = ctx.validated as { operation: string; parameters: Record<string, unknown> };
+        const ownership = await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
+        const outcome = await modules.integrations.executeRead(
+          {
+            connectionId: ctx.params.connectionId,
+            operation: body.operation,
+            parameters: body.parameters,
+          },
+          serverProvenance(ctx.principal),
+        );
+        if (!outcome.ok) {
+          // The provider read failed (or was denied) — NOTHING is
+          // delivered; the outcome (with the recorded policy decision and
+          // the post-bookkeeping connection state) is the honest response.
+          return {
+            connectionId: outcome.connectionId,
+            adapterKey: outcome.adapterKey,
+            operation: outcome.operation,
+            ok: false,
+            records: outcome.records,
+            error: outcome.error,
+            rateLimit: outcome.rateLimit,
+            policyDecisionId: outcome.policyDecisionId,
+            retrievedAt: null,
+            receipts: [],
+            connection: outcome.connection,
+          };
+        }
+        const delivery = await deliverReadObservations({
+          clientId: ownership.connection.clientId,
+          adapterKey: outcome.adapterKey,
+          operation: outcome.operation,
+          records: outcome.records,
+          nowIso: () => services.clock.nowIso(),
+          evidenceSink: modules.evidence,
+          metricsSink: modules.metrics,
+          provenance: {
+            actor: auditActor(ctx.principal),
+            correlationId: currentCorrelation().correlationId,
+            causationId: currentCorrelation().causationId,
+          },
+        });
+        return {
+          connectionId: outcome.connectionId,
+          adapterKey: outcome.adapterKey,
+          operation: outcome.operation,
+          ok: true,
+          records: outcome.records,
+          error: null,
+          rateLimit: outcome.rateLimit,
+          policyDecisionId: outcome.policyDecisionId,
+          retrievedAt: delivery.retrievedAt,
+          receipts: delivery.receipts,
+          connection: outcome.connection,
+        };
+      },
+      emit: async (ctx) => {
+        logger.info('integrations.connection.synced', undefined, {
+          connection_id: ctx.params.connectionId,
+          client_id: ctx.params.clientId,
+          adapter_key: ctx.result.adapterKey,
+          operation: ctx.result.operation,
+          ok: ctx.result.ok,
+          delivered_records: ctx.result.receipts.length,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'integrations.connection.synced',
+          targetType: 'integration_connection',
+          targetId: ctx.params.connectionId,
+          idempotencyKey: `integrations.connection.synced:${ctx.result.policyDecisionId}`,
+          details: {
+            adapterKey: ctx.result.adapterKey,
+            operation: ctx.result.operation,
+            ok: ctx.result.ok,
+            policyDecisionId: ctx.result.policyDecisionId,
+            deliveredRecords: ctx.result.receipts.length,
+          },
+        });
+      },
+      respond: (ctx) => jsonResponse(200, serializeSyncOutcome(ctx.result)),
     }),
   );
 
@@ -838,6 +1049,12 @@ export function registerIntegrationsRoutes(
         }),
       execute: async (ctx) => {
         const body = ctx.validated as { eventType: string; payload: Record<string, unknown>; headers: Record<string, unknown> };
+        // Uniform-404 ownership fence BEFORE any module work: a foreign
+        // or unknown connection id under an accessible Client's path is
+        // the same 404 as everywhere else — the signature verification
+        // (and its 422) must never become a cross-tenant existence
+        // oracle.
+        await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
         return modules.integrations.ingestWebhookEvent(
           {
             connectionId: ctx.params.connectionId,
