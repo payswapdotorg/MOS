@@ -321,6 +321,19 @@ import { createCreatorOperationsPack } from './modules/domain-packs/public.ts';
 // MKT-030: /reporting — read-side reporting (UI-001 — the Client Decision
 // Room live aggregation over the composed authorities' public contracts).
 import { createReportingModule } from './modules/reporting/public.ts';
+// MKT-040: /deployments — the Marketing Cloud Deployment control plane
+// (DEPLOY-002). Constructed with STRUCTURAL PORTS ONLY (the frozen
+// module-dependency-matrix grants /deployments no direct module imports —
+// the /integrations MKT-023 precedent extended to the whole dependency
+// surface): the concrete /workspaces, /playbooks, /workflows,
+// /domain-packs, /extensions, /integrations, /policies, /credentials and
+// /executions public-contract instances satisfy the narrow port types
+// structurally (TypeScript structural typing) and are wired HERE, so the
+// resolution/authorization/request-execution still executes server-side
+// THROUGH those public contracts while the frozen import matrix stays
+// intact (no cross-module import exists inside src/modules/deployments —
+// verified by tools/arch-check and the boundary tests).
+import { createDeploymentsModule } from './modules/deployments/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -701,6 +714,84 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     experiments,
     learnings,
   });
+
+  // MKT-040: /deployments — the Marketing Cloud Deployment control plane
+  // (DEPLOY-002). The structural ports are satisfied by the REAL
+  // public-contract instances constructed above (the type-level proof
+  // that the ports compose the authorities without importing them):
+  // workspace ownership via /workspaces, immutable version resolution via
+  // /playbooks + /workflows (read-only), pack/extension/integration
+  // availability via their registries and installs (read-only), the
+  // fail-closed deployment-dimension policy gate via /policies,
+  // credential REFERENCES via /credentials (reference-only), and the
+  // REQUEST-EXECUTION surface via /executions createExecution (the ONLY
+  // sanctioned interaction with the execution authority — the module has
+  // no dispatch/retry/orchestration path of its own, DEPLOY-AC-07). The
+  // createExecution input is deliberately narrowed to the deployment's
+  // request shape (external-request task link, deterministic kind, the
+  // deployment's DECLARED runtime class — DEPLOY-AC-09 runtime
+  // neutrality) so the port itself cannot express execution-lifecycle
+  // mutation.
+  const deployments = createDeploymentsModule({
+    db,
+    clock,
+    ids,
+    workspaceOwnership: workspaces,
+    playbooks,
+    workflows: {
+      getWorkflowDefinition: (definitionId) => workflows.getWorkflowDefinition(definitionId),
+      getWorkflow: (workflowId) => workflows.getWorkflow(workflowId),
+    },
+    domainPacks: {
+      listDomainPackInstalls: (workspaceId) => domainPacks.listDomainPackInstalls(workspaceId),
+      getDomainPackVersion: async (packId) => {
+        const pack = await domainPacks.getDomainPackVersion(packId);
+        return pack === null
+          ? null
+          : { packId: pack.packId, packKey: pack.manifest.packKey, version: pack.manifest.version };
+      },
+    },
+    extensions: {
+      listExtensionInstalls: (workspaceId) => extensions.listExtensionInstalls(workspaceId),
+      getExtensionVersion: async (extensionId) => {
+        const extension = await extensions.getExtensionVersion(extensionId);
+        return extension === null
+          ? null
+          : {
+              extensionId: extension.extensionId,
+              extensionKey: extension.manifest.extensionKey,
+              version: extension.manifest.version,
+            };
+      },
+    },
+    integrations: {
+      listRegisteredAdapters: () =>
+        integrations.listRegisteredAdapters().map((adapter) => ({
+          adapterKey: adapter.descriptor.adapterKey,
+        })),
+      listConnectionsForClient: (clientId) => integrations.listConnectionsForClient(clientId),
+    },
+    policies,
+    credentials,
+    executions: {
+      createExecution: async (input) => {
+        const outcome = await executions.createExecution({
+          workspaceId: input.workspaceId,
+          taskLink: input.taskLink,
+          retryOfExecutionId: null,
+          executionKind: 'deterministic',
+          runtimeClass: input.runtimeClass as 'pooled-worker',
+          idempotencyKey: input.idempotencyKey,
+          actorId: null,
+        });
+        return {
+          executionId: outcome.execution.executionId,
+          runtimeClass: outcome.execution.runtimeClass,
+          replayed: outcome.replayed,
+        };
+      },
+    },
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -727,7 +818,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments },
     runtime: { aiProvider },
   };
 }

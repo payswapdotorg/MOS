@@ -127,6 +127,10 @@ import { registerExtensionPortalRoutes } from './extension-portal-routes.ts';
 // pack service; every mutation resolves the canonical owner from durable
 // pack-owned rows BEFORE authorize/validate/execute.
 import { registerCreatorOperationsRoutes } from './creator-operations-routes.ts';
+// MKT-040: the Marketing Cloud Deployment control-plane routes (DEPLOY-002
+// — the operator loop Configure → Validate → Deploy → Observe →
+// Pause/Resume → Redeploy/Rollback over /api/workspaces/:id/deployments*).
+import { registerDeploymentsRoutes } from './deployments-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -266,5 +270,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-037: the Creator Operations pack surface (thin delegation — see
   // the import block above).
   registerCreatorOperationsRoutes(router, services, modules);
+  // MKT-040: the /deployments surfaces — the deployment control plane
+  // (configure + reads + the append-only history ledger + the compound
+  // validate leg + the frozen lifecycle transitions + the
+  // request-execution surface). NO delete route: deployment history is
+  // append-only and the frozen lifecycle has exactly two terminal
+  // states; NO dispatch/retry surface: requesting execution through the
+  // /executions public contract is the only sanctioned interaction.
+  registerDeploymentsRoutes(router, services, modules);
   return router;
 }
