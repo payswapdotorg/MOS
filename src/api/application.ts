@@ -39,6 +39,13 @@
  * transition history, the closed conclusion-type taxonomy with the
  * causal evidence standard, and uncertainty/analysis-metadata retention.
  *
+ * MKT-016 additions: /learnings (Learning model, LEARN-001) — the
+ * Learning authority: scoped, append-only Learning records (statement +
+ * applicability conditions + supporting evidence/outcome references +
+ * descriptive confidence) and the contradiction/supersession/retirement
+ * relationship history from which the Learning state is DERIVED
+ * (never a stored, mutable column — history is never erased).
+ *
  * MKT-017 additions: /ai-runtime (AI task profile and model registry,
  * AI-001 — provider-neutral TaskProfiles, normalized model registry,
  * usage telemetry records).
@@ -98,6 +105,8 @@ import type { GoalsModuleApi } from '../modules/goals/public.ts';
 import type { MetricsModuleApi } from '../modules/metrics/public.ts';
 // MKT-015: /experiments module contract (experiment design records).
 import type { ExperimentsModuleApi } from '../modules/experiments/public.ts';
+// MKT-016: /learnings module contract (Learning records + relationships).
+import type { LearningsModuleApi } from '../modules/learnings/public.ts';
 import type { PlaybooksModuleApi } from '../modules/playbooks/public.ts';
 // MKT-021: /policies module contract (execution policy engine).
 import type { PoliciesModuleApi } from '../modules/policies/public.ts';
@@ -126,6 +135,8 @@ export interface ApplicationModules {
   readonly metrics: MetricsModuleApi;
   // MKT-015: experiment model authority (EXP-001).
   readonly experiments: ExperimentsModuleApi;
+  // MKT-016: Learning model authority (LEARN-001).
+  readonly learnings: LearningsModuleApi;
   // MKT-017: AI runtime registry authority (AI-001).
   readonly aiRuntime: AiRuntimeModuleApi;
 

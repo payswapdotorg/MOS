@@ -257,6 +257,9 @@ import { createEvidenceModule } from './modules/evidence/public.ts';
 import { createMetricsModule } from './modules/metrics/public.ts';
 // MKT-015: /experiments module (EXP-001 — experiment design records).
 import { createExperimentsModule } from './modules/experiments/public.ts';
+// MKT-016: /learnings module (LEARN-001 — Learning records + the
+// contradiction/supersession/retirement relationship history).
+import { createLearningModule } from './modules/learnings/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -422,6 +425,29 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // forbidden module import.
   const experiments = createExperimentsModule({ db, clock, ids, evidence, clients, workspaces });
 
+  // MKT-016: /learnings — platform ports + the allowed /evidence and
+  // /experiments dependencies (frozen matrix: /learnings ──→ /evidence,
+  // /experiments, /goals; the two merged authorities this Work Item
+  // consumes for supporting-reference validation — /evidence for the
+  // evidence citations + the shared §21 material-key backstop,
+  // /experiments for the CONCLUDED outcome references; /goals stays an
+  // unused allowed direction) + the /clients and /workspaces
+  // canonical-ownership authorities injected through /learnings'
+  // declared STRUCTURAL PORTS: the real public-contract instances satisfy
+  // the port types structurally (TypeScript structural typing), so
+  // ownership resolution still executes THROUGH the exact /clients +
+  // /workspaces public-contract methods, server-side, with no forbidden
+  // module import.
+  const learnings = createLearningModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    experiments,
+    clients,
+    workspaces,
+  });
+
   // MKT-017: /ai-runtime — the REGISTRY LAYER of the AI Runtime authority
   // (dependency matrix: /ai-runtime ──→ /executions — used exactly for
   // telemetry execution-reference validation; nothing else is imported:
@@ -512,7 +538,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, extensions },
   };
 }
 

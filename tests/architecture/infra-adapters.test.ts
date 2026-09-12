@@ -494,6 +494,17 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // closed outcome/reason-code vocabulary and cross-tenant scope fences
     // (POL-001, CRED-001).
     '025_policies.sql',
+    // MKT-016 (Learning model) appends the learnings migration (027 — the
+    // number is RESERVED for this Work Item; 026 is reserved for a
+    // sibling): the fully-immutable learnings table (statement,
+    // applicability conditions, supporting evidence/experiment-outcome
+    // references, descriptive confidence — NO stored state column) and the
+    // append-only learning_relationships history (contradicts/supersedes/
+    // retires) from which the §17 Learning state is DERIVED, with the
+    // single-supersession/single-retirement fences, the terminal-target
+    // backstop and the cross-tenant relationship + reference fences
+    // (LEARN-001, LEARN-AC-01..02).
+    '027_learnings.sql',
     // MKT-022 (Extension registry and manifest contract) appends the
     // extensions migration (028 — the number is RESERVED for this Work
     // Item; 026/027 are reserved for siblings): the immutable versioned

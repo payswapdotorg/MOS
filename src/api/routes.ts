@@ -6,7 +6,7 @@
  * Workflow instance state machine routes + MKT-010 Execution lifecycle
  * routes + MKT-012 Sandbox lifecycle routes + MKT-013 Evidence/provenance
  * routes + MKT-014 Metric normalization routes + MKT-015 Experiment model
- * routes + MKT-017 AI runtime
+ * routes + MKT-016 Learning model routes + MKT-017 AI runtime
  * registry routes — TaskProfiles, model registry, usage telemetry,
  * MKT-012 Sandbox lifecycle routes, MKT-025 Human Agent profile routes,
  * MKT-026 Job marketplace boundary routes + MKT-020 logical Agent/
@@ -45,6 +45,10 @@ import { registerMetricsRoutes } from './metrics-routes.ts';
 // MKT-015: experiment model routes (EXP-001 — declaration, reads and the
 // frozen lifecycle transitions with the conclusion payload).
 import { registerExperimentsRoutes } from './experiments-routes.ts';
+// MKT-016: Learning model routes (LEARN-001 — appends, reads, the
+// contradiction/supersession/retirement relationships and the
+// append-only relationship history).
+import { registerLearningsRoutes } from './learnings-routes.ts';
 // MKT-017: /ai-runtime registry routes (TaskProfiles, model registry,
 // usage telemetry — AI-001).
 import { registerAiRuntimeRoutes } from './ai-runtime-routes.ts';
@@ -108,6 +112,12 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // delete routes: the declared design is immutable and lifecycle moves
   // only through the frozen state machine, EXP-001).
   registerExperimentsRoutes(router, services, modules);
+  // MKT-016: learnings surface (append / read / list + the explicit
+  // contradiction/supersession/retirement relationships and the
+  // append-only relationship history — NO update or delete routes:
+  // Learning rows are fully immutable and state changes are NEW
+  // relationship rows, LEARN-001/LEARN-AC-02).
+  registerLearningsRoutes(router, services, modules);
   // MKT-017: AI runtime registry surfaces.
   registerAiRuntimeRoutes(router, services, modules);
 
