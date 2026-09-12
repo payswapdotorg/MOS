@@ -83,7 +83,13 @@
  * the visit lifecycle, structured outcomes, evidence capture, follow-up
  * and the policy-gated continuity lookup ride the SAME /jobs module
  * contract: the JobsModuleApi interface is extended in place; NO new
- * module, NO new dependency). */
+ * module, NO new dependency).
+ *
+ * MKT-030 additions: /reporting (read-side reporting, UI-001 — the Client
+ * Decision Room read model: a PURE LIVE AGGREGATION over the /goals,
+ * /workflows, /evidence, /experiments and /learnings public contracts;
+ * read-only by construction, no owned state, no projection tables).
+ */
 
 
 import type { AgenciesModuleApi } from '../modules/agencies/public.ts';
@@ -116,6 +122,9 @@ import type { ExtensionsModuleApi } from '../modules/extensions/public.ts';
 // MKT-036: /domain-packs module contract (versioned Domain Pack
 // framework — PACK-001).
 import type { DomainPacksModuleApi } from '../modules/domain-packs/public.ts';
+// MKT-030: /reporting module contract (read-side reporting — the Client
+// Decision Room live aggregation over the composed authorities).
+import type { ReportingModuleApi } from '../modules/reporting/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -175,4 +184,9 @@ export interface ApplicationModules {
   // scope records with the §5 explicit Client/Agency-reusable
   // distinction).
   readonly domainPacks: DomainPacksModuleApi;
+
+  // MKT-030: read-side reporting authority (UI-001 — the Client Decision
+  // Room live aggregation; the agency-scoped Command Center family of the
+  // SAME authority arrives with MKT-029). READ-ONLY by construction.
+  readonly reporting: ReportingModuleApi;
 }

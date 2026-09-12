@@ -92,6 +92,14 @@ import { registerJobsVisitsRoutes } from './jobs-visits-routes.ts';
 // public contracts; registered BEFORE the :jobId-parameterized routes
 // because the literal 'queue' segment sits in the :jobId position.
 import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
+// MKT-030: the /reporting CLIENT DECISION ROOM routes (UI-001 — the
+// client-scoped read surface of the /reporting authority: WHAT HAPPENED,
+// WHY, EVIDENCE QUALITY, EXPERIMENTS, RECOMMENDATIONS and APPROVALS over
+// authoritative backend state; UI-AC-01..02). READ-ONLY by construction —
+// exactly one GET route, no body, no authority fields, scope server-derived
+// (the jobs-visits-routes.ts precedent: one authority, multiple route
+// families — the agency-scoped Command Center family arrives with MKT-029).
+import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -193,5 +201,14 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // delete routes: registry versions, install history and artifact scope
   // records are immutable/append-only.
   registerDomainPacksRoutes(router, services, modules);
+
+  // MKT-030: the CLIENT DECISION ROOM surface of the /reporting authority
+  // — one GET route presenting the live-aggregated authoritative state
+  // (goals, learnings, evidence quality, experiments + decisions,
+  // approvals) for a client-scoped caller. Every mutating verb 405s at
+  // the router; the route reads no body; NO update/delete/POST routes can
+  // ever appear in this family (the decision room is a read surface, not
+  // a write authority — UI-AC-02).
+  registerReportingDecisionRoomRoutes(router, services, modules);
   return router;
 }
