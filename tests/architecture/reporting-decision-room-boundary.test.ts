@@ -279,7 +279,7 @@ test('routes.ts registers the decision-room family; the composition root builds 
 });
 
 // ---------------------------------------------------------------------------
-// 8. PURE LIVE AGGREGATION — migration 031 stays RESERVED and unused
+// 8. PURE LIVE AGGREGATION — reporting owns no state (031 belongs to MKT-037)
 // ---------------------------------------------------------------------------
 
 test('no decision-room projection migration exists — the live aggregation owns no state', () => {
@@ -294,8 +294,13 @@ test('no decision-room projection migration exists — the live aggregation owns
   }
   assert.ok(
     !existsSync(join(migrationsDir, '031_decision_room.sql')),
-    'migration 031 stays RESERVED and unused: the pure live aggregation is the delivered architecture',
+    'no decision-room projection migration exists: the pure live aggregation is the delivered architecture (031 became the Creator Operations pack schema of MKT-037 per its Work Order reservation)',
   );
-  // The composition root documents the reservation decision.
-  assert.ok(compositionRoot.includes('migration 031 stays RESERVED'));
+  // The composition root documents the reservation decision (MKT-037
+  // disclosure: the original pin read "migration 031 stays RESERVED";
+  // the MKT-037 dispatch reserved 031 for the Creator Operations pack, so
+  // the composition-root comment now records that 032 stays reserved for a
+  // future Work Item while reporting still owns NO state — the substance
+  // of this assertion is unchanged).
+  assert.ok(compositionRoot.includes('migration 032 stays RESERVED'));
 });

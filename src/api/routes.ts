@@ -117,6 +117,16 @@ import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-r
 // delegation only — the jobs-queue-routes.ts precedent: one authority,
 // multiple route families; the portal owns NO state of its own).
 import { registerExtensionPortalRoutes } from './extension-portal-routes.ts';
+// MKT-037: the CREATOR OPERATIONS DOMAIN PACK routes (CREATOR-001 — the
+// pack-owned Client-scoped subject surface, the approval-gated outbound
+// conversation sends and content publication, the human approval records,
+// the observation mapping into the common evidence/metric ledgers, the
+// TaskProfile provisioning through the /ai-runtime authority and the
+// frozen pack-manifest publication through the /domain-packs framework —
+// CREATOR-AC-01..06). Thin delegation over the SAME composition-root-wired
+// pack service; every mutation resolves the canonical owner from durable
+// pack-owned rows BEFORE authorize/validate/execute.
+import { registerCreatorOperationsRoutes } from './creator-operations-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -253,5 +263,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // or delete routes: registry versions, review history and invocation
   // history are immutable/append-only at the authorities.
   registerExtensionPortalRoutes(router, services, modules);
+  // MKT-037: the Creator Operations pack surface (thin delegation — see
+  // the import block above).
+  registerCreatorOperationsRoutes(router, services, modules);
   return router;
 }
