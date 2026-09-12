@@ -34,7 +34,10 @@ export type OwnerScope =
   | { readonly kind: 'evidence'; readonly agencyId: string; readonly clientId: string; readonly workspaceId: string | null; readonly evidenceId: string }
   // MKT-015: experiments are Client-owned with an optional Workspace scope
   // INSIDE the owning Client (workspaceId null = client-wide).
-  | { readonly kind: 'experiment'; readonly agencyId: string; readonly clientId: string; readonly workspaceId: string | null; readonly experimentId: string };
+  | { readonly kind: 'experiment'; readonly agencyId: string; readonly clientId: string; readonly workspaceId: string | null; readonly experimentId: string }
+  // MKT-016: learnings are Client-owned with an optional Workspace scope
+  // INSIDE the owning Client (workspaceId null = client-wide).
+  | { readonly kind: 'learning'; readonly agencyId: string; readonly clientId: string; readonly workspaceId: string | null; readonly learningId: string };
 
 export interface PipelineContext<P extends Record<string, string>> {
   readonly request: RequestContext;

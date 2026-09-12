@@ -73,7 +73,9 @@ function ownerScopeAuditFields(owner: OwnerScope): {
                   ? owner.clientId
                   : owner.kind === 'experiment' // MKT-015: experiments are Client-owned (optional workspace scope).
                     ? owner.clientId
-                    : null,
+                    : owner.kind === 'learning' // MKT-016: learnings are Client-owned (optional workspace scope).
+                      ? owner.clientId
+                      : null,
     workspaceId:
       owner.kind === 'workspace'
         ? owner.workspaceId
@@ -89,7 +91,9 @@ function ownerScopeAuditFields(owner: OwnerScope): {
                   ? owner.workspaceId
                   : owner.kind === 'experiment' // MKT-015: workspace scope when the record is workspace-scoped.
                     ? owner.workspaceId
-                    : null,
+                    : owner.kind === 'learning' // MKT-016: workspace scope when the record is workspace-scoped.
+                      ? owner.workspaceId
+                      : null,
   };
 }
 

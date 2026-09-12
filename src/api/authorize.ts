@@ -41,6 +41,8 @@ import type { GoalOwnerContext } from '../modules/goals/public.ts';
 import type { MetricOwnerContext } from '../modules/metrics/public.ts';
 // MKT-015: /experiments canonical owner context (experiment design records).
 import type { ExperimentOwnerContext } from '../modules/experiments/public.ts';
+// MKT-016: /learnings canonical owner context (Learning access check).
+import type { LearningOwnerContext } from '../modules/learnings/public.ts';
 import type { PlaybookOwnerContext } from '../modules/playbooks/public.ts';
 import type { WorkflowOwnerContext } from '../modules/workflows/public.ts';
 import type { WorkspaceOwnerContext } from '../modules/workspaces/public.ts';
@@ -737,6 +739,54 @@ export async function requireExperimentAccess(
   }
   if (membership.membershipStatus !== 'active') {
     throw new ForbiddenError('Active membership in the experiment client agency required');
+  }
+  if (roles !== undefined && !roles.includes(membership.role)) {
+    throw new ForbiddenError('This operation requires a different agency role');
+  }
+  return ownership;
+}
+
+/**
+ * MKT-016: canonical Learning access check. Resolves the learning's
+ * owning Client through the /learnings module's canonical owner chain
+ * (learning → /clients → /agencies) from durable state BEFORE any
+ * dependent traversal, then enforces the same hard-boundary posture as
+ * evidence, metric observations and experiments: a foreign learning
+ * identifier is indistinguishable from an unknown one (uniform 404 — no
+ * cross-tenant oracle), while intra-tenant failures (suspended
+ * membership, wrong role) are 403s exactly like every other scoped
+ * authority.
+ */
+export async function requireLearningAccess(
+  modules: ApplicationModules,
+  principal: Principal,
+  learningId: string,
+  roles?: ReadonlyArray<AgencyRoleKey>,
+): Promise<LearningOwnerContext> {
+  const ownership = await modules.learnings.resolveLearningOwnership(learningId);
+  if (ownership === null) {
+    throw new NotFoundError('learning', learningId);
+  }
+
+  if (principal.kind === 'service') return ownership;
+
+  const context = await resolveContext(modules, principal);
+  if (context === null || context.principal.status !== 'active') {
+    throw new ForbiddenError('Active user identity required');
+  }
+  if (context.platformRoles.includes('platform_administrator')) return ownership;
+
+  const membership = context.memberships.find(
+    (entry) => entry.agencyId === ownership.clientOwnership.client.agencyId,
+  );
+  if (membership === undefined) {
+    // Hard boundary: not a member of the agency owning the record's CLIENT
+    // → indistinguishable from an unknown record (uniform 404, no
+    // cross-tenant oracle; rejection BEFORE any dependent traversal).
+    throw new NotFoundError('learning', learningId);
+  }
+  if (membership.membershipStatus !== 'active') {
+    throw new ForbiddenError('Active membership in the learning client agency required');
   }
   if (roles !== undefined && !roles.includes(membership.role)) {
     throw new ForbiddenError('This operation requires a different agency role');
