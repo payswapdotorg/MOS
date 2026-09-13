@@ -38,10 +38,14 @@
  *   7. the shared registration files wire the surface (routes.ts registers
  *      the family AFTER the direct MKT-022 family) and NO new module
  *      directory exists — the portal is a surface, not a module;
- *   8. the portal owns NO state: migration 032 stays RESERVED and unused
- *      (no 032_extension_portal.sql or any portal-owned table exists; the
- *      authoritative state stays exactly the MKT-022 extensions tables +
- *      the MKT-021 policies tables).
+ *   8. the portal owns NO state: no extension_portal/portal_review table
+ *      exists in ANY migration and no portal-owned migration file exists
+ *      (the authoritative state stays exactly the MKT-022 extensions
+ *      tables + the MKT-021 policies tables). NUMBERING NOTE (MKT-019
+ *      worker, per the Tech Lead's dispatch): migration number 032 was
+ *      reserved for MKT-019 (AI evaluations) and is now taken by
+ *      032_ai_evaluations.sql — the portal-owns-no-state proof below is
+ *      content-based (no portal-owned table), not number-based.
  */
 
 import { test } from 'node:test';
@@ -329,9 +333,13 @@ test('routes.ts registers the portal family; application.ts is unchanged in modu
 
 test('no portal-owned migration or table exists — the authoritative state stays the MKT-022 + MKT-021 tables', () => {
   const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort();
+  // The portal owns NO state: no portal-owned migration FILE exists. (The
+  // migration NUMBER 032 is taken by MKT-019's ai_evaluations migration,
+  // reserved for that Work Item by the Tech Lead's dispatch — the proof
+  // here is that no migration creates portal-owned TABLES.)
   assert.ok(
-    !migrations.some((name) => name.startsWith('032')),
-    `migration 032 must stay RESERVED and unused (a surface owns no state); found: ${migrations.filter((name) => name.startsWith('032')).join(', ')}`,
+    !migrations.some((name) => /portal/i.test(name)),
+    `a portal-owned migration file must not exist (a surface owns no state); found: ${migrations.filter((name) => /portal/i.test(name)).join(', ')}`,
   );
   for (const migration of migrations) {
     const text = read(join(migrationsDir, migration));

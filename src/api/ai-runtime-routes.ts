@@ -1,6 +1,7 @@
 /**
  * /ai-runtime API routes (MKT-017 — AI task profile and model registry:
- * AI-001, acceptance AI-AC-01..02).
+ * AI-001, acceptance AI-AC-01..02; MKT-018 — routing: AI-002; MKT-019 —
+ * evaluation framework: AI-003, acceptance AI-AC-08).
  *
  *   POST  /api/workspaces/:workspaceId/ai/task-profiles        register TaskProfile (owner|admin|platform admin)
  *   GET   /api/workspaces/:workspaceId/ai/task-profiles        list the Workspace's profiles in ALL states (any active member)
@@ -18,6 +19,23 @@
  *   GET   /api/workspaces/:workspaceId/ai/usage-telemetry      list the Workspace's telemetry, newest first (any active member)
  *   GET   /api/ai/usage-telemetry/:usageId                     read (member of the owning agency)
  *
+ *   POST  /api/ai/evaluators                                   register evaluator registry entry (platform admin only) — MKT-019
+ *   GET   /api/ai/evaluators                                   list ACTIVE entries (any authenticated — catalog data) — MKT-019
+ *   GET   /api/ai/evaluators/:evaluatorRegistryId              read (any authenticated; retired history stays visible) — MKT-019
+ *   POST  /api/ai/evaluators/:evaluatorRegistryId/retire       single lifecycle edge, CAS (platform admin only) — MKT-019
+ *
+ *   POST  /api/workspaces/:workspaceId/ai/evaluations          run one evaluation of a TaskProfile's evaluator contract
+ *                                                               (owner|admin; BUILT-IN evaluators only — caller-supplied
+ *                                                               engines are a module-level composition, never an HTTP
+ *                                                               input) — MKT-019
+ *   GET   /api/workspaces/:workspaceId/ai/evaluations          list the Workspace's evaluation records (any active member) — MKT-019
+ *   GET   /api/ai/evaluations/:evaluationId                    read (member of the owning agency) — MKT-019
+ *
+ *   POST  /api/workspaces/:workspaceId/ai/review-requests      record a human-review request (owner|admin) — MKT-019
+ *   GET   /api/workspaces/:workspaceId/ai/review-requests      list the Workspace's review requests (any active member) — MKT-019
+ *   GET   /api/ai/review-requests/:reviewRequestId             read with transition history (member of the owning agency) — MKT-019
+ *   POST  /api/ai/review-requests/:reviewRequestId/decide      record the single review decision (owner|admin) — MKT-019
+ *
  * The TaskProfile surface is the PROVIDER-NEUTRAL request contract
  * (AI-AC-01): request DTOs REJECT provider/model/credential-shaped keys —
  * domain requests may never carry a provider or model selection. The model
@@ -30,13 +48,13 @@
  * Cross-tenant and unknown identifiers yield a UNIFORM 404 (no
  * traversal/existence oracle).
  *
- * NO routing/eligibility/cascade/escalation logic and NO model invocation
- * exist here (AI-002/MKT-018, AI-003/MKT-019): these routes manage the
- * REGISTRY LAYER ONLY — profiles, registry entries, observations and usage
- * telemetry records. Boundary policy (new-use gating) is enforced at the
- * route layer because the frozen dependency matrix gives /ai-runtime no
- * /workspaces dependency: the module takes the server-derived scope chain
- * as data and the migration-016 scope-chain trigger is the backstop.
+ * MKT-019 AI-AC-08 posture: the evaluation surfaces reject
+ * BUSINESS-OUTCOME-shaped request keys (metricId/kpiId/experimentId/...)
+ * — evaluation is independent of business-outcome measurement — and the
+ * evaluation request DTO can never select evaluators (derived from the
+ * TaskProfile contract) nor fabricate outcomes (verdict/score/dimensions
+ * are evaluator-computed and module-recorded). The review-request surface
+ * records human-review INTENT/OUTCOME only — humans act through /jobs.
  */
 
 import { ConflictError, NotFoundError } from '../platform/errors/errors.ts';
@@ -69,15 +87,23 @@ import { recordMutationAudit } from './audit-emit.ts';
 import type {
   CascadeRunRecord,
   CascadeStepRecord,
+  EvaluationDimension,
+  EvaluationRecord,
+  EvaluatorRecord,
   ModelObservationRecord,
   ModelRegistryRecord,
+  ReviewRequestRecord,
+  ReviewRequestTransitionRecord,
   RoutingPolicyRecord,
   SelectionDecisionRecord,
   TaskProfileRecord,
   UsageTelemetryRecord,
 } from '../modules/ai-runtime/public.ts';
 import {
+  EVALUATION_FORBIDDEN_INPUT_KEYS,
+  EVALUATOR_REGISTRATION_FORBIDDEN_INPUT_KEYS,
   MODEL_REGISTRATION_FORBIDDEN_INPUT_KEYS,
+  REVIEW_REQUEST_FORBIDDEN_INPUT_KEYS,
   ROUTING_POLICY_FORBIDDEN_INPUT_KEYS,
   SELECTION_DECISION_FORBIDDEN_INPUT_KEYS,
   TASK_PROFILE_FORBIDDEN_INPUT_KEYS,
@@ -88,6 +114,30 @@ const RISK_CLASS_PATTERN = /^(low|medium|high)$/;
 const PRIVACY_CLASS_PATTERN = /^(public|internal|confidential|restricted)$/;
 const AVAILABILITY_STATE_PATTERN = /^(available|degraded|unavailable)$/;
 const USAGE_OUTCOME_PATTERN = /^(succeeded|failed|escalated|unknown)$/;
+const EVALUATOR_KIND_PATTERN =
+  /^(schema-validity|factuality-grounding|evidence-citation-coverage|brand-policy-compliance|domain-rubric|human-review|downstream-task-success)$/;
+const REVIEW_DECISION_PATTERN = /^(approve|reject|dismiss)$/;
+
+/** Fields always server-derived on review DECIDE (authority fields). */
+const REVIEW_REQUEST_DECIDE_AUTHORITY_FIELDS = [
+  'reviewRequestId',
+  'workspaceId',
+  'clientId',
+  'agencyId',
+  'executionId',
+  'evaluationId',
+  'reason',
+  'state',
+  'decidedBy',
+  'decidedAt',
+  'decisionNote',
+  'correlationId',
+  'createFingerprint',
+  'createdBy',
+  'createdAt',
+  'updatedAt',
+  'version',
+] as const;
 
 const LATENCY_MS_MAX = 86_400_000;
 const COST_MAX = 1_000_000_000;
@@ -323,6 +373,94 @@ function serializeCascadeRun(run: CascadeRunRecord): Record<string, unknown> {
     createdAt: run.createdAt,
     updatedAt: run.updatedAt,
     cascadeSteps: run.cascadeSteps.map(serializeCascadeStep),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MKT-019 (AI-003) evaluation serializers
+// ---------------------------------------------------------------------------
+
+function serializeEvaluator(evaluator: EvaluatorRecord): Record<string, unknown> {
+  return {
+    evaluatorRegistryId: evaluator.evaluatorRegistryId,
+    evaluatorKey: evaluator.evaluatorKey,
+    displayName: evaluator.displayName,
+    kind: evaluator.kind,
+    evaluatorVersion: evaluator.evaluatorVersion,
+    config: evaluator.config,
+    status: evaluator.status,
+    version: evaluator.version,
+    ...(evaluator.createdBy === null ? {} : { createdBy: evaluator.createdBy }),
+    createdAt: evaluator.createdAt,
+    updatedAt: evaluator.updatedAt,
+  };
+}
+
+function serializeDimension(dimension: EvaluationDimension): Record<string, unknown> {
+  return {
+    dimension: dimension.dimension,
+    verdict: dimension.verdict,
+    ...(dimension.score === null ? {} : { score: dimension.score }),
+    notes: dimension.notes,
+  };
+}
+
+function serializeEvaluation(evaluation: EvaluationRecord): Record<string, unknown> {
+  return {
+    evaluationId: evaluation.evaluationId,
+    workspaceId: evaluation.workspaceId,
+    clientId: evaluation.clientId,
+    agencyId: evaluation.agencyId,
+    taskProfileId: evaluation.taskProfileId,
+    ...(evaluation.executionId === null ? {} : { executionId: evaluation.executionId }),
+    ...(evaluation.usageId === null ? {} : { usageId: evaluation.usageId }),
+    evaluatorRegistryId: evaluation.evaluatorRegistryId,
+    evaluatorId: evaluation.evaluatorKey,
+    evaluatorVersion: evaluation.evaluatorVersion,
+    verdict: evaluation.verdict,
+    ...(evaluation.score === null ? {} : { score: evaluation.score }),
+    dimensions: evaluation.dimensions.map(serializeDimension),
+    evidenceRefs: evaluation.evidenceRefs,
+    uncertaintyOrLimitations: evaluation.uncertaintyOrLimitations,
+    correlationId: evaluation.correlationId,
+    idempotencyKey: evaluation.idempotencyKey,
+    ...(evaluation.createdBy === null ? {} : { createdBy: evaluation.createdBy }),
+    createdAt: evaluation.createdAt,
+  };
+}
+
+function serializeReviewTransition(transition: ReviewRequestTransitionRecord): Record<string, unknown> {
+  return {
+    transitionId: transition.transitionId,
+    reviewRequestId: transition.reviewRequestId,
+    fromState: transition.fromState,
+    toState: transition.toState,
+    ...(transition.decidedBy === null ? {} : { decidedBy: transition.decidedBy }),
+    ...(transition.note === null ? {} : { note: transition.note }),
+    createdAt: transition.createdAt,
+  };
+}
+
+function serializeReviewRequest(request: ReviewRequestRecord): Record<string, unknown> {
+  return {
+    reviewRequestId: request.reviewRequestId,
+    workspaceId: request.workspaceId,
+    clientId: request.clientId,
+    agencyId: request.agencyId,
+    ...(request.executionId === null ? {} : { executionId: request.executionId }),
+    ...(request.evaluationId === null ? {} : { evaluationId: request.evaluationId }),
+    reason: request.reason,
+    state: request.state,
+    ...(request.decidedBy === null ? {} : { decidedBy: request.decidedBy }),
+    ...(request.decidedAt === null ? {} : { decidedAt: request.decidedAt }),
+    ...(request.decisionNote === null ? {} : { decisionNote: request.decisionNote }),
+    correlationId: request.correlationId,
+    idempotencyKey: request.idempotencyKey,
+    version: request.version,
+    ...(request.createdBy === null ? {} : { createdBy: request.createdBy }),
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+    transitions: request.transitions.map(serializeReviewTransition),
   };
 }
 
@@ -1045,6 +1183,487 @@ export function registerAiRuntimeRoutes(
     await requireWorkspaceAccess(modules, principal, run.workspaceId, roles);
     return run;
   }
+
+  // -------------------------------------------------------------------------
+  // MKT-019 (AI-003) — evaluation framework + human-review hook
+  // -------------------------------------------------------------------------
+
+  /** Fields always server-derived on evaluator RETIRE (authority fields). */
+  const EVALUATOR_RETIRE_AUTHORITY_FIELDS = [
+    'evaluatorRegistryId',
+    'evaluatorKey',
+    'displayName',
+    'kind',
+    'evaluatorVersion',
+    'config',
+    'status',
+    'createdBy',
+    'createdAt',
+    'updatedAt',
+  ] as const;
+
+  /** Evaluation-record-scoped access check (same posture as TaskProfile). */
+  async function requireEvaluationAccess(
+    principal: Principal,
+    evaluationId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<EvaluationRecord> {
+    const evaluation = await modules.aiRuntime.getEvaluation(evaluationId);
+    if (evaluation === null) {
+      throw new NotFoundError('evaluation', evaluationId);
+    }
+    await requireWorkspaceAccess(modules, principal, evaluation.workspaceId, roles);
+    return evaluation;
+  }
+
+  /** Review-request-scoped access check (same posture). */
+  async function requireReviewRequestAccess(
+    principal: Principal,
+    reviewRequestId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<ReviewRequestRecord> {
+    const request = await modules.aiRuntime.getReviewRequest(reviewRequestId);
+    if (request === null) {
+      throw new NotFoundError('review-request', reviewRequestId);
+    }
+    await requireWorkspaceAccess(modules, principal, request.workspaceId, roles);
+    return request;
+  }
+
+  // POST /api/ai/evaluators — register an evaluator registry entry
+  // (platform admin only). The evaluator_key is fenced among ACTIVE
+  // entries.
+  router.add(
+    'POST',
+    '/api/ai/evaluators',
+    defineMutationRoute<Record<string, string>, EvaluatorRecord>({
+      authenticator: services.auth,
+      resolveOwner: async () => ({ kind: 'platform' }),
+      authorize: async (ctx) => {
+        await requirePlatformAdministrator(modules, ctx.principal);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: EVALUATOR_REGISTRATION_FORBIDDEN_INPUT_KEYS,
+          fields: {
+            evaluatorKey: stringField({ minLength: 2, maxLength: 100 }),
+            displayName: stringField({ minLength: 1, maxLength: 200 }),
+            kind: stringField({ pattern: EVALUATOR_KIND_PATTERN }),
+            evaluatorVersion: intField({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+            config: recordField({ maxDepthKeys: 64 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const body = ctx.validated as Record<string, unknown>;
+        return modules.aiRuntime.registerEvaluator({
+          evaluator: {
+            evaluatorKey: body['evaluatorKey'] as string,
+            displayName: body['displayName'] as string,
+            kind: body['kind'] as EvaluatorRecord['kind'],
+            evaluatorVersion: body['evaluatorVersion'] as number,
+            config: body['config'] as Record<string, unknown>,
+          },
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.evaluator.registered', undefined, {
+          evaluator_registry_id: ctx.result.evaluatorRegistryId,
+          evaluator_key: ctx.result.evaluatorKey,
+          kind: ctx.result.kind,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.evaluator.registered',
+          targetType: 'ai_evaluator',
+          targetId: ctx.result.evaluatorRegistryId,
+          afterVersion: ctx.result.version,
+          idempotencyKey: `ai_runtime.evaluator.registered:${ctx.result.evaluatorRegistryId}`,
+          details: { evaluatorKey: ctx.result.evaluatorKey, kind: ctx.result.kind },
+        });
+      },
+      respond: (ctx) => jsonResponse(201, serializeEvaluator(ctx.result)),
+    }),
+  );
+
+  // GET /api/ai/evaluators — the ACTIVE registry entries (catalog data:
+  // any authenticated principal; the AI Runtime console surface).
+  router.add(
+    'GET',
+    '/api/ai/evaluators',
+    defineQueryRoute<Record<string, string>, readonly EvaluatorRecord[]>({
+      authenticator: services.auth,
+      execute: async () => modules.aiRuntime.listEvaluators(),
+      respond: (ctx) =>
+        jsonResponse(200, { evaluators: ctx.result.map(serializeEvaluator) }),
+    }),
+  );
+
+  // GET /api/ai/evaluators/:evaluatorRegistryId — read one (retired
+  // history stays visible; uniform 404 for unknown).
+  router.add(
+    'GET',
+    '/api/ai/evaluators/:evaluatorRegistryId',
+    defineQueryRoute<{ evaluatorRegistryId: string }, EvaluatorRecord>({
+      authenticator: services.auth,
+      execute: async (ctx) => {
+        const evaluator = await modules.aiRuntime.getEvaluator(ctx.params.evaluatorRegistryId);
+        if (evaluator === null) {
+          throw new NotFoundError('evaluator', ctx.params.evaluatorRegistryId);
+        }
+        return evaluator;
+      },
+      respond: (ctx) => jsonResponse(200, serializeEvaluator(ctx.result)),
+    }),
+  );
+
+  // POST /api/ai/evaluators/:evaluatorRegistryId/retire — the single
+  // lifecycle edge (active → retired, terminal), CAS (platform admin only).
+  router.add(
+    'POST',
+    '/api/ai/evaluators/:evaluatorRegistryId/retire',
+    defineMutationRoute<{ evaluatorRegistryId: string }, EvaluatorRecord>({
+      authenticator: services.auth,
+      resolveOwner: async () => ({ kind: 'platform' }),
+      authorize: async (ctx) => {
+        await requirePlatformAdministrator(modules, ctx.principal);
+      },
+      validate: (ctx) =>
+        validateObject<{ version: number }>(ctx.request.body, {
+          forbiddenKeys: EVALUATOR_RETIRE_AUTHORITY_FIELDS,
+          fields: {
+            version: intField({ min: 1, max: Number.MAX_SAFE_INTEGER }),
+          },
+        }),
+      execute: async (ctx) => {
+        const body = ctx.validated as { version: number };
+        return modules.aiRuntime.retireEvaluator({
+          evaluatorRegistryId: ctx.params.evaluatorRegistryId,
+          expectedVersion: body.version,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.evaluator.retired', undefined, {
+          evaluator_registry_id: ctx.result.evaluatorRegistryId,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.evaluator.retired',
+          targetType: 'ai_evaluator',
+          targetId: ctx.result.evaluatorRegistryId,
+          beforeVersion: ctx.result.version - 1,
+          afterVersion: ctx.result.version,
+          idempotencyKey: `ai_runtime.evaluator.retired:${ctx.result.evaluatorRegistryId}:${ctx.result.version}`,
+          details: { evaluatorKey: ctx.result.evaluatorKey },
+        });
+      },
+      respond: (ctx) => jsonResponse(200, serializeEvaluator(ctx.result)),
+    }),
+  );
+
+  // POST /api/workspaces/:workspaceId/ai/evaluations — run ONE evaluation
+  // of a TaskProfile's evaluator contract (owner|admin). The evaluation
+  // request is DERIVED from the profile's evaluatorIds (the caller cannot
+  // select evaluators) and the outcomes are evaluator-computed (the caller
+  // cannot fabricate verdict/score/dimensions). The route runs the BUILT-IN
+  // deterministic evaluators only — caller-supplied engines are a
+  // module-level composition (like the routing adapter), never an HTTP
+  // input. The §8-style idempotency key is REQUIRED: a duplicate of the
+  // same logical command converges (201 fresh / 200 replayed); a key
+  // reused for a different command is a 409.
+  router.add(
+    'POST',
+    '/api/workspaces/:workspaceId/ai/evaluations',
+    defineMutationRoute<
+      { workspaceId: string },
+      { evaluations: readonly EvaluationRecord[]; replayed: boolean }
+    >({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => workspaceOwner(params.workspaceId),
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: EVALUATION_FORBIDDEN_INPUT_KEYS,
+          fields: {
+            taskProfileId: stringField({ minLength: 36, maxLength: 36 }),
+            executionId: optionalString({ minLength: 36, maxLength: 36 }),
+            usageId: optionalString({ minLength: 36, maxLength: 36 }),
+            output: optionalRecordField({ maxDepthKeys: 64 }),
+            adapterError: optionalString({ minLength: 0, maxLength: 2000 }),
+            idempotencyKey: stringField({ minLength: 1, maxLength: 200 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const ownership = await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+        assertActiveBoundaries(ownership, 'running an AI evaluation');
+        const body = ctx.validated as Record<string, unknown>;
+        const correlation = currentCorrelation();
+        return modules.aiRuntime.evaluateTask({
+          workspaceId: ctx.params.workspaceId,
+          clientId: ownership.scope.clientId,
+          agencyId: ownership.scope.agencyId,
+          taskProfileId: body['taskProfileId'] as string,
+          executionId: (body['executionId'] as string | undefined) ?? null,
+          usageId: (body['usageId'] as string | undefined) ?? null,
+          output: (body['output'] as Record<string, unknown> | undefined) ?? null,
+          adapterError: (body['adapterError'] as string | undefined) ?? null,
+          idempotencyKey: body['idempotencyKey'] as string,
+          correlationId: correlation.correlationId,
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.evaluation.recorded', undefined, {
+          workspace_id: ctx.params.workspaceId,
+          evaluation_count: ctx.result.evaluations.length,
+          replayed: ctx.result.replayed,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        // The audit fence key uses the FIRST converged evaluation id — on
+        // replay the per-evaluator fences converge to the SAME rows, so
+        // the audit append dedupes naturally.
+        const firstEvaluationId = ctx.result.evaluations[0]?.evaluationId ?? 'none';
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.evaluation.recorded',
+          targetType: 'ai_evaluation',
+          targetId: firstEvaluationId,
+          idempotencyKey: `ai_runtime.evaluation.recorded:${firstEvaluationId}`,
+          details: {
+            evaluations: ctx.result.evaluations.length,
+            replayed: ctx.result.replayed,
+          },
+        });
+      },
+      respond: (ctx) =>
+        jsonResponse(ctx.result.replayed ? 200 : 201, {
+          evaluations: ctx.result.evaluations.map(serializeEvaluation),
+          replayed: ctx.result.replayed,
+        }),
+    }),
+  );
+
+  // GET /api/workspaces/:workspaceId/ai/evaluations — list the Workspace's
+  // evaluation records, newest first (any active member).
+  router.add(
+    'GET',
+    '/api/workspaces/:workspaceId/ai/evaluations',
+    defineQueryRoute<{ workspaceId: string }, readonly EvaluationRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+      },
+      execute: async (ctx) => modules.aiRuntime.listEvaluations(ctx.params.workspaceId, 500),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          workspaceId: ctx.params.workspaceId,
+          evaluations: ctx.result.map(serializeEvaluation),
+        }),
+    }),
+  );
+
+  // GET /api/ai/evaluations/:evaluationId — read one (member of the owning
+  // agency; uniform 404 for foreign/unknown).
+  router.add(
+    'GET',
+    '/api/ai/evaluations/:evaluationId',
+    defineQueryRoute<{ evaluationId: string }, EvaluationRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireEvaluationAccess(ctx.principal, ctx.params.evaluationId);
+      },
+      execute: async (ctx) => {
+        const evaluation = await modules.aiRuntime.getEvaluation(ctx.params.evaluationId);
+        if (evaluation === null) {
+          throw new NotFoundError('evaluation', ctx.params.evaluationId);
+        }
+        return evaluation;
+      },
+      respond: (ctx) => jsonResponse(200, serializeEvaluation(ctx.result)),
+    }),
+  );
+
+  // POST /api/workspaces/:workspaceId/ai/review-requests — record one
+  // human-review request (owner|admin). The hook records review INTENT
+  // only; humans act through /jobs (never a second human-execution engine
+  // here). The §8-style idempotency key is REQUIRED.
+  router.add(
+    'POST',
+    '/api/workspaces/:workspaceId/ai/review-requests',
+    defineMutationRoute<
+      { workspaceId: string },
+      { reviewRequest: ReviewRequestRecord; replayed: boolean }
+    >({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => workspaceOwner(params.workspaceId),
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: REVIEW_REQUEST_FORBIDDEN_INPUT_KEYS,
+          fields: {
+            executionId: optionalString({ minLength: 36, maxLength: 36 }),
+            evaluationId: optionalString({ minLength: 36, maxLength: 36 }),
+            reason: stringField({ minLength: 1, maxLength: 2000 }),
+            idempotencyKey: stringField({ minLength: 1, maxLength: 200 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const ownership = await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+        assertActiveBoundaries(ownership, 'requesting an AI human review');
+        const body = ctx.validated as Record<string, unknown>;
+        const correlation = currentCorrelation();
+        return modules.aiRuntime.requestReview({
+          workspaceId: ctx.params.workspaceId,
+          clientId: ownership.scope.clientId,
+          agencyId: ownership.scope.agencyId,
+          executionId: (body['executionId'] as string | undefined) ?? null,
+          evaluationId: (body['evaluationId'] as string | undefined) ?? null,
+          reason: body['reason'] as string,
+          idempotencyKey: body['idempotencyKey'] as string,
+          correlationId: correlation.correlationId,
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.review_request.recorded', undefined, {
+          review_request_id: ctx.result.reviewRequest.reviewRequestId,
+          workspace_id: ctx.result.reviewRequest.workspaceId,
+          state: ctx.result.reviewRequest.state,
+          replayed: ctx.result.replayed,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.review_request.recorded',
+          targetType: 'ai_review_request',
+          targetId: ctx.result.reviewRequest.reviewRequestId,
+          afterVersion: ctx.result.reviewRequest.version,
+          idempotencyKey: `ai_runtime.review_request.recorded:${ctx.result.reviewRequest.reviewRequestId}`,
+          details: { state: ctx.result.reviewRequest.state, replayed: ctx.result.replayed },
+        });
+      },
+      respond: (ctx) =>
+        jsonResponse(ctx.result.replayed ? 200 : 201, {
+          reviewRequest: serializeReviewRequest(ctx.result.reviewRequest),
+          replayed: ctx.result.replayed,
+        }),
+    }),
+  );
+
+  // GET /api/workspaces/:workspaceId/ai/review-requests — list the
+  // Workspace's review requests (transition histories included), newest
+  // first (any active member).
+  router.add(
+    'GET',
+    '/api/workspaces/:workspaceId/ai/review-requests',
+    defineQueryRoute<{ workspaceId: string }, readonly ReviewRequestRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireWorkspaceAccess(modules, ctx.principal, ctx.params.workspaceId);
+      },
+      execute: async (ctx) => modules.aiRuntime.listReviewRequests(ctx.params.workspaceId, undefined, 500),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          workspaceId: ctx.params.workspaceId,
+          reviewRequests: ctx.result.map(serializeReviewRequest),
+        }),
+    }),
+  );
+
+  // GET /api/ai/review-requests/:reviewRequestId — read one with the
+  // append-only transition history (member of the owning agency).
+  router.add(
+    'GET',
+    '/api/ai/review-requests/:reviewRequestId',
+    defineQueryRoute<{ reviewRequestId: string }, ReviewRequestRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        await requireReviewRequestAccess(ctx.principal, ctx.params.reviewRequestId);
+      },
+      execute: async (ctx) => {
+        const request = await modules.aiRuntime.getReviewRequest(ctx.params.reviewRequestId);
+        if (request === null) {
+          throw new NotFoundError('review-request', ctx.params.reviewRequestId);
+        }
+        return request;
+      },
+      respond: (ctx) => jsonResponse(200, serializeReviewRequest(ctx.result)),
+    }),
+  );
+
+  // POST /api/ai/review-requests/:reviewRequestId/decide — record the
+  // single review decision (owner|admin). Exactly-once: the transitions
+  // fence + the state-guarded update make concurrent decisions
+  // deterministic (one wins, the rest 409); decided requests are terminal.
+  router.add(
+    'POST',
+    '/api/ai/review-requests/:reviewRequestId/decide',
+    defineMutationRoute<{ reviewRequestId: string }, ReviewRequestRecord>({
+      authenticator: services.auth,
+      resolveOwner: async (_ctx, params) => {
+        const request = await modules.aiRuntime.getReviewRequest(params.reviewRequestId);
+        if (request === null) {
+          throw new NotFoundError('review-request', params.reviewRequestId);
+        }
+        return {
+          kind: 'workspace',
+          agencyId: request.agencyId,
+          clientId: request.clientId,
+          workspaceId: request.workspaceId,
+        };
+      },
+      authorize: async (ctx) => {
+        await requireReviewRequestAccess(ctx.principal, ctx.params.reviewRequestId, [
+          'agency_owner',
+          'agency_admin',
+        ]);
+      },
+      validate: (ctx) =>
+        validateObject<Record<string, unknown>>(ctx.request.body, {
+          forbiddenKeys: REVIEW_REQUEST_DECIDE_AUTHORITY_FIELDS,
+          fields: {
+            decision: stringField({ pattern: REVIEW_DECISION_PATTERN }),
+            note: optionalString({ minLength: 0, maxLength: 2000 }),
+          },
+        }),
+      execute: async (ctx) => {
+        const body = ctx.validated as Record<string, unknown>;
+        const correlation = currentCorrelation();
+        return modules.aiRuntime.decideReview({
+          reviewRequestId: ctx.params.reviewRequestId,
+          decision: body['decision'] as ReviewRequestRecord extends never ? never : 'approve' | 'reject' | 'dismiss',
+          note: (body['note'] as string | undefined) ?? '',
+          correlationId: correlation.correlationId,
+          actorId: ctx.principal.kind === 'user' ? ctx.principal.userId : null,
+        });
+      },
+      emit: async (ctx) => {
+        logger.info('ai_runtime.review_request.decided', undefined, {
+          review_request_id: ctx.result.reviewRequestId,
+          state: ctx.result.state,
+          correlation_id: currentCorrelation().correlationId,
+        });
+        await recordMutationAudit(modules, ctx.principal, ctx.owner, {
+          action: 'ai_runtime.review_request.decided',
+          targetType: 'ai_review_request',
+          targetId: ctx.result.reviewRequestId,
+          beforeVersion: ctx.result.version - 1,
+          afterVersion: ctx.result.version,
+          idempotencyKey: `ai_runtime.review_request.decided:${ctx.result.reviewRequestId}:${ctx.result.version}`,
+          details: { state: ctx.result.state },
+        });
+      },
+      respond: (ctx) => jsonResponse(200, serializeReviewRequest(ctx.result)),
+    }),
+  );
 
   // POST /api/workspaces/:workspaceId/ai/routing-policies — register the
   // routing policy (owner|admin). The §8-style idempotency key is REQUIRED.

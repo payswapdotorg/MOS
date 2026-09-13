@@ -545,7 +545,11 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // telemetry execution-reference validation; nothing else is imported:
   // workspace scope arrives as server-derived data resolved by the routes
   // and DB-backstopped by the migration-016 scope-chain triggers).
-  const aiRuntime = createAiRuntimeModule({ db, clock, ids, executions });
+  // MKT-019 (AI evaluation framework) composes the ONE additional
+  // matrix-sanctioned dependency — the /evidence public API — for
+  // evaluation citation validation (AI-AC-08: /metrics and /experiments
+  // are never imported).
+  const aiRuntime = createAiRuntimeModule({ db, clock, ids, executions, evidence });
 
   // MKT-025 (Human Agent foundation): the generalized /field-agents authority.
   // Platform ports + the /users identity dependency only (frozen matrix:
