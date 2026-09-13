@@ -275,6 +275,15 @@ import { createDecisionsModule } from './modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // durable state, zero mutation methods — architecture-lock-v1.5 #6).
 import { createProfitIntelligenceModule } from './modules/profit-intelligence/public.ts';
+// MKT-045: /ai-operator module (AI Operator / Attention Queue — the
+// DERIVED ranked attention-queue read model over the canonical
+// authorities' public contracts: blocked work, approvals, client risk,
+// anomalies, scope leakage, margin pressure, capacity constraints and
+// opportunities as governed action candidates; live derivation, no owned
+// durable state, zero mutation methods — consequential actions continue
+// through the existing policy/approval contracts, architecture-v1.5.md
+// §7).
+import { createAiOperatorModule } from './modules/ai-operator/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -929,6 +938,36 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     aiRuntime,
     integrations,
   });
+
+  // MKT-045: /ai-operator — the AI Operator attention queue (the DERIVED
+  // ranked attention items over the canonical authorities —
+  // architecture-v1.5.md §7: ranked action candidates only; consequential
+  // actions continue through the existing policy/approval contracts).
+  // Composed READ-ONLY over the real public-contract instances constructed
+  // above (the frozen matrix line added for this Work Item): canonical
+  // Client/Workspace ownership resolution, the delivery-surface listings
+  // (/workflows, /executions, /deployments), the jobs enumeration surface
+  // (/jobs), the approval ledger (/policies), the evidence/experiment/
+  // learning listings, the human capacity pool (/field-agents) and the
+  // /profit-intelligence public views (scope-leakage + margin-pressure
+  // items CONSUME its figures — never recomputed). The module owns NO
+  // durable state (NO migration — the /profit-intelligence precedent) and
+  // its HTTP surface is read-only by construction.
+  const aiOperator = createAiOperatorModule({
+    clock,
+    clients,
+    workspaces,
+    workflows,
+    executions,
+    deployments,
+    jobs,
+    policies,
+    evidence,
+    experiments,
+    learnings,
+    fieldAgents,
+    profitIntelligence,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -955,7 +994,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, profitIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, profitIntelligence, aiOperator },
     runtime: { aiProvider },
   };
 }

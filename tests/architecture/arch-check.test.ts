@@ -23,14 +23,14 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (29 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (30 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 29);
+  assert.equal(modules.length, 30);
   // Spot-check the full frozen set from the architecture document.
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-runtime', 'audit', 'auth', 'clients', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'audit', 'auth', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
       'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
@@ -68,6 +68,14 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
     'clients', 'workspaces', 'goals', 'playbooks', 'workflows', 'executions',
     'deployments', 'evidence', 'metrics', 'jobs', 'field-agents', 'ai-runtime',
     'integrations',
+  ]);
+  // The MKT-045 additive matrix line (the /ai-operator derived ranked
+  // attention-queue read model over the canonical authorities + the
+  // consumed /profit-intelligence public figures):
+  assert.deepEqual(matrix['ai-operator'], [
+    'clients', 'workspaces', 'workflows', 'executions', 'deployments', 'jobs',
+    'policies', 'evidence', 'experiments', 'learnings', 'field-agents',
+    'profit-intelligence',
   ]);
 });
 
@@ -136,6 +144,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     'TEST_MODULE_INTERNAL_IMPORT|tests/unit/sample.test.ts',
     'UNRESOLVED_IMPORT|src/api/routes.ts',
     'MODULE_IMPORTS_APPLICATION|src/modules/goals/internal/service.ts',
+    // The /ai-operator registration (the MKT-045 delivery): the fixture
+    // provides no ai-operator boundary, so the frozen module is reported
+    // missing — exactly as for every other spec-parsed frozen module the
+    // fixture omits.
+    'MISSING_MODULE|src/modules/ai-operator',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -170,18 +183,19 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 30 enforced modules (the 29 spec-parsed frozen modules — the v1.4 26
+  // 31 enforced modules (the 30 spec-parsed frozen modules — the v1.4 26
   // PLUS /decisions registered by the MKT-042 delivery, /operating-graph
-  // registered by the MKT-041 delivery and /profit-intelligence
-  // registered by the MKT-043 delivery per the disclosed promotion
-  // precedent — PLUS the disclosed MKT-047 v1.5 composition
-  // provision 'apps' in tools/arch-check/checker.ts); the fixture provides
-  // auth, users, goals (billing is not frozen, so it cannot satisfy any
-  // frozen boundary) → 27 missing boundaries.
-  assert.equal(byRule.get('MISSING_MODULE'), 27);
+  // registered by the MKT-041 delivery, /profit-intelligence registered
+  // by the MKT-043 delivery and /ai-operator registered by the MKT-045
+  // delivery per the disclosed promotion precedent — PLUS the disclosed
+  // MKT-047 v1.5 composition provision 'apps' in
+  // tools/arch-check/checker.ts); the fixture provides auth, users, goals
+  // (billing is not frozen, so it cannot satisfy any frozen boundary) →
+  // 28 missing boundaries.
+  assert.equal(byRule.get('MISSING_MODULE'), 28);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    30,
+    31,
     'no unexpected violation categories may be reported',
   );
 
