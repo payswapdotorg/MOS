@@ -157,6 +157,11 @@ import type { AppInstallsModuleApi } from '../modules/app-installs/public.ts';
 // MKT-042: Decision Ledger authority (the append-oriented decision
 // records authority).
 import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
+// MKT-043: /profit-intelligence module contract (Profit Intelligence — the
+// derived revenue/cost/capacity/scope/margin analytics read model over the
+// canonical authorities' public contracts; live derivation, no owned
+// state, read-only surface).
+import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -274,4 +279,12 @@ export interface ApplicationModules {
   // and the append-only event tail; never rewriting any other
   // authority).
   readonly decisions: DecisionsModuleApi;
+
+  // MKT-043: the Profit Intelligence derived-analytics authority (the
+  // live revenue/cost/capacity/utilization/scope-leakage/margin read
+  // model over the canonical authorities — every material figure carries
+  // source references, the frozen calculation version and the explicit
+  // assumption set; ZERO mutation methods: derived analytics, never a
+  // financial system of record — architecture-lock-v1.5 #6).
+  readonly profitIntelligence: ProfitIntelligenceModuleApi;
 }

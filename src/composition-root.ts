@@ -270,6 +270,11 @@ import { createLearningModule } from './modules/learnings/public.ts';
 // MKT-042: /decisions module (the Decision Ledger — the append-oriented
 // ledger for material recommendations and commercial decisions).
 import { createDecisionsModule } from './modules/decisions/public.ts';
+// MKT-043: /profit-intelligence module (Profit Intelligence — the DERIVED
+// revenue/cost/capacity/scope/margin analytics read model over the
+// canonical authorities' public contracts; live derivation, no owned
+// durable state, zero mutation methods — architecture-lock-v1.5 #6).
+import { createProfitIntelligenceModule } from './modules/profit-intelligence/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -937,6 +942,36 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     clients,
     workspaces,
   });
+
+  // MKT-043: /profit-intelligence — Profit Intelligence (the DERIVED
+  // revenue/cost/capacity/scope/margin analytics over the canonical
+  // authorities — architecture-v1.5 §5; architecture-lock-v1.5 #6: derived
+  // analytics, never a financial system of record). Composed READ-ONLY
+  // over the real public-contract instances constructed above (the frozen
+  // matrix line added for this Work Item): canonical Client/Workspace
+  // ownership resolution, the authority listings (/goals, /playbooks,
+  // /workflows, /executions, /deployments, /evidence, /metrics,
+  // /integrations), the AI/provider telemetry (/ai-runtime), the jobs
+  // enumeration surface (/jobs) and the human capacity pool
+  // (/field-agents). The module owns NO durable state (NO migration — the
+  // /reporting live-aggregation precedent) and its HTTP surface is
+  // read-only by construction.
+  const profitIntelligence = createProfitIntelligenceModule({
+    clock,
+    clients,
+    workspaces,
+    goals,
+    playbooks,
+    workflows,
+    executions,
+    deployments,
+    evidence,
+    metrics: metricsModule,
+    jobs,
+    fieldAgents,
+    aiRuntime,
+    integrations,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -963,7 +998,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence },
     runtime: { aiProvider },
   };
 }
