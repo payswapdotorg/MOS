@@ -530,11 +530,12 @@ export class AppInstallsStore {
     const selectionSeq = append.prior === null ? 1 : append.prior.selectionSeq + 1;
 
     try {
-      const install = await this.db.transaction(async (tx) => {
+      const appended = await this.db.transaction(async (tx) => {
         // 1. Supersede the prior current selection (the SINGLE sanctioned
         //    UPDATE of migration 038). The guarded WHERE serializes
         //    concurrent selection changes of the same lineage: a moved
         //    selection updates zero rows → 'stale'.
+        let priorAfter: AppInstallRecord | null = append.prior;
         if (append.prior !== null) {
           const superseded = await tx.query(
             `UPDATE app_installs
@@ -545,6 +546,14 @@ export class AppInstallsStore {
           if (superseded.rowCount !== 1) {
             throw new StaleSelectionError();
           }
+          // The returned prior is the row's DURABLE post-transition state
+          // (SUPERSEDED with the stamp) — the caller sees the honest
+          // selection change, never a stale in-memory snapshot.
+          const priorRow = await tx.query<AppInstallRow>(
+            `${APP_INSTALL_SELECT} WHERE install_id = $1`,
+            [append.prior.installId],
+          );
+          priorAfter = priorRow.rows.length === 0 ? append.prior : toAppInstallRecord(priorRow.rows[0]!);
         }
 
         // 2. The successor ledger row.
@@ -620,10 +629,10 @@ export class AppInstallsStore {
           `${APP_INSTALL_SELECT} WHERE install_id = $1`,
           [installId],
         );
-        return toAppInstallRecord(inserted.rows[0]!);
+        return { install: toAppInstallRecord(inserted.rows[0]!), prior: priorAfter };
       });
 
-      return { kind: 'appended', install, prior: append.prior };
+      return { kind: 'appended', install: appended.install, prior: appended.prior };
     } catch (error) {
       if (error instanceof StaleSelectionError) return { kind: 'stale' };
       const conflict = classifyAppInstallsWriteConflict(error);

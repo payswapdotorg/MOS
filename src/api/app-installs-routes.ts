@@ -294,7 +294,7 @@ export function registerAppInstallsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'app-installs.installed',
+          action: 'appinstalls.installed',
           targetType: 'app_install',
           targetId: ctx.result.install.installId,
           details: {
@@ -430,7 +430,7 @@ export function registerAppInstallsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'app-installs.upgraded',
+          action: 'appinstalls.upgraded',
           targetType: 'app_install',
           targetId: ctx.result.install.installId,
           details: {
@@ -516,7 +516,7 @@ export function registerAppInstallsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'app-installs.rolled_back',
+          action: 'appinstalls.rolled_back',
           targetType: 'app_install',
           targetId: ctx.result.install.installId,
           details: {
