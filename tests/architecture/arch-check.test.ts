@@ -23,15 +23,16 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (30 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (32 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 31);
+  assert.equal(modules.length, 32);
   // Spot-check the full frozen set from the architecture document
-  // (the MKT-046 delivery appends /sales-continuity — §8 registration).
+  // (the MKT-046 delivery appends /sales-continuity — §8 registration;
+  // the MKT-044 delivery appends /client-memory — §6 registration).
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-runtime', 'app-installs', 'audit', 'auth', 'clients', 'credentials',
+      'agencies', 'agents', 'ai-runtime', 'app-installs', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
       'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
@@ -82,6 +83,12 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // orchestrator over the proposal + delivery authorities):
   assert.deepEqual(matrix['sales-continuity'], [
     'decisions', 'playbooks', 'deployments', 'clients', 'workspaces', 'evidence',
+  ]);
+  // The MKT-044 additive matrix line (the /client-memory derived
+  // governed-projection read model over the canonical authorities):
+  assert.deepEqual(matrix['client-memory'], [
+    'clients', 'workspaces', 'goals', 'playbooks', 'deployments', 'evidence',
+    'experiments', 'decisions', 'learnings',
   ]);
 });
 
@@ -152,7 +159,9 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     'MODULE_IMPORTS_APPLICATION|src/modules/goals/internal/service.ts',
     // The MKT-046 registration adds /sales-continuity to the enforced
     // set; the fixture provides no such boundary → the missing-module
-    // violation joins the exact set (28 missing modules total).
+    // violation joins the exact set (the /client-memory boundary stub
+    // for the MKT-044 registration is provided — the MKT-043 fixture
+    // precedent).
     'MISSING_MODULE|src/modules/sales-continuity',
   ].sort();
 
@@ -188,20 +197,21 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 31 enforced modules (the 30 spec-parsed frozen modules — the v1.4 26
+  // 32 enforced modules (the 31 spec-parsed frozen modules — the v1.4 26
   // PLUS /decisions registered by the MKT-042 delivery, /operating-graph
   // registered by the MKT-041 delivery, /app-installs registered by the
   // MKT-048 delivery, /profit-intelligence registered by the MKT-043
-  // delivery and /sales-continuity registered by the MKT-046 delivery
+  // delivery, /sales-continuity registered by the MKT-046 delivery and
+  // /client-memory registered by the MKT-044 delivery
   // per the disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
   // tools/arch-check/checker.ts); the fixture provides
   // auth, users, goals (billing is not frozen, so it cannot satisfy any
-  // frozen boundary) → 29 missing boundaries.
-  assert.equal(byRule.get('MISSING_MODULE'), 29);
+  // frozen boundary) → 30 missing boundaries.
+  assert.equal(byRule.get('MISSING_MODULE'), 30);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    32,
+    33,
     'no unexpected violation categories may be reported',
   );
 

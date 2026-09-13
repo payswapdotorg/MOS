@@ -168,6 +168,12 @@ import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence
 // path through the EXISTING creation commands, with the provenance +
 // version identity retained on its own append-only continuity ledger).
 import type { SalesContinuityModuleApi } from '../modules/sales-continuity/public.ts';
+// MKT-044: /client-memory module contract (Client Operating Memory — the
+// governed client-context projection and retrieval surface over the
+// canonical client, goal, playbook, deployment, evidence, experiment,
+// outcome, decision and learning records; live derivation, no owned
+// state, read-only surface — never a second tenant/data authority).
+import type { ClientMemoryModuleApi } from '../modules/client-memory/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -301,4 +307,15 @@ export interface ApplicationModules {
   // orchestrates, never duplicates their authority; the provenance +
   // version identity live on its own append-only continuity ledger).
   readonly salesContinuity: SalesContinuityModuleApi;
+
+  // MKT-044: the Client Operating Memory derived projection authority
+  // (the governed client-context projection and retrieval surface over
+  // the canonical client, goal, playbook, deployment, evidence,
+  // experiment, outcome, decision and learning records — every memory
+  // item cites canonical record ids under the frozen, versioned
+  // projection vocabulary (cm-proj-v1); ZERO mutation methods and ZERO
+  // owned state: retrieval/index technology is non-authoritative,
+  // PostgreSQL remains authoritative — never a second tenant/data
+  // authority).
+  readonly clientMemory: ClientMemoryModuleApi;
 }
