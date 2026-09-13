@@ -148,6 +148,9 @@ import type { DeploymentsModuleApi } from '../modules/deployments/public.ts';
 // Packaging v1 authority: versioned immutable App Version manifests over
 // the /extensions registry through a structural port).
 import type { AppsModuleApi } from '../modules/apps/public.ts';
+// MKT-042: Decision Ledger authority (the append-oriented decision
+// records authority).
+import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -242,4 +245,11 @@ export interface ApplicationModules {
   // no mutation surface over extensions (composition, not authority
   // transfer).
   readonly apps: AppsModuleApi;
+  // MKT-042: the Decision Ledger authority (the append-oriented ledger
+  // for material recommendations and commercial decisions — proposal
+  // vocabulary, the frozen disposition state machine, the one-shot
+  // observed outcome with its execution/deployment/learning references,
+  // and the append-only event tail; never rewriting any other
+  // authority).
+  readonly decisions: DecisionsModuleApi;
 }

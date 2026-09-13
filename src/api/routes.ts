@@ -147,6 +147,13 @@ import { registerDeploymentsRoutes } from './deployments-routes.ts';
 // app key, and the compatibility query — NO update or delete routes:
 // published App Versions are immutable).
 import { registerAppsRoutes } from './apps-routes.ts';
+// MKT-042: the /decisions routes (the Decision Ledger — record / list /
+// read + the frozen disposition state machine (accept/reject/supersede
+// with the successor forward-link), the one-shot observed outcome with
+// its execution/deployment/learning references and the append-only
+// event tail — NO update or delete routes: the ledger is append-oriented,
+// corrections are NEW records and history is never rewritten).
+import { registerDecisionsRoutes } from './decisions-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -307,5 +314,12 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // immutable (architecture-lock v1.5 #11) and certification transitions
   // are the future MKT-050 platform marketplace/trust surface.
   registerAppsRoutes(router, services, modules);
+  // MKT-042: the /decisions surfaces — the Decision Ledger (record +
+  // reads + the frozen disposition transitions with the §8 replay
+  // fences + the one-shot observed outcome + the append-only event
+  // tail). NO update or delete routes: the proposal payload is
+  // immutable, corrections are NEW records linked through the
+  // predecessor/successor chain, and ledger history is never erased.
+  registerDecisionsRoutes(router, services, modules);
   return router;
 }

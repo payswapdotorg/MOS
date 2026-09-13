@@ -23,17 +23,18 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (26 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (27 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 26);
+  assert.equal(modules.length, 27);
   // Spot-check the full frozen set from the architecture document.
   assert.deepEqual(
     [...modules].sort(),
     [
       'agencies', 'agents', 'ai-runtime', 'audit', 'auth', 'clients', 'credentials',
-      'deployments', 'domain-packs', 'evidence', 'executions', 'experiments', 'extensions',
-      'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics', 'notifications',
-      'playbooks', 'policies', 'reporting', 'users', 'workflows', 'workspaces',
+      'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
+      'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
+      'notifications', 'playbooks', 'policies', 'reporting', 'users', 'workflows',
+      'workspaces',
     ].sort(),
   );
 });
@@ -161,6 +162,8 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // tools/arch-check/checker.ts — see the provision comment there); the
   // fixture provides auth, users, goals (billing is not frozen, so it
   // cannot satisfy any frozen boundary) → 24 missing boundaries.
+  // 27 frozen modules; the fixture provides auth, users, goals (billing is not
+  // frozen, so it cannot satisfy any frozen boundary) → 24 missing boundaries.
   assert.equal(byRule.get('MISSING_MODULE'), 24);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
