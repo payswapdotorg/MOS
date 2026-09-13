@@ -568,6 +568,23 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // workflow, execution, evidence, policy or credential table is
     // created (DEPLOY-002, DEPLOY-AC-03/05/06/09).
     '034_deployments.sql',
+    // MKT-042 (Decision Ledger) appends the decisions migration (036 —
+    // the number is RESERVED for this Work Item; 035 is reserved for a
+    // sibling delivery): the decisions table (the full frozen record
+    // vocabulary — scope chain, objective/context/hypothesis summary,
+    // evidence refs + experiment link, structured expected impact +
+    // SEPARATE uncertainty, expected cost, alternatives, correction link,
+    // SERVER-DERIVED proposer + provenance columns, the disposition enum
+    // with the successor shape and outcome-pairing CHECKs, the §8
+    // (client_id, idempotency_key) create fence) and the append-only
+    // decision_events tail (disposition + outcome_observed events with
+    // the payload-shape CHECK and the (decision_id, idempotency_key)
+    // fence) — proposal-immutability, legal-lifecycle, no-delete,
+    // workspace-within-client, correction-link and cross-tenant reference
+    // triggers are trigger-enforced; NO evidence, experiment, learning,
+    // execution, deployment or policy table is created or mutated (the
+    // ledger links the authorities read-only, lock rule #5).
+    '036_decisions.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
