@@ -568,6 +568,21 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // workflow, execution, evidence, policy or credential table is
     // created (DEPLOY-002, DEPLOY-AC-03/05/06/09).
     '034_deployments.sql',
+    // MKT-047 (App Manifest and Packaging v1) appends the apps migration
+    // (037 — the number is PRE-ASSIGNED to this Work Item; 035/036 are
+    // reserved for sibling deliveries): the /apps App registry — the
+    // app-key ownership rows (first publisher owns the lineage), the
+    // immutable versioned App Version manifest registry (the frozen
+    // mos-app-ecosystem-v1.5.md §Manifest column set with the closed
+    // certification/runtime-class/scope/ UI-surface/metering CHECKs, the
+    // REAL semver comparator, the app-owned state-namespace denylist and
+    // the §21 material-key backstops) and the append-only
+    // app_dependencies rows with the dependency validation trigger
+    // (extension target must have a published version in range in the
+    // migration-028 registry; app target must exist in range; no
+    // self-dependency); published manifests reject UPDATE and DELETE by
+    // trigger (MKT-047, AC-4/AC-6/AC-7).
+    '037_apps.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

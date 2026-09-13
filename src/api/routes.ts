@@ -140,6 +140,13 @@ import { registerCreatorOperationsRoutes } from './creator-operations-routes.ts'
 // — the operator loop Configure → Validate → Deploy → Observe →
 // Pause/Resume → Redeploy/Rollback over /api/workspaces/:id/deployments*).
 import { registerDeploymentsRoutes } from './deployments-routes.ts';
+// MKT-047: the /apps APP REGISTRY routes (the App Manifest and Packaging
+// v1 surface: publish an immutable App Version through the frozen
+// platform_developer role with the SERVER-DERIVED publisher identity,
+// the manifest read by exact (app key, version), the version history by
+// app key, and the compatibility query — NO update or delete routes:
+// published App Versions are immutable).
+import { registerAppsRoutes } from './apps-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -291,5 +298,14 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // states; NO dispatch/retry surface: requesting execution through the
   // /executions public contract is the only sanctioned interaction.
   registerDeploymentsRoutes(router, services, modules);
+
+  // MKT-047: the /apps surfaces — the App registry (publish one immutable
+  // App Version through the frozen platform_developer role; read the
+  // manifest by exact (app key, semantic version); the version history
+  // by app key; the compatibility query given runtime/extension
+  // versions). NO update or delete routes: published App Versions are
+  // immutable (architecture-lock v1.5 #11) and certification transitions
+  // are the future MKT-050 platform marketplace/trust surface.
+  registerAppsRoutes(router, services, modules);
   return router;
 }
