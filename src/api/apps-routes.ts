@@ -40,11 +40,11 @@ import {
 import type { AppServices } from '../platform/app-services.ts';
 import type { Router } from '../platform/http/router.ts';
 import { currentCorrelation } from '../platform/observability/correlation.ts';
+import type { FieldSpec } from '../platform/http/validation.ts';
 import {
   arrayField,
   intField,
   objectField,
-  optionalString,
   recordField,
   stringField,
   validateObject,
@@ -64,6 +64,29 @@ import type {
   AppVersionRecord,
 } from '../modules/apps/public.ts';
 import type { AppRuntimeClass, AppDataScope, AppMutationScope, AppMeteringDimension } from '../modules/apps/public.ts';
+
+/**
+ * An optional field that accepts an EXPLICIT null (the "no value" form —
+ * e.g. an app dependency's absent publisher, a compatibility query's
+ * absent runtime-class filter) in addition to omission.
+ */
+function nullableStringField(options: { pattern?: RegExp } = {}): FieldSpec<string | null | undefined> {
+  return {
+    required: false,
+    parse: (value, problems) => {
+      if (value === undefined) return undefined;
+      if (value === null) return null;
+      if (typeof value !== 'string') {
+        problems.push('must be a string or null');
+        return null;
+      }
+      if (options.pattern !== undefined && !options.pattern.test(value)) {
+        problems.push('has an invalid format');
+      }
+      return value;
+    },
+  };
+}
 
 const KEY_PATTERN = /^[a-z][a-z0-9-]{1,62}$/;
 const SEMVER_PATTERN = /^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.-]{1,32})?$/;
@@ -280,8 +303,8 @@ export function registerAppsRoutes(
                 },
               }),
             }),
-            inputSchema: recordField({ maxDepthKeys: 64, forbiddenKeys: MATERIAL_KEYS }),
-            outputSchema: recordField({ maxDepthKeys: 64, forbiddenKeys: MATERIAL_KEYS }),
+            inputSchema: recordField({ maxDepthKeys: 64 }),
+            outputSchema: recordField({ maxDepthKeys: 64 }),
             dataScopes: arrayField({
               minItems: 0,
               maxItems: 16,
@@ -320,7 +343,7 @@ export function registerAppsRoutes(
                 },
               }),
             }),
-            configSchema: recordField({ maxDepthKeys: 64, forbiddenKeys: MATERIAL_KEYS }),
+            configSchema: recordField({ maxDepthKeys: 64 }),
             requiredCredentialNames: arrayField({
               minItems: 0,
               maxItems: 32,
@@ -338,7 +361,7 @@ export function registerAppsRoutes(
               item: objectField({
                 fields: {
                   kind: stringField({ pattern: /^(extension|app)$/ }),
-                  publisher: optionalString({ pattern: PUBLISHER_LABEL_PATTERN }),
+                  publisher: nullableStringField({ pattern: PUBLISHER_LABEL_PATTERN }),
                   key: stringField({ pattern: KEY_PATTERN }),
                   minVersion: stringField({ pattern: SEMVER_PATTERN }),
                   maxVersion: stringField({ pattern: SEMVER_PATTERN }),
@@ -383,7 +406,7 @@ export function registerAppsRoutes(
       readonly migrationVersion: number;
       readonly dependencies: ReadonlyArray<{
         readonly kind: string;
-        readonly publisher: string | undefined;
+        readonly publisher: string | null | undefined;
         readonly key: string;
         readonly minVersion: string;
         readonly maxVersion: string;
@@ -459,7 +482,7 @@ export function registerAppsRoutes(
           kind: dependency.kind as AppDependencyDeclaration['kind'],
           publisher:
             dependency.kind === 'extension'
-              ? dependency.publisher === undefined
+              ? dependency.publisher === undefined || dependency.publisher === null
                 ? ''
                 : dependency.publisher
               : null,
@@ -613,7 +636,7 @@ export function registerAppsRoutes(
 
   type ValidatedCompatibilityQuery = {
     readonly platformVersion: string;
-    readonly runtimeClass: string | undefined;
+    readonly runtimeClass: string | null | undefined;
     readonly extensionVersions: ReadonlyArray<{
       readonly publisher: string;
       readonly extensionKey: string;
@@ -641,7 +664,7 @@ export function registerAppsRoutes(
           ],
           fields: {
             platformVersion: stringField({ pattern: SEMVER_PATTERN }),
-            runtimeClass: optionalString({ pattern: RUNTIME_CLASS_PATTERN }),
+            runtimeClass: nullableStringField({ pattern: RUNTIME_CLASS_PATTERN }),
             extensionVersions: arrayField({
               minItems: 0,
               maxItems: 256,
@@ -657,7 +680,10 @@ export function registerAppsRoutes(
         });
         return modules.apps.queryCompatibleAppVersions({
           platformVersion: query.platformVersion,
-          runtimeClass: query.runtimeClass === undefined ? null : (query.runtimeClass as AppRuntimeClass),
+          runtimeClass:
+            query.runtimeClass === undefined || query.runtimeClass === null
+              ? null
+              : (query.runtimeClass as AppRuntimeClass),
           extensionVersions: query.extensionVersions,
         });
       },

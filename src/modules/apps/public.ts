@@ -647,6 +647,7 @@ export {
   assertValidAppManifest,
   assertValidCompatibilityQuery,
   appCreateFingerprint,
-  APPS_MATERIAL_SHAPED_KEYS,
   appDependenciesValid,
+  APPS_MATERIAL_SHAPED_KEYS,
+  payloadHasNoAppsMaterialKeys,
 } from './internal/store.ts';
