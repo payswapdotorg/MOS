@@ -29,11 +29,16 @@
  *   5. the /reporting module internals import ONLY the matrix-allowed
  *      public contracts (/goals, /workflows, /evidence, /experiments,
  *      /learnings) + the module's own public entry + the platform clock —
- *      and NO store implementation of another module is imported;
+ *      and NO store implementation of another module is imported
+ *      (MKT-029 additive evolution: the /executions public contract and
+ *      the command-center read-model joined the module — both remain
+ *      inside the SAME frozen matrix line, and the assertions below track
+ *      the widened-but-equally-strict sets);
  *   6. NO mutating module API exists: the /reporting public contract
- *      exposes exactly ONE method — the decision-room read — and no
- *      create/update/set/append/record/transition/delete verb appears in
- *      the contract (the decision room never becomes a write authority);
+ *      exposes exactly the READ methods (the decision-room read + the
+ *      MKT-029 command-center read) and no create/update/set/append/
+ *      record/transition/delete verb appears in the contract (the read
+ *      side never becomes a write authority);
  *   7. the shared registration files wire the surface (routes.ts registers
  *      it; the composition root builds the reporting module EXACTLY ONCE
  *      with the matrix-allowed dependencies and documents the MKT-030
@@ -57,6 +62,7 @@ const read = (path: string): string => readFileSync(path, 'utf8');
 const decisionRoomRoutes = read(src('api', 'reporting-decision-room-routes.ts'));
 const reportingPublic = read(src('modules', 'reporting', 'public.ts'));
 const reportingModule = read(src('modules', 'reporting', 'internal', 'reporting-module.ts'));
+const commandCenterReadModel = read(src('modules', 'reporting', 'internal', 'command-center-read-model.ts'));
 const routesFile = read(src('api', 'routes.ts'));
 const compositionRoot = read(src('composition-root.ts'));
 const applicationFile = read(src('api', 'application.ts'));
@@ -167,16 +173,19 @@ test('the /reporting module internals import ONLY the matrix-allowed public cont
     /^\.\.\/public\.ts$/,
     /^\.\.\/\.\.\/evidence\/public\.ts$/,
     /^\.\.\/\.\.\/experiments\/public\.ts$/,
+    /^\.\.\/\.\.\/executions\/public\.ts$/,
     /^\.\.\/\.\.\/goals\/public\.ts$/,
     /^\.\.\/\.\.\/learnings\/public\.ts$/,
     /^\.\.\/\.\.\/workflows\/public\.ts$/,
     /^\.\.\/\.\.\/workspaces\/public\.ts$/,
     /^\.\/decision-room-read-model\.ts$/,
+    /^\.\/command-center-read-model\.ts$/,
     /^\.\/reporting-module\.ts$/,
   ];
   for (const file of [
     src('modules', 'reporting', 'internal', 'reporting-module.ts'),
     src('modules', 'reporting', 'internal', 'decision-room-read-model.ts'),
+    src('modules', 'reporting', 'internal', 'command-center-read-model.ts'),
   ]) {
     for (const specifier of importsOf(file)) {
       assert.ok(
@@ -198,6 +207,7 @@ test('the /reporting module internals import ONLY the matrix-allowed public cont
     src('modules', 'reporting', 'public.ts'),
     src('modules', 'reporting', 'internal', 'reporting-module.ts'),
     src('modules', 'reporting', 'internal', 'decision-room-read-model.ts'),
+    src('modules', 'reporting', 'internal', 'command-center-read-model.ts'),
   ]) {
     for (const specifier of importsOf(file)) {
       const crossModule = specifier.startsWith('../..') || specifier.startsWith('/');
@@ -215,16 +225,18 @@ test('the /reporting module internals import ONLY the matrix-allowed public cont
 });
 
 // ---------------------------------------------------------------------------
-// 6. NO mutating module API — exactly one read method
+// 6. NO mutating module API — read methods only
 // ---------------------------------------------------------------------------
 
-test('the /reporting public contract exposes EXACTLY ONE method — the decision-room read — and no mutating verb exists', () => {
+test('the /reporting public contract exposes EXACTLY the READ methods — no mutating verb exists', () => {
   const apiBlock = reportingPublic.match(
     /export interface ReportingModuleApi \{([\s\S]*?)\n\}/,
   );
   assert.ok(apiBlock !== null, 'ReportingModuleApi is required');
   const methods = [...apiBlock![1]!.matchAll(/^ {2}([a-zA-Z]+)\(/gm)].map((match) => match[1]!);
-  assert.deepEqual(methods, ['getClientDecisionRoom']);
+  // MKT-029 additive evolution: the agency-scoped Command Center read
+  // joined the SAME read-only contract (still zero mutating verbs).
+  assert.deepEqual(methods, ['getClientDecisionRoom', 'getAgencyCommandCenter']);
   for (const forbidden of [
     'create',
     'update',
@@ -244,8 +256,14 @@ test('the /reporting public contract exposes EXACTLY ONE method — the decision
       `the /reporting contract must never expose a '${forbidden}' verb (read-side authority only)`,
     );
   }
-  // And the implementation wires exactly that one method.
+  // And the implementation wires exactly those methods.
   assert.equal((reportingModule.match(/async getClientDecisionRoom\(/g) ?? []).length, 1);
+  assert.equal((reportingModule.match(/async getAgencyCommandCenter\(/g) ?? []).length, 1);
+  // The command-center read model performs no I/O of its own (pure
+  // derivations only — no fetch, no store, no mutation anywhere).
+  for (const forbidden of ['await ', 'deps.db', '.query(']) {
+    assert.ok(!commandCenterReadModel.includes(forbidden), `the pure read model must not contain '${forbidden}'`);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -263,13 +281,16 @@ test('routes.ts registers the decision-room family; the composition root builds 
     1,
     'the composition root must not wire a second reporting module',
   );
-  // The wired dependency set is exactly the matrix-allowed subset.
+  // The wired dependency set is exactly the matrix-allowed subset (MKT-029
+  // additive evolution: the /executions direction of the SAME frozen
+  // matrix line joined the wiring for the Command Center risk posture;
+  // /metrics remains the one unused allowed direction).
   const wiring = compositionRoot.match(
     /createReportingModule\(\{([\s\S]*?)\}\);/,
   );
   assert.ok(wiring !== null);
   const wired = [...wiring![1]!.matchAll(/\b([a-zA-Z]+),/g)].map((match) => match[1]!);
-  assert.deepEqual([...wired].sort(), ['clock', 'evidence', 'experiments', 'goals', 'learnings', 'workflows']);
+  assert.deepEqual([...wired].sort(), ['clock', 'evidence', 'executions', 'experiments', 'goals', 'learnings', 'workflows']);
   // application.ts exposes the module contract to the route builders.
   assert.ok(applicationFile.includes("import type { ReportingModuleApi } from '../modules/reporting/public.ts'"));
   assert.ok(applicationFile.includes('readonly reporting: ReportingModuleApi'));

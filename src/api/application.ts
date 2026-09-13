@@ -216,9 +216,9 @@ export interface ApplicationModules {
   // manifest publication through the framework above).
   readonly creatorOperations: CreatorOperationsPackApi;
 
-  // MKT-030: read-side reporting authority (UI-001 — the Client Decision
-  // Room live aggregation; the agency-scoped Command Center family of the
-  // SAME authority arrives with MKT-029). READ-ONLY by construction.
+  // MKT-030 + MKT-029: read-side reporting authority (UI-001 — the Client
+  // Decision Room live aggregation + the agency-scoped Agency Command
+  // Center family of the SAME authority). READ-ONLY by construction.
   readonly reporting: ReportingModuleApi;
 
   // MKT-040: the Marketing Cloud Deployment control-plane authority

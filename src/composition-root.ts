@@ -696,24 +696,28 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     aiRuntime,
   });
 
-  // MKT-030: /reporting — the read-side Client Decision Room (UI-001). A
-  // PURE LIVE AGGREGATION over the composed authorities' public contracts:
-  // platform clock + the frozen-matrix-allowed /goals, /workflows,
-  // /evidence, /experiments and /learnings dependencies ONLY (/executions
-  // and /metrics stay unused allowed directions — the MKT-029 agency-scoped
-  // family may compose them later through the same public entry). The
-  // module owns NO durable state: no projection tables, nothing to migrate
-  // or rebuild (migration 032 stays RESERVED for a future Work Item — 031
-  // is the Creator Operations pack schema of MKT-037), and no
+  // MKT-030 + MKT-029: /reporting — the read-side Client Decision Room and
+  // Agency Command Center (UI-001). A PURE LIVE AGGREGATION over the
+  // composed authorities' public contracts: platform clock + the
+  // frozen-matrix-allowed /goals, /workflows, /executions, /evidence,
+  // /experiments and /learnings dependencies (/metrics stays an unused
+  // allowed direction). MKT-029 adds the /executions direction of the same
+  // frozen matrix line — the failed/unresolved executions are the canonical
+  // operational-risk signals the Command Center's risk posture presents.
+  // The module owns NO durable state: no projection tables, nothing to
+  // migrate or rebuild (migration 032 stays RESERVED for a future Work Item
+  // — 031 is the Creator Operations pack schema of MKT-037), and no
   // db/ids are wired because there is no write path of any kind. The
-  // Client/Workspace scope arrives as SERVER-DERIVED data resolved by the
-  // route layer (canonical /clients ownership + /workspaces enumeration —
-  // matrix directions /reporting does not hold; the /agents and
-  // /domain-packs scope-as-data posture).
+  // agency/Client/Workspace scopes arrive as SERVER-DERIVED data resolved
+  // by the route layers (durable agency/membership state + the /clients
+  // live-client listing + the /workspaces enumeration — matrix directions
+  // /reporting does not hold; the /agents and /domain-packs scope-as-data
+  // posture).
   const reporting = createReportingModule({
     clock,
     goals,
     workflows,
+    executions,
     evidence,
     experiments,
     learnings,

@@ -107,6 +107,15 @@ import { registerJobsQueueRoutes } from './jobs-queue-routes.ts';
 // (the jobs-visits-routes.ts precedent: one authority, multiple route
 // families — the agency-scoped Command Center family arrives with MKT-029).
 import { registerReportingDecisionRoomRoutes } from './reporting-decision-room-routes.ts';
+// MKT-029: the /reporting AGENCY COMMAND CENTER routes (UI-001 — the
+// agency-scoped sibling of the decision room: PORTFOLIO GOALS, WORKFLOW
+// STATE, EVIDENCE QUALITY, RISKS and PENDING APPROVALS across the agency's
+// authorized client portfolio; UI-AC-01..02). READ-ONLY by construction —
+// exactly one GET route, no body, no authority fields, the agency scope
+// server-derived from durable agency/membership + client/workspace state
+// (the decision-room precedent: one authority, multiple route families;
+// cross-agency identifiers are the uniform 404 — no existence leak).
+import { registerReportingCommandCenterRoutes } from './reporting-command-center-routes.ts';
 // MKT-032: the EXTENSION DEVELOPER PORTAL routes (UI-003 — the developer/
 // reviewer/installer surface family over the SAME /extensions authority
 // (MKT-022) composed with the /policies permission-approval authority:
@@ -252,6 +261,10 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // ever appear in this family (the decision room is a read surface, not
   // a write authority — UI-AC-02).
   registerReportingDecisionRoomRoutes(router, services, modules);
+  // MKT-029: the agency-scoped Command Center family of the SAME /reporting
+  // authority (registered after the decision-room family; the literal
+  // 'command-center' segment cannot collide with 'decision-room').
+  registerReportingCommandCenterRoutes(router, services, modules);
 
   // MKT-032: the EXTENSION DEVELOPER PORTAL surface family over the
   // /extensions authority (MKT-022) + the /policies permission-approval
