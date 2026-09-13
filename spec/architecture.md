@@ -133,9 +133,10 @@ Role assignment is orthogonal to tenant ownership. Human Agents are platform ide
 /audit
 /notifications
 /reporting
+/operating-graph
 ```
 
-`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only.
+`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only. `/operating-graph` is the v1.5 derived coordination model: read-only composition over the canonical authorities, source references only (spec/architecture-v1.5.md §3).
 
 ## 7. Goal
 

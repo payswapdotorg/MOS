@@ -334,6 +334,14 @@ import { createReportingModule } from './modules/reporting/public.ts';
 // intact (no cross-module import exists inside src/modules/deployments —
 // verified by tools/arch-check and the boundary tests).
 import { createDeploymentsModule } from './modules/deployments/public.ts';
+// MKT-041: /operating-graph — the Agency Operating Graph (the derived
+// coordination model over the canonical authorities: the canonical-record
+// registry + the append-oriented versioned relation ledger, the converging
+// rebuild and the read-only views; composed READ-ONLY over the /clients,
+// /workspaces, /goals, /playbooks, /workflows, /executions, /deployments,
+// /evidence, /experiments and /learnings public contracts — the frozen
+// matrix line added for this Work Item).
+import { createOperatingGraphModule } from './modules/operating-graph/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -800,6 +808,35 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       },
     },
   });
+
+  // MKT-041: /operating-graph — the Agency Operating Graph (the DERIVED
+  // COORDINATION MODEL over the canonical authorities — never a second
+  // authority, architecture-lock-v1.5 #4). Composed READ-ONLY over the
+  // real public-contract instances constructed above (the frozen matrix
+  // line added for this Work Item): canonical Client/Workspace ownership
+  // resolution (/clients, /workspaces), the authority listings (/goals,
+  // /playbooks, /workflows, /executions, /deployments, /evidence,
+  // /experiments, /learnings) and the individual reference resolutions
+  // those listings do not carry. The module writes ONLY its own two
+  // derived structures (migration 035 — the canonical-record registry +
+  // the append-oriented versioned relation ledger); the HTTP surface is
+  // read-only (the rebuild is the module-level operation for background
+  // workers and later v1.5 Work Items).
+  const operatingGraph = createOperatingGraphModule({
+    db,
+    clock,
+    ids,
+    clients,
+    workspaces,
+    goals,
+    playbooks,
+    workflows,
+    executions,
+    deployments,
+    evidence,
+    experiments,
+    learnings,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -826,7 +863,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph },
     runtime: { aiProvider },
   };
 }
