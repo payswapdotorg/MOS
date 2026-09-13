@@ -611,6 +611,22 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // self-dependency); published manifests reject UPDATE and DELETE by
     // trigger (MKT-047, AC-4/AC-6/AC-7).
     '037_apps.sql',
+    // MKT-048 (App Installation, Upgrade and Rollback) appends the
+    // app-installs migration (038 — the number is PRE-ASSIGNED to this Work
+    // Item): the /app-installs App installation authority — the
+    // append-oriented app_installs selection ledger (exact (app key,
+    // app_version_id, version) identity, SERVER-DERIVED scope chain +
+    // granted-scope columns with the closed frozen vocabularies, the
+    // operation/selection-seq shape CHECKs, the current-selection partial
+    // unique fence, the §8 (workspace_id, idempotency_key) create fence)
+    // and the append-only app_install_events tail (installed/upgraded/
+    // rolled_back with the payload-shape CHECK and the (workspace_id,
+    // idempotency_key) fence); workspace-within-client scope-chain
+    // consistency, exact-version identity + least-privilege grants and the
+    // history-preserving single-supersession-UPDATE/ no-DELETE triggers are
+    // trigger-enforced; NO apps, policies, workspaces or extensions table
+    // is created or mutated (MKT-048, AC-4/AC-8).
+    '038_app_installs.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
