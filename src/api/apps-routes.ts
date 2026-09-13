@@ -57,6 +57,7 @@ import type {
   AppConfigFieldContract,
   AppDependencyDeclaration,
   AppManifest,
+  AppManifestSignature,
   AppNetworkDestination,
   AppPublisherIdentity,
   AppUiSurfaceDeclaration,
@@ -64,6 +65,7 @@ import type {
   AppVersionRecord,
 } from '../modules/apps/public.ts';
 import type { AppRuntimeClass, AppDataScope, AppMutationScope, AppMeteringDimension } from '../modules/apps/public.ts';
+import type { AppSignatureAlgorithm } from '../modules/apps/public.ts';
 
 /**
  * An optional field that accepts an EXPLICIT null (the "no value" form —
@@ -84,6 +86,45 @@ function nullableStringField(options: { pattern?: RegExp } = {}): FieldSpec<stri
         problems.push('has an invalid format');
       }
       return value;
+    },
+  };
+}
+
+/**
+ * The OPTIONAL manifest signature DTO field (MKT-049 — the disclosed
+ * additive signing step): { algorithm, digest } or an explicit null /
+ * omission. Surface-level shape hygiene only: the module's
+ * appManifestSignatureProblems guard is the single semantic enforcement
+ * point (closed algorithm vocabulary + digest shape + the INTEGRITY
+ * gate against the server-computed canonical manifest fingerprint).
+ */
+function signatureField(): FieldSpec<{ readonly algorithm: string; readonly digest: string } | null> {
+  return {
+    required: false,
+    parse: (value, problems) => {
+      if (value === undefined || value === null) return null;
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        problems.push('must be an object { algorithm, digest } or null');
+        return null;
+      }
+      const record = value as Record<string, unknown>;
+      for (const key of Object.keys(record)) {
+        if (key !== 'algorithm' && key !== 'digest') {
+          problems.push(`${key}: unknown field`);
+        }
+      }
+      const algorithm = record['algorithm'];
+      const digest = record['digest'];
+      if (typeof algorithm !== 'string' || algorithm !== 'manifest-sha256-fingerprint') {
+        problems.push('algorithm: must be manifest-sha256-fingerprint (the closed v1 attestation vocabulary)');
+      }
+      if (typeof digest !== 'string' || !/^[0-9a-f]{64}$/.test(digest)) {
+        problems.push('digest: must be a 64-character lowercase hex sha256 digest of the canonical manifest');
+      }
+      return {
+        algorithm: typeof algorithm === 'string' ? algorithm : '',
+        digest: typeof digest === 'string' ? digest : '',
+      };
     },
   };
 }
@@ -377,6 +418,10 @@ export function registerAppsRoutes(
           },
         }),
         idempotencyKey: stringField({ minLength: 1, maxLength: 200 }),
+        // MKT-049: the OPTIONAL publish-envelope hash attestation (the
+        // module guard verifies the digest against the server-computed
+        // canonical manifest fingerprint — fail-closed 422 on mismatch).
+        signature: signatureField(),
       },
     };
   }
@@ -415,6 +460,7 @@ export function registerAppsRoutes(
       readonly meteringDimensions: readonly string[];
     };
     readonly idempotencyKey: string;
+    readonly signature: { readonly algorithm: string; readonly digest: string } | null;
   };
 
   /** Rebuilds the typed manifest from the validated DTO. */
@@ -522,6 +568,14 @@ export function registerAppsRoutes(
           manifest: deserializeManifest(body.manifest),
           identity,
           idempotencyKey: body.idempotencyKey,
+          ...(body.signature === null
+            ? { signature: null }
+            : {
+                signature: {
+                  algorithm: body.signature.algorithm as AppSignatureAlgorithm,
+                  digest: body.signature.digest,
+                } satisfies AppManifestSignature,
+              }),
         });
       },
       emit: async (ctx) => {
