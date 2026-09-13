@@ -159,6 +159,14 @@ import { registerAppsRoutes } from './apps-routes.ts';
 // event tail — NO update or delete routes: the ledger is append-oriented,
 // corrections are NEW records and history is never rewritten).
 import { registerDecisionsRoutes } from './decisions-routes.ts';
+// MKT-043: the /profit-intelligence routes (Profit Intelligence — the
+// derived revenue/cost/capacity/utilization/scope-leakage/margin
+// analytics surface: the agency portfolio rollup, the client view and the
+// workspace slice, all GET-only with server-derived scope; every material
+// figure carries source references, the frozen calculation version and
+// the explicit assumption record — NO write path of any kind, the module
+// can never mutate a financial authority).
+import { registerProfitIntelligenceRoutes } from './profit-intelligence-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -333,5 +341,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // immutable, corrections are NEW records linked through the
   // predecessor/successor chain, and ledger history is never erased.
   registerDecisionsRoutes(router, services, modules);
+  // MKT-043: the /profit-intelligence surfaces — Profit Intelligence
+  // (the DERIVED revenue/cost/capacity/utilization/scope-leakage/margin
+  // analytics over the canonical authorities: the agency portfolio
+  // rollup, the client view and the workspace slice). READ-ONLY by
+  // construction: exactly three GETs, no body, no DTO, no query
+  // parameters — derived analytics, never a financial system of record
+  // (architecture-lock-v1.5 #6); a frontend bypass has nothing to drive.
+  registerProfitIntelligenceRoutes(router, services, modules);
   return router;
 }
