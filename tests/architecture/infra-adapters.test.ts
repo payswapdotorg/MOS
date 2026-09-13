@@ -627,6 +627,21 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // trigger-enforced; NO apps, policies, workspaces or extensions table
     // is created or mutated (MKT-048, AC-4/AC-8).
     '038_app_installs.sql',
+    // MKT-046 (Sales-to-Delivery Continuity) appends the
+    // sales-continuity migration (040 — the number is PRE-ASSIGNED to
+    // this Work Item; 038/039 are reserved for sibling deliveries): the
+    // module-owned append-only continuity ledger — the carry rows (the
+    // canonical proposal source references + version fingerprint, the
+    // carried playbook/version/deployment linkage, the derived
+    // scope/goals/outcomes/assumptions/economics snapshot with the
+    // closed-state CHECK, the source fence + the §8 logical create
+    // fence, the forward-only completion ladder triggers, the
+    // identity-immutability and no-delete triggers, the cross-tenant
+    // reference fences) and the append-only continuity event tail — NO
+    // other module's table is created or mutated (the module orchestrates
+    // the /playbooks and /deployments creation commands, never writing
+    // their tables).
+    '040_sales_continuity.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

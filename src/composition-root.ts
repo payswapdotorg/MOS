@@ -275,6 +275,12 @@ import { createDecisionsModule } from './modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // durable state, zero mutation methods — architecture-lock-v1.5 #6).
 import { createProfitIntelligenceModule } from './modules/profit-intelligence/public.ts';
+// MKT-046: /sales-continuity module (Sales-to-Delivery Continuity — the
+// §8 orchestrator carrying structured proposal scope/goals/outcomes/
+// assumptions/economics into the Playbook/Deployment path through the
+// EXISTING creation commands, with provenance + version identity on its
+// own append-only continuity ledger).
+import { createSalesContinuityModule } from './modules/sales-continuity/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -972,6 +978,30 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     aiRuntime,
     integrations,
   });
+
+  // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
+  // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
+  // (resolveDecisionOwnership + getDecision); the playbook and
+  // deployment paths compose through their EXISTING public
+  // creation/status commands (the frozen matrix line added for this Work
+  // Item: /sales-continuity ──→ /decisions, /playbooks, /deployments,
+  // /clients, /workspaces); /clients and /workspaces are consumed
+  // through the module's declared STRUCTURAL PORTS (the /decisions
+  // precedent — the real public-contract instances satisfy the port
+  // types structurally). The module owns exactly the append-only
+  // continuity ledger (migration 040 — the disclosed AC-6 persistence
+  // choice: the existing creation commands expose no provenance-carrying
+  // surface); it never writes any other module's tables.
+  const salesContinuity = createSalesContinuityModule({
+    db,
+    clock,
+    ids,
+    decisions,
+    playbooks,
+    deployments,
+    clients,
+    workspaces,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -998,7 +1028,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity },
     runtime: { aiProvider },
   };
 }
