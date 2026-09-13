@@ -133,9 +133,10 @@ Role assignment is orthogonal to tenant ownership. Human Agents are platform ide
 /audit
 /notifications
 /reporting
+/decisions
 ```
 
-`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only.
+`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only. `/decisions` is the v1.5 append-oriented Decision Ledger authority (spec/architecture-v1.5.md §4; spec/change-request-005.md change #2 — registered here per the v1.4 promotion precedent).
 
 ## 7. Goal
 

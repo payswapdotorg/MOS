@@ -267,6 +267,9 @@ import { createExperimentsModule } from './modules/experiments/public.ts';
 // MKT-016: /learnings module (LEARN-001 — Learning records + the
 // contradiction/supersession/retirement relationship history).
 import { createLearningModule } from './modules/learnings/public.ts';
+// MKT-042: /decisions module (the Decision Ledger — the append-oriented
+// ledger for material recommendations and commercial decisions).
+import { createDecisionsModule } from './modules/decisions/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -800,6 +803,36 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       },
     },
   });
+
+  // MKT-042: /decisions — the Decision Ledger authority (the
+  // append-oriented ledger for material recommendations and commercial
+  // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
+  // Ledger"). Platform ports + the reference-validation authorities of
+  // the frozen vocabulary consumed READ-ONLY through their public
+  // contracts (/evidence citations + the shared §21 material-key
+  // backstop, /experiments hypothesis links, /learnings derived-learning
+  // references, /executions + /deployments implementation references) +
+  // the /clients and /workspaces canonical-ownership authorities
+  // injected through /decisions' declared STRUCTURAL PORTS (the real
+  // public-contract instances satisfy the port types structurally — the
+  // experiments/learnings precedent). The /policies allowance of the
+  // MKT-042 registration row stays a deliberately-unused reserved
+  // direction (the /agents precedent): recording a decision is
+  // unconditional (architecture-v1.5 §7 — consequential ACTIONS, not
+  // records, flow through the policy/approval contracts; the MKT-045
+  // attention queue consumes that direction later).
+  const decisions = createDecisionsModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    experiments,
+    learnings,
+    executions,
+    deployments,
+    clients,
+    workspaces,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -826,7 +859,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, decisions },
     runtime: { aiProvider },
   };
 }
