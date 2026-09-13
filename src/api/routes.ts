@@ -167,6 +167,18 @@ import { registerDecisionsRoutes } from './decisions-routes.ts';
 // the explicit assumption record — NO write path of any kind, the module
 // can never mutate a financial authority).
 import { registerProfitIntelligenceRoutes } from './profit-intelligence-routes.ts';
+// MKT-046: the /sales-continuity routes (Sales-to-Delivery Continuity —
+// the proposal carry into the Playbook path + the optional deployment
+// carry + the continuity/provenance round-trip views: POST
+// /api/decisions/:decisionId/carry derives the structured payload from
+// the accepted proposal and creates the playbook + version THROUGH the
+// existing /playbooks commands; POST
+// /api/sales-continuity/carries/:carryId/deployment publishes the carried
+// version through the frozen lifecycle and configures the deployment
+// THROUGH the existing /deployments command; the GET views read the
+// durable linkage + live records. The carried payload is NEVER a request
+// field — no manual re-entry anywhere).
+import { registerSalesContinuityRoutes } from './sales-continuity-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -349,5 +361,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // parameters — derived analytics, never a financial system of record
   // (architecture-lock-v1.5 #6); a frontend bypass has nothing to drive.
   registerProfitIntelligenceRoutes(router, services, modules);
+  // MKT-046: the /sales-continuity surfaces — the carry family (proposal
+  // → playbook → deployment through the EXISTING creation commands) + the
+  // continuity views (proposal → carried records; the delivery side →
+  // proposal round-trip). NO update or delete routes: the continuity
+  // ledger is append-only with a forward-only completion ladder; NO
+  // validate/activate/transition surface: the MKT-040 gate stays the
+  // /deployments routes' alone.
+  registerSalesContinuityRoutes(router, services, modules);
   return router;
 }

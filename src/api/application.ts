@@ -161,6 +161,12 @@ import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // state, read-only surface).
 import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence/public.ts';
+// MKT-046: /sales-continuity module contract (Sales-to-Delivery
+// Continuity — the orchestrator that carries structured proposal scope,
+// goals, outcomes, assumptions and economics into the Playbook/Deployment
+// path through the EXISTING creation commands, with the provenance +
+// version identity retained on its own append-only continuity ledger).
+import type { SalesContinuityModuleApi } from '../modules/sales-continuity/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -278,4 +284,12 @@ export interface ApplicationModules {
   // assumption set; ZERO mutation methods: derived analytics, never a
   // financial system of record — architecture-lock-v1.5 #6).
   readonly profitIntelligence: ProfitIntelligenceModuleApi;
+
+  // MKT-046: the Sales-to-Delivery Continuity orchestrator (carries the
+  // structured proposal scope/goals/outcomes/assumptions/economics of an
+  // accepted Decision Ledger proposal into the Playbook/Deployment path
+  // THROUGH the existing /playbooks and /deployments creation commands —
+  // orchestrates, never duplicates their authority; the provenance +
+  // version identity live on its own append-only continuity ledger).
+  readonly salesContinuity: SalesContinuityModuleApi;
 }
