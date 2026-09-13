@@ -177,6 +177,18 @@ import { registerAppInstallsRoutes } from './app-installs-routes.ts';
 // the explicit assumption record — NO write path of any kind, the module
 // can never mutate a financial authority).
 import { registerProfitIntelligenceRoutes } from './profit-intelligence-routes.ts';
+// MKT-049: the /developer-portal APP DEVELOPER PORTAL routes (the App
+// SDK and Developer Portal surface family over the SAME /apps registry
+// authority — the MKT-032 extension-portal precedent: one authority,
+// multiple route families, the portal owns NO state of its own): the
+// developer catalog + version views, ONLINE validation through the REAL
+// registry guard (pure), the delegated publish (the same
+// publishAppVersion command — optional signature verified by the
+// authority) and the documentation surface derived read-only from the
+// frozen /apps public contract. NO update or delete routes: published
+// App Versions are immutable (architecture-lock v1.5 #11) and the
+// portal is never a second app authority.
+import { registerDeveloperPortalRoutes } from './developer-portal-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -362,5 +374,12 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // parameters — derived analytics, never a financial system of record
   // (architecture-lock-v1.5 #6); a frontend bypass has nothing to drive.
   registerProfitIntelligenceRoutes(router, services, modules);
+  // MKT-049: the /developer-portal surfaces — the App Developer Portal
+  // (see the import block above). Thin delegation over the /apps
+  // registry authority + its exported pure guards; registered after the
+  // /api/apps family (no literal-segment collision — the portal's
+  // 'catalog'/'docs'/'validate'/'publish'/'apps' segments live under
+  // /api/developer-portal/*).
+  registerDeveloperPortalRoutes(router, services, modules);
   return router;
 }

@@ -58,6 +58,7 @@ import type {
 } from '../public.ts';
 import {
   appCreateFingerprint,
+  appManifestSignatureProblems,
   AppsStore,
   assertValidAppManifest,
   assertValidCompatibilityQuery,
@@ -74,6 +75,23 @@ export function createAppsModule(deps: AppsModuleDeps): AppsModuleApi {
       // certification-shaped keys are 403 platform territory; every
       // other authority-shaped key and material-shaped key is 422.
       assertValidAppManifest(input.manifest);
+
+      // MKT-049 (the disclosed additive signing step): the OPTIONAL hash
+      // attestation over the canonical manifest, verified BEFORE any
+      // write — the caller-supplied digest must equal the server-computed
+      // create fingerprint (the identical digest the App SDK `sign`
+      // command computes offline). A mismatch is a 422 with zero rows;
+      // absent/null proceeds unsigned (backwards compatible).
+      const signatureProblems = appManifestSignatureProblems(
+        input.manifest,
+        input.signature ?? null,
+      );
+      if (signatureProblems.length > 0) {
+        throw new InvalidRequestError(
+          'app manifest signature failed the frozen attestation contract',
+          signatureProblems,
+        );
+      }
 
       const publisher = appPublisherIdentityString(input.identity);
       const manifest = input.manifest;

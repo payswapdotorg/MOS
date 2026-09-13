@@ -468,6 +468,53 @@ export interface AppVersionRecord {
 }
 
 // ---------------------------------------------------------------------------
+// The OPTIONAL manifest signature (MKT-049 — the disclosed additive
+// signing step: hash attestation over the canonical manifest)
+// ---------------------------------------------------------------------------
+
+/**
+ * The frozen signature-algorithm vocabulary (MKT-049): v1 attestation is
+ * EXACTLY the manifest's canonical create-fingerprint digest — the same
+ * deterministic sha256 the registry already computes and persists as the
+ * published row's createFingerprint (the §8 logical-command identity).
+ * A developer signs OFFLINE (the App SDK `sign` command computes the
+ * identical digest from the frozen fingerprint contract) and the registry
+ * VERIFIES at publish: the caller-supplied digest must equal the
+ * SERVER-COMPUTED fingerprint of the manifest being published, else 422
+ * with zero rows (integrity failure, fail-closed). The attestation is
+ * OPTIONAL: unsigned publishes remain valid (backwards compatible — no
+ * manifest-shape change, no schema change, no migration); when supplied
+ * and verified, the attested digest is anchored FOREVER by the immutable
+ * row's persisted createFingerprint column (published versions are
+ * immutable — MKT-047/architecture-lock v1.5 #11).
+ *
+ * DISCLOSURE (docs/implementation/MKT-049.md): the signature rides the
+ * PUBLISH ENVELOPE (a sibling of idempotencyKey), NOT inside AppManifest —
+ * the frozen MKT-047 manifest shape stays byte-identical (19 fields,
+ * strict-shape guard unchanged), and whether a historical publish was
+ * signed is not persisted as a distinct boolean (that would require an
+ * ALTER on the sibling-owned app_versions table; the digest itself is
+ * verifiable offline by anyone through the SDK fingerprint contract).
+ */
+export type AppSignatureAlgorithm = 'manifest-sha256-fingerprint';
+
+export const APP_SIGNATURE_ALGORITHMS: readonly AppSignatureAlgorithm[] = [
+  'manifest-sha256-fingerprint',
+];
+
+/**
+ * The OPTIONAL manifest signature (hash attestation): the closed
+ * one-algorithm vocabulary + the 64-character lowercase hex digest of
+ * the CANONICAL manifest (the create-fingerprint value — computed the
+ * identical way server-side by appCreateFingerprint and offline by the
+ * App SDK). Never secret material: it is a PUBLIC integrity digest.
+ */
+export interface AppManifestSignature {
+  readonly algorithm: AppSignatureAlgorithm;
+  readonly digest: string;
+}
+
+// ---------------------------------------------------------------------------
 // The server-derived publisher identity (MKT-047 AC-5)
 // ---------------------------------------------------------------------------
 
@@ -587,11 +634,21 @@ export interface AppsModuleApi {
    * publish under an app key owned by ANOTHER publisher is a
    * ConflictError (the key-lineage fence). `idempotencyKey` is a
    * server-side logical command identity only.
+   *
+   * OPTIONAL SIGNATURE (MKT-049 — the disclosed additive signing step):
+   * `signature` is the publish-envelope hash attestation over the
+   * canonical manifest. When present, its digest must EQUAL the
+   * server-computed create fingerprint (appCreateFingerprint) of the
+   * manifest being published — a mismatch is a 422 with zero rows
+   * (fail-closed integrity gate, verified BEFORE any write). Absent or
+   * null: the publish proceeds unsigned (backwards compatible).
    */
   publishAppVersion(input: {
     readonly manifest: AppManifest;
     readonly identity: AppPublisherIdentity;
     readonly idempotencyKey: string;
+    /** OPTIONAL manifest hash attestation (MKT-049; see AppManifestSignature). */
+    readonly signature?: AppManifestSignature | null;
   }): Promise<AppVersionRecord>;
   /** Raw registry row by id — immutable history is always readable. */
   getAppVersion(appVersionId: string): Promise<AppVersionRecord | null>;
@@ -648,6 +705,7 @@ export {
   assertValidCompatibilityQuery,
   appCreateFingerprint,
   appDependenciesValid,
+  appManifestSignatureProblems,
   APPS_MATERIAL_SHAPED_KEYS,
   payloadHasNoAppsMaterialKeys,
 } from './internal/store.ts';
