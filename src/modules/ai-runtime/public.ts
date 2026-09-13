@@ -30,20 +30,43 @@
  *     cost, latency, evaluator outcome and escalation count when
  *     authoritative"): append-oriented rows linking the TaskProfile, the
  *     registry model ref, the execution context reference, the correlation
- *     identity and the observed outcome signals.
+ *     identity and the observed outcome signals;
+ *   - the EVALUATION LAYER (MKT-019, AI-003): the provider-neutral
+ *     evaluator REGISTRY (normalized task-level evaluator definitions
+ *     referenced by TaskProfile evaluatorIds BY LABEL — no provider/model
+ *     names as anything but labels, no credentials ever), the task-level
+ *     EVALUATION RUN (evaluation requests derived from a TaskProfile's
+ *     evaluator contract, executed by built-in deterministic evaluators
+ *     and/or caller-supplied evaluator engines — model judges are advisory
+ *     evidence, per implementation-contract §12), the append-only
+ *     EVALUATION OUTCOME records (verdict/score, rubric dimensions,
+ *     evidence citations, uncertainty — linked to the Execution and the
+ *     usage-telemetry row, AI-AC-08-independent of business outcomes) and
+ *     the HUMAN-REVIEW HOOK (review-request records with the pending →
+ *     approved/rejected/dismissed lifecycle and append-only transitions —
+ *     the hook records review intent/outcome, it never executes human
+ *     work).
  *
- * What this module deliberately does NOT do (MKT-017 scope bounds):
- *   - NO routing/eligibility/cascade/escalation logic (AI-002, MKT-018) —
- *     no candidate resolution, no hard filters, no ranking, no strategies;
- *   - NO evaluation framework (AI-003, MKT-019) — evaluator ids and the
- *     telemetry evaluation link are reference placeholders;
- *   - NO provider adapters and NO model invocation: no provider SDK may be
- *     imported by this module's domain code — SDKs may only ever appear
- *     inside /ai-runtime ADAPTER implementations (AI-AC-02), and none exist
- *     yet. The registry is data + contracts, not a provider client;
- *   - NO credentials: the TaskProfile and telemetry records carry no
- *     credential references (routing-time credential resolution is MKT-018
- *     composing /credentials).
+ * What this module deliberately does NOT do (post-MKT-019 scope bounds):
+ *   - NO provider adapters of its own at route time and NO model
+ *     invocation: no provider SDK may be imported by this module's domain
+ *     code — SDKs may only ever appear inside /ai-runtime ADAPTER
+ *     implementations (AI-AC-02). The registry is data + contracts, not a
+ *     provider client; the adapter is supplied by the caller at route
+ *     time (MKT-018);
+ *   - NO credentials: the TaskProfile, evaluation and telemetry records
+ *     carry no credential references (routing-time credential resolution
+ *     is MKT-018 composing /credentials);
+ *   - NO business-outcome measurement (AI-AC-08): the evaluation layer
+ *     reads TaskProfile/execution/usage context ONLY — it never imports
+ *     /metrics or /experiments surfaces, and its input guards reject
+ *     business-outcome-shaped keys. Model evaluations and business
+ *     outcomes remain separate datasets (spec/ai-runtime-and-routing.md
+ *     §8);
+ *   - NO second human-execution engine: the review hook records review
+ *     intent/outcome (pending → approved/rejected/dismissed) — humans ACT
+ *     through the existing Job/Task/Execution authorities (/jobs,
+ *     /field-agents).
  *
  * Registry posture (append-oriented, per the architecture's history rules):
  * TaskProfile and model-registry CONTENT is immutable after creation —
@@ -69,6 +92,7 @@ import type { Clock } from '../../platform/clock/clock.ts';
 import type { Db } from '../../platform/db/contract.ts';
 import type { IdGenerator } from '../../platform/ids/ids.ts';
 import type { ExecutionsModuleApi } from '../executions/public.ts';
+import type { EvidenceModuleApi } from '../evidence/public.ts';
 
 // ---------------------------------------------------------------------------
 // TaskProfile — the provider-neutral request contract (§10)
@@ -753,6 +777,142 @@ export interface AiRuntimeModuleApi {
   getCascadeRun(cascadeRunId: string): Promise<CascadeRunRecord | null>;
   /** The cascade runs of one Workspace, newest first (bounded). */
   listCascadeRuns(workspaceId: string, limit?: number): Promise<readonly CascadeRunRecord[]>;
+
+  // ----- Evaluation framework (MKT-019, AI-003 — extends the same module) --
+  //
+  // The evaluation layer extends the merged REGISTRY + ROUTING layers with
+  // task-level evaluators, the human-review hook and execution-linked
+  // quality telemetry (spec/ai-runtime-and-routing.md §7/§8;
+  // implementation-contract §12). Evaluation is INDEPENDENT of business-
+  // outcome measurement (AI-AC-08): the evaluation layer reads
+  // TaskProfile/execution/usage context only — it never imports /metrics
+  // or /experiments surfaces (static architecture proof) and its input
+  // guards reject business-outcome-shaped keys.
+
+  /**
+   * Registers a PLATFORM-level evaluator registry entry, born ACTIVE with
+   * declared content IMMUTABLE from registration (corrections retire +
+   * re-register; the single lifecycle edge is terminal). The
+   * (evaluator_key) pair is DB-fenced among ACTIVE entries — registering a
+   * key that already has an ACTIVE entry is a ConflictError (a retired
+   * key may be re-registered as a NEW identity). Provider/model/SDK/
+   * credential/business-outcome-shaped input keys are REJECTED.
+   */
+  registerEvaluator(input: {
+    readonly evaluator: EvaluatorRegistrationInput;
+    readonly actorId: string | null;
+  }): Promise<EvaluatorRecord>;
+  /** Raw record by id (retired tombstones included) — module/route internal reads. */
+  getEvaluator(evaluatorRegistryId: string): Promise<EvaluatorRecord | null>;
+  /** The ACTIVE registry entries, oldest first (retired history stays readable by id). */
+  listEvaluators(): Promise<readonly EvaluatorRecord[]>;
+  /**
+   * The single evaluator lifecycle transition: ACTIVE → RETIRED
+   * (terminal). CAS on the presented version; the DB terminal/immutability
+   * triggers are the backstops. Retiring never rewrites evaluation
+   * history (the key + version are denormalized on the outcome rows).
+   */
+  retireEvaluator(input: {
+    readonly evaluatorRegistryId: string;
+    readonly expectedVersion: number;
+  }): Promise<EvaluatorRecord>;
+
+  /**
+   * Runs one EVALUATION of a TaskProfile's evaluator contract and records
+   * the append-only outcome rows. The evaluation request is DERIVED from
+   * the profile's evaluatorIds (never caller-selected): each key resolves
+   * to its ACTIVE registry entry (unknown/retired-all key → uniform
+   * NotFoundError); the evaluator implementation is a caller-supplied
+   * ENGINE for that key when provided, otherwise the module's built-in
+   * deterministic evaluator for the kind, otherwise a ConflictError (the
+   * contract is unsatisfiable — partial evaluation is never silent).
+   * Human-review-kind evaluators record `unknown` (the human decides via
+   * the review hook, never a machine).
+   *
+   * Execution linkage is server-proven: the execution reference, when
+   * present, is validated through the /executions public API (same
+   * Workspace — uniform NotFoundError otherwise); the usage-telemetry
+   * reference, when present, must belong to the same Workspace; every
+   * evidence citation is resolved through the /evidence public API (same
+   * Client). The §8-style idempotency key is REQUIRED and DB-fenced per
+   * (Workspace, key, evaluatorKey): a duplicate of the same logical
+   * command converges (replayed=true); a key reused for a DIFFERENT
+   * command is a ConflictError. Outcome rows are append-only (DB rejects
+   * UPDATE and DELETE) — corrections append NEW rows.
+   */
+  evaluateTask(input: {
+    readonly workspaceId: string;
+    readonly clientId: string;
+    readonly agencyId: string;
+    readonly taskProfileId: string;
+    readonly executionId: string | null;
+    readonly usageId: string | null;
+    readonly output: Readonly<Record<string, unknown>> | null;
+    readonly adapterError: string | null;
+    readonly engines?: Readonly<Record<string, EvaluatorEngine>> | undefined;
+    readonly idempotencyKey: string;
+    readonly correlationId: string;
+    readonly actorId: string | null;
+  }): Promise<EvaluationRunOutcome>;
+  /** Raw record by id — module/route internal reads. */
+  getEvaluation(evaluationId: string): Promise<EvaluationRecord | null>;
+  /**
+   * The evaluation outcome rows of one Workspace, newest first (bounded by
+   * `limit`, default 500, max 1000 — long-list handling).
+   */
+  listEvaluations(workspaceId: string, limit?: number): Promise<readonly EvaluationRecord[]>;
+
+  // ----- Human-review hook (records intent/outcome — never executes) ------
+
+  /**
+   * Records one HUMAN-REVIEW REQUEST (the hook): born PENDING with the
+   * review intent, linked to the (validated) execution and/or evaluation
+   * context. The hook records review intent ONLY — humans ACT through the
+   * existing Job/Task/Execution authorities (/jobs, /field-agents); this
+   * record never assigns, claims or executes work. The §8-style
+   * idempotency key is REQUIRED and DB-fenced per workspace: a duplicate
+   * of the same command converges (replayed=true); a key reused for a
+   * different command is a ConflictError. Context links, reason and scope
+   * are immutable after creation.
+   */
+  requestReview(input: {
+    readonly workspaceId: string;
+    readonly clientId: string;
+    readonly agencyId: string;
+    readonly executionId: string | null;
+    readonly evaluationId: string | null;
+    readonly reason: string;
+    readonly idempotencyKey: string;
+    readonly correlationId: string;
+    readonly actorId: string | null;
+  }): Promise<ReviewRequestCreateOutcome>;
+  /**
+   * Records the single lifecycle transition pending → approved/rejected/
+   * dismissed (terminal) — the review OUTCOME, appended to the
+   * append-only transition history. The decision is exactly-once (the
+   * transitions-table UNIQUE fence + the state-guarded update backstop
+   * concurrent decisions: one wins, the rest ConflictError). The deciding
+   * human is the server-derived actor. Decided requests are terminal —
+   * history is never rewritten.
+   */
+  decideReview(input: {
+    readonly reviewRequestId: string;
+    readonly decision: ReviewRequestDecision;
+    readonly note: string;
+    readonly correlationId: string;
+    readonly actorId: string | null;
+  }): Promise<ReviewRequestRecord>;
+  /** Raw record by id (transition history included) — module/route internal reads. */
+  getReviewRequest(reviewRequestId: string): Promise<ReviewRequestRecord | null>;
+  /**
+   * The review requests of one Workspace (transition histories included),
+   * newest first, optionally filtered by state (bounded).
+   */
+  listReviewRequests(
+    workspaceId: string,
+    state?: ReviewRequestState,
+    limit?: number,
+  ): Promise<readonly ReviewRequestRecord[]>;
 }
 
 export interface AiRuntimeModuleDeps {
@@ -773,8 +933,18 @@ export interface AiRuntimeModuleDeps {
    * adapter (OpenRouter or a fake) is supplied by the caller at route
    * time; the routing core depends on the adapter CONTRACT (ports), not
    * implementations (AI-AC-03 — provider independence §9).
+   *
+   * MKT-019 (AI-003) uses exactly ONE more matrix-sanctioned dependency:
+   * the /evidence public API — to VALIDATE evaluation evidence citations
+   * (existence + same-Client scope) before recording an evaluation. The
+   * evaluation layer reads TaskProfile/execution/usage context ONLY
+   * (AI-AC-08): /metrics and /experiments are NEVER imported (the frozen
+   * dependency matrix forbids them and the static architecture test
+   * proves it).
    */
   readonly executions: ExecutionsModuleApi;
+  /** Matrix-sanctioned /evidence public API — evaluation citation validation (MKT-019). */
+  readonly evidence: EvidenceModuleApi;
 }
 
 // ---------------------------------------------------------------------------
@@ -1218,6 +1388,466 @@ export interface RoutingOutcome {
   readonly finalOutput: Readonly<Record<string, unknown>> | null;
 }
 
+// ---------------------------------------------------------------------------
+// Evaluation framework (MKT-019, AI-003) — task-level evaluators, the
+// human-review hook and execution-linked quality telemetry
+// ---------------------------------------------------------------------------
+
+/**
+ * The closed evaluator-kind vocabulary (spec/ai-runtime-and-routing.md §7:
+ * "AI quality is measured through task-specific evaluations"). Every
+ * registered evaluator declares exactly one kind:
+ *
+ *   - `schema-validity`               — deterministic (built-in): the output
+ *     satisfies the TaskProfile's outputSchema (§11 "An output that fails
+ *     schema validation is never accepted");
+ *   - `factuality-grounding`          — model-judge/advisory (caller-
+ *     supplied engine; §12 "Model-judge evaluations are advisory
+ *     evidence");
+ *   - `evidence-citation-coverage`    — deterministic (built-in): the
+ *     output cites the config-declared expected evidence references;
+ *   - `brand-policy-compliance`       — deterministic (built-in): the output
+ *     text avoids the config-declared denied terms;
+ *   - `domain-rubric`                 — deterministic (built-in): the
+ *     output's numeric fields meet the config-declared rubric bounds;
+ *   - `human-review`                  — the human-review hook: an evaluator
+ *     contract of this kind records an `unknown` outcome and the caller
+ *     composes requestReview (humans act through /jobs — the hook never
+ *     executes);
+ *   - `downstream-task-success`       — recorded via a caller-supplied
+ *     engine from downstream task outcomes (TASK-level success — never
+ *     business lift, §8).
+ */
+export const EVALUATOR_KINDS = [
+  'schema-validity',
+  'factuality-grounding',
+  'evidence-citation-coverage',
+  'brand-policy-compliance',
+  'domain-rubric',
+  'human-review',
+  'downstream-task-success',
+] as const;
+export type EvaluatorKind = (typeof EVALUATOR_KINDS)[number];
+
+/**
+ * The evaluator-registry lifecycle. Registry content is immutable after
+ * registration (corrections retire + re-register); the single lifecycle
+ * edge is `active → retired` and `retired` is TERMINAL.
+ */
+export type EvaluatorStatus = 'active' | 'retired';
+
+export const EVALUATOR_TRANSITIONS: Readonly<
+  Record<EvaluatorStatus, readonly EvaluatorStatus[]>
+> = {
+  active: ['retired'],
+  retired: [],
+};
+
+export function isLegalEvaluatorTransition(
+  from: EvaluatorStatus,
+  to: EvaluatorStatus,
+): boolean {
+  return EVALUATOR_TRANSITIONS[from].includes(to);
+}
+
+/**
+ * Input keys that can NEVER appear in a caller-supplied evaluator
+ * registration payload: server-derived identity/lifecycle/provenance
+ * fields PLUS SDK/adapter/provider/credential-shaped keys (the registry is
+ * provider-neutral DATA) PLUS business-outcome-shaped keys (AI-AC-08 — an
+ * evaluator definition never references KPIs or experiment outcomes).
+ */
+export const EVALUATOR_REGISTRATION_FORBIDDEN_INPUT_KEYS = [
+  // Server-derived authority fields.
+  'evaluatorRegistryId',
+  'status',
+  'version',
+  'createdBy',
+  'createdAt',
+  'updatedAt',
+  // SDK/adapter/provider/credential-shaped keys — never evaluator data.
+  'sdk',
+  'sdkPackage',
+  'clientLibrary',
+  'adapter',
+  'adapterConfig',
+  'provider',
+  'providerName',
+  'providerLabel',
+  'model',
+  'modelName',
+  'modelKey',
+  'modelId',
+  'credential',
+  'credentialId',
+  'secretHandle',
+  'secret',
+  'secretMaterial',
+  'material',
+  'apiKey',
+  'api_key',
+  'token',
+  'password',
+  // Business-outcome-shaped keys — AI-AC-08 (never evaluator inputs).
+  'metricId',
+  'kpiId',
+  'experimentId',
+  'experimentOutcomeId',
+  'businessOutcomeId',
+  'lift',
+] as const;
+
+/**
+ * The evaluator-registration input: the normalized task-level evaluator
+ * definition as DECLARED data. `evaluatorKey` is the label TaskProfiles
+ * reference in their evaluatorIds contract; `kind` selects the closed §7
+ * vocabulary; `evaluatorVersion` versions the definition (denormalized
+ * onto every evaluation record); `config` is the bounded declarative
+ * configuration interpreted by the evaluation core (e.g. expected
+ * evidence references, rubric bounds, denied terms, thresholds).
+ */
+export interface EvaluatorRegistrationInput {
+  readonly evaluatorKey: string;
+  readonly displayName: string;
+  readonly kind: EvaluatorKind;
+  readonly evaluatorVersion: number;
+  readonly config: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Immutable storage shape of one persisted evaluator registry entry — the
+ * declared definition is immutable after registration; `status` moves
+ * along the single lifecycle edge; `version` is the CAS token.
+ */
+export interface EvaluatorRecord {
+  readonly evaluatorRegistryId: string;
+  /** The evaluator KEY label TaskProfiles reference in evaluatorIds. */
+  readonly evaluatorKey: string;
+  readonly displayName: string;
+  readonly kind: EvaluatorKind;
+  readonly evaluatorVersion: number;
+  /** The declarative config (bounded JSON object). */
+  readonly config: Readonly<Record<string, unknown>>;
+  readonly status: EvaluatorStatus;
+  readonly createdBy: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * The evaluation verdict vocabulary (implementation-contract §12
+ * "pass/fail/score"). `unknown` follows the frozen UNKNOWN semantics: the
+ * evaluator could not prove pass or fail — never auto-resolved to pass.
+ */
+export const EVALUATION_VERDICTS = ['pass', 'fail', 'unknown'] as const;
+export type EvaluationVerdict = (typeof EVALUATION_VERDICTS)[number];
+
+/**
+ * Input keys that can NEVER appear in a caller-supplied evaluation request
+ * payload: server-derived identity/scope/provenance fields, the
+ * EVALUATOR-SELECTION keys (which evaluators run is derived from the
+ * TaskProfile's evaluator contract — never caller-chosen), the
+ * OUTCOME keys (verdict/score/dimensions/evidence/uncertainty are
+ * evaluator-computed and module-recorded — caller-supplied outcomes would
+ * be fabrication), provider/model/credential-shaped keys, and
+ * BUSINESS-OUTCOME-shaped keys (AI-AC-08 — evaluation inputs never
+ * reference /metrics KPIs or /experiments outcomes).
+ */
+export const EVALUATION_FORBIDDEN_INPUT_KEYS = [
+  // Server-derived authority fields.
+  'evaluationId',
+  'workspaceId',
+  'clientId',
+  'agencyId',
+  'correlationId',
+  'causationId',
+  'createFingerprint',
+  'createdBy',
+  'createdAt',
+  // Evaluator selection — derived from the TaskProfile contract only.
+  'evaluatorIds',
+  'evaluatorId',
+  'evaluatorKey',
+  'evaluatorVersion',
+  'evaluatorRegistryId',
+  // Outcome fields — evaluator-computed, module-recorded (never caller
+  // fabrications).
+  'verdict',
+  'score',
+  'dimensions',
+  'evidenceRefs',
+  'uncertainty',
+  'uncertaintyOrLimitations',
+  // Business-outcome-shaped keys — AI-AC-08 (never evaluation inputs).
+  'metricId',
+  'kpiId',
+  'metricObservationId',
+  'experimentId',
+  'experimentOutcomeId',
+  'businessOutcomeId',
+  'businessOutcome',
+  'lift',
+  'conversionRate',
+  // Provider/model authority — never evaluation inputs.
+  'provider',
+  'providerName',
+  'providerLabel',
+  'model',
+  'modelName',
+  'modelKey',
+  'modelRegistryId',
+  // Credential-shaped keys — never in evaluation records.
+  'credential',
+  'credentialId',
+  'secretHandle',
+  'secret',
+  'secretMaterial',
+  'material',
+  'apiKey',
+  'api_key',
+  'token',
+  'password',
+] as const;
+
+/**
+ * One rubric dimension outcome (the §12 `dimensions` entry): the dimension
+ * label, the per-dimension verdict, the optional per-dimension 0..1 score
+ * and bounded notes.
+ */
+export interface EvaluationDimension {
+  readonly dimension: string;
+  readonly verdict: EvaluationVerdict;
+  readonly score: number | null;
+  readonly notes: string;
+}
+
+/**
+ * The §12 EvaluationResult payload an evaluator engine produces (minus the
+ * evaluatorId/evaluatorVersion — those are registry-derived and recorded
+ * by the module). `score` is the normalized 0..1 score (null when the
+ * evaluator reports a pure verdict); `evidenceRefs` are the citations
+ * backing the evaluation (validated module-side against the /evidence
+ * authority); `uncertaintyOrLimitations` is the honest disclosure of what
+ * the evaluator could not prove.
+ */
+export interface EvaluationResultPayload {
+  readonly verdict: EvaluationVerdict;
+  readonly score: number | null;
+  readonly dimensions: readonly EvaluationDimension[];
+  readonly evidenceRefs: readonly string[];
+  readonly uncertaintyOrLimitations: string;
+}
+
+/**
+ * Immutable storage shape of one persisted evaluation outcome record — one
+ * evaluator's §12 result for one evaluation request. APPEND-ONLY: written
+ * once, never updated or deleted (DB-enforced); corrections append a NEW
+ * record. Linked to the TaskProfile, the (validated) Execution, the
+ * (validated) usage-telemetry row and the evaluator registry entry.
+ */
+export interface EvaluationRecord {
+  readonly evaluationId: string;
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly taskProfileId: string;
+  /** Execution context link (server-validated same-Workspace; nullable). */
+  readonly executionId: string | null;
+  /** The usage-telemetry row this evaluation judges (nullable). */
+  readonly usageId: string | null;
+  readonly evaluatorRegistryId: string;
+  /** The §12 evaluatorId (the key label), denormalized at record time. */
+  readonly evaluatorKey: string;
+  /** The §12 evaluatorVersion, denormalized at record time. */
+  readonly evaluatorVersion: number;
+  readonly verdict: EvaluationVerdict;
+  /** Normalized 0..1 score (null when unmeasured — never fabricated). */
+  readonly score: number | null;
+  readonly dimensions: readonly EvaluationDimension[];
+  /** Validated citations into the /evidence authority. */
+  readonly evidenceRefs: readonly string[];
+  readonly uncertaintyOrLimitations: string;
+  /** Server-derived from the ambient correlation context. */
+  readonly correlationId: string;
+  readonly idempotencyKey: string;
+  readonly createFingerprint: string;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+}
+
+/**
+ * The outcome of one evaluation run: the per-evaluator outcome records and
+ * whether this request was a REPLAY of an already-recorded logical
+ * evaluation command (the §8-style per-evaluator fences converged the
+ * duplicates — no second rows, no rewrites).
+ */
+export interface EvaluationRunOutcome {
+  readonly evaluations: readonly EvaluationRecord[];
+  readonly replayed: boolean;
+}
+
+/**
+ * The evaluator ENGINE port — the caller-supplied evaluator implementation
+ * for kinds WITHOUT a built-in deterministic evaluator (factuality
+ * grounding model judges, downstream-task-success recorders, custom
+ * overrides). The engine receives the evaluator registry entry (the
+ * declared config), the TaskProfile and the output under evaluation; it
+ * returns the §12 result payload (guarded module-side: verdict vocabulary,
+ * score bounds, dimension shape, evidence-ref bounds). Model-judge engines
+ * are ADVISORY EVIDENCE (implementation-contract §12) — the module records
+ * their outcome, it never treats it as unquestionable truth.
+ */
+export interface EvaluatorEngine {
+  (input: {
+    readonly evaluator: EvaluatorRecord;
+    readonly taskProfile: TaskProfileRecord;
+    readonly output: Readonly<Record<string, unknown>> | null;
+    readonly adapterError: string | null;
+  }): Promise<EvaluationResultPayload>;
+}
+
+/**
+ * Input keys that can NEVER appear in a caller-supplied review-request
+ * payload: server-derived identity/scope/lifecycle/decision/provenance
+ * fields (the decision fields are set ONLY by decideReview — never
+ * caller-supplied on create), business-outcome-shaped keys (AI-AC-08) and
+ * credential-shaped keys.
+ */
+export const REVIEW_REQUEST_FORBIDDEN_INPUT_KEYS = [
+  // Server-derived authority fields.
+  'reviewRequestId',
+  'workspaceId',
+  'clientId',
+  'agencyId',
+  'state',
+  'status',
+  'decidedBy',
+  'decidedAt',
+  'decisionNote',
+  'correlationId',
+  'createFingerprint',
+  'createdBy',
+  'createdAt',
+  'updatedAt',
+  'version',
+  // Business-outcome-shaped keys — AI-AC-08 (never review-request inputs).
+  'metricId',
+  'kpiId',
+  'experimentId',
+  'experimentOutcomeId',
+  'businessOutcomeId',
+  'lift',
+  // Provider/model authority — never review-request inputs.
+  'provider',
+  'providerLabel',
+  'model',
+  'modelName',
+  'modelKey',
+  // Credential-shaped keys — never in review records.
+  'credential',
+  'credentialId',
+  'secretHandle',
+  'secret',
+  'secretMaterial',
+  'material',
+  'apiKey',
+  'api_key',
+  'token',
+  'password',
+] as const;
+
+/**
+ * The review-request lifecycle (the human-review hook): a request is born
+ * PENDING and moves — exactly once, terminally — to `approved`,
+ * `rejected` or `dismissed` through decideReview, which appends the
+ * transition to the append-only transition history. Humans act through the
+ * existing Job/Task/Execution authorities; the hook records intent and
+ * outcome only.
+ */
+export const REVIEW_REQUEST_STATES = [
+  'pending',
+  'approved',
+  'rejected',
+  'dismissed',
+] as const;
+export type ReviewRequestState = (typeof REVIEW_REQUEST_STATES)[number];
+
+export const REVIEW_REQUEST_TRANSITIONS: Readonly<
+  Record<ReviewRequestState, readonly ReviewRequestState[]>
+> = {
+  pending: ['approved', 'rejected', 'dismissed'],
+  approved: [],
+  rejected: [],
+  dismissed: [],
+};
+
+export function isLegalReviewRequestTransition(
+  from: ReviewRequestState,
+  to: ReviewRequestState,
+): boolean {
+  return REVIEW_REQUEST_TRANSITIONS[from].includes(to);
+}
+
+/** The decideReview decision vocabulary (one decision, one terminal state). */
+export const REVIEW_REQUEST_DECISIONS = ['approve', 'reject', 'dismiss'] as const;
+export type ReviewRequestDecision = (typeof REVIEW_REQUEST_DECISIONS)[number];
+
+/**
+ * Immutable storage shape of one persisted review-request record. The
+ * context links (execution, evaluation), reason and scope chain are
+ * immutable after creation; the lifecycle fields (state, decidedBy,
+ * decidedAt, decisionNote) move ONCE (pending → terminal) via decideReview.
+ */
+export interface ReviewRequestRecord {
+  readonly reviewRequestId: string;
+  readonly workspaceId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly executionId: string | null;
+  readonly evaluationId: string | null;
+  /** The review intent — why human review is requested. */
+  readonly reason: string;
+  readonly state: ReviewRequestState;
+  readonly decidedBy: string | null;
+  readonly decidedAt: string | null;
+  readonly decisionNote: string | null;
+  readonly correlationId: string;
+  readonly idempotencyKey: string;
+  readonly createFingerprint: string;
+  readonly createdBy: string | null;
+  readonly version: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  /** The append-only transition history (loaded on by-id reads). */
+  readonly transitions: readonly ReviewRequestTransitionRecord[];
+}
+
+/**
+ * One APPEND-ONLY review-request transition row: the from/to states, the
+ * deciding human, the decision note and the transition time. Written once;
+ * UPDATE and DELETE are DB-rejected.
+ */
+export interface ReviewRequestTransitionRecord {
+  readonly transitionId: string;
+  readonly reviewRequestId: string;
+  readonly fromState: ReviewRequestState;
+  readonly toState: ReviewRequestState;
+  readonly decidedBy: string | null;
+  readonly note: string | null;
+  readonly createdAt: string;
+}
+
+/**
+ * The outcome of a review-request create: the record and whether this
+ * request was a REPLAY of the already-recorded logical create command
+ * (the §8-style fence converged the duplicate).
+ */
+export interface ReviewRequestCreateOutcome {
+  readonly reviewRequest: ReviewRequestRecord;
+  readonly replayed: boolean;
+}
+
 export { createAiRuntimeModule } from './internal/ai-runtime-module.ts';
 /**
  * The input guards (validation + provider-neutrality + authority-field
@@ -1235,6 +1865,20 @@ export {
   assertValidUsageTelemetryInput,
   assertValidRoutingPolicyInput,
 } from './internal/ai-runtime-store.ts';
+/**
+ * The MKT-019 (AI-003) evaluation-layer input guards: evaluator
+ * registration (provider-neutral DATA + business-outcome-key rejection),
+ * the evaluation request (reference/bound validation — the evaluator
+ * selection and outcomes are never inputs) and the review-request
+ * create/decision guards. Same posture as the registry guards; exported
+ * so the guard semantics are part of the module contract.
+ */
+export {
+  assertValidEvaluatorRegistrationInput,
+  assertValidEvaluationInput,
+  assertValidReviewRequestInput,
+  assertValidReviewDecisionInput,
+} from './internal/ai-evaluation-store.ts';
 /**
  * The routing policy pure functions (MKT-018, AI-AC-04 phase-order proof +
  * AI-AC-07 capability non-clipping proof). The routing core depends on
@@ -1267,3 +1911,23 @@ export {
   type CascadeExecutorInput,
   type CascadeExecutorResult,
 } from './internal/routing/cascade.ts';
+/**
+ * The evaluation core (MKT-019, AI-003): the built-in deterministic
+ * evaluators (schema-validity, evidence-citation-coverage, brand-policy
+ * compliance, domain-rubric — the §7 kinds that need no model), the
+ * §12 result-payload guard and the evaluator-engine resolution. Exported
+ * for unit tests, the evaluator regression matrix and future server-side
+ * callers; the module's evaluateTask method orchestrates them.
+ */
+export {
+  BUILTIN_EVALUATOR_KINDS,
+  schemaValidityEvaluator,
+  citationCoverageEvaluator,
+  brandPolicyEvaluator,
+  domainRubricEvaluator,
+  humanReviewEvaluator,
+  resolveEvaluatorEngine,
+  assertValidEvaluationResultPayload,
+  runEvaluators,
+  type BuiltInEvaluator,
+} from './internal/evaluation/evaluate.ts';

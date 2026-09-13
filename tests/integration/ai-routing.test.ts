@@ -102,6 +102,16 @@ before(async () => {
       listExecutions: async () => [],
       resolveExecutionOwnership: async () => null,
     } as unknown as AiRuntimeModuleApi extends never ? never : Parameters<typeof createAiRuntimeModule>[0]['executions'],
+    // MKT-019: the routing test never runs evaluations, so a minimal
+    // evidence fake satisfies the (new) matrix-sanctioned dep.
+    evidence: {
+      appendEvidence: async () => {
+        throw new Error('not used in this test');
+      },
+      getEvidence: async () => null,
+      resolveEvidenceOwnership: async () => null,
+      listEvidenceForClient: async () => [],
+    } as unknown as Parameters<typeof createAiRuntimeModule>[0]['evidence'],
   });
 });
 

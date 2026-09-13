@@ -489,6 +489,35 @@ test('usage telemetry appends the §24 record shape and converges duplicates (EX
   assert.equal(create.status, 201);
   const profileId = (create.body['taskProfile'] as Record<string, unknown>)['taskProfileId'] as string;
 
+  // MKT-019 wiring: the telemetry evaluationRef must reference a REAL
+  // evaluation outcome record. Register the profile's evaluator
+  // ('brand-voice-rubric', a domain-rubric builtin) as the platform
+  // administrator, run one evaluation of the profile, and reference the
+  // recorded evaluation id.
+  const registerEvaluator = await apiCall(port(), '/api/ai/evaluators', {
+    token: await adminToken(),
+    body: {
+      evaluatorKey: 'brand-voice-rubric',
+      displayName: 'Brand Voice Rubric',
+      kind: 'domain-rubric',
+      evaluatorVersion: 1,
+      config: { dimensions: [{ field: 'headline', min: 0, max: 1 }] },
+    },
+  });
+  assert.equal(registerEvaluator.status, 201, JSON.stringify(registerEvaluator.body));
+  const evaluation = await apiCall(port(), `/api/workspaces/${tenant.workspaceId}/ai/evaluations`, {
+    token: tenant.owner.token,
+    body: {
+      taskProfileId: profileId,
+      output: { headline: 'Summer Sale' },
+      idempotencyKey: 'usage-eval-1',
+    },
+  });
+  assert.equal(evaluation.status, 201, JSON.stringify(evaluation.body));
+  const evaluations = evaluation.body['evaluations'] as ReadonlyArray<Record<string, unknown>>;
+  assert.equal(evaluations.length, 1);
+  const evaluationId = evaluations[0]!['evaluationId'] as string;
+
   const correlationUuid = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
   const append = await apiCall(port(), `/api/workspaces/${tenant.workspaceId}/ai/usage-telemetry`, {
     token: tenant.owner.token,
@@ -501,7 +530,7 @@ test('usage telemetry appends the §24 record shape and converges duplicates (EX
       costAmount: 0.0125,
       tokensIn: 1500,
       tokensOut: 420,
-      evaluationRef: 'eval:brand-voice-rubric:run-42',
+      evaluationRef: evaluationId,
       escalationCount: 0,
       idempotencyKey: 'usage-append-1',
     },
@@ -529,7 +558,7 @@ test('usage telemetry appends the §24 record shape and converges duplicates (EX
       costAmount: 0.0125,
       tokensIn: 1500,
       tokensOut: 420,
-      evaluationRef: 'eval:brand-voice-rubric:run-42',
+      evaluationRef: evaluationId,
       escalationCount: 0,
       idempotencyKey: 'usage-append-1',
     },
@@ -553,7 +582,7 @@ test('usage telemetry appends the §24 record shape and converges duplicates (EX
       costAmount: 0.0125,
       tokensIn: 1500,
       tokensOut: 420,
-      evaluationRef: 'eval:brand-voice-rubric:run-42',
+      evaluationRef: evaluationId,
       escalationCount: 0,
       idempotencyKey: 'usage-append-1',
     },

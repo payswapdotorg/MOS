@@ -1,5 +1,6 @@
 /**
- * /ai-runtime module implementation (MKT-017, AI-001 + MKT-018, AI-002).
+ * /ai-runtime module implementation (MKT-017, AI-001 + MKT-018, AI-002 +
+ * MKT-019, AI-003).
  *
  * Implements the AI Runtime authority:
  *   - REGISTRY LAYER (MKT-017): provider-neutral TaskProfiles, the
@@ -12,25 +13,42 @@
  *     provider-neutral adapter contract, and authoritative selection
  *     telemetry (spec/ai-runtime-and-routing.md §4/§5/§6/§9). The router
  *     is the /ai-runtime module itself (AI-AC-03) — OpenRouter is pluggable
- *     as an ADAPTER behind the provider-neutral contract.
+ *     as an ADAPTER behind the provider-neutral contract;
+ *   - EVALUATION LAYER (MKT-019): the provider-neutral evaluator registry,
+ *     task-level evaluation runs derived from the TaskProfile evaluator
+ *     contract (built-in deterministic evaluators + caller-supplied
+ *     engines), append-only evaluation outcome records linked to the
+ *     Execution and the usage telemetry, and the human-review hook
+ *     (review-request records, pending → approved/rejected/dismissed,
+ *     append-only transitions — the hook records intent/outcome, humans
+ *     act through /jobs) (spec/ai-runtime-and-routing.md §7/§8,
+ *     implementation-contract §12, AI-AC-08 independence from
+ *     business-outcome measurement).
  *
- * What this implementation deliberately does NOT contain: no evaluation
- * framework (MKT-019), no provider SDK imports (the OpenRouter adapter
- * uses the platform's HttpCallPort — fetch-based, never an SDK; AI-AC-02),
- * no credentials (routing-time credential resolution is the composition
- * root's job — the adapter takes the API key, never the TaskProfile), no
- * domain-module consumption of routing (that stays via TaskProfiles).
+ * What this implementation deliberately does NOT contain: no provider SDK
+ * imports (the OpenRouter adapter uses the platform's HttpCallPort —
+ * fetch-based, never an SDK; AI-AC-02), no credentials (routing-time
+ * credential resolution is the composition root's job — the adapter takes
+ * the API key, never the TaskProfile), no domain-module consumption of
+ * routing (that stays via TaskProfiles), NO /metrics or /experiments
+ * imports (AI-AC-08 — the evaluation layer reads
+ * TaskProfile/execution/usage/evidence-citation context ONLY) and NO
+ * human work distribution (the review hook records review state; /jobs
+ * owns human execution).
  *
- * The module's ONLY cross-module dependency is the frozen-matrix-
- * sanctioned /executions public API (telemetry execution reference
- * validation); scope chains arrive as server-derived data resolved by
- * the caller (routes resolve canonical ownership BEFORE authorize) and
- * are DB-backstopped by the migration-016/020 scope-chain triggers.
+ * The module's cross-module dependencies are the frozen-matrix-sanctioned
+ * /executions public API (telemetry + evaluation execution-reference
+ * validation) and the /evidence public API (evaluation citation
+ * validation — MKT-019); scope chains arrive as server-derived data
+ * resolved by the caller (routes resolve canonical ownership BEFORE
+ * authorize) and are DB-backstopped by the migration-016/020/032
+ * scope-chain triggers.
  *
  * Convergence discipline (§8-style, exactly the MKT-009/MKT-010 pattern):
- * TaskProfile creates, telemetry appends, routing-policy creates, selection-
- * decision appends and cascade-run starts all carry a LOGICAL idempotency
- * key whose uniqueness the DATABASE enforces — a duplicate of the same
+ * TaskProfile creates, telemetry appends, routing-policy creates,
+ * selection-decision appends, cascade-run starts, per-evaluator evaluation
+ * appends and review-request creates all carry a LOGICAL idempotency key
+ * whose uniqueness the DATABASE enforces — a duplicate of the same
  * command (same create fingerprint) converges to the existing row
  * (replayed=true); a key reused for a different command is a
  * ConflictError. History is append-only: corrections create new records,
@@ -46,6 +64,12 @@ import type {
   SelectionDecisionRecord,
   TaskProfileInput,
   UsageTelemetryInput,
+} from '../public.ts';
+import type {
+  EvaluationRecord,
+  EvaluatorRecord,
+  ReviewRequestDecision,
+  ReviewRequestState,
 } from '../public.ts';
 import {
   assertValidIdempotencyKey,
@@ -63,6 +87,16 @@ import {
   fingerprintSelectionDecisionAppend,
   fingerprintCascadeRunStart,
 } from './ai-routing-store.ts';
+import {
+  AiEvaluationStore,
+  assertValidEvaluationInput,
+  assertValidEvaluatorRegistrationInput,
+  assertValidReviewDecisionInput,
+  assertValidReviewRequestInput,
+  fingerprintEvaluationAppend,
+  fingerprintReviewRequestCreate,
+} from './ai-evaluation-store.ts';
+import { runEvaluators } from './evaluation/evaluate.ts';
 import type { CascadeRunRow, CascadeStepRow } from './ai-routing-store.ts';
 import {
   interpretPolicy,
@@ -156,7 +190,11 @@ export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModul
   // MKT-018: the routing store (selection decisions, cascade runs/steps,
   // routing policies). Same module authority, deeper scope.
   const routingStore = new AiRoutingStore(deps.db, deps.clock, deps.ids);
-  const { executions } = deps;
+  // MKT-019: the evaluation store (evaluator registry, evaluation outcome
+  // records, review requests + transitions). Same module authority,
+  // deeper scope.
+  const evaluationStore = new AiEvaluationStore(deps.db, deps.clock, deps.ids);
+  const { executions, evidence } = deps;
 
   return {
     // ----- TaskProfiles ---------------------------------------------------
@@ -367,7 +405,13 @@ export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModul
       //     rewrites history);
       //   - the execution reference, when present, is validated through the
       //     /executions public API and must belong to the SAME Workspace
-      //     (the frozen matrix direction /ai-runtime ──→ /executions).
+      //     (the frozen matrix direction /ai-runtime ──→ /executions);
+      //   - MKT-019 WIRING: the evaluationRef, when present, must reference
+      //     a REAL evaluation outcome record of the SAME Workspace (the
+      //     MKT-017 placeholder is now a validated reference — usage
+      //     telemetry's evaluator-outcome link is populated by real
+      //     evaluation results, never fabricated strings). A foreign or
+      //     unknown reference is a uniform NotFoundError.
       const profile = await store.getTaskProfile(input.usage.taskProfileId);
       if (profile === null || profile.workspaceId !== input.workspaceId) {
         throw new NotFoundError('task-profile', input.usage.taskProfileId);
@@ -380,6 +424,12 @@ export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModul
         const execution = await executions.getExecution(input.usage.executionId);
         if (execution === null || execution.workspaceId !== input.workspaceId) {
           throw new NotFoundError('execution', input.usage.executionId);
+        }
+      }
+      if (input.usage.evaluationRef !== null && input.usage.evaluationRef !== undefined && input.usage.evaluationRef !== '') {
+        const evaluation = await evaluationStore.getEvaluation(input.usage.evaluationRef);
+        if (evaluation === null || evaluation.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('evaluation', input.usage.evaluationRef);
         }
       }
 
@@ -900,6 +950,345 @@ export function createAiRuntimeModule(deps: AiRuntimeModuleDeps): AiRuntimeModul
     async listCascadeRuns(workspaceId, limit) {
       const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
       return routingStore.listCascadeRuns(workspaceId, bounded);
+    },
+
+    // ----- Evaluation framework (MKT-019, AI-003) --------------------------
+
+    async registerEvaluator(input) {
+      assertValidEvaluatorRegistrationInput(input.evaluator);
+      const inserted = await evaluationStore.insertEvaluator({
+        evaluator: input.evaluator,
+        actorId: input.actorId,
+      });
+      if (inserted === 'key-taken') {
+        throw new ConflictError(
+          `an ACTIVE evaluator with key '${input.evaluator.evaluatorKey}' already exists (a retired key may be re-registered as a NEW identity)`,
+        );
+      }
+      return inserted;
+    },
+
+    async getEvaluator(evaluatorRegistryId) {
+      return evaluationStore.getEvaluator(evaluatorRegistryId);
+    },
+
+    async listEvaluators() {
+      return evaluationStore.listEvaluators();
+    },
+
+    async retireEvaluator(input) {
+      return deps.db.transaction(async (tx) => {
+        const current = await evaluationStore.lockEvaluator(tx, input.evaluatorRegistryId);
+        if (current === null) {
+          throw new NotFoundError('evaluator', input.evaluatorRegistryId);
+        }
+        if (current.version !== input.expectedVersion) {
+          throw new ConflictError(`evaluator version mismatch: current version is ${current.version}`);
+        }
+        if (current.status === 'retired') {
+          throw new ConflictError(
+            `evaluator ${input.evaluatorRegistryId} is retired and terminal — corrections register a NEW evaluator`,
+          );
+        }
+        const outcome = await evaluationStore.updateEvaluatorStatus(tx, {
+          evaluatorRegistryId: input.evaluatorRegistryId,
+          expectedVersion: input.expectedVersion,
+        });
+        if (outcome !== 'ok') {
+          throw new ConflictError('evaluator retire lost the version race');
+        }
+        const updated = await evaluationStore.lockEvaluator(tx, input.evaluatorRegistryId);
+        if (updated === null) {
+          throw new Error(`retired evaluator ${input.evaluatorRegistryId} could not be read back`);
+        }
+        return updated;
+      });
+    },
+
+    async evaluateTask(input) {
+      assertValidEvaluationInput({
+        taskProfileId: input.taskProfileId,
+        executionId: input.executionId,
+        usageId: input.usageId,
+        output: input.output,
+        adapterError: input.adapterError,
+        idempotencyKey: input.idempotencyKey,
+      });
+      assertValidIdempotencyKey(input.idempotencyKey);
+      assertScopeIds({
+        workspaceId: input.workspaceId,
+        clientId: input.clientId,
+        agencyId: input.agencyId,
+      });
+      if (typeof input.correlationId !== 'string' || input.correlationId.length < 1 || input.correlationId.length > 128) {
+        throw new ConflictError('correlationId must be the server-derived ambient correlation identity');
+      }
+
+      // REFERENCE pre-checks (clean uniform errors; the migration-032
+      // scope-chain trigger is the backstop behind every one of them):
+      //   - the TaskProfile must exist AND belong to the SAME Workspace
+      //     (the evaluation request is derived from ITS evaluator contract);
+      //   - the usage-telemetry reference, when present, must belong to the
+      //     SAME Workspace (the §24 evaluator-outcome link);
+      //   - the execution reference, when present, is validated through the
+      //     /executions public API and must belong to the SAME Workspace
+      //     (server-proven execution linkage — never caller-controlled).
+      const profile = await store.getTaskProfile(input.taskProfileId);
+      if (profile === null || profile.workspaceId !== input.workspaceId) {
+        throw new NotFoundError('task-profile', input.taskProfileId);
+      }
+      if (input.usageId !== null) {
+        const usage = await store.getUsageTelemetry(input.usageId);
+        if (usage === null || usage.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('usage-telemetry', input.usageId);
+        }
+      }
+      if (input.executionId !== null) {
+        const execution = await executions.getExecution(input.executionId);
+        if (execution === null || execution.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('execution', input.executionId);
+        }
+      }
+
+      // DERIVE the evaluation request from the TaskProfile's evaluator
+      // contract (evaluatorIds are LABELS, never caller-selected here):
+      // every key must resolve to its ACTIVE registry entry — an
+      // unknown/unsatisfiable key is a uniform NotFoundError.
+      const evaluatorRecords: EvaluatorRecord[] = [];
+      for (const evaluatorKey of profile.evaluatorIds) {
+        const evaluator = await evaluationStore.findActiveEvaluatorByKey(evaluatorKey);
+        if (evaluator === null) {
+          throw new NotFoundError('evaluator', evaluatorKey);
+        }
+        evaluatorRecords.push(evaluator);
+      }
+
+      // RUN the evaluators (built-ins and/or caller-supplied engines; a
+      // missing implementation is a ConflictError — the contract is never
+      // silently half-evaluated). The §12 payloads are guarded inside.
+      const runResults = await runEvaluators({
+        taskProfile: profile,
+        evaluators: evaluatorRecords,
+        output: input.output,
+        adapterError: input.adapterError,
+        engines: input.engines,
+      });
+
+      // VALIDATE the evidence citations through the /evidence public API
+      // (matrix direction /ai-runtime ──→ /evidence): every citation must
+      // exist and belong to the SAME Client — a fabricated or foreign
+      // citation is a uniform NotFoundError. This module NEVER becomes a
+      // second evidence authority: it records references it cannot honor.
+      for (const runResult of runResults) {
+        for (const evidenceRef of runResult.result.evidenceRefs) {
+          // A non-UUID citation is indistinguishable from an unknown one
+          // (uniform NotFoundError — never a syntax error surfaced as a
+          // 500 from the uuid column).
+          if (!SCOPE_ID_PATTERN.test(evidenceRef)) {
+            throw new NotFoundError('evidence', evidenceRef);
+          }
+          const evidenceRecord = await evidence.getEvidence(evidenceRef);
+          if (evidenceRecord === null || evidenceRecord.clientId !== input.clientId) {
+            throw new NotFoundError('evidence', evidenceRef);
+          }
+        }
+      }
+
+      // RECORD the append-only outcome rows (one per evaluator, fenced by
+      // (workspace, key, evaluatorKey)); a fence firing converges the
+      // per-evaluator slice of this logical evaluation command.
+      return deps.db.transaction(async (tx) => {
+        const evaluations: EvaluationRecord[] = [];
+        let replayed = false;
+        for (const runResult of runResults) {
+          const createFingerprint = fingerprintEvaluationAppend({
+            workspaceId: input.workspaceId,
+            taskProfileId: input.taskProfileId,
+            executionId: input.executionId,
+            usageId: input.usageId,
+            evaluatorKey: runResult.evaluator.evaluatorKey,
+            evaluatorVersion: runResult.evaluator.evaluatorVersion,
+            result: runResult.result,
+          });
+          const inserted = await evaluationStore.insertEvaluation(tx, {
+            workspaceId: input.workspaceId,
+            clientId: input.clientId,
+            agencyId: input.agencyId,
+            taskProfileId: input.taskProfileId,
+            executionId: input.executionId,
+            usageId: input.usageId,
+            evaluatorRegistryId: runResult.evaluator.evaluatorRegistryId,
+            evaluatorKey: runResult.evaluator.evaluatorKey,
+            evaluatorVersion: runResult.evaluator.evaluatorVersion,
+            result: runResult.result,
+            correlationId: input.correlationId,
+            idempotencyKey: input.idempotencyKey,
+            createFingerprint,
+            actorId: input.actorId,
+          });
+          if (inserted !== 'fence') {
+            evaluations.push(inserted);
+            continue;
+          }
+          // The §8-style fence fired: converge on the recorded command or
+          // reject the key reuse — never a silent rewrite of history.
+          const existing = await evaluationStore.findEvaluationByIdempotencyKey(
+            tx,
+            input.workspaceId,
+            input.idempotencyKey,
+            runResult.evaluator.evaluatorKey,
+          );
+          if (existing === null) {
+            throw new ConflictError(
+              `evaluation idempotency key '${input.idempotencyKey}' fence fired but no record resolved for evaluator '${runResult.evaluator.evaluatorKey}'`,
+            );
+          }
+          if (existing.createFingerprint !== createFingerprint) {
+            throw new IdempotencyConflictError(input.idempotencyKey);
+          }
+          evaluations.push(existing);
+          replayed = true;
+        }
+        return { evaluations, replayed };
+      });
+    },
+
+    async getEvaluation(evaluationId) {
+      return evaluationStore.getEvaluation(evaluationId);
+    },
+
+    async listEvaluations(workspaceId, limit) {
+      const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
+      return evaluationStore.listEvaluations(workspaceId, bounded);
+    },
+
+    // ----- Human-review hook (records intent/outcome — never executes) ------
+
+    async requestReview(input) {
+      assertValidReviewRequestInput({
+        executionId: input.executionId,
+        evaluationId: input.evaluationId,
+        reason: input.reason,
+        idempotencyKey: input.idempotencyKey,
+      });
+      assertValidIdempotencyKey(input.idempotencyKey);
+      assertScopeIds({
+        workspaceId: input.workspaceId,
+        clientId: input.clientId,
+        agencyId: input.agencyId,
+      });
+      if (typeof input.correlationId !== 'string' || input.correlationId.length < 1 || input.correlationId.length > 128) {
+        throw new ConflictError('correlationId must be the server-derived ambient correlation identity');
+      }
+
+      // REFERENCE pre-checks (uniform NotFoundError; the migration-032
+      // scope-chain trigger is the backstop): the execution reference,
+      // when present, is validated through the /executions public API
+      // (same-Workspace); the evaluation reference, when present, must
+      // belong to the SAME Workspace.
+      if (input.executionId !== null) {
+        const execution = await executions.getExecution(input.executionId);
+        if (execution === null || execution.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('execution', input.executionId);
+        }
+      }
+      if (input.evaluationId !== null) {
+        const evaluation = await evaluationStore.getEvaluation(input.evaluationId);
+        if (evaluation === null || evaluation.workspaceId !== input.workspaceId) {
+          throw new NotFoundError('evaluation', input.evaluationId);
+        }
+      }
+
+      const createFingerprint = fingerprintReviewRequestCreate({
+        workspaceId: input.workspaceId,
+        executionId: input.executionId,
+        evaluationId: input.evaluationId,
+        reason: input.reason,
+      });
+
+      return deps.db.transaction(async (tx) => {
+        const inserted = await evaluationStore.insertReviewRequest(tx, {
+          workspaceId: input.workspaceId,
+          clientId: input.clientId,
+          agencyId: input.agencyId,
+          executionId: input.executionId,
+          evaluationId: input.evaluationId,
+          reason: input.reason,
+          correlationId: input.correlationId,
+          idempotencyKey: input.idempotencyKey,
+          createFingerprint,
+          actorId: input.actorId,
+        });
+        if (inserted !== 'fence') {
+          return { reviewRequest: inserted, replayed: false };
+        }
+        // The §8-style fence fired: converge on the recorded command or
+        // reject the key reuse.
+        const existing = await evaluationStore.findReviewRequestByIdempotencyKey(
+          tx,
+          input.workspaceId,
+          input.idempotencyKey,
+        );
+        if (existing === null) {
+          throw new ConflictError(
+            `review request idempotency key '${input.idempotencyKey}' fence fired but no record resolved`,
+          );
+        }
+        if (existing.createFingerprint !== createFingerprint) {
+          throw new IdempotencyConflictError(input.idempotencyKey);
+        }
+        const withTransitions = await evaluationStore.getReviewRequest(existing.reviewRequestId);
+        return { reviewRequest: withTransitions ?? existing, replayed: true };
+      });
+    },
+
+    async decideReview(input) {
+      assertValidReviewDecisionInput({ decision: input.decision, note: input.note });
+      if (typeof input.correlationId !== 'string' || input.correlationId.length < 1 || input.correlationId.length > 128) {
+        throw new ConflictError('correlationId must be the server-derived ambient correlation identity');
+      }
+
+      const TO_STATE: Record<ReviewRequestDecision, ReviewRequestState> = {
+        approve: 'approved',
+        reject: 'rejected',
+        dismiss: 'dismissed',
+      };
+      const toState = TO_STATE[input.decision];
+
+      return deps.db.transaction(async (tx) => {
+        // Lock the request row (uniform NotFoundError for unknown ids — a
+        // foreign review request id is indistinguishable from an unknown
+        // one; the ROUTE layer additionally authorizes scope BEFORE this).
+        const current = await evaluationStore.lockReviewRequest(tx, input.reviewRequestId);
+        if (current === null) {
+          throw new NotFoundError('review-request', input.reviewRequestId);
+        }
+        if (current.state !== 'pending') {
+          throw new ConflictError(
+            `review request ${input.reviewRequestId} is ${current.state} and terminal — the decision is append-only history`,
+          );
+        }
+        const updated = await evaluationStore.applyReviewDecision(tx, {
+          reviewRequestId: input.reviewRequestId,
+          fromState: 'pending',
+          toState,
+          decidedBy: input.actorId,
+          note: input.note,
+        });
+        if (updated === null) {
+          throw new ConflictError('review request decision lost the state race (exactly-one decision fence)');
+        }
+        return updated;
+      });
+    },
+
+    async getReviewRequest(reviewRequestId) {
+      return evaluationStore.getReviewRequest(reviewRequestId);
+    },
+
+    async listReviewRequests(workspaceId, state, limit) {
+      const bounded = limit === undefined ? 500 : Math.min(Math.max(Math.trunc(limit), 1), 1000);
+      return evaluationStore.listReviewRequests(workspaceId, state, bounded);
     },
   };
 }

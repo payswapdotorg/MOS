@@ -547,6 +547,13 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // audit table is created (the pack maps observations into the COMMON
     // /evidence + /metrics authorities — CREATOR-AC-01/AC-02/AC-06).
     '031_creator_operations.sql',
+    // MKT-019 (AI evaluation framework) appends the AI evaluations
+    // migration (032 — the number is RESERVED for this Work Item): the
+    // provider-neutral evaluator registry, the append-only evaluation
+    // outcome records (§12 verdict/score/dimensions/evidenceRefs/
+    // uncertainty, execution- and usage-linked) and the human-review hook
+    // records with their append-only transition history (AI-003).
+    '032_ai_evaluations.sql',
     // MKT-040 (Marketing Cloud Deployment) appends the deployments
     // migration (034 — the number is RESERVED for this Work Item; 032/033
     // are reserved for sibling deliveries): the deployment identity
