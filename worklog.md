@@ -34,3 +34,28 @@ Design decisions (frozen for this delivery):
 
 Stage Summary:
 - Research phase complete; implementation starts now.
+
+---
+Task ID: 2
+Agent: MKT-045 Worker (completion session — tests + gates + delivery)
+Task: Complete the MKT-045 delivery on top of snapshot a113ab2: the three test suites (ACs 7-9), the docs/implementation/MKT-045.md runbook, the six gates with exact counts, commit + push.
+
+Work Log:
+- Audited the pushed snapshot a113ab2 (module + three-GET routes + additive spec/registration) and the uncommitted working tree: the three test suites and the runbook drafted by the prior session, plus the uncommitted marketplace-id fix in src/modules/ai-operator/internal/ai-operator-module.ts (gatherAgencyRows now enumerates jobs over the RESOLVED human-agent PROFILES: listMarketplaceJobs(profile.agentId), listOffersForCandidate(profile.userId) — the /field-agents contract takes the PROFILE id for the marketplace listing and the USER id for offers).
+- Verified suite structure: tests/unit/ai-operator.test.ts (18 tests), tests/architecture/ai-operator-boundary.test.ts (15 tests), tests/integration/ai-operator-api.test.ts (9 tests) — each matching the runbook's AC map (AC-7 pinning/determinism, AC-8 integration vs real PostgreSQL, AC-9 unit; AC-10 boundary/architecture; AC-11 runbook).
+- Provisioned the pinned MinIO binary: dl.min.io returns 410 Gone upstream (open-source releases archived) and the pinned GitHub release is 404; extracted the byte-identical binary (usr/bin/minio from the official quay.io/minio/minio image layer, tag RELEASE.2025-09-07T16-13-09Z) and installed it into the harness's own cache path .test-deps/minio-RELEASE.2025-09-07T16-13-09Z/minio — sha256 7c5bd8512c6e966455b1d198209358b2d191c77a83ab377c4073281065fb855f matches the harness's pinned MINIO_SHA256 exactly, so ensureMinio() finds its cached pinned binary (no override, no skip; the real S3 endpoint still runs).
+- Ran the six gates on the delivery head:
+  - npm install — exit 0, no lockfile/node_modules changes;
+  - npm run lint — 0 errors;
+  - npm run typecheck (tsc --noEmit) — 0 errors;
+  - npm run arch:check — 0 violations, 403 files, 31 enforced frozen modules (30 spec-parsed §6 modules incl. /ai-operator + the disclosed 'apps' composition provision);
+  - npm run test:unit — 834/834 pass (18 this module's);
+  - npm run test:architecture — 469/469 pass (15 this module's);
+  - npm run test:integration — 847/847 pass (9 this module's). At node --test default file-parallelism on this 2-core/~4GB sandbox, two pre-existing timing-sensitive suites (redis-cache-lock, async-work) flaked; both pass deterministically in isolation and serially. The reported serial run: node --test --test-concurrency=1 over the same 76 files / 847 tests as six consecutive foreground chunk invocations (background/detached runners are reaped by the sandbox ~60-90s in, so foreground chunks were required), each chunk fail 0; 63+111+202+211+140+120 = 847.
+- Corrected the runbook: arch-check reports 31 enforced frozen modules (the prior draft said 30); filled the Gates section with the exact counts and the two disclosed environment notes.
+- Committed and pushed the completion on mkt/045-worker-delivery.
+
+Stage Summary:
+- The MKT-045 delivery is complete: module + three-GET surface + registration (a113ab2) PLUS tests (18 unit / 15 architecture / 9 integration) + runbook + the marketplace-id fix, all six gates green with exact counts (lint 0 / tsc 0 / arch:check 0 (403 files, 31 enforced modules) / unit 834/834 / architecture 469/469 / integration 847/847).
+- Environment disclosures recorded in docs/implementation/MKT-045.md (minio 410 Gone provisioning via the harness's own cache; serial chunk execution on the constrained sandbox; the two parallel-flaky pre-existing suites proven deterministic serially).
+- No test was masked, skipped or deleted; no spec file beyond the additive MKT-045 registration was modified.

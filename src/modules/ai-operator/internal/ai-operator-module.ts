@@ -179,10 +179,16 @@ export function createAiOperatorModule(deps: AiOperatorModuleDeps): AiOperatorMo
     const openJobs = [];
     const inFlightJobs = [];
     const seenJobIds = new Set<string>();
-    for (const userId of input.humanAgentUserIds) {
+    // The jobs surface enumeration runs over the RESOLVED profiles (the
+    // marketplace listing takes the Human Agent PROFILE id through the
+    // /field-agents contract — a membership user id is never an agent id;
+    // listOffersForCandidate takes the user id). Both stay inside the
+    // disclosed enumeration window: jobs never reachable through this
+    // agency's human agents stay out of the derivations.
+    for (const profile of profiles) {
       // OPEN work: the marketplace listing of each human agent (projected
       // / offered jobs the candidate is eligible for).
-      for (const job of await deps.jobs.listMarketplaceJobs(userId)) {
+      for (const job of await deps.jobs.listMarketplaceJobs(profile.agentId)) {
         if (job.agencyId !== input.agencyId) continue;
         if (seenJobIds.has(job.jobId)) continue;
         if (job.status !== 'projected' && job.status !== 'offered') continue;
@@ -190,7 +196,7 @@ export function createAiOperatorModule(deps: AiOperatorModuleDeps): AiOperatorMo
         openJobs.push(job);
       }
       // IN-FLIGHT work: accepted offers whose jobs are not yet settled.
-      for (const offer of await deps.jobs.listOffersForCandidate(userId)) {
+      for (const offer of await deps.jobs.listOffersForCandidate(profile.userId)) {
         if (offer.status !== 'accepted') continue;
         if (seenJobIds.has(offer.jobId)) continue;
         const job = await deps.jobs.getJob(offer.jobId);
