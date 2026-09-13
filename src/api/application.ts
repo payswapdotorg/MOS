@@ -144,6 +144,10 @@ import type { ReportingModuleApi } from '../modules/reporting/public.ts';
 // control plane — DEPLOY-002; the structural-port wiring happens at the
 // composition root).
 import type { DeploymentsModuleApi } from '../modules/deployments/public.ts';
+// MKT-047: /apps module contract (App registry — the App Manifest and
+// Packaging v1 authority: versioned immutable App Version manifests over
+// the /extensions registry through a structural port).
+import type { AppsModuleApi } from '../modules/apps/public.ts';
 // MKT-042: Decision Ledger authority (the append-oriented decision
 // records authority).
 import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
@@ -233,6 +237,14 @@ export interface ApplicationModules {
   // engine).
   readonly deployments: DeploymentsModuleApi;
 
+  // MKT-047: the App registry authority (App Manifest and Packaging v1 —
+  // the immutable versioned App Version manifests: capabilities,
+  // schemas, scopes, UI surfaces, events, dependencies, app-owned state
+  // namespaces and certification metadata; the compatibility query).
+  // Composes OVER the /extensions authority via its structural port —
+  // no mutation surface over extensions (composition, not authority
+  // transfer).
+  readonly apps: AppsModuleApi;
   // MKT-042: the Decision Ledger authority (the append-oriented ledger
   // for material recommendations and commercial decisions — proposal
   // vocabulary, the frozen disposition state machine, the one-shot

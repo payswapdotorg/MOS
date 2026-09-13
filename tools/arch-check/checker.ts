@@ -79,7 +79,44 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
   const { codeRoot, specDir } = options;
   const skip = new Set(options.skip ?? []);
 
-  const frozenModules = parseFrozenModules(path.join(specDir, 'architecture.md'));
+  const specModules = parseFrozenModules(path.join(specDir, 'architecture.md'));
+  // -------------------------------------------------------------------------
+  // v1.5 COMPOSITION MODULES — DISCLOSED PROVISION (MKT-047 worker →
+  // Tech Lead, for Architect ratification).
+  //
+  // The frozen v1.5 architecture package (spec/change-request-005.md #4
+  // "Expand the existing Extension Registry into an App Ecosystem" —
+  // APPROVED; spec/architecture-lock-v1.5.md #7/#11; spec/
+  // mos-app-ecosystem-v1.5.md) establishes the App registry as a
+  // composition layer over /extensions, but the v1.5 promotion did NOT
+  // append /apps to the §6 module enumeration of spec/architecture.md
+  // (the module list remains the v1.4-era 26 — a documentation gap in
+  // the frozen chain; workers may not edit spec/). The MKT-047 Work
+  // Item dispatch places the App registry authority at src/modules/apps.
+  //
+  // Until the Architect ratifies the module-list update (a one-line
+  // spec/architecture.md §6 addition — at which point this provision
+  // should be REMOVED and the spec-parsed list used directly), this
+  // provision appends the v1.5 composition modules to the enforced set
+  // with the STRICTEST posture available — a frozen boundary directory,
+  // a required public.ts, and an EMPTY dependency-matrix allowance (the
+  // /deployments precedent: structural ports only, wired at the
+  // composition root; every cross-module import inside these modules is
+  // a FORBIDDEN_MODULE_DEPENDENCY violation). NO existing rule is
+  // relaxed: the 26 spec-parsed modules and their frozen matrix remain
+  // exactly as enforced; this only ADDS a new strictly-enforced boundary.
+  //
+  // Sibling v1.5 workers may append their own composition modules here
+  // (additive, conflict-tolerant — one entry per Work Item).
+  // -------------------------------------------------------------------------
+  const v15CompositionModules: readonly string[] = [
+    // MKT-047: the App registry authority (App Manifest and Packaging v1).
+    'apps',
+  ];
+  const frozenModules = [
+    ...specModules,
+    ...v15CompositionModules.filter((module) => !specModules.includes(module)),
+  ];
   const frozenMatrix = parseFrozenMatrix(
     path.join(specDir, 'module-dependency-matrix.md'),
     path.join(specDir, 'module-dependency-v1.3.md'),

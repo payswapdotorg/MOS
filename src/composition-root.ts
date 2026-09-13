@@ -337,6 +337,18 @@ import { createReportingModule } from './modules/reporting/public.ts';
 // intact (no cross-module import exists inside src/modules/deployments —
 // verified by tools/arch-check and the boundary tests).
 import { createDeploymentsModule } from './modules/deployments/public.ts';
+// MKT-047: /apps — the App registry (App Manifest and Packaging v1).
+// Constructed with a STRUCTURAL PORT ONLY (the /deployments posture:
+// the module holds an EMPTY dependency-matrix allowance): the concrete
+// /extensions public-contract instance satisfies the narrow READ-ONLY
+// AppsExtensionsPort structurally (TypeScript structural typing) and is
+// wired HERE, so dependency validation composes over the /extensions
+// authority server-side while the frozen import matrix stays intact (no
+// cross-module import exists inside src/modules/apps — verified by
+// tools/arch-check and the apps-boundary architecture tests). The App
+// registry adds NO mutation surface over extensions (composition, not
+// authority transfer — architecture-lock v1.5 #7).
+import { createAppsModule } from './modules/apps/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -803,6 +815,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       },
     },
   });
+  // MKT-047: /apps — the App registry (App Manifest and Packaging v1 —
+  // the immutable versioned App Version manifests, the app-key ownership
+  // lineages, dependency validation through the /extensions structural
+  // port and the compatibility query). The REAL /extensions module
+  // public-contract instance satisfies the READ-ONLY
+  // AppsExtensionsPort structurally (getExtensionVersion /
+  // listExtensionVersions — the narrow AppExtensionView: extensionId +
+  // manifest { extensionKey, publisher, version }); no cross-module
+  // import exists inside src/modules/apps.
+  const apps = createAppsModule({ db, clock, ids, extensions });
+
 
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
@@ -859,7 +882,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, decisions },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, decisions, apps },
     runtime: { aiProvider },
   };
 }
