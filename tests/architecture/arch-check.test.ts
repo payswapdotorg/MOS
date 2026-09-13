@@ -157,17 +157,16 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 27 enforced modules (the 26 spec-parsed frozen modules PLUS the
-  // disclosed MKT-047 v1.5 composition provision 'apps' in
-  // tools/arch-check/checker.ts — see the provision comment there); the
-  // fixture provides auth, users, goals (billing is not frozen, so it
-  // cannot satisfy any frozen boundary) → 24 missing boundaries.
-  // 27 frozen modules; the fixture provides auth, users, goals (billing is not
-  // frozen, so it cannot satisfy any frozen boundary) → 24 missing boundaries.
-  assert.equal(byRule.get('MISSING_MODULE'), 24);
+  // 28 enforced modules (the 27 spec-parsed frozen modules — the v1.4 26
+  // PLUS /decisions registered by the MKT-042 delivery per the disclosed
+  // promotion precedent — PLUS the disclosed MKT-047 v1.5 composition
+  // provision 'apps' in tools/arch-check/checker.ts); the fixture provides
+  // auth, users, goals (billing is not frozen, so it cannot satisfy any
+  // frozen boundary) → 25 missing boundaries.
+  assert.equal(byRule.get('MISSING_MODULE'), 25);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    27,
+    28,
     'no unexpected violation categories may be reported',
   );
 

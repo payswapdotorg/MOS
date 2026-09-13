@@ -325,11 +325,15 @@ test('MKT-047 AC-1 static: application.ts exposes the module, routes.ts register
 // 7. The disclosed arch-check provision (no frozen-spec enforcement drift)
 // ---------------------------------------------------------------------------
 
-test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 26', () => {
-  // The spec parser is untouched: exactly the 26 frozen modules.
+test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 27', () => {
+  // The spec parser is untouched: the 26 v1.4 frozen modules + /decisions
+  // (registered by the MKT-042 delivery per the disclosed promotion
+  // precedent). /apps itself is NOT in the spec set — it rides the
+  // disclosed v1.5 composition provision.
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 26);
-  assert.ok(!specModules.includes('apps'), 'the v1.4-era spec module list does not name /apps');
+  assert.equal(specModules.length, 27);
+  assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
+  assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   // The enforced set (spec + the disclosed v1.5 composition provision)
   // includes /apps and /apps only holds an EMPTY dependency allowance.
   const result = checkArchitecture({
