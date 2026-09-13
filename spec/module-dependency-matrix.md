@@ -31,6 +31,7 @@ The arrows below are allowed dependency directions. A module may depend on a dec
 /reporting ──→ /goals, /workflows, /executions, /evidence, /experiments, /metrics, /learnings
 /operating-graph ──→ /clients, /workspaces, /goals, /playbooks, /workflows, /executions, /deployments, /evidence, /experiments, /learnings
 /decisions ──→ /evidence, /experiments, /learnings, /executions, /deployments, /policies, /clients, /workspaces
+/profit-intelligence ──→ /clients, /workspaces, /goals, /playbooks, /workflows, /executions, /deployments, /evidence, /metrics, /jobs, /field-agents, /ai-runtime, /integrations
 ```
 
 ## Forbidden dependency directions
@@ -42,6 +43,7 @@ The arrows below are allowed dependency directions. A module may depend on a dec
 - `/reporting` must never mutate authoritative domain state.
 - `/operating-graph` is a derived coordination model over canonical authorities (read-only composition): it must never mutate authoritative domain state, must store only source references (canonical ids, kinds, versions and the scope chain — never shadowed authoritative shape), and must never become a second authority for any composed module.
 - `/decisions` is the v1.5 append-oriented Decision Ledger authority (spec/architecture-v1.5.md §4; spec/change-request-005.md change #2). It consumes the listed public contracts READ-ONLY for write-time reference validation and canonical ownership resolution; `/policies` is the reserved direction for the MKT-045 consequential-action flow (deliberately unused by the ledger itself — recording a decision is unconditional, architecture-v1.5.md §7). The ledger never mutates historical execution, evidence, outcome or learning records (architecture-lock-v1.5.md rule #5).
+- `/profit-intelligence` is the v1.5 derived Profit Intelligence read model (spec/architecture-v1.5.md §5; architecture-lock-v1.5.md rule #6). It consumes the listed public contracts READ-ONLY through the /reporting live-aggregation precedent: every material figure is computed at read time with source references, the frozen calculation version and the explicit assumption set, and the module owns NO durable state (no profit_intelligence_* tables, no persisted projection). It can recommend but must never mutate contracts, billing or any financial/accounting authority — no mutation method over any authority may exist on its contract.
 - `/extensions` must not mutate `/workflows` except through an authorized workflow command/port.
 - No module imports another module's database repository implementation directly unless the matrix explicitly names that authority boundary and the imported symbol is part of its public contract.
 

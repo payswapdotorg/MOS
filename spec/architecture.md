@@ -135,9 +135,10 @@ Role assignment is orthogonal to tenant ownership. Human Agents are platform ide
 /reporting
 /operating-graph
 /decisions
+/profit-intelligence
 ```
 
-`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only. `/operating-graph` is the v1.5 derived coordination model: read-only composition over the canonical authorities, source references only (spec/architecture-v1.5.md §3). `/decisions` is the v1.5 append-oriented Decision Ledger authority (spec/architecture-v1.5.md §4; spec/change-request-005.md change #2 — registered here per the v1.4 promotion precedent).
+`/deployments` is the sole Deployment lifecycle authority. `/reporting` is read-side only. `/operating-graph` is the v1.5 derived coordination model: read-only composition over the canonical authorities, source references only (spec/architecture-v1.5.md §3). `/decisions` is the v1.5 append-oriented Decision Ledger authority (spec/architecture-v1.5.md §4; spec/change-request-005.md change #2 — registered here per the v1.4 promotion precedent). `/profit-intelligence` is the v1.5 derived Profit Intelligence read model: live derivation of revenue/cost/capacity/utilization/scope-leakage/margin analytics over the canonical authorities with source references, calculation version and assumptions; read-only composition, no owned state (spec/architecture-v1.5.md §5 — registered here per the v1.4 promotion precedent).
 
 ## 7. Goal
 
