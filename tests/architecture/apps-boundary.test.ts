@@ -325,18 +325,20 @@ test('MKT-047 AC-1 static: application.ts exposes the module, routes.ts register
 // 7. The disclosed arch-check provision (no frozen-spec enforcement drift)
 // ---------------------------------------------------------------------------
 
-test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 29', () => {
+test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 30', () => {
   // The spec parser is untouched: the 26 v1.4 frozen modules + /decisions
   // (registered by the MKT-042 delivery) + /operating-graph (registered
-  // by the MKT-041 delivery) + /profit-intelligence (registered by the
-  // MKT-043 delivery) — all per the disclosed promotion
-  // precedent. /apps itself is NOT in the spec set — it rides the
-  // disclosed v1.5 composition provision.
+  // by the MKT-041 delivery) + /app-installs (registered by the MKT-048
+  // delivery) + /profit-intelligence (registered by the MKT-043
+  // delivery) — all per the disclosed promotion precedent. /apps itself
+  // is NOT in the spec set — it rides the disclosed v1.5 composition
+  // provision.
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 29);
+  assert.equal(specModules.length, 30);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');
+  assert.ok(specModules.includes('app-installs'), 'the MKT-048 /app-installs registration is parsed');
   assert.ok(specModules.includes('profit-intelligence'), 'the MKT-043 /profit-intelligence registration is parsed');
   // The enforced set (spec + the disclosed v1.5 composition provision)
   // includes /apps and /apps only holds an EMPTY dependency allowance.
@@ -364,12 +366,16 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
 test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position (the shared infra-adapters surface)', () => {
   const infraAdapters = read(join(repoRoot, 'tests', 'architecture', 'infra-adapters.test.ts'));
   const last = [...infraAdapters.matchAll(/'(\d{3})_[a-z_]+\.sql',/g)].map((match) => match[1]!);
-  assert.equal(last[last.length - 1], '037', '037_apps.sql is appended in numeric position');
+  // MKT-048 appends 038 after 037 — 037 keeps its numeric position and
+  // is no longer the terminal entry (the shared additive surface).
+  assert.equal(last[last.length - 2], '037', '037_apps.sql holds its numeric position');
+  assert.equal(last[last.length - 1], '038', '038_app_installs.sql is appended after 037');
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '038_app_installs.sql');
   // The store/entrypoint exist (the module boundary is complete).
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'module.ts')));
