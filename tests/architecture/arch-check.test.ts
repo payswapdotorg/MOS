@@ -23,17 +23,18 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (27 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (28 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 27);
+  assert.equal(modules.length, 28);
   // Spot-check the full frozen set from the architecture document.
   assert.deepEqual(
     [...modules].sort(),
     [
       'agencies', 'agents', 'ai-runtime', 'audit', 'auth', 'clients', 'credentials',
-      'deployments', 'domain-packs', 'evidence', 'executions', 'experiments', 'extensions',
-      'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics', 'notifications',
-      'operating-graph', 'playbooks', 'policies', 'reporting', 'users', 'workflows', 'workspaces',
+      'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
+      'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
+      'notifications', 'operating-graph', 'playbooks', 'policies', 'reporting', 'users',
+      'workflows', 'workspaces',
     ].sort(),
   );
 });
@@ -162,12 +163,17 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 27 frozen modules; the fixture provides auth, users, goals (billing is not
-  // frozen, so it cannot satisfy any frozen boundary) → 24 missing boundaries.
-  assert.equal(byRule.get('MISSING_MODULE'), 24);
+  // 29 enforced modules (the 28 spec-parsed frozen modules — the v1.4 26
+  // PLUS /decisions registered by the MKT-042 delivery PLUS /operating-graph
+  // registered by the MKT-041 delivery per the disclosed promotion
+  // precedent — PLUS the disclosed MKT-047 v1.5 composition
+  // provision 'apps' in tools/arch-check/checker.ts); the fixture provides
+  // auth, users, goals (billing is not frozen, so it cannot satisfy any
+  // frozen boundary) → 26 missing boundaries.
+  assert.equal(byRule.get('MISSING_MODULE'), 26);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    27,
+    29,
     'no unexpected violation categories may be reported',
   );
 
