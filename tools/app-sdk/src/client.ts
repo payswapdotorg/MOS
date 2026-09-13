@@ -21,11 +21,7 @@
  * NO imports from the MOS repository (standalone outbound artifact).
  */
 
-import type {
-  AppCompatibilityQuery,
-  AppManifest,
-  AppManifestSignature,
-} from './types.ts';
+import type { AppCompatibilityQuery, AppManifest, AppManifestSignature } from './types.ts';
 
 // ---------------------------------------------------------------------------
 // Response DTO types (the serialized route shapes)
@@ -218,7 +214,9 @@ export class MosDeveloperPortalClient {
 
   /**
    * Online validation through the REAL registry guard (pure — no state
-   * change). Optionally verify a signature attestation in the same call.
+   * change). The manifest rides in its TYPED form (the guard's own
+   * language: network-destination ports are numbers). Optionally verify
+   * a signature attestation in the same call.
    */
   async validateManifest(
     manifest: AppManifest,
@@ -234,18 +232,50 @@ export class MosDeveloperPortalClient {
   // -- the delegated mutation ---------------------------------------------------
 
   /**
+   * The HTTP WIRE form of the manifest: the publish DTOs accept the
+   * network-destination `port` as a STRING (the MKT-047 route surface
+   * contract) while the canonical typed manifest (and the canonical
+   * FINGERPRINT the signature attests) carries it as a NUMBER — the
+   * registry deserializes the wire form back to the identical typed
+   * form, so the developer's signature still verifies. The client
+   * accepts the TYPED manifest everywhere and wire-ifies internally.
+   */
+  private toWireManifest(manifest: AppManifest): Record<string, unknown> {
+    const wire = JSON.parse(JSON.stringify(manifest)) as Record<string, unknown>;
+    const destinations = wire['networkDestinations'];
+    if (Array.isArray(destinations)) {
+      wire['networkDestinations'] = destinations.map((destination) => {
+        if (destination !== null && typeof destination === 'object') {
+          const record = destination as Record<string, unknown>;
+          return {
+            ...record,
+            ...(typeof record['port'] === 'number'
+              ? { port: String(record['port']) }
+              : {}),
+          };
+        }
+        return destination;
+      });
+    }
+    return wire;
+  }
+
+  /**
    * Publish a NEW immutable App Version through the Developer Portal
    * (delegates to the /apps registry publish command; the publisher
    * identity is server-derived; the optional signature is verified
-   * server-side). Returns 201 with the published record + the signature
-   * acceptance disclosure.
+   * server-side against the CANONICAL typed manifest). Returns 201 with
+   * the published record + the signature acceptance disclosure.
    */
   async publishAppVersion(
     manifest: AppManifest,
     idempotencyKey: string,
     signature?: AppManifestSignature | null,
   ): Promise<PublishResultDto> {
-    const body: Record<string, unknown> = { manifest, idempotencyKey };
+    const body: Record<string, unknown> = {
+      manifest: this.toWireManifest(manifest),
+      idempotencyKey,
+    };
     if (signature !== undefined && signature !== null) {
       body['signature'] = signature;
     }

@@ -857,16 +857,17 @@ export function registerDeveloperPortalRoutes(
         // The OPTIONAL signature verification (the same guard publish
         // runs — pure; verified only when a signature is supplied).
         let signature: Record<string, unknown> | null = null;
-        if (body.signature !== null) {
+        const suppliedSignature = body.signature ?? null;
+        if (suppliedSignature !== null) {
           const signatureProblems = appManifestSignatureProblems(manifest, {
-            algorithm: body.signature.algorithm as AppSignatureAlgorithm,
-            digest: body.signature.digest,
+            algorithm: suppliedSignature.algorithm as AppSignatureAlgorithm,
+            digest: suppliedSignature.digest,
           });
           problems = [...problems, ...signatureProblems];
           if (signatureProblems.length > 0) valid = false;
           signature = {
-            algorithm: body.signature.algorithm,
-            digest: body.signature.digest,
+            algorithm: suppliedSignature.algorithm,
+            digest: suppliedSignature.digest,
             verified: signatureProblems.length === 0,
           };
         }
@@ -904,6 +905,9 @@ export function registerDeveloperPortalRoutes(
       execute: async (ctx) => {
         const body = ctx.validated as ValidatedPublish;
         const identity = await requireDeveloperRole(ctx.principal);
+        // Absent optional field arrives as undefined (validateObject skips
+        // absent fields) — normalize to the explicit null envelope.
+        const signature = body.signature ?? null;
         // THIN DELEGATION to the /apps registry publish command — the
         // portal NEVER publishes through its own path (one authority,
         // multiple route families; the publish remains immutable-versioned
@@ -913,16 +917,16 @@ export function registerDeveloperPortalRoutes(
           manifest: deserializeManifest(body.manifest),
           identity,
           idempotencyKey: body.idempotencyKey,
-          ...(body.signature === null
+          ...(signature === null
             ? { signature: null }
             : {
                 signature: {
-                  algorithm: body.signature.algorithm as AppSignatureAlgorithm,
-                  digest: body.signature.digest,
+                  algorithm: signature.algorithm as AppSignatureAlgorithm,
+                  digest: signature.digest,
                 } satisfies AppManifestSignature,
               }),
         });
-        return { record, signature: body.signature };
+        return { record, signature };
       },
       emit: async (ctx) => {
         logger.info('developer-portal.app.published', undefined, {
@@ -935,10 +939,10 @@ export function registerDeveloperPortalRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'developer-portal.app.published',
+          action: 'developer_portal.app.published',
           targetType: 'app_version',
           targetId: ctx.result.record.appVersionId,
-          idempotencyKey: `developer-portal.app.published:${ctx.result.record.appVersionId}`,
+          idempotencyKey: `developer_portal.app.published:${ctx.result.record.appVersionId}`,
           details: {
             appKey: ctx.result.record.appKey,
             version: ctx.result.record.manifest.version,
@@ -958,7 +962,7 @@ export function registerDeveloperPortalRoutes(
           // the authority verified the digest against the server-computed
           // canonical fingerprint before any write (a mismatch would have
           // been a 422 with zero rows — reaching 201 means verified).
-          ...(ctx.result.signature === null
+          ...(ctx.result.signature === null || ctx.result.signature === undefined
             ? { signature: null }
             : {
                 signature: {

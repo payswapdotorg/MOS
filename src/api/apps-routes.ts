@@ -564,16 +564,19 @@ export function registerAppsRoutes(
       execute: async (ctx) => {
         const body = ctx.validated as ValidatedPublish;
         const identity = await requireDeveloperRole(ctx.principal);
+        // Absent optional field arrives as undefined (validateObject skips
+        // absent fields) — normalize to the explicit null envelope.
+        const signature = body.signature ?? null;
         return modules.apps.publishAppVersion({
           manifest: deserializeManifest(body.manifest),
           identity,
           idempotencyKey: body.idempotencyKey,
-          ...(body.signature === null
+          ...(signature === null
             ? { signature: null }
             : {
                 signature: {
-                  algorithm: body.signature.algorithm as AppSignatureAlgorithm,
-                  digest: body.signature.digest,
+                  algorithm: signature.algorithm as AppSignatureAlgorithm,
+                  digest: signature.digest,
                 } satisfies AppManifestSignature,
               }),
         });
