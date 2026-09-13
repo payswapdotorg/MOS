@@ -65,18 +65,6 @@ const migration038 = readFileSync(
   join(repoRoot, 'src', 'platform', 'db', 'migrations', '038_app_installs.sql'),
   'utf8',
 );
-const migration002 = readFileSync(
-  join(repoRoot, 'src', 'platform', 'db', 'migrations', '002_identity_agencies.sql'),
-  'utf8',
-);
-const migration003 = readFileSync(
-  join(repoRoot, 'src', 'platform', 'db', 'migrations', '003_clients.sql'),
-  'utf8',
-);
-const migration004 = readFileSync(
-  join(repoRoot, 'src', 'platform', 'db', 'migrations', '004_workspaces.sql'),
-  'utf8',
-);
 const appInstallsPublic = readFileSync(
   join(repoRoot, 'src', 'modules', 'app-installs', 'public.ts'),
   'utf8',
@@ -243,12 +231,7 @@ test('install ownership is exactly the scope chain — no owner/role/user column
     );
   }
   // NO redefinition of any frozen table (own tables ONLY).
-  for (const [migration, table] of [
-    [migration002, 'agencies'],
-    [migration002, 'users'],
-    [migration003, 'clients'],
-    [migration004, 'workspaces'],
-  ] as const) {
+  for (const table of ['agencies', 'users', 'clients', 'workspaces']) {
     assert.ok(
       !migration038.includes(`CREATE TABLE IF NOT EXISTS ${table} (`),
       `038 must not redefine the frozen ${table} table`,
