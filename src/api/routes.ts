@@ -140,6 +140,11 @@ import { registerCreatorOperationsRoutes } from './creator-operations-routes.ts'
 // — the operator loop Configure → Validate → Deploy → Observe →
 // Pause/Resume → Redeploy/Rollback over /api/workspaces/:id/deployments*).
 import { registerDeploymentsRoutes } from './deployments-routes.ts';
+// MKT-041: the /operating-graph routes (the Agency Operating Graph — the
+// derived coordination model's READ-ONLY surface: the agency portfolio
+// rollup + the client detail with version history; the rebuild is a
+// module-level operation, never a route).
+import { registerOperatingGraphRoutes } from './operating-graph-routes.ts';
 // MKT-047: the /apps APP REGISTRY routes (the App Manifest and Packaging
 // v1 surface: publish an immutable App Version through the frozen
 // platform_developer role with the SERVER-DERIVED publisher identity,
@@ -305,6 +310,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // states; NO dispatch/retry surface: requesting execution through the
   // /executions public contract is the only sanctioned interaction.
   registerDeploymentsRoutes(router, services, modules);
+  // MKT-041: the /operating-graph surfaces — the Agency Operating Graph's
+  // READ-ONLY views (the agency portfolio rollup + the client detail with
+  // the append-oriented version history). NO write path of any kind: the
+  // derived-edge rebuild is a module-level operation (background workers
+  // and later v1.5 Work Items), so no POST/PUT/PATCH/DELETE can ever
+  // appear in this family — a frontend bypass has nothing to drive.
+  registerOperatingGraphRoutes(router, services, modules);
 
   // MKT-047: the /apps surfaces — the App registry (publish one immutable
   // App Version through the frozen platform_developer role; read the

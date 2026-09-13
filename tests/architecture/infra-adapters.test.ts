@@ -568,6 +568,17 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // workflow, execution, evidence, policy or credential table is
     // created (DEPLOY-002, DEPLOY-AC-03/05/06/09).
     '034_deployments.sql',
+    // MKT-041 (Agency Operating Graph) appends the operating-graph
+    // migration (035 — the number is RESERVED for this Work Item): the
+    // canonical-record registry (source references only: kind + canonical
+    // id + agency/client/workspace scope chain) and the append-oriented,
+    // versioned relation ledger (CHECK-fenced node kinds, relations and
+    // the frozen five-value epistemic vocabulary, per-client version
+    // uniqueness + the single-current partial fence, the supersession-only
+    // UPDATE trigger, the no-DELETE trigger and the scope-chain +
+    // cross-tenant endpoint fences) — NO authoritative table of another
+    // module is created or altered (OPGRAPH-001).
+    '035_operating_graph.sql',
     // MKT-042 (Decision Ledger) appends the decisions migration (036 —
     // the number is RESERVED for this Work Item; 035 is reserved for a
     // sibling delivery): the decisions table (the full frozen record

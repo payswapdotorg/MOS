@@ -144,6 +144,11 @@ import type { ReportingModuleApi } from '../modules/reporting/public.ts';
 // control plane — DEPLOY-002; the structural-port wiring happens at the
 // composition root).
 import type { DeploymentsModuleApi } from '../modules/deployments/public.ts';
+// MKT-041: /operating-graph module contract (Agency Operating Graph — the
+// derived coordination model over the canonical authorities; source
+// references only, append-oriented versioned relations, read-only HTTP
+// surface, the rebuild is module-level).
+import type { OperatingGraphModuleApi } from '../modules/operating-graph/public.ts';
 // MKT-047: /apps module contract (App registry — the App Manifest and
 // Packaging v1 authority: versioned immutable App Version manifests over
 // the /extensions registry through a structural port).
@@ -236,6 +241,14 @@ export interface ApplicationModules {
   // /executions public contract only — never a second workflow/execution
   // engine).
   readonly deployments: DeploymentsModuleApi;
+
+  // MKT-041: the Agency Operating Graph authority (the derived
+  // coordination model over the canonical authorities — canonical source
+  // references, CHECK-fenced kinds/relations/epistemic vocabulary,
+  // append-oriented versioned relations, the converging rebuild and the
+  // agency-scoped READ-ONLY route surface; never a second authority for
+  // any composed module).
+  readonly operatingGraph: OperatingGraphModuleApi;
 
   // MKT-047: the App registry authority (App Manifest and Packaging v1 —
   // the immutable versioned App Version manifests: capabilities,
