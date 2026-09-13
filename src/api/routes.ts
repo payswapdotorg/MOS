@@ -159,6 +159,16 @@ import { registerAppsRoutes } from './apps-routes.ts';
 // event tail — NO update or delete routes: the ledger is append-oriented,
 // corrections are NEW records and history is never rewritten).
 import { registerDecisionsRoutes } from './decisions-routes.ts';
+// MKT-048: the /app-installs routes (the App INSTALLATION surface: install
+// one EXACT published App Version into a workspace with the
+// server-derived granted scopes, the append-oriented upgrade/rollback
+// selection changes, the workspace listing with current selections +
+// full history, the one-row read and the agency rollup — every mutation
+// is a POST with server-derived identity; NO update or delete routes: the
+// selection ledger is append-only and the single sanctioned supersession
+// transition happens inside the module's transaction, never through a
+// caller-facing rewrite).
+import { registerAppInstallsRoutes } from './app-installs-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -333,5 +343,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // immutable, corrections are NEW records linked through the
   // predecessor/successor chain, and ledger history is never erased.
   registerDecisionsRoutes(router, services, modules);
+  // MKT-048: the /app-installs surfaces — the App installation authority
+  // (see the import block above).
+  registerAppInstallsRoutes(router, services, modules);
   return router;
 }

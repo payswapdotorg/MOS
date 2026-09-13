@@ -153,6 +153,7 @@ import type { OperatingGraphModuleApi } from '../modules/operating-graph/public.
 // Packaging v1 authority: versioned immutable App Version manifests over
 // the /extensions registry through a structural port).
 import type { AppsModuleApi } from '../modules/apps/public.ts';
+import type { AppInstallsModuleApi } from '../modules/app-installs/public.ts';
 // MKT-042: Decision Ledger authority (the append-oriented decision
 // records authority).
 import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
@@ -258,6 +259,14 @@ export interface ApplicationModules {
   // no mutation surface over extensions (composition, not authority
   // transfer).
   readonly apps: AppsModuleApi;
+  // MKT-048: the App INSTALLATION authority (workspace-scoped app
+  // lifecycle: install/upgrade/rollback of EXACT published App Versions
+  // with server-derived granted scopes, the append-only selection ledger
+  // and the single sanctioned supersession transition; composes OVER the
+  // /apps registry, /policies install gate and the /workspaces +
+  // /extensions ownership/availability ports — no mutation surface over
+  // any of them).
+  readonly appInstalls: AppInstallsModuleApi;
   // MKT-042: the Decision Ledger authority (the append-oriented ledger
   // for material recommendations and commercial decisions — proposal
   // vocabulary, the frozen disposition state machine, the one-shot
