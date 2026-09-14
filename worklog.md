@@ -116,3 +116,21 @@ Work Log:
 
 Stage Summary:
 - In progress: design settled on a new composition module src/modules/first-party-apps (pack manifests + presentation composers over /apps,/app-installs,/reporting,/profit-intelligence,/clients,/decisions,/evidence,/metrics,/integrations publics), NO migration (the required preference), in-memory bounded app state with export/delete + lineage, and a 6-route invoke/read family keyed on the workspace's CURRENT install selection.
+
+---
+Task ID: MKT-051 (final)
+Agent: MKT-051 Worker (Incumbent Capability App Program)
+Task: Complete the MKT-051 delivery — module, routes, wiring, tests, runbook, gates, push.
+
+Work Log:
+- Implemented src/modules/first-party-apps: public contract + internal module/state + 4 pack manifest/composer pairs (mos-analytics, mos-crm, mos-sheets, mos-portal; 2 versions each — 8 manifests, all passing the REAL registry guard, the SDK offline mirror and the MKT-049 signature verification).
+- Bounded in-memory app state (namespaced app:<key>:<local>, §21-guarded via the SHARED /apps guard payloadHasNoAppsMaterialKeys — returns problems array, fixed the boolean misuse, entry/size/lineage bounds, export/delete semantics, canonical lineage).
+- 6-route HTTP family (catalog, compose-surface, state read/mutate/export/delete) with requireWorkspaceAccess posture, dot-namespaced audit actions (firstpartyapps.state_mutated/state_deleted), DELETE query-param namespace validation.
+- Composition root wiring (after profitIntelligence — reference ordering), application.ts + routes.ts registration, §6 + dependency-matrix spec registration, sibling count bumps (arch-check 36/37 + negative fixture, apps-boundary 36, developer-portal-boundary 36).
+- Fixed the first-party publish path: service-principal label slugification in apps-routes.ts + developer-portal-routes.ts (disclosed; 'Internal API token' → 'internal-api-token' satisfies the migration-037 svc: publisher CHECK).
+- Tests: 16 unit (first-party-apps.test.ts), 10 architecture (first-party-apps-boundary.test.ts — the incumbent-capability discipline battery: public-contracts-only allowlist, zero mutation verbs via the deps.<authority>.<method> read-allowlist scan, zero SQL/Db, no-network, no-migration, exact route family), 12 integration (first-party-apps-api.test.ts — the FULL lifecycle: publish (8 versions, svc: principal, signed) → marketplace listing (first-party, UNVERIFIED) → trust verify+certify (MOS_CERTIFIED, the REAL command) → policy deny (zero rows) → agency allow (workspace:read denied for the intersection proof) → install all four → compose all families (report-page 403 on the missing grant) → bounded state mutate/read/export/delete + the 13-table authority row-count proof → upgrade mos-portal 1.1.0 (highlights null→[]) + mos-sheets + mos-analytics → rollback mos-portal (DB-asserted 3-row history) → the version-stable scope gate).
+- Runbook docs/implementation/MKT-051.md (contract summary, pack map, lifecycle, AC map, disclosures).
+- Final gates on the branch: bun install (140 pkgs) / lint 0 / tsc 0 / arch:check 0 (467 files, 37 modules) / unit 964/964 / architecture 548/548 / integration 922/931 — the 9 failures are the KNOWN s3-object-store MinIO class, verified identical on clean main BEFORE any change (baseline 910/919: the same 9); redis-cache-lock passed 8/8 in isolation on the flake check.
+
+Stage Summary:
+- MKT-051 delivered: four first-party capability packs proving the App model end-to-end over the REAL MKT-047/048/050 surfaces; NO migration (the required preference — 043 not taken); NO mutation verbs over any authority; bounded in-memory app state with export/delete + lineage; integrations constrained to the EXISTING /integrations authority (zero network in pack code, DB-proven).

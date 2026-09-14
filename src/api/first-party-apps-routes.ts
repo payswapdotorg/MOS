@@ -425,7 +425,7 @@ export function registerFirstPartyAppsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'firstpartyapps.state-mutated',
+          action: 'firstpartyapps.state_mutated',
           targetType: 'app_state',
           targetId: `${ctx.params.appKey}:${ctx.result.namespace}`,
           details: {
@@ -527,7 +527,7 @@ export function registerFirstPartyAppsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'firstpartyapps.state-deleted',
+          action: 'firstpartyapps.state_deleted',
           targetType: 'app_state',
           targetId: `${ctx.params.appKey}:${ctx.result.namespace}`,
           details: {
@@ -537,7 +537,7 @@ export function registerFirstPartyAppsRoutes(
           },
         });
       },
-      respond: (ctx) => jsonResponse(200, { existed: ctx.result }),
+      respond: (ctx) => jsonResponse(200, { existed: ctx.result.existed }),
     }),
   );
 

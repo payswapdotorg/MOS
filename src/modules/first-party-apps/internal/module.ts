@@ -27,7 +27,6 @@ import type {
 } from '../../apps/public.ts';
 import {
   FIRST_PARTY_APP_PACKS,
-  PACK_SURFACE_REQUIRED_DATA_SCOPES,
   type FirstPartyAppsModuleApi,
   type FirstPartyAppsModuleDeps,
   type PackAppStateExport,
@@ -379,4 +378,3 @@ export function createFirstPartyAppsModule(
   };
 }
 
-void PACK_SURFACE_REQUIRED_DATA_SCOPES;

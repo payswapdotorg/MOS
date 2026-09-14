@@ -716,6 +716,7 @@ export { createFirstPartyAppsModule } from './internal/module.ts';
  * part of the module contract. Pure functions.
  */
 export {
+  allFirstPartyManifests,
   packAppStateKey,
   packStateMutationProblems,
   declaredActionFor,

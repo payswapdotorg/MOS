@@ -213,11 +213,14 @@ export function packStateMutationProblems(input: {
       problems.push(`entries: entry keys must be 1-64 characters ('${key}')`);
     }
   }
-  if (!payloadHasNoAppsMaterialKeys(input.nextEntries)) {
-    problems.push(
-      'entries: material-shaped keys are rejected everywhere (§21 — bounded app state carries no secret material)',
-    );
-  }
+  problems.push(
+    ...payloadHasNoAppsMaterialKeys(input.nextEntries, 'entries').map((problem) =>
+      problem.replace(
+        'secrets never appear in app manifests',
+        'bounded app state carries no secret material',
+      ),
+    ),
+  );
   const serialized = JSON.stringify(input.nextEntries) ?? '';
   if (serialized.length > PACK_STATE_MAX_SERIALIZED_BYTES) {
     problems.push(
