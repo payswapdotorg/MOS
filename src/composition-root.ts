@@ -284,6 +284,12 @@ import { createProfitIntelligenceModule } from './modules/profit-intelligence/pu
 // through the existing policy/approval contracts, architecture-v1.5.md
 // §7).
 import { createAiOperatorModule } from './modules/ai-operator/public.ts';
+// MKT-046: /sales-continuity module (Sales-to-Delivery Continuity — the
+// §8 orchestrator carrying structured proposal scope/goals/outcomes/
+// assumptions/economics into the Playbook/Deployment path through the
+// EXISTING creation commands, with provenance + version identity on its
+// own append-only continuity ledger).
+import { createSalesContinuityModule } from './modules/sales-continuity/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -371,6 +377,12 @@ import { createOperatingGraphModule } from './modules/operating-graph/public.ts'
 // registry adds NO mutation surface over extensions (composition, not
 // authority transfer — architecture-lock v1.5 #7).
 import { createAppsModule } from './modules/apps/public.ts';
+// MKT-048: /app-installs — the App installation authority (the
+// workspace-scoped app lifecycle: install/upgrade/rollback over the
+// /apps registry through its public contract, the /policies install-time
+// gate, and the /workspaces + /extensions ownership/availability ports —
+// the frozen matrix row added by this Work Item).
+import { createAppInstallsModule } from './modules/app-installs/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -878,6 +890,43 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // import exists inside src/modules/apps.
   const apps = createAppsModule({ db, clock, ids, extensions });
 
+  // MKT-048: /app-installs — the App INSTALLATION authority (the
+  // workspace-scoped app lifecycle: install, upgrade and rollback of EXACT
+  // published App Versions with SERVER-DERIVED granted scopes, the
+  // append-only selection ledger with the single sanctioned supersession
+  // transition and the append-only lifecycle event tail). Composition is
+  // the frozen-matrix row added by this Work Item: the /apps registry and
+  // the /policies engine are consumed through their PUBLIC contracts
+  // (READ-ONLY over /apps — the exact-version resolution + the MKT-047
+  // compatibility query; fail-closed evaluations over /policies, every
+  // decision recorded by the engine); the /workspaces canonical-ownership
+  // port is satisfied STRUCTURALLY by the real WorkspacesModuleApi
+  // instance; the /extensions availability port is ADAPTER-WIRED (the
+  // flat extension-version view of the nested manifest record — the
+  // /deployments capability-check precedent). No mutation surface over
+  // any composed authority (composition, not authority transfer).
+  const appInstalls = createAppInstallsModule({
+    db,
+    clock,
+    ids,
+    apps,
+    policies,
+    workspaceOwnership: workspaces,
+    extensions: {
+      listExtensionInstalls: (workspaceId) => extensions.listExtensionInstalls(workspaceId),
+      getExtensionVersion: async (extensionId) => {
+        const record = await extensions.getExtensionVersion(extensionId);
+        return record === null
+          ? null
+          : {
+              extensionId: record.extensionId,
+              extensionKey: record.manifest.extensionKey,
+              publisher: record.manifest.publisher,
+              version: record.manifest.version,
+            };
+      },
+    },
+  });
 
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
@@ -968,6 +1017,29 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     fieldAgents,
     profitIntelligence,
   });
+  // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
+  // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
+  // (resolveDecisionOwnership + getDecision); the playbook and
+  // deployment paths compose through their EXISTING public
+  // creation/status commands (the frozen matrix line added for this Work
+  // Item: /sales-continuity ──→ /decisions, /playbooks, /deployments,
+  // /clients, /workspaces); /clients and /workspaces are consumed
+  // through the module's declared STRUCTURAL PORTS (the /decisions
+  // precedent — the real public-contract instances satisfy the port
+  // types structurally). The module owns exactly the append-only
+  // continuity ledger (migration 040 — the disclosed AC-6 persistence
+  // choice: the existing creation commands expose no provenance-carrying
+  // surface); it never writes any other module's tables.
+  const salesContinuity = createSalesContinuityModule({
+    db,
+    clock,
+    ids,
+    decisions,
+    playbooks,
+    deployments,
+    clients,
+    workspaces,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -994,7 +1066,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, profitIntelligence, aiOperator },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator },
     runtime: { aiProvider },
   };
 }

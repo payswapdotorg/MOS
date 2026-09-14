@@ -153,6 +153,7 @@ import type { OperatingGraphModuleApi } from '../modules/operating-graph/public.
 // Packaging v1 authority: versioned immutable App Version manifests over
 // the /extensions registry through a structural port).
 import type { AppsModuleApi } from '../modules/apps/public.ts';
+import type { AppInstallsModuleApi } from '../modules/app-installs/public.ts';
 // MKT-042: Decision Ledger authority (the append-oriented decision
 // records authority).
 import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
@@ -169,6 +170,12 @@ import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence
 // state, read-only surface; consequential actions continue through the
 // existing policy/approval contracts).
 import type { AiOperatorModuleApi } from '../modules/ai-operator/public.ts';
+// MKT-046: /sales-continuity module contract (Sales-to-Delivery
+// Continuity — the orchestrator that carries structured proposal scope,
+// goals, outcomes, assumptions and economics into the Playbook/Deployment
+// path through the EXISTING creation commands, with the provenance +
+// version identity retained on its own append-only continuity ledger).
+import type { SalesContinuityModuleApi } from '../modules/sales-continuity/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -271,6 +278,14 @@ export interface ApplicationModules {
   // no mutation surface over extensions (composition, not authority
   // transfer).
   readonly apps: AppsModuleApi;
+  // MKT-048: the App INSTALLATION authority (workspace-scoped app
+  // lifecycle: install/upgrade/rollback of EXACT published App Versions
+  // with server-derived granted scopes, the append-only selection ledger
+  // and the single sanctioned supersession transition; composes OVER the
+  // /apps registry, /policies install gate and the /workspaces +
+  // /extensions ownership/availability ports — no mutation surface over
+  // any of them).
+  readonly appInstalls: AppInstallsModuleApi;
   // MKT-042: the Decision Ledger authority (the append-oriented ledger
   // for material recommendations and commercial decisions — proposal
   // vocabulary, the frozen disposition state machine, the one-shot
@@ -295,4 +310,11 @@ export interface ApplicationModules {
   // module ranks action candidates only, never executes or creates them —
   // architecture-v1.5.md §7).
   readonly aiOperator: AiOperatorModuleApi;
+  // MKT-046: the Sales-to-Delivery Continuity orchestrator (carries the
+  // structured proposal scope/goals/outcomes/assumptions/economics of an
+  // accepted Decision Ledger proposal into the Playbook/Deployment path
+  // THROUGH the existing /playbooks and /deployments creation commands —
+  // orchestrates, never duplicates their authority; the provenance +
+  // version identity live on its own append-only continuity ledger).
+  readonly salesContinuity: SalesContinuityModuleApi;
 }

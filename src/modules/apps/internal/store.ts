@@ -59,6 +59,7 @@ import type {
   AppDataScope,
   AppDependencyDeclaration,
   AppManifest,
+  AppManifestSignature,
   AppMeteringDimension,
   AppMutationScope,
   AppNetworkDestination,
@@ -927,6 +928,69 @@ function canonicalize(value: JSONValue): JSONValue {
     return sorted;
   }
   return value;
+}
+
+// ---------------------------------------------------------------------------
+// The OPTIONAL manifest signature guard (MKT-049 — the disclosed additive
+// signing step: hash attestation over the canonical manifest)
+// ---------------------------------------------------------------------------
+
+const SIGNATURE_DIGEST_PATTERN = /^[0-9a-f]{64}$/;
+
+/**
+ * The OPTIONAL manifest-signature guard (MKT-049): when a publish carries
+ * a signature, it must be EXACTLY { algorithm, digest } with the
+ * algorithm in the closed one-element vocabulary and the digest a
+ * 64-character lowercase hex sha256 — AND the digest must EQUAL the
+ * server-computed canonical manifest fingerprint (appCreateFingerprint),
+ * proving the caller published bit-identical content to what they
+ * attested offline (the App SDK `sign` command computes the identical
+ * digest). A mismatch is a publish-time integrity failure (422, zero
+ * rows — fail-closed BEFORE any write; the module calls this guard).
+ * Absent/null: no attestation, publish proceeds unsigned (backwards
+ * compatible — the frozen MKT-047 manifest shape and schema are
+ * untouched; see the disclosure in public.ts / the MKT-049 runbook).
+ * Pure.
+ */
+export function appManifestSignatureProblems(
+  manifest: AppManifest,
+  signature: unknown,
+): string[] {
+  if (signature === null || signature === undefined) return [];
+  const problems: string[] = [];
+  if (typeof signature !== 'object' || Array.isArray(signature)) {
+    return ['signature: must be an object { algorithm, digest } or null (the optional hash attestation)'];
+  }
+  const declaration = signature as Partial<AppManifestSignature>;
+  const keys = Object.keys(declaration);
+  if (keys.length !== 2 || declaration.algorithm === undefined || declaration.digest === undefined) {
+    problems.push('signature: must declare exactly { algorithm, digest }');
+  }
+  if (
+    declaration.algorithm !== 'manifest-sha256-fingerprint'
+  ) {
+    problems.push(
+      `signature.algorithm: '${String(declaration.algorithm)}' is not in the closed signature-algorithm vocabulary (manifest-sha256-fingerprint)`,
+    );
+  }
+  if (typeof declaration.digest !== 'string' || !SIGNATURE_DIGEST_PATTERN.test(declaration.digest)) {
+    problems.push('signature.digest: must be a 64-character lowercase hex sha256 digest of the canonical manifest');
+  }
+  // The INTEGRITY gate: the caller-supplied digest must equal the
+  // server-computed canonical fingerprint of THIS manifest (verified
+  // only when the shape is attestation-shaped, so the error set stays
+  // deterministic for malformed inputs too).
+  if (
+    declaration.algorithm === 'manifest-sha256-fingerprint' &&
+    typeof declaration.digest === 'string' &&
+    SIGNATURE_DIGEST_PATTERN.test(declaration.digest) &&
+    declaration.digest !== appCreateFingerprint(manifest)
+  ) {
+    problems.push(
+      'signature.digest: attestation mismatch — the signed digest does not equal this manifest\'s canonical fingerprint (the manifest content differs from what was signed; re-sign the exact manifest you are publishing)',
+    );
+  }
+  return problems;
 }
 
 // ---------------------------------------------------------------------------

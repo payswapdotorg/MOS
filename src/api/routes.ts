@@ -159,6 +159,16 @@ import { registerAppsRoutes } from './apps-routes.ts';
 // event tail — NO update or delete routes: the ledger is append-oriented,
 // corrections are NEW records and history is never rewritten).
 import { registerDecisionsRoutes } from './decisions-routes.ts';
+// MKT-048: the /app-installs routes (the App INSTALLATION surface: install
+// one EXACT published App Version into a workspace with the
+// server-derived granted scopes, the append-oriented upgrade/rollback
+// selection changes, the workspace listing with current selections +
+// full history, the one-row read and the agency rollup — every mutation
+// is a POST with server-derived identity; NO update or delete routes: the
+// selection ledger is append-only and the single sanctioned supersession
+// transition happens inside the module's transaction, never through a
+// caller-facing rewrite).
+import { registerAppInstallsRoutes } from './app-installs-routes.ts';
 // MKT-043: the /profit-intelligence routes (Profit Intelligence — the
 // derived revenue/cost/capacity/utilization/scope-leakage/margin
 // analytics surface: the agency portfolio rollup, the client view and the
@@ -177,6 +187,30 @@ import { registerProfitIntelligenceRoutes } from './profit-intelligence-routes.t
 // ranks action candidates only, consequential actions continue through
 // the existing policy/approval contracts).
 import { registerAiOperatorRoutes } from './ai-operator-routes.ts';
+// MKT-046: the /sales-continuity routes (Sales-to-Delivery Continuity —
+// the proposal carry into the Playbook path + the optional deployment
+// carry + the continuity/provenance round-trip views: POST
+// /api/decisions/:decisionId/carry derives the structured payload from
+// the accepted proposal and creates the playbook + version THROUGH the
+// existing /playbooks commands; POST
+// /api/sales-continuity/carries/:carryId/deployment publishes the carried
+// version through the frozen lifecycle and configures the deployment
+// THROUGH the existing /deployments command; the GET views read the
+// durable linkage + live records. The carried payload is NEVER a request
+// field — no manual re-entry anywhere).
+import { registerSalesContinuityRoutes } from './sales-continuity-routes.ts';
+// MKT-049: the /developer-portal APP DEVELOPER PORTAL routes (the App
+// SDK and Developer Portal surface family over the SAME /apps registry
+// authority — the MKT-032 extension-portal precedent: one authority,
+// multiple route families, the portal owns NO state of its own): the
+// developer catalog + version views, ONLINE validation through the REAL
+// registry guard (pure), the delegated publish (the same
+// publishAppVersion command — optional signature verified by the
+// authority) and the documentation surface derived read-only from the
+// frozen /apps public contract. NO update or delete routes: published
+// App Versions are immutable (architecture-lock v1.5 #11) and the
+// portal is never a second app authority.
+import { registerDeveloperPortalRoutes } from './developer-portal-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -351,6 +385,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // immutable, corrections are NEW records linked through the
   // predecessor/successor chain, and ledger history is never erased.
   registerDecisionsRoutes(router, services, modules);
+  // MKT-048: the /app-installs surfaces — the App installation authority
+  // (see the import block above).
+  registerAppInstallsRoutes(router, services, modules);
   // MKT-043: the /profit-intelligence surfaces — Profit Intelligence
   // (the DERIVED revenue/cost/capacity/utilization/scope-leakage/margin
   // analytics over the canonical authorities: the agency portfolio
@@ -368,5 +405,20 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // existing policy/approval contracts — architecture-v1.5.md §7); a
   // frontend bypass has nothing to drive.
   registerAiOperatorRoutes(router, services, modules);
+  // MKT-046: the /sales-continuity surfaces — the carry family (proposal
+  // → playbook → deployment through the EXISTING creation commands) + the
+  // continuity views (proposal → carried records; the delivery side →
+  // proposal round-trip). NO update or delete routes: the continuity
+  // ledger is append-only with a forward-only completion ladder; NO
+  // validate/activate/transition surface: the MKT-040 gate stays the
+  // /deployments routes' alone.
+  registerSalesContinuityRoutes(router, services, modules);
+  // MKT-049: the /developer-portal surfaces — the App Developer Portal
+  // (see the import block above). Thin delegation over the /apps
+  // registry authority + its exported pure guards; registered after the
+  // /api/apps family (no literal-segment collision — the portal's
+  // 'catalog'/'docs'/'validate'/'publish'/'apps' segments live under
+  // /api/developer-portal/*).
+  registerDeveloperPortalRoutes(router, services, modules);
   return router;
 }
