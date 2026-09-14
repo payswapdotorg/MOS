@@ -337,6 +337,8 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // (registered by the MKT-050 delivery) — all per the disclosed
   // promotion precedent. /apps itself is NOT in the spec set — it rides
   // the disclosed v1.5 composition provision.
+  const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
+  assert.equal(specModules.length, 34);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');
@@ -383,8 +385,6 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '038_app_installs.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '037_apps.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '038_app_installs.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '040_sales_continuity.sql');

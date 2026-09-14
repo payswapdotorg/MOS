@@ -23,15 +23,19 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (33 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (34 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-assert.equal(modules.length, 34);
+  assert.equal(modules.length, 34);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
   // MKT-044 delivery appends /client-memory — the §6 registration; the
   // MKT-050 delivery appends /app-marketplace — the trust/certification
   // registration).
+  assert.deepEqual(
+    [...modules].sort(),
+    [
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
       'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
@@ -229,6 +233,9 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // the MKT-050 delivery per the disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
   // tools/arch-check/checker.ts); the fixture provides
+  assert.equal(
+    [...byRule.values()].reduce((sum, count) => sum + count, 0),
+    35,
     'no unexpected violation categories may be reported',
   );
 
