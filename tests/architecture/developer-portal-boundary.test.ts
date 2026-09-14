@@ -293,7 +293,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // 30 → 31 only through the disclosed MKT-050 /app-marketplace
   // registration (the promotion precedent this portal delivery itself
   // documented); no portal registration was added.
-  assert.equal(specModules.length, 31, 'the spec module list is untouched by this Work Item');
+  assert.equal(specModules.length, 34, 'the spec module list (31 at MKT-050 delivery time + the MKT-046/044/045 registrations) parses cleanly');
   assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
   // /apps entry (this Work Item appends nothing).

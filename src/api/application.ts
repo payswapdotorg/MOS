@@ -167,6 +167,26 @@ import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence
 // registry: the derived listing read model, the append-only trust
 // transition ledger and the append-only review records).
 import type { AppMarketplaceModuleApi } from '../modules/app-marketplace/public.ts';
+// MKT-045: /ai-operator module contract (AI Operator / Attention Queue —
+// the derived ranked attention-queue read model over the canonical
+// authorities' public contracts: blocked work, approvals, client risk,
+// anomalies, scope leakage, margin pressure, capacity constraints and
+// opportunities as governed action candidates; live derivation, no owned
+// state, read-only surface; consequential actions continue through the
+// existing policy/approval contracts).
+import type { AiOperatorModuleApi } from '../modules/ai-operator/public.ts';
+// MKT-046: /sales-continuity module contract (Sales-to-Delivery
+// Continuity — the orchestrator that carries structured proposal scope,
+// goals, outcomes, assumptions and economics into the Playbook/Deployment
+// path through the EXISTING creation commands, with the provenance +
+// version identity retained on its own append-only continuity ledger).
+import type { SalesContinuityModuleApi } from '../modules/sales-continuity/public.ts';
+// MKT-044: /client-memory module contract (Client Operating Memory — the
+// governed client-context projection and retrieval surface over the
+// canonical client, goal, playbook, deployment, evidence, experiment,
+// outcome, decision and learning records; live derivation, no owned
+// state, read-only surface — never a second tenant/data authority).
+import type { ClientMemoryModuleApi } from '../modules/client-memory/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -300,4 +320,30 @@ export interface ApplicationModules {
   // consumes through the disclosed structural-port wiring; trust is
   // metadata and a policy input — never authority by itself).
   readonly appMarketplace: AppMarketplaceModuleApi;
+  // MKT-045: the AI Operator attention-queue derived read model (the
+  // live-derived ranked attention items over the canonical authorities —
+  // every item carries its category, deterministic priority score, source
+  // references, structured rationale and the EXISTING consequential-action
+  // contract reference it would flow through; ZERO mutation methods: the
+  // module ranks action candidates only, never executes or creates them —
+  // architecture-v1.5.md §7).
+  readonly aiOperator: AiOperatorModuleApi;
+  // MKT-046: the Sales-to-Delivery Continuity orchestrator (carries the
+  // structured proposal scope/goals/outcomes/assumptions/economics of an
+  // accepted Decision Ledger proposal into the Playbook/Deployment path
+  // THROUGH the existing /playbooks and /deployments creation commands —
+  // orchestrates, never duplicates their authority; the provenance +
+  // version identity live on its own append-only continuity ledger).
+  readonly salesContinuity: SalesContinuityModuleApi;
+
+  // MKT-044: the Client Operating Memory derived projection authority
+  // (the governed client-context projection and retrieval surface over
+  // the canonical client, goal, playbook, deployment, evidence,
+  // experiment, outcome, decision and learning records — every memory
+  // item cites canonical record ids under the frozen, versioned
+  // projection vocabulary (cm-proj-v1); ZERO mutation methods and ZERO
+  // owned state: retrieval/index technology is non-authoritative,
+  // PostgreSQL remains authoritative — never a second tenant/data
+  // authority).
+  readonly clientMemory: ClientMemoryModuleApi;
 }

@@ -275,6 +275,29 @@ import { createDecisionsModule } from './modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // durable state, zero mutation methods — architecture-lock-v1.5 #6).
 import { createProfitIntelligenceModule } from './modules/profit-intelligence/public.ts';
+// MKT-045: /ai-operator module (AI Operator / Attention Queue — the
+// DERIVED ranked attention-queue read model over the canonical
+// authorities' public contracts: blocked work, approvals, client risk,
+// anomalies, scope leakage, margin pressure, capacity constraints and
+// opportunities as governed action candidates; live derivation, no owned
+// durable state, zero mutation methods — consequential actions continue
+// through the existing policy/approval contracts, architecture-v1.5.md
+// §7).
+import { createAiOperatorModule } from './modules/ai-operator/public.ts';
+// MKT-046: /sales-continuity module (Sales-to-Delivery Continuity — the
+// §8 orchestrator carrying structured proposal scope/goals/outcomes/
+// assumptions/economics into the Playbook/Deployment path through the
+// EXISTING creation commands, with provenance + version identity on its
+// own append-only continuity ledger).
+import { createSalesContinuityModule } from './modules/sales-continuity/public.ts';
+// MKT-044: /client-memory module (Client Operating Memory — the DERIVED
+// governed client-context projection and retrieval surface over the
+// canonical client, goal, playbook, deployment, evidence, experiment,
+// outcome, decision and learning records; live derivation, no owned
+// durable state, zero mutation methods — retrieval/index technology is
+// non-authoritative and none exists: never a second tenant/data
+// authority, PostgreSQL remains authoritative).
+import { createClientMemoryModule } from './modules/client-memory/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -1001,6 +1024,84 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     aiRuntime,
     integrations,
   });
+
+  // MKT-045: /ai-operator — the AI Operator attention queue (the DERIVED
+  // ranked attention items over the canonical authorities —
+  // architecture-v1.5.md §7: ranked action candidates only; consequential
+  // actions continue through the existing policy/approval contracts).
+  // Composed READ-ONLY over the real public-contract instances constructed
+  // above (the frozen matrix line added for this Work Item): canonical
+  // Client/Workspace ownership resolution, the delivery-surface listings
+  // (/workflows, /executions, /deployments), the jobs enumeration surface
+  // (/jobs), the approval ledger (/policies), the evidence/experiment/
+  // learning listings, the human capacity pool (/field-agents) and the
+  // /profit-intelligence public views (scope-leakage + margin-pressure
+  // items CONSUME its figures — never recomputed). The module owns NO
+  // durable state (NO migration — the /profit-intelligence precedent) and
+  // its HTTP surface is read-only by construction.
+  const aiOperator = createAiOperatorModule({
+    clock,
+    clients,
+    workspaces,
+    workflows,
+    executions,
+    deployments,
+    jobs,
+    policies,
+    evidence,
+    experiments,
+    learnings,
+    fieldAgents,
+    profitIntelligence,
+  });
+  // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
+  // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
+  // (resolveDecisionOwnership + getDecision); the playbook and
+  // deployment paths compose through their EXISTING public
+  // creation/status commands (the frozen matrix line added for this Work
+  // Item: /sales-continuity ──→ /decisions, /playbooks, /deployments,
+  // /clients, /workspaces); /clients and /workspaces are consumed
+  // through the module's declared STRUCTURAL PORTS (the /decisions
+  // precedent — the real public-contract instances satisfy the port
+  // types structurally). The module owns exactly the append-only
+  // continuity ledger (migration 040 — the disclosed AC-6 persistence
+  // choice: the existing creation commands expose no provenance-carrying
+  // surface); it never writes any other module's tables.
+  const salesContinuity = createSalesContinuityModule({
+    db,
+    clock,
+    ids,
+    decisions,
+    playbooks,
+    deployments,
+    clients,
+    workspaces,
+  });
+
+  // MKT-044: /client-memory — Client Operating Memory (the DERIVED
+  // governed projection over the canonical authorities — architecture
+  // v1.5 §6; the no-second-tenant/data-authority lock posture). Composed
+  // READ-ONLY over the real public-contract instances constructed above
+  // (the frozen matrix line added for this Work Item): canonical
+  // Client/Workspace ownership resolution, the authority listings
+  // (/goals, /playbooks, /deployments, /evidence, /experiments,
+  // /decisions, /learnings). The module owns NO durable state (NO
+  // migration — the /reporting + /profit-intelligence live-derivation
+  // precedent), adds NO retrieval index or cache (§6: retrieval/index
+  // technology is non-authoritative) and its HTTP surface is read-only
+  // by construction.
+  const clientMemory = createClientMemoryModule({
+    clock,
+    clients,
+    workspaces,
+    goals,
+    playbooks,
+    deployments,
+    evidence,
+    experiments,
+    decisions,
+    learnings,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -1027,7 +1128,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, appMarketplace },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace },
     runtime: { aiProvider },
   };
 }

@@ -177,6 +177,37 @@ import { registerAppInstallsRoutes } from './app-installs-routes.ts';
 // the explicit assumption record — NO write path of any kind, the module
 // can never mutate a financial authority).
 import { registerProfitIntelligenceRoutes } from './profit-intelligence-routes.ts';
+// MKT-045: the /ai-operator routes (AI Operator / Attention Queue — the
+// derived ranked attention-queue surface: the agency attention queue, the
+// deterministic item detail (re-derived queue, nothing stored) and the
+// client-scoped slice, all GET-only with server-derived scope; every item
+// carries its category, deterministic priority score, source references,
+// structured rationale and the EXISTING consequential-action contract
+// reference it would flow through — NO write path of any kind: the module
+// ranks action candidates only, consequential actions continue through
+// the existing policy/approval contracts).
+import { registerAiOperatorRoutes } from './ai-operator-routes.ts';
+// MKT-046: the /sales-continuity routes (Sales-to-Delivery Continuity —
+// the proposal carry into the Playbook path + the optional deployment
+// carry + the continuity/provenance round-trip views: POST
+// /api/decisions/:decisionId/carry derives the structured payload from
+// the accepted proposal and creates the playbook + version THROUGH the
+// existing /playbooks commands; POST
+// /api/sales-continuity/carries/:carryId/deployment publishes the carried
+// version through the frozen lifecycle and configures the deployment
+// THROUGH the existing /deployments command; the GET views read the
+// durable linkage + live records. The carried payload is NEVER a request
+// field — no manual re-entry anywhere).
+import { registerSalesContinuityRoutes } from './sales-continuity-routes.ts';
+// MKT-044: the /client-memory routes (Client Operating Memory — the
+// governed client-context projection and retrieval surface: the client
+// memory view + the workspace slice + the kind-filtered retrieval over
+// the projected records, all GET-only with server-derived scope; every
+// memory item cites canonical record ids and the frozen, versioned
+// projection vocabulary (cm-proj-v1) ships in every response — NO write
+// path of any kind, retrieval/index technology is non-authoritative and
+// none exists: never a second tenant/data authority).
+import { registerClientMemoryRoutes } from './client-memory-routes.ts';
 // MKT-049: the /developer-portal APP DEVELOPER PORTAL routes (the App
 // SDK and Developer Portal surface family over the SAME /apps registry
 // authority — the MKT-032 extension-portal precedent: one authority,
@@ -384,6 +415,34 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // parameters — derived analytics, never a financial system of record
   // (architecture-lock-v1.5 #6); a frontend bypass has nothing to drive.
   registerProfitIntelligenceRoutes(router, services, modules);
+  // MKT-045: the /ai-operator surfaces — the AI Operator attention queue
+  // (the derived ranked attention items over the canonical authorities:
+  // the agency queue, the item detail and the client slice). READ-ONLY by
+  // construction: exactly three GETs, no body, no DTO, no query
+  // parameters — the module ranks governed action candidates and never
+  // executes or creates them (consequential actions continue through the
+  // existing policy/approval contracts — architecture-v1.5.md §7); a
+  // frontend bypass has nothing to drive.
+  registerAiOperatorRoutes(router, services, modules);
+  // MKT-046: the /sales-continuity surfaces — the carry family (proposal
+  // → playbook → deployment through the EXISTING creation commands) + the
+  // continuity views (proposal → carried records; the delivery side →
+  // proposal round-trip). NO update or delete routes: the continuity
+  // ledger is append-only with a forward-only completion ladder; NO
+  // validate/activate/transition surface: the MKT-040 gate stays the
+  // /deployments routes' alone.
+  registerSalesContinuityRoutes(router, services, modules);
+  // MKT-044: the /client-memory surfaces — Client Operating Memory (the
+  // DERIVED governed projection over the canonical client, goal,
+  // playbook, deployment, evidence, experiment, outcome, decision and
+  // learning records: the client memory view, the workspace slice and the
+  // kind-filtered retrieval over the projected records). READ-ONLY by
+  // construction: exactly three GETs, no body, no DTO, no query
+  // parameters — retrieval/index technology is non-authoritative
+  // (spec/architecture-v1.5.md §6) and this delivery adds none at all;
+  // never a second tenant/data authority, so a frontend bypass has
+  // nothing to drive.
+  registerClientMemoryRoutes(router, services, modules);
   // MKT-049: the /developer-portal surfaces — the App Developer Portal
   // (see the import block above). Thin delegation over the /apps
   // registry authority + its exported pure guards; registered after the
