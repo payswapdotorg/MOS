@@ -220,6 +220,16 @@ import { registerClientMemoryRoutes } from './client-memory-routes.ts';
 // App Versions are immutable (architecture-lock v1.5 #11) and the
 // portal is never a second app authority.
 import { registerDeveloperPortalRoutes } from './developer-portal-routes.ts';
+// MKT-050: the /app-marketplace routes (the App Marketplace, Trust and
+// Certification surface: the agency-scoped discovery family — listing
+// with search/filters, the app detail with the append-only trust/review
+// tails and the policy-eligibility read-side query — plus the
+// platform-territory command family: the operator trust transition and
+// the community review record; every mutation is a POST with
+// server-derived identity/provenance; NO update or delete routes —
+// trust events and reviews are append-only and the registry is never
+// rewritten).
+import { registerAppMarketplaceRoutes } from './app-marketplace-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -440,5 +450,12 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // 'catalog'/'docs'/'validate'/'publish'/'apps' segments live under
   // /api/developer-portal/*).
   registerDeveloperPortalRoutes(router, services, modules);
+  // MKT-050: the /app-marketplace surfaces — the agency-scoped discovery
+  // family (the listing with search/filters, the app detail, the
+  // policy-eligibility read-side query) + the platform-territory trust
+  // transition and community review commands. NO update or delete
+  // routes: trust events and reviews are append-only (migration 042)
+  // and the marketplace NEVER rewrites the /apps registry.
+  registerAppMarketplaceRoutes(router, services, modules);
   return router;
 }

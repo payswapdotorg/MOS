@@ -162,6 +162,11 @@ import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // state, read-only surface).
 import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence/public.ts';
+// MKT-050: /app-marketplace module contract (App Marketplace, Trust and
+// Certification — the discovery/trust/review surface over the /apps
+// registry: the derived listing read model, the append-only trust
+// transition ledger and the append-only review records).
+import type { AppMarketplaceModuleApi } from '../modules/app-marketplace/public.ts';
 // MKT-045: /ai-operator module contract (AI Operator / Attention Queue —
 // the derived ranked attention-queue read model over the canonical
 // authorities' public contracts: blocked work, approvals, client risk,
@@ -308,6 +313,13 @@ export interface ApplicationModules {
   // financial system of record — architecture-lock-v1.5 #6).
   readonly profitIntelligence: ProfitIntelligenceModuleApi;
 
+  // MKT-050: the App Marketplace, Trust and Certification authority (the
+  // discovery/review read model over the /apps registry + the append-only
+  // trust transition ledger and review records; the policy-eligibility
+  // read-side query whose trust vocabulary the MKT-048 install gate
+  // consumes through the disclosed structural-port wiring; trust is
+  // metadata and a policy input — never authority by itself).
+  readonly appMarketplace: AppMarketplaceModuleApi;
   // MKT-045: the AI Operator attention-queue derived read model (the
   // live-derived ranked attention items over the canonical authorities —
   // every item carries its category, deterministic priority score, source

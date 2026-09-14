@@ -103,6 +103,7 @@ import type { IdGenerator } from '../../platform/ids/ids.ts';
 import {
   APP_DATA_SCOPES,
   APP_MUTATION_SCOPES,
+  type AppCertificationState,
   type AppDataScope,
   type AppMutationScope,
   type AppsModuleApi,
@@ -522,6 +523,49 @@ export interface AppInstallsExtensionsPort {
 }
 
 // ---------------------------------------------------------------------------
+// The MKT-050 additive trust-state STRUCTURAL PORT (disclosed wiring —
+// the /policies credential-reference port precedent: the frozen matrix
+// row of /app-installs does not list /app-marketplace, so the port is
+// DECLARED HERE and wired at the composition root exactly like
+// /metrics' ownership ports and /policies' /credentials port)
+// ---------------------------------------------------------------------------
+
+/**
+ * The marketplace-derived CURRENT trust state of one app lineage — the
+ * TRUST part of the MKT-050 policy-eligibility read-side query, exposed
+ * to the install/upgrade/rollback GATE as a policy ACTION ATTRIBUTE
+ * input. Satisfied STRUCTURALLY by the /app-marketplace module's
+ * resolveAppTrustState (wired at the composition root; zero imports of
+ * marketplace code inside src/modules/app-installs). DISCLOSED SEMANTICS:
+ *
+ *   - trust is METADATA and a POLICY INPUT — it NEVER grants authority
+ *     by itself: the fail-closed /policies evaluation stays the sole
+ *     install authority; an MOS_CERTIFIED app under a denied policy
+ *     still fails; an UNVERIFIED app under a permissive policy still
+ *     installs;
+ *   - the port only ENRICHES the gate action's certificationState
+ *     attribute (the marketplace-derived current state instead of the
+ *     frozen registry birth state). Nothing else in the gate, grants or
+ *     ledger changes — MKT-048 semantics are preserved exactly;
+ *   - the dep is OPTIONAL: unwired, the module behaves byte-identically
+ *     to the MKT-048 delivery (the registry birth state);
+ *   - a port RESOLUTION ERROR propagates (the selection fails closed):
+ *     an unresolvable policy INPUT never silently degrades to a stale
+ *     value — trust-attribute-consuming rules must always see the
+ *     derived truth or no decision at all.
+ */
+export interface AppInstallsTrustStatePort {
+  /**
+   * The derived current trust state of one app lineage. Null when the
+   * app key has no published lineage (the caller falls back to the
+   * registry record's birth state).
+   */
+  resolveAppTrustState(
+    appKey: string,
+  ): Promise<{ readonly trustLevel: AppCertificationState } | null>;
+}
+
+// ---------------------------------------------------------------------------
 // The server-declared platform version (the compatibility-contract input)
 // ---------------------------------------------------------------------------
 
@@ -692,6 +736,21 @@ export interface AppInstallsModuleDeps {
    * dependency-satisfaction inputs of the compatibility contract.
    */
   readonly extensions: AppInstallsExtensionsPort;
+  /**
+   * OPTIONAL (MKT-050 — the DISCLOSED additive trust-state wiring; see
+   * AppInstallsTrustStatePort): the marketplace-derived CURRENT trust
+   * state that enriches the install/upgrade/rollback gate action's
+   * certificationState attribute. Satisfied STRUCTURALLY by the
+   * /app-marketplace module at the composition root (the
+   * /policies-credentials port precedent — the frozen /app-installs row
+   * lists /apps, /policies, /workspaces, /extensions, so the port is
+   * declared in THIS public entry, never imported from the marketplace).
+   * UNWIRED (absent): the gate action carries the registry birth state
+   * exactly as the MKT-048 delivery did. Trust NEVER grants authority:
+   * the fail-closed /policies evaluation stays the sole install
+   * authority either way.
+   */
+  readonly trustState?: AppInstallsTrustStatePort;
 }
 
 export { createAppInstallsModule } from './internal/module.ts';
