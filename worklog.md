@@ -81,3 +81,25 @@ Work Log:
 Stage Summary:
 - The MKT-045 delivery is now a fresh-base PR: base 3c0d759, worker commits a113ab2 + a3a6adb preserved, merge 996d74a + docs commit; six gates green on BOTH the worker head and the merged head with exact counts recorded in the runbook.
 - The merge was purely additive (unions + the standard sibling count bumps); no sibling behavior was changed, no test masked or deleted.
+
+---
+Task ID: 4
+Agent: MKT-045 Worker (MKT-044 re-integration session)
+Task: After MKT-044 (Client Operating Memory) landed on origin/main (3c0d759 → d18bc57) and PR #37 turned mergeable=false/dirty, re-integrate current main into the worker branch, re-run the six gates on the new merged head, update the runbook, and re-push so the PR is fresh-based and mergeable again.
+
+Work Log:
+- Verified the prior delivery state: fedba41 == origin/mkt/045-worker-delivery (push landed), PR #37 open with the full report body — but origin/main had moved to d18bc57 (MKT-044) and GitHub reported the PR mergeable:false / dirty, so the worker contract's "never reuse a stale base" rule applied a second time.
+- Merged origin/main (d18bc57) into mkt/045-worker-delivery: 5 conflicts, all in the shared additive-registration surfaces, resolved additively:
+  - spec/architecture.md: §6 registration paragraph as the UNION (the /ai-operator sentence kept, main's /client-memory sentence appended);
+  - src/composition-root.ts: the modules-map entry unioned (…, salesContinuity, aiOperator, clientMemory) — the createClientMemoryModule factory call auto-merged;
+  - tests/architecture/arch-check.test.ts: counts recomputed for the tree parsing 33 spec-parsed modules — 33 spec-parsed / 34 enforced / 31 fixture-missing boundaries / 34 total violations in the negative fixture (both sides had asserted "32", each counting a different sibling: mine /ai-operator, theirs /client-memory);
+  - tests/architecture/apps-boundary.test.ts: spec-parsed set 32 → 33 (comment union listing all seven v1.5 registrations);
+  - tests/architecture/developer-portal-boundary.test.ts: sibling count 32 → 33 (message recomputed: 32 after the MKT-044 integration + the MKT-045 registration).
+  - spec/module-dependency-matrix.md / src/api/routes.ts / src/api/application.ts auto-merged cleanly (both rows/imports/registrations present).
+- Ran the six gates on the NEW merged tree 5df300c (all green): npm install (no changes) / lint 0 / tsc 0 / arch:check 0 (440 files, 34 enforced frozen modules) / unit 911/911 (18 this module's) / architecture 517/517 (15 this module's) / integration 891/891 across all 80 files (9 this module's; the MKT-044 client-memory suite included), serial --test-concurrency=1 foreground chunks (127+89+115+169+121+95+79+96 = 891, each chunk fail 0).
+- Updated docs/implementation/MKT-045.md: the Gates section now reports THREE runs (worker head a3a6adb; first merged head 996d74a base 3c0d759; current merged head 5df300c base d18bc57) and the migration note now reflects the d18bc57 tail (037_apps, 038_app_installs, 040_sales_continuity; MKT-044 also owns no migration; this module still owns none).
+- Pushed the branch; PR #37 auto-updates to the new head (base d18bc57 current main) and becomes mergeable again.
+
+Stage Summary:
+- The MKT-045 PR is fresh-based again after the second main movement: base d18bc57, worker commits a113ab2 + a3a6adb preserved, merges 996d74a + 5df300c, docs commits; six gates green on the worker head AND both merged heads with exact counts recorded in the runbook.
+- The second merge was again purely additive (unions + recomputed sibling counts); no sibling behavior was changed, no test masked or deleted.
