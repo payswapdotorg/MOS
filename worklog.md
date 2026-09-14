@@ -59,3 +59,25 @@ Stage Summary:
 - The MKT-045 delivery is complete: module + three-GET surface + registration (a113ab2) PLUS tests (18 unit / 15 architecture / 9 integration) + runbook + the marketplace-id fix, all six gates green with exact counts (lint 0 / tsc 0 / arch:check 0 (403 files, 31 enforced modules) / unit 834/834 / architecture 469/469 / integration 847/847).
 - Environment disclosures recorded in docs/implementation/MKT-045.md (minio 410 Gone provisioning via the harness's own cache; serial chunk execution on the constrained sandbox; the two parallel-flaky pre-existing suites proven deterministic serially).
 - No test was masked, skipped or deleted; no spec file beyond the additive MKT-045 registration was modified.
+
+---
+Task ID: 3
+Agent: MKT-045 Worker (fresh-base integration + PR session)
+Task: Integrate the moved origin/main (MKT-048/049/046 landed) into the worker branch, re-run the six gates on the merged tree, push, and open the PR against current main.
+
+Work Log:
+- Verified the delivery push (a3a6adb) landed; checked for an open PR (none) and found origin/main had moved 98f20b3 → 3c0d759 (MKT-048 app-installs, MKT-049 app SDK/developer portal, MKT-046 sales-continuity) — the worker contract's "never reuse a stale base" rule applied.
+- Merged origin/main into mkt/045-worker-delivery (preserving the original worker commits — no rebase/rewrite): 7 conflicts, all in the shared additive-registration surfaces, resolved additively:
+  - spec/architecture.md: §6 module list + registration paragraph as the UNION (ai-operator + app-installs + sales-continuity);
+  - spec/module-dependency-matrix.md: both matrix rows + both forbidden-direction bullets;
+  - src/api/routes.ts / application.ts / composition-root.ts: both route families, module types and factories unioned (composition-root needed the factory-call close + single modules-map entry fixups after the textual union);
+  - tests/architecture/arch-check.test.ts: merged counts recomputed — 32 spec-parsed modules, 33 enforced (incl. 'apps' provision), 30 fixture-missing boundaries, 33 total violations in the negative fixture, both matrix-line assertions and both MISSING_MODULE expected entries;
+  - tests/architecture/apps-boundary.test.ts: spec-parsed set 32 with all six registration assertions;
+  - tests/architecture/developer-portal-boundary.test.ts: sibling count bumped 31 → 32 (the standard sibling-registration bump — exactly how MKT-046/048/049 bumped each other's counts).
+- Ran the six gates on the MERGED tree (all green): npm install (no changes) / lint 0 / tsc 0 / arch:check 0 (433 files, 33 enforced frozen modules) / unit 891/891 (18 this module's) / architecture 504/504 (15 this module's) / integration 882/882 across all 79 files (9 this module's), serial --test-concurrency=1 foreground chunks (127+125+249+169+133+79 = 882).
+- Amended the merge commit to fold the post-merge fixups (merge head 996d74a); updated docs/implementation/MKT-045.md (Gates section now reports BOTH runs — worker head a3a6adb and merged head 996d74a — plus the merged-tree migration note: 038 taken by MKT-048, 040 by MKT-046, this module still owns no migration).
+- Pushed the branch and opened the PR against current main (base 3c0d759, head the final branch SHA).
+
+Stage Summary:
+- The MKT-045 delivery is now a fresh-base PR: base 3c0d759, worker commits a113ab2 + a3a6adb preserved, merge 996d74a + docs commit; six gates green on BOTH the worker head and the merged head with exact counts recorded in the runbook.
+- The merge was purely additive (unions + the standard sibling count bumps); no sibling behavior was changed, no test masked or deleted.
