@@ -400,10 +400,25 @@ export function registerDeveloperPortalRoutes(
    * /api/apps + extension-portal precedent): the developer role or the
    * platform administrator; the internal service principal publishes
    * like every platform surface. Publishing is PLATFORM territory.
+   *
+   * MKT-051 DISCLOSED FIX (the first-party publish path — the identical
+   * fix applied to /api/apps): the service principal's display label
+   * ('Internal API token') does not satisfy the frozen 'svc:<label>'
+   * publisher shape (migration 037 CHECK), so the label is SLUGGED here
+   * the same way. Display-only normalization, zero authority semantics;
+   * dev:<userId> publishes are byte-identical to the MKT-049 delivery.
    */
+  function servicePrincipalPublisherLabel(label: string): string {
+    const slug = label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug.length > 0 ? slug : 'internal-service';
+  }
+
   async function requireDeveloperRole(principal: Principal): Promise<AppPublisherIdentity> {
     if (principal.kind === 'service') {
-      return { kind: 'platform_service', label: principal.label };
+      return { kind: 'platform_service', label: servicePrincipalPublisherLabel(principal.label) };
     }
     if (principal.kind !== 'user') {
       throw new ForbiddenError('Active user identity required');

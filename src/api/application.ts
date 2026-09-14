@@ -195,6 +195,15 @@ import type { ClientMemoryModuleApi } from '../modules/client-memory/public.ts';
 // attribution read models; ZERO billing/charging methods — marketplace
 // attribution stays separate from the core financial authority).
 import type { AppMeteringModuleApi } from '../modules/app-metering/public.ts';
+// MKT-051: /first-party-apps module contract (Incumbent Capability App
+// Program — the four first-party capability packs: the typed App
+// manifests that publish through the REAL /apps registry command plus
+// the presentation-only surface composers over the incumbent
+// authorities' public contracts, the declared action menus over EXISTING
+// authority command routes, and the bounded in-memory app state with
+// export/delete semantics and lineage; NO mutation verbs over ANY
+// authority — composition, never a transfer of authority).
+import type { FirstPartyAppsModuleApi } from '../modules/first-party-apps/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -367,4 +376,11 @@ export interface ApplicationModules {
   // marketplace attribution stays separate from the core financial
   // authority, mos-app-ecosystem-v1.5.md "Economics").
   readonly appMetering: AppMeteringModuleApi;
+  // MKT-051: /first-party-apps — the four first-party capability packs'
+  // invoke/read surface over the CURRENT install selection (the pack
+  // catalog, the composed surfaces, the bounded app state with
+  // export/delete semantics). Read-only composition over the incumbent
+  // authorities; the app-state mutations touch app-owned bounded state
+  // only — never an authority table.
+  readonly firstPartyApps: FirstPartyAppsModuleApi;
 }

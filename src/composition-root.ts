@@ -403,6 +403,22 @@ import { createAppMarketplaceModule } from './modules/app-marketplace/public.ts'
 // invocation / usage events, the usage-observation ingestion command, the
 // rebuildable rollup projection and the derived attribution read models).
 import { createAppMeteringModule } from './modules/app-metering/public.ts';
+// MKT-051: /first-party-apps — the Incumbent Capability App Program
+// composition home (the four first-party capability packs: the typed
+// manifests that publish through the REAL /apps registry command plus
+// the presentation-only surface composers over the incumbent
+// authorities' public contracts). Composition is the frozen-matrix row
+// added by this Work Item: /apps (the pinned immutable manifest of the
+// current selection's EXACT App Version) and /app-installs (the
+// workspace's CURRENT selections with their SERVER-DERIVED granted
+// scopes) are consumed READ-ONLY; the incumbent authorities (/reporting,
+// /profit-intelligence, /clients, /workspaces, /decisions, /evidence,
+// /metrics, /integrations) are consumed READ-ONLY through the
+// /reporting + /profit-intelligence live-aggregation precedent. The
+// module holds NO database dependency and takes NO migration (the
+// bounded app state is in-memory with export/delete semantics — the
+// MKT-051 required preference, disclosed in the runbook).
+import { createFirstPartyAppsModule } from './modules/first-party-apps/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1062,6 +1078,31 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     integrations,
   });
 
+  // MKT-051: /first-party-apps — the Incumbent Capability App Program
+  // composition home (see the import block above). NO database
+  // dependency: the packs are registry data + presentation code over
+  // existing authorities, and the bounded app state is in-memory
+  // (process-local presentation state with export/delete semantics —
+  // no migration, per the MKT-051 required preference). Wired after the
+  // decisions module: every consumed public-contract instance (apps,
+  // appInstalls, reporting, profitIntelligence, clients, workspaces,
+  // decisions, evidence, metrics, integrations) is constructed above
+  // (pure in-process object constructions, no lifecycle ordering
+  // beyond reference availability).
+  const firstPartyApps = createFirstPartyAppsModule({
+    clock,
+    apps,
+    appInstalls,
+    reporting,
+    profitIntelligence,
+    clients,
+    workspaces,
+    decisions,
+    evidence,
+    metrics: metricsModule,
+    integrations,
+  });
+
   // MKT-045: /ai-operator — the AI Operator attention queue (the DERIVED
   // ranked attention items over the canonical authorities —
   // architecture-v1.5.md §7: ranked action candidates only; consequential
@@ -1165,7 +1206,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps },
     runtime: { aiProvider },
   };
 }

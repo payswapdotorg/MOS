@@ -243,6 +243,16 @@ import { registerAppMarketplaceRoutes } from './app-marketplace-routes.ts';
 // marketplace attribution stays separate from the core financial
 // authority, so a frontend bypass has nothing to drive).
 import { registerAppMeteringRoutes } from './app-metering-routes.ts';
+// MKT-051: the /first-party-apps routes (the Incumbent Capability App
+// Program surface: the pack catalog with LIVE registry + install state,
+// the composed-surface invoke/read over the CURRENT install selection
+// (422 undeclared surface, 403 missing granted scope, 404 not installed)
+// and the bounded app-state family with the export/delete semantics.
+// Thin delegation over the /first-party-apps module — the pack action
+// menus only DECLARE existing authority command routes; the bounded
+// app-state mutations touch app-owned state only (never an authority
+// table — proven by direct SQL in the integration tests).
+import { registerFirstPartyAppsRoutes } from './first-party-apps-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -474,5 +484,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // attribution read models (the workspace view, the agency portfolio
   // rollup, the publisher commercial view; see the import block above).
   registerAppMeteringRoutes(router, services, modules);
+  // MKT-051: the /first-party-apps surfaces — the pack catalog + the
+  // composed-surface invoke/read + the bounded app-state family (see
+  // the import block above).
+  registerFirstPartyAppsRoutes(router, services, modules);
   return router;
 }
