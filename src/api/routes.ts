@@ -199,6 +199,15 @@ import { registerAiOperatorRoutes } from './ai-operator-routes.ts';
 // durable linkage + live records. The carried payload is NEVER a request
 // field — no manual re-entry anywhere).
 import { registerSalesContinuityRoutes } from './sales-continuity-routes.ts';
+// MKT-044: the /client-memory routes (Client Operating Memory — the
+// governed client-context projection and retrieval surface: the client
+// memory view + the workspace slice + the kind-filtered retrieval over
+// the projected records, all GET-only with server-derived scope; every
+// memory item cites canonical record ids and the frozen, versioned
+// projection vocabulary (cm-proj-v1) ships in every response — NO write
+// path of any kind, retrieval/index technology is non-authoritative and
+// none exists: never a second tenant/data authority).
+import { registerClientMemoryRoutes } from './client-memory-routes.ts';
 // MKT-049: the /developer-portal APP DEVELOPER PORTAL routes (the App
 // SDK and Developer Portal surface family over the SAME /apps registry
 // authority — the MKT-032 extension-portal precedent: one authority,
@@ -413,6 +422,17 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // validate/activate/transition surface: the MKT-040 gate stays the
   // /deployments routes' alone.
   registerSalesContinuityRoutes(router, services, modules);
+  // MKT-044: the /client-memory surfaces — Client Operating Memory (the
+  // DERIVED governed projection over the canonical client, goal,
+  // playbook, deployment, evidence, experiment, outcome, decision and
+  // learning records: the client memory view, the workspace slice and the
+  // kind-filtered retrieval over the projected records). READ-ONLY by
+  // construction: exactly three GETs, no body, no DTO, no query
+  // parameters — retrieval/index technology is non-authoritative
+  // (spec/architecture-v1.5.md §6) and this delivery adds none at all;
+  // never a second tenant/data authority, so a frontend bypass has
+  // nothing to drive.
+  registerClientMemoryRoutes(router, services, modules);
   // MKT-049: the /developer-portal surfaces — the App Developer Portal
   // (see the import block above). Thin delegation over the /apps
   // registry authority + its exported pure guards; registered after the

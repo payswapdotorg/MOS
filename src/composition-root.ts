@@ -290,6 +290,14 @@ import { createAiOperatorModule } from './modules/ai-operator/public.ts';
 // EXISTING creation commands, with provenance + version identity on its
 // own append-only continuity ledger).
 import { createSalesContinuityModule } from './modules/sales-continuity/public.ts';
+// MKT-044: /client-memory module (Client Operating Memory — the DERIVED
+// governed client-context projection and retrieval surface over the
+// canonical client, goal, playbook, deployment, evidence, experiment,
+// outcome, decision and learning records; live derivation, no owned
+// durable state, zero mutation methods — retrieval/index technology is
+// non-authoritative and none exists: never a second tenant/data
+// authority, PostgreSQL remains authoritative).
+import { createClientMemoryModule } from './modules/client-memory/public.ts';
 
 // MKT-017: /ai-runtime registry layer (TaskProfiles, model registry,
 // usage telemetry — AI-001).
@@ -1040,6 +1048,31 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     clients,
     workspaces,
   });
+
+  // MKT-044: /client-memory — Client Operating Memory (the DERIVED
+  // governed projection over the canonical authorities — architecture
+  // v1.5 §6; the no-second-tenant/data-authority lock posture). Composed
+  // READ-ONLY over the real public-contract instances constructed above
+  // (the frozen matrix line added for this Work Item): canonical
+  // Client/Workspace ownership resolution, the authority listings
+  // (/goals, /playbooks, /deployments, /evidence, /experiments,
+  // /decisions, /learnings). The module owns NO durable state (NO
+  // migration — the /reporting + /profit-intelligence live-derivation
+  // precedent), adds NO retrieval index or cache (§6: retrieval/index
+  // technology is non-authoritative) and its HTTP surface is read-only
+  // by construction.
+  const clientMemory = createClientMemoryModule({
+    clock,
+    clients,
+    workspaces,
+    goals,
+    playbooks,
+    deployments,
+    evidence,
+    experiments,
+    decisions,
+    learnings,
+  });
   // Authentication order: user sessions first, then the internal service
   // token. Every path fails closed (CompositeAuthenticator).
   const authenticator = new CompositeAuthenticator([
@@ -1066,7 +1099,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory },
     runtime: { aiProvider },
   };
 }
