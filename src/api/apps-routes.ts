@@ -274,10 +274,31 @@ export function registerAppsRoutes(
    * Publisher ... wired by later extension Work Items") or the platform
    * administrator; the internal service principal publishes like every
    * platform surface. Publishing is PLATFORM territory (MKT-047 AC-8).
+   *
+   * MKT-051 DISCLOSED FIX (the first-party publish path): the service
+   * principal's display label ('Internal API token') does NOT satisfy the
+   * frozen 'svc:<label>' publisher shape the registry persists
+   * (migration 037 CHECK: '^(dev|svc):[a-z0-9][a-z0-9._-]{0,63}$') — the
+   * FIRST-PARTY publish path (the 'svc:' publisher identity the MKT-050
+   * marketplace derives the first-party classification from) was
+   * therefore structurally unreachable through this route. The label is
+   * now SLUGGED at the derivation point ('Internal API token' →
+   * 'internal-api-token'): a display-only normalization with zero
+   * authority semantics — the publisher identity stays SERVER-DERIVED
+   * from the authenticated principal exactly as before, and every
+   * dev:<userId> publish is byte-identical to the MKT-047/049 deliveries.
    */
+  function servicePrincipalPublisherLabel(label: string): string {
+    const slug = label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug.length > 0 ? slug : 'internal-service';
+  }
+
   async function requireDeveloperRole(principal: Principal): Promise<AppPublisherIdentity> {
     if (principal.kind === 'service') {
-      return { kind: 'platform_service', label: principal.label };
+      return { kind: 'platform_service', label: servicePrincipalPublisherLabel(principal.label) };
     }
     if (principal.kind !== 'user') {
       throw new ForbiddenError('Active user identity required');

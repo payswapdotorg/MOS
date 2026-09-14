@@ -103,3 +103,16 @@ Work Log:
 Stage Summary:
 - The MKT-045 PR is fresh-based again after the second main movement: base d18bc57, worker commits a113ab2 + a3a6adb preserved, merges 996d74a + 5df300c, docs commits; six gates green on the worker head AND both merged heads with exact counts recorded in the runbook.
 - The second merge was again purely additive (unions + recomputed sibling counts); no sibling behavior was changed, no test masked or deleted.
+
+---
+Task ID: MKT-051
+Agent: MKT-051 Worker (Incumbent Capability App Program)
+Task: Implement MKT-051 — first-party capability App packs (reporting/analytics, CRM/pipeline, spreadsheet workflows, client portals) proving the App model end-to-end over the MKT-047/048/049/050 surfaces.
+
+Work Log:
+- Cloned at base c52bc74 (main at dispatch), created mkt/051-worker-delivery.
+- Read AGENTS.md, WORKER-CONTRACT.md, effective-backlog-v1.5 (MKT-051), mos-app-ecosystem-v1.5, architecture-v1.5, and the house patterns (/apps, /app-installs, /app-marketplace, /app-metering, tools/app-sdk, domain-packs, reporting, profit-intelligence, composition root, routes, arch-check).
+- Baseline gates on clean main: lint 0 / tsc 0 / arch:check 0 (455 files) / unit 948/948 / architecture 538/538 / integration 910/919 — the 9 failures are the KNOWN s3-object-store MinIO provisioning class (dl.min.io unreachable from this sandbox), verified on clean main BEFORE any change.
+
+Stage Summary:
+- In progress: design settled on a new composition module src/modules/first-party-apps (pack manifests + presentation composers over /apps,/app-installs,/reporting,/profit-intelligence,/clients,/decisions,/evidence,/metrics,/integrations publics), NO migration (the required preference), in-memory bounded app state with export/delete + lineage, and a 6-route invoke/read family keyed on the workspace's CURRENT install selection.
