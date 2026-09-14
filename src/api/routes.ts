@@ -230,6 +230,19 @@ import { registerDeveloperPortalRoutes } from './developer-portal-routes.ts';
 // trust events and reviews are append-only and the registry is never
 // rewritten).
 import { registerAppMarketplaceRoutes } from './app-marketplace-routes.ts';
+// MKT-052: the /app-metering routes (the App Metering and Commercial
+// Attribution surface: EXACTLY THREE GETs — the workspace attribution
+// view, the agency portfolio rollup and the publisher commercial view
+// (per app / per publisher / per period aggregates with the frozen
+// calculation version + the disclosed assumption record in every
+// response). READ-ONLY by construction: the metering collection, the
+// usage-observation ingestion and the rollup recompute are MODULE-LEVEL
+// operations for server-side callers (the operating-graph rebuild
+// precedent) — NO POST/PUT/PATCH/DELETE route exists anywhere in this
+// family, and the module exposes ZERO billing/charging methods —
+// marketplace attribution stays separate from the core financial
+// authority, so a frontend bypass has nothing to drive).
+import { registerAppMeteringRoutes } from './app-metering-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -457,5 +470,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // routes: trust events and reviews are append-only (migration 042)
   // and the marketplace NEVER rewrites the /apps registry.
   registerAppMarketplaceRoutes(router, services, modules);
+  // MKT-052: the /app-metering surfaces — the GET-only derived
+  // attribution read models (the workspace view, the agency portfolio
+  // rollup, the publisher commercial view; see the import block above).
+  registerAppMeteringRoutes(router, services, modules);
   return router;
 }
