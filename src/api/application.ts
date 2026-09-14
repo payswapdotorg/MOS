@@ -187,6 +187,14 @@ import type { SalesContinuityModuleApi } from '../modules/sales-continuity/publi
 // outcome, decision and learning records; live derivation, no owned
 // state, read-only surface — never a second tenant/data authority).
 import type { ClientMemoryModuleApi } from '../modules/client-memory/public.ts';
+// MKT-052: /app-metering module contract (App Metering and Commercial
+// Attribution — the append-only meter event tail over the REAL
+// install/invocation/usage events consumed through the /apps,
+// /app-installs and /extensions public contracts, the usage-observation
+// ingestion command, the rebuildable rollup projection and the derived
+// attribution read models; ZERO billing/charging methods — marketplace
+// attribution stays separate from the core financial authority).
+import type { AppMeteringModuleApi } from '../modules/app-metering/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -346,4 +354,17 @@ export interface ApplicationModules {
   // PostgreSQL remains authoritative — never a second tenant/data
   // authority).
   readonly clientMemory: ClientMemoryModuleApi;
+
+  // MKT-052: the App Metering and Commercial Attribution authority (the
+  // append-only meter event tail over the real install/invocation/usage
+  // events — collection through the /app-installs + /extensions public
+  // contracts, usage-observation ingestion with validated canonical
+  // source references, the rebuildable rollup projection and the derived
+  // attribution read models under the frozen am-meter-v1/am-attrib-v1
+  // vocabularies; the module-level collection/ingestion/recompute
+  // commands are server-side operations, the HTTP surface is the
+  // GET-only attribution family; ZERO billing/charging methods —
+  // marketplace attribution stays separate from the core financial
+  // authority, mos-app-ecosystem-v1.5.md "Economics").
+  readonly appMetering: AppMeteringModuleApi;
 }

@@ -659,6 +659,23 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // no install ledger either — migration 038 stays the sole
     // install authority).
     '042_app_marketplace.sql',
+    // MKT-052 (App Metering and Commercial Attribution) appends the
+    // app-metering migration (044 — the number is PRE-ASSIGNED to this
+    // Work Item; 039/040/041/043 are reserved for sibling deliveries):
+    // the /app-metering metering ledger — the append-only
+    // app_metering_events tail (the frozen five-dimension/units
+    // vocabulary CHECK-fenced per dimension, the payload-shape fence per
+    // source kind, the at-most-once partial unique source fence, the §8
+    // (workspace_id, idempotency_key) command fence, the scope-chain +
+    // canonical app/extension identity re-verification triggers and the
+    // append-only UPDATE/DELETE rejection triggers) and the rebuildable
+    // app_metering_rollups projection (the disclosed recompute path —
+    // replaced atomically from the tail, never a second truth); NO
+    // billing/invoice/payment/balance/pricing column exists anywhere
+    // (the Economics separation), NO app catalog/install/invocation
+    // table is created or mutated (migration 037/038/028 stay the sole
+    // authorities — consumed READ-ONLY through the public contracts).
+    '044_app_metering.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

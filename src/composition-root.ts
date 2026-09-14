@@ -398,6 +398,11 @@ import { createAppInstallsModule } from './modules/app-installs/public.ts';
 // migration 042; the policy-eligibility read-side query — the frozen
 // matrix row added by this Work Item).
 import { createAppMarketplaceModule } from './modules/app-marketplace/public.ts';
+// MKT-052: /app-metering — the App Metering and Commercial Attribution
+// authority (the append-only meter event tail over the real install /
+// invocation / usage events, the usage-observation ingestion command, the
+// rebuildable rollup projection and the derived attribution read models).
+import { createAppMeteringModule } from './modules/app-metering/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -965,6 +970,38 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     trustState: appMarketplace,
   });
 
+  // MKT-052: /app-metering — the App METERING authority (the App Metering
+  // and Commercial Attribution surface: the append-only meter event tail
+  // over the REAL events — install/upgrade/rollback selections consumed
+  // from the MKT-048 ledger, invocations from the MKT-022 invocation
+  // ledger, runtime-host usage observations ingested through the
+  // module-level command with validated canonical source references —
+  // plus the rebuildable rollup projection and the derived attribution
+  // read models). Composition is the frozen-matrix row added by this Work
+  // Item: the /apps registry (exact App Version resolution for the
+  // ingestion guards + the lineage listings for the publisher view), the
+  // /app-installs ledger (the COLLECTION SOURCE + the current-selection
+  // contexts) and the /extensions invocation ledger (the invocation
+  // COLLECTION SOURCE + the ingestion provenance validation) are consumed
+  // READ-ONLY through their PUBLIC contracts; the /workspaces
+  // canonical-ownership port is satisfied STRUCTURALLY by the real
+  // WorkspacesModuleApi instance (the /app-installs precedent). The
+  // collection, ingestion and recompute commands are MODULE-LEVEL
+  // operations (the operating-graph rebuild precedent — background
+  // workers and later v1.5 Work Items); the HTTP surface is the GET-only
+  // attribution family. ZERO billing/charging methods anywhere (the
+  // Economics rule: marketplace attribution stays separate from the core
+  // financial authority).
+  const appMetering = createAppMeteringModule({
+    db,
+    clock,
+    ids,
+    apps,
+    appInstalls,
+    extensions,
+    workspaceOwnership: workspaces,
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1128,7 +1165,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering },
     runtime: { aiProvider },
   };
 }
