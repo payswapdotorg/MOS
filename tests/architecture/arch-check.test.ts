@@ -25,12 +25,15 @@ const specDir = path.join(repoRoot, 'spec');
 
 test('frozen module set is parsed from spec/architecture.md §6 (29 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 30);
+  // MKT-050 registers /app-marketplace per the v1.4 promotion precedent
+  // (the MKT-043/048 pattern): the spec-parsed set is 31 after the
+  // MKT-050 delivery (30 + app-marketplace).
+  assert.equal(modules.length, 31);
   // Spot-check the full frozen set from the architecture document.
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-runtime', 'app-installs', 'audit', 'auth', 'clients', 'credentials',
+      'agencies', 'agents', 'ai-runtime', 'app-installs', 'app-marketplace', 'audit', 'auth', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'goals', 'integrations', 'jobs', 'learnings', 'metrics',
       'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
@@ -70,6 +73,11 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // authority over the /apps registry + the /policies install gate + the
   // /workspaces ownership and /extensions availability structural ports):
   assert.deepEqual(matrix['app-installs'], ['apps', 'policies', 'workspaces', 'extensions']);
+  // The MKT-050 additive matrix line (the /app-marketplace discovery/trust/
+  // review surface over the /apps registry — READ-ONLY catalog composition;
+  // the MKT-048 trust-state wiring arrives through the disclosed structural
+  // port declared in /app-installs' public entry, deliberately off-matrix):
+  assert.deepEqual(matrix['app-marketplace'], ['apps']);
   // The MKT-043 additive matrix line (the /profit-intelligence derived
   // analytics read model over the canonical authorities):
   assert.deepEqual(matrix['profit-intelligence'], [
@@ -144,6 +152,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     'TEST_MODULE_INTERNAL_IMPORT|tests/unit/sample.test.ts',
     'UNRESOLVED_IMPORT|src/api/routes.ts',
     'MODULE_IMPORTS_APPLICATION|src/modules/goals/internal/service.ts',
+    // The MKT-050 /app-marketplace §6 registration makes the fixture's
+    // missing marketplace boundary a MISSING_MODULE violation (the
+    // fixture provides only auth/users/goals — the additive count each
+    // sibling promotion adds).
+    'MISSING_MODULE|src/modules/app-marketplace',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -178,19 +191,19 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 31 enforced modules (the 30 spec-parsed frozen modules — the v1.4 26
+  // 32 enforced modules (the 31 spec-parsed frozen modules — the v1.4 26
   // PLUS /decisions registered by the MKT-042 delivery, /operating-graph
   // registered by the MKT-041 delivery, /app-installs registered by the
-  // MKT-048 delivery and /profit-intelligence registered by the MKT-043
-  // delivery per the disclosed promotion precedent — PLUS the
-  // disclosed MKT-047 v1.5 composition provision 'apps' in
-  // tools/arch-check/checker.ts); the fixture provides
-  // auth, users, goals (billing is not frozen, so it cannot satisfy any
-  // frozen boundary) → 28 missing boundaries.
-  assert.equal(byRule.get('MISSING_MODULE'), 28);
+  // MKT-048 delivery, /profit-intelligence registered by the MKT-043
+  // delivery and /app-marketplace registered by the MKT-050 delivery per
+  // the disclosed promotion precedent — PLUS the disclosed MKT-047 v1.5
+  // composition provision 'apps' in tools/arch-check/checker.ts); the
+  // fixture provides auth, users, goals (billing is not frozen, so it
+  // cannot satisfy any frozen boundary) → 29 missing boundaries.
+  assert.equal(byRule.get('MISSING_MODULE'), 29);
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    31,
+    32,
     'no unexpected violation categories may be reported',
   );
 

@@ -74,7 +74,7 @@ import {
 
 export function createAppInstallsModule(deps: AppInstallsModuleDeps): AppInstallsModuleApi {
   const store = new AppInstallsStore(deps.db, deps.clock, deps.ids);
-  const { apps, policies, workspaceOwnership, extensions } = deps;
+  const { apps, policies, workspaceOwnership, extensions, trustState } = deps;
 
   /**
    * Canonical Workspace ownership for a SELECTION WRITE: resolved through
@@ -182,6 +182,40 @@ export function createAppInstallsModule(deps: AppInstallsModuleDeps): AppInstall
   }
 
   /**
+   * The MKT-050 DISCLOSED ADDITIVE trust-state enrichment: when the
+   * OPTIONAL marketplace trustState port is wired, the gate action's
+   * certificationState attribute carries the marketplace-DERIVED
+   * current state (the trust_events tail) instead of the registry
+   * record's frozen BIRTH state. TRUST IS METADATA AND A POLICY INPUT —
+   * this enrichment changes NOTHING about the gate's authority: the
+   * fail-closed /policies evaluation (explicit allow required,
+   * deny-overrides) stays the sole install authority. UNWIRED: the
+   * action is byte-identical to the MKT-048 delivery. A port error
+   * PROPAGATES (fail-closed: an unresolvable policy input never
+   * silently degrades to a stale value).
+   */
+  async function gateActionWithDerivedTrust(
+    record: AppVersionRecord,
+    operation: 'install' | 'upgrade' | 'rollback',
+  ): Promise<ReturnType<typeof buildInstallGateAction>> {
+    const action = buildInstallGateAction(record, operation);
+    if (trustState === undefined) {
+      return action;
+    }
+    const derived = await trustState.resolveAppTrustState(record.manifest.appKey);
+    if (derived === null) {
+      return action;
+    }
+    return {
+      ...action,
+      attributes: {
+        ...action.attributes,
+        certificationState: derived.trustLevel,
+      },
+    };
+  }
+
+  /**
    * The FAIL-CLOSED selection gate + the SERVER-DERIVED grant derivation:
    * the extension-dimension operation gate must be an EXPLICIT recorded
    * allow (deny/unknown → PolicyDeniedError, zero rows — the /deployments
@@ -208,9 +242,13 @@ export function createAppInstallsModule(deps: AppInstallsModuleDeps): AppInstall
     };
 
     // 1. THE OPERATION GATE — only an explicit recorded allow proceeds.
+    //    (MKT-050: the action's certificationState attribute carries the
+    //    marketplace-DERIVED current trust state when the optional port
+    //    is wired — the disclosed additive enrichment above; the gate's
+    //    fail-closed authority is UNCHANGED.)
     const gate = await policies.evaluateAction(
       {
-        action: buildInstallGateAction(record, operation),
+        action: await gateActionWithDerivedTrust(record, operation),
         scope: { agencyId: scope.agencyId, clientId: scope.clientId },
       },
       policyProvenance,

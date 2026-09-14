@@ -287,9 +287,13 @@ test('MKT-049 AC-8 static: NO portal module directory — the portal rides the /
   );
 });
 
-test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-parsed set stays 30 and /apps remains the only v1.5 provision entry', () => {
+test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-parsed set stays 31 and /apps remains the only v1.5 provision entry', () => {
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 30, 'the spec module list is untouched by this Work Item');
+  // The spec module list is untouched by THIS Work Item: the count moved
+  // 30 → 31 only through the disclosed MKT-050 /app-marketplace
+  // registration (the promotion precedent this portal delivery itself
+  // documented); no portal registration was added.
+  assert.equal(specModules.length, 31, 'the spec module list is untouched by this Work Item');
   assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
   // /apps entry (this Work Item appends nothing).

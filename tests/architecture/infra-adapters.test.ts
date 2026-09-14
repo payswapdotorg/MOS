@@ -627,6 +627,23 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // trigger-enforced; NO apps, policies, workspaces or extensions table
     // is created or mutated (MKT-048, AC-4/AC-8).
     '038_app_installs.sql',
+    // MKT-050 (App Marketplace, Trust and Certification) appends the
+    // app-marketplace migration (042 — the number is PRE-ASSIGNED to
+    // this Work Item; 039/040/041 are reserved for sibling deliveries):
+    // the /app-marketplace trust/review surface — the append-only
+    // trust_events governance ledger (the frozen from/to state
+    // vocabulary with the legal transition-triple CHECK fence, the
+    // gapless per-lineage transition sequence, the chain-consistency
+    // trigger and the append-only UPDATE/DELETE rejection triggers)
+    // and the append-only app_reviews display-metadata records (the
+    // closed rating band + structured-verdict vocabulary, the
+    // bounded body, the same-lineage version-consistency trigger
+    // and the append-only triggers); NO app catalog table is created
+    // or mutated (the marketplace NEVER becomes a second registry —
+    // the /apps registry of migration 037 stays the sole catalog;
+    // no install ledger either — migration 038 stays the sole
+    // install authority).
+    '042_app_marketplace.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

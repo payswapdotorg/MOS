@@ -368,6 +368,13 @@ import { createAppsModule } from './modules/apps/public.ts';
 // gate, and the /workspaces + /extensions ownership/availability ports —
 // the frozen matrix row added by this Work Item).
 import { createAppInstallsModule } from './modules/app-installs/public.ts';
+// MKT-050: /app-marketplace — the App Marketplace, Trust and
+// Certification surface (the discovery/review read model over the /apps
+// registry through its public contract + the append-only trust_events
+// governance ledger and app_reviews display-metadata records of
+// migration 042; the policy-eligibility read-side query — the frozen
+// matrix row added by this Work Item).
+import { createAppMarketplaceModule } from './modules/app-marketplace/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -890,6 +897,27 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // flat extension-version view of the nested manifest record — the
   // /deployments capability-check precedent). No mutation surface over
   // any composed authority (composition, not authority transfer).
+  //
+  // MKT-050 (the DISCLOSED additive trust-state wiring): the OPTIONAL
+  // trustState structural port is satisfied STRUCTURALLY by the
+  // /app-marketplace module instance below — the install/upgrade/
+  // rollback gate action's certificationState attribute then carries the
+  // marketplace-DERIVED current trust state instead of the frozen
+  // registry birth state (trust is metadata and a policy input; the
+  // fail-closed /policies evaluation stays the sole install authority —
+  // the /policies-credentials port precedent, deliberately off-matrix
+  // and disclosed in the runbook + the matrix note).
+  //
+  // (The marketplace instance is created FIRST — the appInstalls wiring
+  // below consumes it structurally; both are pure in-process object
+  // constructions, no lifecycle ordering beyond that reference.)
+  const appMarketplace = createAppMarketplaceModule({
+    db,
+    clock,
+    ids,
+    apps,
+  });
+
   const appInstalls = createAppInstallsModule({
     db,
     clock,
@@ -911,6 +939,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
             };
       },
     },
+    trustState: appMarketplace,
   });
 
   // MKT-042: /decisions — the Decision Ledger authority (the
@@ -998,7 +1027,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, appMarketplace },
     runtime: { aiProvider },
   };
 }

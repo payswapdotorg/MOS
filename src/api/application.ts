@@ -162,6 +162,11 @@ import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // state, read-only surface).
 import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence/public.ts';
+// MKT-050: /app-marketplace module contract (App Marketplace, Trust and
+// Certification — the discovery/trust/review surface over the /apps
+// registry: the derived listing read model, the append-only trust
+// transition ledger and the append-only review records).
+import type { AppMarketplaceModuleApi } from '../modules/app-marketplace/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -287,4 +292,12 @@ export interface ApplicationModules {
   // assumption set; ZERO mutation methods: derived analytics, never a
   // financial system of record — architecture-lock-v1.5 #6).
   readonly profitIntelligence: ProfitIntelligenceModuleApi;
+
+  // MKT-050: the App Marketplace, Trust and Certification authority (the
+  // discovery/review read model over the /apps registry + the append-only
+  // trust transition ledger and review records; the policy-eligibility
+  // read-side query whose trust vocabulary the MKT-048 install gate
+  // consumes through the disclosed structural-port wiring; trust is
+  // metadata and a policy input — never authority by itself).
+  readonly appMarketplace: AppMarketplaceModuleApi;
 }
