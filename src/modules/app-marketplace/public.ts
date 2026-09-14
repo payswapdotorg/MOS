@@ -544,9 +544,12 @@ export { createAppMarketplaceModule } from './internal/module.ts';
  */
 export {
   appReviewCreateFingerprint,
+  assertValidMarketplaceFilters,
   assertValidMarketplaceProvenance,
   assertValidReviewInput,
   assertValidTransitionInput,
+  classifyMarketplaceWriteConflict,
+  replayOrConflict,
   trustEventCreateFingerprint,
   MARKETPLACE_MATERIAL_SHAPED_KEYS,
 } from './internal/store.ts';

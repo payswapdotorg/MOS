@@ -479,7 +479,7 @@ export function registerAppMarketplaceRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('app-marketplace.trust.transitioned', undefined, {
+        logger.info('appmarketplace.trust.transitioned', undefined, {
           app_key: ctx.params.appKey,
           event_id: ctx.result.event.eventId,
           transition: ctx.result.event.transition,
@@ -490,10 +490,10 @@ export function registerAppMarketplaceRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'app-marketplace.trust.transitioned',
+          action: 'appmarketplace.trust.transitioned',
           targetType: 'app_trust_event',
           targetId: ctx.result.event.eventId,
-          idempotencyKey: `app-marketplace.trust.transitioned:${ctx.result.event.eventId}`,
+          idempotencyKey: `appmarketplace.trust.transitioned:${ctx.result.event.eventId}`,
           details: {
             appKey: ctx.result.event.appKey,
             transition: ctx.result.event.transition,
@@ -562,7 +562,7 @@ export function registerAppMarketplaceRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('app-marketplace.review.recorded', undefined, {
+        logger.info('appmarketplace.review.recorded', undefined, {
           app_key: ctx.params.appKey,
           review_id: ctx.result.review.reviewId,
           rating: ctx.result.review.rating,
@@ -572,10 +572,10 @@ export function registerAppMarketplaceRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'app-marketplace.review.recorded',
+          action: 'appmarketplace.review.recorded',
           targetType: 'app_review',
           targetId: ctx.result.review.reviewId,
-          idempotencyKey: `app-marketplace.review.recorded:${ctx.result.review.reviewId}`,
+          idempotencyKey: `appmarketplace.review.recorded:${ctx.result.review.reviewId}`,
           details: {
             appKey: ctx.result.review.appKey,
             ...(ctx.result.review.appVersionId === null
