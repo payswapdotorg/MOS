@@ -162,6 +162,14 @@ import type { DecisionsModuleApi } from '../modules/decisions/public.ts';
 // canonical authorities' public contracts; live derivation, no owned
 // state, read-only surface).
 import type { ProfitIntelligenceModuleApi } from '../modules/profit-intelligence/public.ts';
+// MKT-045: /ai-operator module contract (AI Operator / Attention Queue —
+// the derived ranked attention-queue read model over the canonical
+// authorities' public contracts: blocked work, approvals, client risk,
+// anomalies, scope leakage, margin pressure, capacity constraints and
+// opportunities as governed action candidates; live derivation, no owned
+// state, read-only surface; consequential actions continue through the
+// existing policy/approval contracts).
+import type { AiOperatorModuleApi } from '../modules/ai-operator/public.ts';
 // MKT-046: /sales-continuity module contract (Sales-to-Delivery
 // Continuity — the orchestrator that carries structured proposal scope,
 // goals, outcomes, assumptions and economics into the Playbook/Deployment
@@ -300,6 +308,14 @@ export interface ApplicationModules {
   // financial system of record — architecture-lock-v1.5 #6).
   readonly profitIntelligence: ProfitIntelligenceModuleApi;
 
+  // MKT-045: the AI Operator attention-queue derived read model (the
+  // live-derived ranked attention items over the canonical authorities —
+  // every item carries its category, deterministic priority score, source
+  // references, structured rationale and the EXISTING consequential-action
+  // contract reference it would flow through; ZERO mutation methods: the
+  // module ranks action candidates only, never executes or creates them —
+  // architecture-v1.5.md §7).
+  readonly aiOperator: AiOperatorModuleApi;
   // MKT-046: the Sales-to-Delivery Continuity orchestrator (carries the
   // structured proposal scope/goals/outcomes/assumptions/economics of an
   // accepted Decision Ledger proposal into the Playbook/Deployment path
