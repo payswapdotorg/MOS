@@ -4,8 +4,6 @@ This repository is the architecture and implementation source of truth for MOS. 
 
 ## Before implementing any Work Item
 
-Read, in this order:
-
 1. README.md
 2. spec/frozen-manifest-v1.6.json
 3. spec/architecture-v1.6.md
@@ -14,15 +12,25 @@ Read, in this order:
 6. spec/effective-backlog-v1.6.md
 7. spec/module-dependency-matrix-v1.6.md
 8. the applicable v1.5 frozen documents and explicit supersessions
-9. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
-10. docs/product/PRODUCT-CONSOLE-V1.6.md
-11. docs/handoff/IMPLEMENTATION-STATE-V1.6.md
-12. docs/handoff/EXECUTION-PLAN-V1.6.md
-13. docs/handoff/WORKER-CONTRACT.md
-14. docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md
-15. the exact Work Item / task being implemented
+9. spec/effective-backlog-v1.5.md
+10. applicable v1.5 dependency / traceability / security / module matrices
+11. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
+12. docs/product/PRODUCT-CONSOLE-V1.6.md
+13. docs/handoff/IMPLEMENTATION-STATE.md
+14. docs/handoff/EXECUTION-PLAN.md
+15. docs/handoff/WORKER-CONTRACT.md
+16. docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md
+17. the exact Work Item / task
 
 Actual Git history, source, tests, migrations and provider verification outrank stale coordination documents.
+
+## Unified implementation rules
+
+- v1.5 MKT-001..MKT-052 are dependencies only after objective verification; do not trust "accepted" labels alone.
+- v1.5 and v1.6 must be implemented as one program under docs/handoff/EXECUTION-PLAN.md, not as two independent prompts.
+- Growth Mission and Growth Operator may orchestrate, but never become a second workflow or execution engine.
+- Social, product, commerce and transformation providers remain behind explicit capability boundaries.
+- Optional human growth never becomes a required dependency for mission activation, core distribution, product marketing, commerce discovery or final autonomy proof.
 
 ## Authority rules
 
@@ -38,7 +46,6 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Domain Packs use core authorities and may not create parallel engines.
 - Apps use server capabilities and may own only explicitly bounded app-domain state.
 - Growth Mission and Growth Operator may orchestrate, but never become a second workflow or execution engine.
-- Social, product, commerce and transformation providers remain behind explicit capability boundaries.
 
 ## v1.6 growth-autonomy rules
 
@@ -63,6 +70,9 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Human-created content enters the same Content Asset / Rights / Provenance pipeline as automated content.
 - Human work must represent authentic activity; fake engagement, fabricated testimonials and anti-abuse bypasses are forbidden.
 - Compensation terms are not payment authority; settlement remains a composed external capability or future financial authority.
+- Human growth is an optional experiment treatment. It must never be required for a mission to start, continue, distribute content, market a product, discover commerce opportunities or pass the core autonomy proof.
+- Zero human budget, no eligible creator, no accepted offer, offer expiry and offer decline are valid non-human states. The operator must continue, replan, pause, notify or terminate truthfully according to policy.
+- A specific rights/policy/capability gate may require human approval, but that is represented explicitly as blocked_pending_human_action rather than hidden as a marketplace dependency.
 
 ## Product-console rules
 
@@ -88,7 +98,7 @@ If implementation appears to require changing a frozen rule, stop and report an 
 - execution_id is never Sandbox identity.
 - UNKNOWN execution outcome is unresolved, never success, and requires reconciliation.
 - Non-idempotent unknown side effects must not be blindly replayed.
-- Candidate-specific Job Offers are concurrency-safe claims.
+- Candidate-specific Job Offers are concurrency-safe.
 
 ## App rules
 
