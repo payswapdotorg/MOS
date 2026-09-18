@@ -270,3 +270,17 @@ Compensation terms are contract data, not payment authority. Payment/settlement 
 Human-created assets enter the same Content Asset, Rights and Provenance pipeline as machine-produced assets. Creator ownership, license/usage grant, permitted destinations, duration and revocation state remain explicit.
 
 Human work is a legitimate optimization route, not an engagement-manipulation escape hatch. MOS may test human-created content and authentic creator distribution; it may not commission fake comments, fake likes, fabricated testimonials, bot-like activity or other inauthentic engagement.
+
+## 21. Human participation is optional acceleration, not a mission dependency
+
+Human UGC and creator work is an optional experiment treatment. The autonomous Growth Mission path MUST remain executable with:
+
+- zero human-growth budget;
+- no eligible creators or field agents;
+- no accepted human offers;
+- declined or expired offers;
+- human work priced above the configured budget.
+
+In those cases the Growth Operator must continue with available non-human treatments, reallocate to another channel/strategy, pause, notify or reach a truthful terminal state according to policy. It must never fabricate a human result or treat offer unavailability as an implicit system failure.
+
+Human work becomes a hard blocker only when a particular action genuinely requires human approval because of a rights, policy or capability constraint. Such a state is represented explicitly as `blocked_pending_human_action` and is not a dependency on the human marketplace for normal autonomous growth.
