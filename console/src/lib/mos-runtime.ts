@@ -25,6 +25,10 @@ import { access, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+// P0-SRC: pin the bundle's externalized `pg` dependency into the Next.js
+// server trace (see ./mos-pg-trace.ts — prevents the §10 rollback outage).
+import "./mos-pg-trace";
+
 // --- MOS structural types (wire shapes of the bundle's exports) ------------
 
 export interface MosRequestContext {

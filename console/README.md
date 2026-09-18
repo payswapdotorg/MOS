@@ -160,6 +160,12 @@ bun run dev            # next dev -p 3000 (needs a MOS upstream — §6)
 `build:bundle` first, and `vercel.json` wires the same
 `bun run build:bundle && next build` into the Vercel build command. The
 generated `mos-bundle/` artifacts are gitignored (see `mos-bundle/README.md`).
+The traced serverless functions ship the bundle (`next.config.ts`
+`outputFileTracingIncludes`) **and its externalized `pg` dependency**: the
+`src/lib/mos-pg-trace.ts` import pin keeps `node_modules/pg` (with its full
+transitive closure) inside the trace — the file tracer cannot see inside the
+prebuilt `mos.mjs`, and without the pin the function loses `pg` and hits the
+§10 outage class.
 
 ### Bundle reproducibility rule
 
@@ -197,22 +203,39 @@ shape; `bun mos-build/prod-boot.mjs` proves the bundle against the same env).
 
 The Vercel project is **`mos-product`** (`prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq`,
 team `team_4KOoA5CgtYaOF85yFXPeMXLt`); `.vercel/project.json` is committed.
-From a checkout of this directory:
+
+**Preview deployment from a repository checkout (the proven CLI recipe —
+build locally, deploy prebuilt):**
 
 ```bash
 set -a; . ../.env; set +a                 # VERCEL_TOKEN (never printed)
-bunx vercel deploy --yes                  # PREVIEW deployment
-bunx vercel deploy --prod --yes           # production (alias update — owner decision)
+bunx vercel build                         # bun install + build:bundle (mos.mjs
+                                           #   + migrations compiled from THIS
+                                           #   repo's ../src) + next build
+bunx vercel deploy --prebuilt --yes       # PREVIEW deployment of that build
+bun run deploy:preview                    # = the two commands above
 ```
 
+A plain `bunx vercel deploy` from `console/` fails by design and must not be
+used: the CLI uploads `console/` only, so the repository's `../src` backend is
+absent on Vercel's build machine and the remote `build:bundle` step of
+`vercel.json`'s buildCommand fails (`missing input: /vercel/src/composition-
+root.ts` — verified). `vercel build` runs locally where the full checkout
+(including `../src`) exists, and `deploy --prebuilt` ships exactly that
+repository-derived build. Production from the CLI is the same shape with
+`--prod` (alias update — owner decision, DEP-003/004). A Git-connected
+deployment (project Root Directory `console/`) uploads the whole repository,
+so the same `vercel.json` buildCommand runs remotely unchanged — wiring that
+connection is DEP-003/004 scope, not this package's.
+
 The CLI upload honors `.vercelignore` (no `.env*`, no `node_modules`, no
-generated bundle — the remote build regenerates it) and `vercel.json`:
-build command `bun run build:bundle && next build`, plus the daily 03:00 UTC
-cron on `/api/mos-admin/drain`. **Preview deployments of this project talk to
+`scripts/`; the gitignored generated `mos-bundle/` artifacts are NOT excluded —
+the prebuilt flow's traced functions ship them) and `vercel.json`: build
+command `bun run build:bundle && next build`, plus the daily 03:00 UTC cron
+on `/api/mos-admin/drain`. **Preview deployments of this project talk to
 the same authoritative Neon database as production** (the project env vars)
 — treat them as production-adjacent; the production alias is never touched
-by preview deploys. Connecting the Vercel production alias to repository
-`main` (Git integration / CI) is the DEP-003/004 scope, NOT this package's.
+by preview deploys.
 
 The admin-gated drain (`POST /api/mos-admin/drain`, bearer =
 `MOS_INTERNAL_API_TOKEN` or a platform-admin session; GET form additionally
@@ -259,9 +282,12 @@ evidence"). Cause: a deployment where the externally-imported `pg` was not
 resolvable from the serverless function. `pg` therefore remains a **runtime
 dependency of this package** even though no console source file imports it
 statically — `mos-bundle/mos.mjs` resolves it from `node_modules` at runtime
-(`--external=pg` in the bundle build). A rollback to an old artifact without
-`pg` installed would reintroduce the outage. No runtime errors have been
-observed on the live deployment since 2026-09-14T21:00:Z.
+(`--external=pg` in the bundle build). The structural fix in this package:
+`src/lib/mos-pg-trace.ts` pins `pg` into the Next.js server trace (§5), so
+every bundle-loading route's function ships `node_modules/pg`. A rollback to
+an old artifact without `pg` installed would reintroduce the outage. No
+runtime errors have been observed on the live deployment since
+2026-09-14T21:00:Z.
 
 ## 11. Source provenance
 
