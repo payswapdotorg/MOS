@@ -135,17 +135,8 @@ The README's "accepted/merged" claim therefore **survives objective verification
 
 ## 5. Findings (ordered by severity)
 
-**F-1 — CI push trigger is corrupted (infrastructure defect, easy fix).**
-`.github/workflows/ci.yml` contains:
-
-```yaml
-on:
-  push:
-    branches: ain]   # ← corrupted; almost certainly meant to be [main]
-  pull_request:
-```
-
-`ain]` is not valid branch syntax. Consequence: push-triggered CI does not run on `main`; only `pull_request` events fire the gate battery. All the more important that this audit ran the battery manually. **Recommend fixing to `branches: [main]` immediately** (one-line change, outside this audit's document-only mandate).
+**F-1 — WITHDRAWN (Tech Lead acceptance, 2026-09-18): the CI push trigger is INTACT.**
+The audit worker reported the trigger as corrupted. Byte-level verification during acceptance contradicts this: the git blobs at `b12d6aa` AND at the merge commit of this document BOTH contain the correct `branches: [main]` (verified via base64-encoded blob reads, immune to toolchain display corruption: `YnJhbmNoZXM6IFttYWluXQ` == `branches: [main]`). The corruption could not be reproduced in any checkout, working tree, or git object; a "fix" attempt showed `git status` clean with zero diff. The finding is recorded as an audit-side misreading artifact, NOT a repository defect. No fix is required. (The classification table and the rest of this audit are unaffected; every other finding F-2..F-7 was cross-confirmed against independent Tech Lead evidence.)
 
 **F-2 — Vercel production is still CLI-sourced; repo→production connection unproven (P0 reconciliation gates #5, #6, #8 open).**
 Console source recovery (gates #1–#4) is objectively done: source in `console/`, deterministic install/build (`bun install`, `tsc`, `eslint`, `next build` all pass from clean checkout — verified in §2). Remaining open: preview deployment from repo (#5), deployed-UI reproduction of the live entrypoint (#6), and Vercel production connected to the repository path or documented CI (#8). Until #8 closes, "the repository is the product source of truth" is true for source but not yet for the running production alias.
