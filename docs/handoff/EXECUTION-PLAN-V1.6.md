@@ -82,3 +82,12 @@ Use an explicit anomaly detector. It may identify suspected distribution or auto
 7. blocker → notification → human resolution → resume;
 8. restriction on one network → compliant reallocation to another network;
 9. target achieved → autonomous mission stops cleanly.
+
+## Human-growth implementation wave
+
+After the baseline human/job contracts are verified:
+- MKT-076 extends the existing Human Agent + Job surfaces;
+- MKT-077 composes offer terms with Content Rights/Assets/Distribution;
+- MKT-078 connects human work to Experiment Analysis and Growth Operator allocation.
+
+Worker C owns MKT-076..MKT-078 alongside mission/commerce work. Worker B verifies rights/provenance and human-created asset lineage. Worker A validates platform-specific creator-ad capability declarations inside the social adapter matrix.
