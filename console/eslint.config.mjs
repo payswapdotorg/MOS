@@ -48,8 +48,10 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   // Bun-executed operational scripts (bundle entry, seed, verify runners) —
   // recovered verbatim, executed by Bun, not part of the eslint surface
   // (same posture as the source workspace, which ignored them too).
-  // mos-bundle/ is generated output.
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "mos-bundle/**", "mos-build/**", "scripts/**"]
+  // mos-bundle/ is generated output. .vercel/output/ is `vercel build`
+  // output (P0-SRC integration fix: lint must stay green after a local
+  // vercel build, not only on a pristine checkout).
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "mos-bundle/**", "mos-build/**", "scripts/**", ".vercel/**"]
 }];
 
 export default eslintConfig;
