@@ -56,6 +56,14 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Content used for padding, compilations or composites must carry its own rights/provenance.
 - Business objectives outrank vanity metrics when the mission declares a business outcome.
 
+## v1.6 human-growth rules
+
+- Human amplification uses the existing /field-agents + /jobs + /workflows + /executions authorities; never create a second human marketplace or execution engine.
+- UGC, creator-post and creator-ad offers must preserve explicit deliverables, compensation terms, disclosure requirements and content-rights/usage terms.
+- Human-created content enters the same Content Asset / Rights / Provenance pipeline as automated content.
+- Human work must represent authentic activity; fake engagement, fabricated testimonials and anti-abuse bypasses are forbidden.
+- Compensation terms are not payment authority; settlement remains a composed external capability or future financial authority.
+
 ## Product-console rules
 
 - The complete user-facing console source must live in this repository.
