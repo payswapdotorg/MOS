@@ -4,7 +4,7 @@ Status: FROZEN
 Architecture: 1.6
 Maximum concurrent implementation workers: 3
 
-MKT-001..MKT-052 remain the accepted v1.5 baseline. v1.6 adds MKT-053..MKT-075.
+MKT-001..MKT-052 remain the v1.5 implementation baseline **only after objective verification**. v1.6 adds MKT-053..MKT-078.
 
 ## A. Mission and autonomy
 
@@ -16,7 +16,7 @@ Acceptance: creator-growth, audience-growth, product-marketing and commerce-disc
 ### MKT-054 — Growth Operator
 Objective: persistent goal-pursuit controller that selects bounded next experiments/actions and delegates all physical work to existing Workflow/Execution authorities.
 Dependencies: MKT-053, MKT-008, MKT-010, MKT-015, MKT-016, MKT-021.
-Acceptance: restart-safe controller, idempotent replanning, blocked/paused/resume semantics, no second execution engine.
+Acceptance: restart-safe controller, idempotent replanning, blocked/paused/resume semantics, no second execution engine; controller remains functional when no human amplification treatment is available or funded.
 
 ## B. Social capability plane
 
@@ -87,7 +87,7 @@ Acceptance: baseline-relative anomaly detection, descriptive reason codes, confi
 ### MKT-067 — Experiment Analysis and Adaptive Allocation
 Objective: compute experiment effects/uncertainty and allocate bounded exploration/exploitation.
 Dependencies: MKT-015, MKT-014, MKT-016.
-Acceptance: negative/inconclusive outcomes preserved; adaptive allocation is auditable and reproducible.
+Acceptance: negative/inconclusive outcomes preserved; adaptive allocation is auditable and reproducible; allocator remains valid when human treatment has zero capacity.
 
 ### MKT-068 — Notification Delivery Plane
 Objective: real delivery adapters over the existing Notifications boundary.
@@ -126,7 +126,7 @@ Acceptance: attribution ids survive content transformations and provider boundar
 ### MKT-074 — Growth Autopilot Console
 Objective: first-class console journeys for Growth Missions, social account connections, strategy state, content candidates, rights gates, platform health, experiments and commerce outcomes.
 Dependencies: MKT-053..MKT-073 plus P0 console source recovery.
-Acceptance: one calm mission UX supports creator growth, product marketing and commerce discovery.
+Acceptance: one calm mission UX supports creator growth, product marketing and commerce discovery without requiring human offers or human budget.
 
 ### MKT-075 — v1.6 End-to-End Autonomy Proof
 Objective: prove the full evidence-driven operating loop across multi-platform social and commerce scenarios.
@@ -136,9 +136,13 @@ Acceptance:
 2. product marketing → inspect product → select channel mix → experiment → attributable conversion;
 3. commerce discovery → niche/product search → demand experiment → viable product → listing → orders → learning;
 4. platform-health anomaly → compliant adaptation;
-5. human-required blocker → notification → action → resume.
+5. human-required blocker → notification → action → resume;
+6. zero human budget / no eligible creators → autonomous strategy continues or reaches a truthful terminal condition;
+7. optional human treatment, when available, enters the same experiment/evidence/learning loop.
 
-## G. Human growth marketplace
+## G. Optional human growth acceleration
+
+These items extend the Human Agent + Job authority. They are deliberately **outside the core autonomous critical path**.
 
 ### MKT-076 — Human Growth Work Extensions
 Objective: extend the existing Human Agent and Job authorities with creator/UGC specialization metadata and growth-work Job descriptors.
@@ -153,4 +157,18 @@ Acceptance: offer terms persist deliverables, compensation, disclosure, destinat
 ### MKT-078 — Human Amplification Optimization
 Objective: make authentic human work a measurable experiment arm alongside owned-account and automated strategies.
 Dependencies: MKT-054, MKT-067, MKT-076, MKT-077.
-Acceptance: allocate bounded human/automated treatments, measure outcomes, preserve attribution/evidence, learn cost and quality, and reallocate without creating fake engagement or bypassing platform controls.
+Acceptance: allocate bounded human/automated treatments, measure outcomes, preserve attribution/evidence, learn cost and quality, and reallocate without fake engagement or bypassing platform controls; absence of eligible/funded human treatment never blocks the non-human treatment arm.
+
+## Critical-path statement
+
+MKT-076..MKT-078 are optional acceleration capabilities. They MUST NOT be prerequisites of:
+
+- Growth Mission activation;
+- core cross-platform distribution;
+- experiment analysis;
+- product marketing;
+- commerce discovery;
+- the Growth Autopilot Console;
+- the v1.6 autonomy proof.
+
+If human work is unavailable, the system must continue, replan, pause, notify or terminate truthfully according to the mission state and policies.
