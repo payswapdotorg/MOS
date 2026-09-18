@@ -26,3 +26,9 @@ Status: FROZEN
 22. Historical evidence, experiments, decisions and learnings remain immutable or append-oriented according to their existing contracts.
 23. Client/Workspace isolation remains fail-closed before external access or dependent traversal.
 24. Any future platform adapter must declare its current capability matrix, authorization constraints, policy dependencies and limitations before acceptance.
+
+25. Human growth work uses the existing Human Agent + Job + Task + Execution authorities; no second marketplace authority is introduced.
+26. UGC/creator offers must carry explicit deliverables, compensation terms, disclosure requirements and content-rights/usage terms.
+27. Compensation records in Jobs are not payment settlement records.
+28. Human amplification must represent authentic creator activity; fake engagement and fabricated social proof are forbidden.
+29. Human-created content retains the same lineage, rights and provenance gates as automated content.
