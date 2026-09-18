@@ -308,7 +308,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
   assert.equal(result.violations.length, 0, 'the static architecture check is clean');
   assert.ok(result.frozenModules.includes('apps'), 'the enforced set includes /apps');

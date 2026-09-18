@@ -27,7 +27,15 @@ const testDepsDir = path.join(repoRoot, '.test-deps');
 
 /** Pinned MinIO release (deterministic S3 protocol behavior in CI). */
 const MINIO_VERSION = 'RELEASE.2025-09-07T16-13-09Z';
-const MINIO_URL = `https://dl.min.io/server/minio/release/linux-amd64/archive/minio.${MINIO_VERSION}`;
+// Primary: the official GitHub release asset (same binary as the historic
+// dl.min.io archive). dl.min.io delisted this archive URL (HTTP 410 Gone,
+// verified 2026-09-18) while the GitHub release remains live; the SHA-256
+// below proves byte-identity of the two sources.
+// Fallback: the dl.min.io archive, kept in case of GitHub-side egress blocks.
+const MINIO_URLS = [
+  `https://github.com/minio/minio/releases/download/${MINIO_VERSION}/minio.linux-amd64.${MINIO_VERSION}`,
+  `https://dl.min.io/server/minio/release/linux-amd64/archive/minio.${MINIO_VERSION}`,
+];
 const MINIO_SHA256 = '7c5bd8512c6e966455b1d198209358b2d191c77a83ab377c4073281065fb855f';
 
 const minioDir = path.join(testDepsDir, `minio-${MINIO_VERSION}`);
@@ -67,7 +75,18 @@ export function ensureMinio(): string {
   const staged = path.join(stagingDir, 'minio');
 
   try {
-    downloadFile(MINIO_URL, staged);
+    let lastError: unknown = 'no download source attempted';
+    for (const url of MINIO_URLS) {
+      try {
+        downloadFile(url, staged);
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+        fs.rmSync(staged, { force: true });
+      }
+    }
+    if (lastError !== null) throw lastError;
     const digest = sha256OfFile(staged);
     if (digest !== MINIO_SHA256) {
       throw new Error(`minio download integrity mismatch: sha256 ${digest} != ${MINIO_SHA256}`);

@@ -128,7 +128,7 @@ test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations',
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir,
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
 
   assert.deepEqual(

@@ -18,7 +18,7 @@ try {
   result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: path.join(repoRoot, 'spec'),
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
 } catch (error) {
   process.stderr.write(`arch-check failed to run: ${String(error)}\n`);

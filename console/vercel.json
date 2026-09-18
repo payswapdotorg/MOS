@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run build:bundle && next build",
+  "crons": [
+    {
+      "path": "/api/mos-admin/drain",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

@@ -12,6 +12,11 @@ export default tseslint.config(
       'tests/architecture/fixtures/**', // deliberately violating sample code, parsed only by the arch checker
       'var/**',
       '.test-deps/**',
+      // The console/ sub-package is a self-contained Next.js app with its OWN
+      // lint gate (`cd console && bun run lint`) and its own eslint config;
+      // its shadcn-style sources legitimately use patterns the backend rules
+      // forbid (e.g. type-only default imports). Gate it there, not here.
+      'console/**',
     ],
   },
   js.configs.recommended,
