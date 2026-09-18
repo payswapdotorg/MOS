@@ -1,112 +1,101 @@
-# MarketingOS — Successor Tech Lead Execution Plan
+# MOS — Successor Tech Lead Execution Plan v1.5
 
-**Architecture:** v1.4 frozen
-**Maximum concurrent implementation workers:** 3
-**Final Work Item:** MKT-040
+**Architecture:** v1.5 FROZEN  
+**Backend/platform state:** MKT-001..MKT-052 ACCEPTED/MERGED  
+**Maximum concurrent workers:** 3  
+**Primary remaining program:** Product Console + Deployment Reproducibility + Final E2E
 
-## Scheduling algorithm
+## Mandatory scheduling rule
 
-The Tech Lead must derive readiness from the effective dependency graph after every accepted merge. A Work Item is eligible only when all dependencies are accepted on the current `main`.
+Read `AGENTS.md`, `docs/product/PRODUCT-CONSOLE-V1.5.md`, `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`, and the current `IMPLEMENTATION-STATE.md` first.
 
-Before concurrent dispatch, inspect expected changed-file surfaces. Do not dispatch two items together when they are likely to conflict in the same module, migration sequence, composition root, route registry, or foundational test harness.
+A console Work Item is not READY until its source tree exists in `payswapdotorg/MOS`.
 
-## Immediate repository state
+Recompute readiness after every accepted merge.
 
-- MKT-001..MKT-012: accepted/merged.
-- MKT-009 corrective history backstop: accepted/merged.
-- MKT-013: in-flight; review actual PR state before treating its dependency as complete.
-
-## Dependency graph for MKT-013..MKT-040
+## Work graph
 
 ```text
-MKT-013 ← MKT-004, MKT-005
-MKT-014 ← MKT-013
-MKT-015 ← MKT-013, MKT-014
-MKT-016 ← MKT-015
+P0 Console Source Recovery
+        │
+        ├── UI-002 Shell
+        │      ├── UI-003 Today
+        │      ├── UI-004 Client Workspace
+        │      └── UI-005 Work / Deployment / Experiment
+        │               └── UI-006 Sales / Human / Apps
+        │
+        └── UX-E2E harness adaptation
 
-MKT-017 ← MKT-005, MKT-010
-MKT-018 ← MKT-017, MKT-013
-MKT-019 ← MKT-017, MKT-013
-MKT-020 ← MKT-010, MKT-018
-MKT-021 ← MKT-003, MKT-005, MKT-020
-MKT-022 ← MKT-021, MKT-010
-MKT-023 ← MKT-013, MKT-021
-MKT-024 ← MKT-023
+DEP-001 Provider/Environment Contract
+        ├── DEP-002 Staging
+        └── DEP-003 Production
+                ├── DEP-004 CI/CD + migrations + rollback
+                └── DEP-005 Observability + recovery
 
-MKT-025 ← MKT-003
-MKT-026 ← MKT-009, MKT-010, MKT-025
-MKT-027 ← MKT-026, MKT-013
-MKT-028 ← MKT-006, MKT-009, MKT-015, MKT-027
-
-MKT-029 ← MKT-006, MKT-009, MKT-013
-MKT-030 ← MKT-013, MKT-015, MKT-016
-MKT-031 ← MKT-026, MKT-027
-MKT-032 ← MKT-022
-MKT-033 ← MKT-005, MKT-011, MKT-012, MKT-018
-
-MKT-034 ← MKT-024, MKT-028, MKT-030, MKT-032, MKT-033
-
-MKT-035 ← MKT-026
-MKT-036 ← MKT-007, MKT-008, MKT-022
-MKT-037 ← MKT-035, MKT-036, MKT-013, MKT-017, MKT-021
-MKT-038 ← MKT-023, MKT-024, MKT-037
-MKT-039 ← MKT-030, MKT-031, MKT-037, MKT-038
-
-MKT-040 ← MKT-007, MKT-008, MKT-013, MKT-017, MKT-022, MKT-023, MKT-024
+UI-003 + UI-004 + UI-005 + UI-006 + DEP-003
+        └── UX-E2E final proof
 ```
 
-## Recommended worker waves
+## Worker lanes
 
-These are scheduling hints, not permission to ignore the live DAG.
+### Worker A — Console ownership
 
-### Frontier A — after MKT-013 is accepted
+**First assignment:** P0 Console Source Recovery.
 
-Prefer:
+After source recovery is accepted:
 
-- Worker 1: MKT-014 — Metric normalization.
-- Worker 2: MKT-017 — AI task profile and model registry.
-- Worker 3: MKT-025 — Human Agent foundation / Field Agent specialization.
+1. UI-002 Shell.
+2. UI-003 Today.
+3. UI-004 Client Workspace.
+4. UI-005 Work/Deployment/Experiment.
+5. UI-006 Sales/Human/Apps.
 
-If MKT-013 is not yet merged, MKT-017 and MKT-025 can still be considered independently because their dependencies do not include MKT-013; however the Tech Lead must inspect actual file overlap before dispatching them together with any other ready item.
+Worker A owns recovered frontend source and user journey presentation. It must never create backend authority.
 
-### Frontier B — after the next merges
+### Worker B — Deployment ownership
 
-Typical candidates include MKT-015, MKT-018, MKT-019, and MKT-026. Choose the three whose dependencies are complete and whose expected file surfaces are independent.
+Start only on surfaces independent of the missing source:
 
-### Convergence
+1. DEP-001 provider/environment contract.
+2. DEP-002 staging and preview reproducibility.
+3. DEP-003 production wiring.
+4. DEP-004 CI/CD and rollback.
+5. DEP-005 observability/cost/recovery.
 
-The graph naturally converges through:
+All cloud vendor choices remain behind existing provider capability boundaries.
 
-- evidence → metrics → experiments → learning;
-- AI runtime → policy → extensions/integrations;
-- Human Agent → Job → field execution;
-- product UI surfaces;
-- creator Domain Pack and provider proof;
-- final deployment control plane.
+### Worker C — Verification ownership
 
-Do not implement downstream convergence work against speculative upstream interfaces. Consume only accepted public contracts.
+While source recovery is underway:
 
-## Priority guidance
+1. Build the browser/E2E harness contract.
+2. Establish API-backed smoke journeys against the current live console.
+3. Define tenant-isolation/bypass checks.
+4. Once source exists, bind the harness to the repository-built preview.
+5. Execute UX-E2E owner/client/human/sales/app journeys.
 
-When several items are ready, prefer the set that unlocks the most downstream work while minimizing shared-file conflicts. Avoid making the scheduler optimize merely for having three active workers.
+Worker C does not create a second application implementation to work around missing frontend source.
 
-## Final convergence
+## Parallelism guard
 
-MKT-034 is the v1.2/v1.3 end-to-end acquisition operating loop. MKT-039 is the v1.3 Creator Operations experience. MKT-040 is the v1.4 Marketing Cloud Deployment control plane.
+Safe concurrency is based on ownership, not calendar sequencing.
 
-MKT-040 must remain a control-plane authority. It may request execution but must not mutate Workflow/Execution state directly or introduce a second retry/orchestration engine.
+- Worker A and B may proceed concurrently once A is performing source recovery and B is touching deployment configuration outside A's source root.
+- Worker C may proceed concurrently with API/browser harness work that does not modify A's frontend source.
+- UI-002 and downstream UI work must not start before P0 source recovery.
+- Do not allow multiple workers to modify composition roots, shared route registries or deployment manifests simultaneously.
 
-## End-of-implementation gate
+## Final proof
 
-After the final Work Item is accepted/merged:
+The Tech Lead must independently verify:
 
-1. run lint and typecheck;
-2. run static architecture checks;
-3. run the complete unit suite;
-4. run the complete architecture suite;
-5. run real PostgreSQL integration/E2E suites;
-6. verify concurrency/security regressions;
-7. verify deployment/runtime wiring with explicit environment limitations;
-8. trace the final Goal → Evidence → Hypothesis → Playbook → Deployment → Workflow → Task → Execution → Outcome → Learning loop;
-9. audit for second authorities, cross-tenant traversal, provider leakage, secret persistence, history rewriting and unsafe UNKNOWN handling;
-10. update implementation-state only after objective verification.
+1. `npm run lint` for the backend and the console's actual lint command.
+2. `npm run typecheck` for the backend and the console's actual typecheck command.
+3. `npm run arch:check`.
+4. Complete unit/architecture/integration suites for the backend.
+5. Console unit/component/browser suites.
+6. Goal → Evidence → Hypothesis → Playbook → Deployment → Workflow → Task → Execution → Outcome → Decision → Learning.
+7. Incumbent App lifecycle: discover → install → invoke → upgrade → rollback.
+8. Client isolation and frontend bypass.
+9. Preview/staging/production deployment reproducibility.
+10. Runtime errors/health in the final production window.
