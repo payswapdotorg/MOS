@@ -18,7 +18,10 @@
     "product-intelligence",
     "product-marketing",
     "commerce-discovery",
-    "social-to-commerce-attribution"
+    "social-to-commerce-attribution",
+    "human-growth-marketplace",
+    "ugc-and-creator-offers",
+    "human-amplification-optimization"
   ],
   "mvpSocialPlatforms": [
     "youtube",
@@ -69,5 +72,12 @@
     "ordersRemainExternalAuthority": true,
     "productRecommendationsRequireEvidence": true,
     "attributionIsNotCausality": true
+  },
+  "humanGrowthRules": {
+    "usesExistingHumanAgentJobAuthority": true,
+    "authenticActivityOnly": true,
+    "fakeEngagementForbidden": true,
+    "compensationIsNotPaymentAuthority": true,
+    "explicitRightsAndDisclosureRequired": true
   }
 }
