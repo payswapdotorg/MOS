@@ -1,0 +1,20 @@
+# P0-SRC — what the Vercel CLI may upload from console/. (.vercelignore
+# REPLACES .gitignore for the CLI upload, so the gitignored secrets are
+# excluded HERE too; node_modules and .next are always excluded — the build
+# machine reinstalls dependencies from bun.lock.)
+#
+# The GENERATED mos-bundle/mos.mjs + mos-bundle/migrations are NOT excluded:
+# they are gitignored (never committed — rebuilt deterministically by
+# `bun run build:bundle` from the repository's own ../src), but a
+# `vercel build` + `vercel deploy --prebuilt` CLI preview needs them on disk
+# so the traced serverless functions ship the bundle (see README §7: a plain
+# CLI deploy from console/ cannot run build:bundle remotely because the CLI
+# uploads console/ only — ../src is not part of the upload).
+.env
+.env.*
+.git
+node_modules
+.next
+.vercel
+scripts
+*.log

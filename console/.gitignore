@@ -1,0 +1,37 @@
+# MOS console package — generated/ignored artifacts
+
+# dependencies
+node_modules
+
+# next.js
+.next/
+out/
+build/
+
+# the deterministic prebuild regenerates the serverless bundle from the
+# repository's own ../src backend on every `bun run build` — generated output
+# is never committed (see mos-bundle/README.md)
+mos-bundle/mos.mjs
+mos-bundle/migrations/
+
+# secrets — never committed
+.env
+.env.*
+*.pem
+
+# seed cache (scripts/seed-production.ts)
+scripts/var/
+
+# misc
+.DS_Store
+*.tsbuildinfo
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel CLI state — EXCEPT project.json (projectId + orgId only, no secrets;
+# it lets any checkout deploy previews of the existing mos-product project)
+.vercel/*
+!.vercel/project.json
