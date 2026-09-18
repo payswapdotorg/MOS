@@ -34,3 +34,6 @@ v1.5 module dependencies remain valid. v1.6 adds these bounded domains:
 8. Commerce Discovery never writes directly to catalog/order tables; store mutations flow through Integrations.
 9. Notification Delivery delivers messages only; it does not become canonical task/action state.
 10. All new modules preserve Client/Workspace scope and fail closed before dependent traversal.
+
+/growth-human-work → /field-agents, /jobs, /growth-missions, /content-assets, /content-rights, /policies
+/human-growth-optimization → /growth-missions, /growth-operator, /jobs, /experiments, /metrics, /evidence, /learnings
