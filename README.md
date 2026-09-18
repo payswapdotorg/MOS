@@ -1,47 +1,68 @@
 # MarketingOS
 
-**Status:** Architecture package FROZEN
-**Current Architecture Version:** 1.4
-**Previous Baseline:** 1.3
+**Status:** Architecture package FROZEN; v1.5 backend/platform roadmap complete  
+**Current Architecture Version:** 1.5  
+**Previous Baseline:** 1.4
 
-MarketingOS is a provider-independent, evidence-driven, multi-tenant Marketing Operating System for agencies. It coordinates deterministic software, AI capabilities, human agents, and third-party extensions around measurable acquisition and audience-operation goals.
+MarketingOS (MOS) is a provider-independent, evidence-driven, multi-tenant Marketing Operating System for agencies. It connects commercial intent, governed marketing work, deterministic execution, AI, human participants, extensions/apps, evidence, outcomes, economics and learning.
 
-## Core loop
+## Core operating model
 
 ```text
-Goal → Context → Evidence → Hypothesis → Workflow → Execution → Measurement → Learning
-  ↑                                                                            │
-  └────────────────────────────────────────────────────────────────────────────┘
+Prospect → Client → Goal → Strategy/Hypothesis → Playbook Version
+→ Deployment → Workflow → Task → Human / AI / App / Extension
+→ Execution → Evidence → Outcome → Revenue / Cost / Margin
+→ Decision → Learning → next action / deployment
 ```
 
-## Supported operating model
+## v1.5 capabilities
 
-The same governed workflow system supports:
+- Agency Operating Graph as a derived coordination projection.
+- Append-oriented Decision Ledger.
+- Derived Profit Intelligence with source references and calculation assumptions.
+- Client Operating Memory.
+- AI Operator / Attention Queue.
+- Sales-to-Delivery Continuity.
+- Versioned App Ecosystem with first-party and community capabilities.
+- App marketplace, trust/certification, developer portal, install/upgrade/rollback and metering.
+- Deployment validation of required App/Extension capability versions.
 
-- marketing/acquisition operations;
-- field sales/acquisition;
-- creator operations;
-- future domain verticals through Domain Packs.
+## Current implementation state
 
-Human Agents are the generic human execution participant. Field Agent, Chatter, Creator Manager, Sales Agent and similar roles are specializations, not separate execution systems.
+MKT-001..MKT-052 are accepted/merged on `main`. See `docs/handoff/IMPLEMENTATION-STATE.md` for the current verification ledger.
 
-## Implementation authority
+The user-facing MOS console is a separate Vercel `mos-product` deployment today. Its source is **not yet present in this repository**. The console source reconciliation is therefore a P0 handoff gate documented in `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`.
 
-The `spec/` tree is authoritative. v1.1 is the historical baseline; v1.2, v1.3 and v1.4 Architecture Change Requests introduce only the explicit corrections/additions listed in the frozen manifests. Override precedence is explicit in `spec/frozen-manifest-v1.4.json`.
+The repository is not considered product-complete until the console source is committed here and the production deployment is reproducible from the repository.
 
-Implementation agents MUST read `AGENTS.md` before any implementation work.
+## Product experience
 
-Implementation is intended to be driven through `pectoraux/WorkflowOS`. WorkflowOS remains a separate development-governance product and is not a MarketingOS runtime dependency.
+The console should organize the agency experience around:
 
-## v1.4 additions
+**Today → Clients → Work → Apps → Admin**
 
-- Generic Human Agent model with Field Agent as a specialization.
-- Versioned Domain Pack composition layer.
-- Creator Operations Domain Pack.
-- Creator-platform integrations remain provider-specific adapters/extensions.
-- Human Agent work distribution continues to use the common Job/Task/Execution model.
-- Marketing Cloud Deployment is the first-class Vercel-like deployment control plane.
+Deeper architecture objects remain contextual:
+
+- Client Decision Room.
+- Goals / Strategy / Playbooks.
+- Deployment Center.
+- Workflow / Execution timeline.
+- Evidence Explorer.
+- Experiment Lab.
+- Human Agent queue.
+- App Marketplace / Developer Portal.
+- Decision and learning trace.
+
+The UX contract lives in `docs/product/PRODUCT-CONSOLE-V1.5.md`.
+
+## Architecture authority
+
+The `spec/` tree is authoritative. v1.5 supersedes v1.4 only where the v1.5 frozen documents explicitly add or alter behavior.
+
+Read `AGENTS.md` before implementation work.
 
 ## Architectural rule
 
 > **AI is a replaceable reasoning layer. The system of record, evidence, policy, workflow state, experiments, deterministic computation, and deployment lifecycle remain authoritative outside the model.**
+
+Apps are presentation/composition capabilities, not alternate MOS authorities. PostgreSQL remains authoritative for durable MOS state.
