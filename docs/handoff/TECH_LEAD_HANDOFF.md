@@ -1,132 +1,341 @@
-# MarketingOS — Successor Tech Lead Handoff
+# MOS — Final Successor Tech Lead Handoff
 
-**Repository:** `payswapdotorg/MOS`
-**Architecture:** v1.4 FROZEN
-**Role:** Successor LLM Tech Lead / implementation orchestrator
+**Repository:** `payswapdotorg/MOS`  
+**Architecture:** **v1.5 FROZEN**  
+**Canonical main at final audit baseline:** `2e071d0c313b5dc9fa634fc90ade894bcd2754f0`  
+**Open PRs at audit:** none  
+**Maximum concurrent implementation workers:** 3
 
 ## Mission
 
-Take the repository from its current accepted implementation state to complete implementation of the frozen v1.4 MarketingOS architecture. The Tech Lead may dispatch at most **3 implementation workers concurrently**.
+Take MOS from **v1.5 backend/platform complete** to **product-console and deployment complete**.
 
-The Tech Lead is an orchestrator, not an architecture editor. Workers implement bounded Work Items. The Architect/reviewer independently verifies evidence and accepts or rejects the resulting PR.
+Do not redesign the frozen architecture. MKT-001..MKT-052 are accepted/merged. The remaining implementation work is presentation, repository/source reconciliation, reproducible deployment and final E2E proof.
 
-## Current state at handoff
+## 1. Repository-first truth
 
-- The repository is now `payswapdotorg/MOS`.
-- `main` is the authoritative integration branch.
-- MKT-001..MKT-012 are accepted and merged in the inherited baseline.
-- MKT-009 history-ledger consistency correction is accepted and merged in the inherited baseline.
-- The source repository previously had an MKT-013 Evidence/provenance PR, but the destination repository currently has **no open PR** and only the `main` branch; therefore MKT-013 is explicitly `RECONCILE`, not accepted or in-flight.
-- Effective frozen backlog ends at MKT-040.
+The repository is the source of truth.
 
-Never infer completion from this document alone. Reconcile it with `main`, open PRs, implementation docs, and actual code/tests at takeover.
+Do not trust:
 
-## Authority
+- prior handoffs;
+- worker reports;
+- screenshots;
+- stale test counts;
+- Vercel deployment state as source code;
+- compiled Next.js bundles as frontend source;
+- external local workspaces.
 
-Read first:
+At takeover, inspect:
 
-1. `AGENTS.md`
-2. `spec/frozen-manifest.json`
-3. `spec/frozen-manifest-v1.4.json`
-4. `spec/architecture.md`
-5. `spec/architecture-lock.md`
-6. `spec/architecture-lock-v1.4.md`
-7. `spec/change-request-004.md`
-8. `spec/preflight-v1.4.md`
-9. applicable v1.2/v1.3 addenda and corrections
-10. `spec/requirements.md`
-11. `spec/requirements-v1.3.md`
-12. `spec/requirements-v1.4.md`
-13. `spec/implementation-contract.md` plus later explicit overrides
-14. `spec/state-machines.md` plus applicable corrections
-15. `spec/effective-backlog-v1.4.md`
-16. applicable dependency, traceability, security and work-item matrices
-17. `docs/architecture/IMPLEMENTATION-GOVERNANCE.md`
-18. `docs/handoff/IMPLEMENTATION-STATE.md`
-19. `docs/handoff/EXECUTION-PLAN.md`
-20. `docs/handoff/WORKER-CONTRACT.md`
-21. the exact Work Item being implemented
+```bash
+git status
+git log --oneline --decorate -30
+git branch -a
+```
 
-Later frozen documents supersede earlier clauses only where they explicitly say so. Do not locally redesign ambiguous architecture.
+Then reconcile:
 
-## Mandatory takeover procedure
+- `README.md`
+- `AGENTS.md`
+- `spec/frozen-manifest-v1.5.json`
+- `spec/architecture-v1.5.md`
+- `spec/architecture-lock-v1.5.md`
+- `spec/change-request-005.md`
+- `spec/mos-app-ecosystem-v1.5.md`
+- `spec/operating-graph-v1.5.md`
+- `spec/effective-backlog-v1.5.md`
+- `docs/product/PRODUCT-CONSOLE-V1.5.md`
+- `docs/handoff/IMPLEMENTATION-STATE.md`
+- `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`
+- `docs/handoff/EXECUTION-PLAN.md`
+- `docs/handoff/WORKER-CONTRACT.md`
 
-1. Inspect git status, `main`, open PRs and recent commits.
-2. Confirm the effective frozen version is v1.4.
-3. Reconcile `IMPLEMENTATION-STATE.md` against actual repository state.
-4. Resolve the MKT-013 `RECONCILE` state before dispatching downstream evidence-dependent work.
-5. Compute the READY set from `EXECUTION-PLAN.md` and the effective dependency graph.
-6. Dispatch no more than three non-conflicting Workers.
-7. Each Worker implements exactly one Work Item unless the Architect explicitly authorizes a corrective split.
-8. Review worker evidence against actual code before accepting the PR into the integration sequence.
-9. Merge only accepted work onto current `main`; stale-base PRs must be rebased/reissued before merge.
-10. After every merge, recompute the dependency graph rather than assuming the next item.
-11. Keep `IMPLEMENTATION-STATE.md` accurate after every accepted/merged item.
-12. When all Work Items are merged, run the final system-level proof and repository audit.
+Also inspect source, migrations, tests, CI, PRs and deployment configuration directly.
 
-## Worker scheduling rules
+## 2. Verified v1.5 backend/platform state
 
-A Work Item is READY only when every dependency is actually accepted on `main`.
+MKT-001..MKT-052 are accepted/merged on `main`.
 
-A Worker slot is released only when its PR is accepted/merged or the worker is explicitly stopped.
+v1.5 includes:
 
-Never dispatch two Workers whose changes are likely to modify the same authority boundary, migration sequence, composition root, shared route registry, or foundational test harness unless their file-level independence is demonstrated first.
+- Agency Operating Graph.
+- Decision Ledger.
+- Profit Intelligence.
+- Client Operating Memory.
+- AI Operator / Attention Queue.
+- Sales-to-Delivery Continuity.
+- Versioned App Ecosystem.
+- App install/upgrade/rollback.
+- Developer Portal.
+- Marketplace/trust/certification.
+- First-party incumbent-capability packs.
+- App metering/attribution.
+- MKT-040 deployment capability-version validation amendment.
 
-Prefer parallelism across independently owned modules. Avoid speculative parallel work that creates integration conflicts merely to fill the three slots.
+Do not dispatch a Worker to reimplement any of these authorities.
 
-When a blocker affects multiple ready items, do not dispatch downstream work that will be invalidated by the blocker.
+## 3. Critical takeover finding — console source
 
-## Worker contract
+There is a real user-facing Next.js MOS console deployed as Vercel project:
 
-Every Worker must:
+- Project: `mos-product`
+- Project ID: `prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq`
+- Latest inspected production deployment: `dpl_Ggjek4trEkcAMa9WN2AB2DVwBSAA`
+- Deployment status: READY
+- Production alias: `https://mos-product.vercel.app`
+- Vercel source mode: CLI
 
-- inspect the actual current repository before coding;
-- read the exact effective requirement and Work Item contract;
-- preserve all frozen architecture rules;
-- use existing authorities instead of creating parallel ones;
-- enforce Client isolation before dependent traversal;
-- keep provider SDKs behind provider adapters/extensions;
-- use PostgreSQL as authoritative persistence;
-- add negative security/concurrency regressions for material invariants;
-- provide exact commands and actual outputs for verification;
-- disclose environment limitations;
-- open a PR against the current `main` base;
-- never mark another Work Item complete based only on its own report.
+GitHub inspection found no matching console frontend source in `payswapdotorg/MOS`.
 
-## Acceptance rules
+This is a **P0 source-of-truth defect**.
 
-The Tech Lead must not treat green tests as sufficient by themselves. Reviewers must inspect:
+### Required resolution
 
-- changed files and architecture boundaries;
-- requirement/acceptance mapping;
-- actual test commands and exit status;
-- integration/E2E proof where required;
-- tenant/security proof;
-- concurrency/crash-window proof where relevant;
-- production wiring rather than mock-only paths;
-- migration ordering and database backstops;
-- honest disclosures.
+Recover the original source workspace that produced the CLI deployment and commit the real console source into this repository.
 
-Serious blockers include second authorities, cross-tenant traversal, caller-controlled provenance, secret persistence, provider leakage, unsafe unknown replay, competing Job winners, extension permission bypass, deployment becoming a second execution engine, and historical record rewriting.
+Do **not** reconstruct the source from minified/static `/_next/static` bundles.
 
-## Finish condition
+Do **not** mark product completion until:
 
-Implementation is complete only when MKT-001..MKT-040 are actually accepted/merged or explicitly classified as not applicable by an approved architecture decision, and the final E2E proof demonstrates the frozen operating loop without bypassing authority boundaries.
+- source is committed;
+- source has deterministic build/test commands;
+- console builds from clean main;
+- preview deployment is generated from repo source;
+- production deployment is connected to that repository source path or an explicitly documented repository-driven CI path.
 
-Final target:
+The detailed gate is `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`.
 
-```text
-Goal
- → Evidence
- → Hypothesis
- → Playbook Version
+## 4. Product UX target
+
+Primary navigation:
+
+**Today → Clients → Work → Apps → Admin**
+
+This is intentional. Architecture objects remain contextual rather than becoming nine or fifteen primary nav items.
+
+### Today
+
+Answer:
+
+> What needs attention, what can create/save money, and what should I do next?
+
+Use:
+
+- AI Operator.
+- Profit Intelligence.
+- client risks.
+- blocked work.
+- approvals.
+- experiments needing decisions.
+- revenue opportunities.
+
+### Client
+
+Use progressive disclosure:
+
+**Today**
+→ What happened / What matters / What MOS recommends
+
+**Operating**
+→ Goals / Strategy / Workflows / Deployments
+
+**Intelligence**
+→ Evidence / Experiments / Decisions / Learning / Memory
+
+**Trace**
+→ Goal → Evidence → Hypothesis → Playbook → Workflow → Execution → Outcome → Decision → Learning
+
+### Work
+
+Human Work should feel like a queue.
+
+Workflow/Execution should feel like a timeline.
+
+Deployment should feel like:
+
+**Configure → Validate → Deploy → Observe → Pause/Resume → Redeploy/Rollback**
+
+Experimentation becomes an explicit **Experiment Lab**.
+
+### Apps
+
+**Installed / Marketplace / First-party / Developer Portal**
+
+App Version, trust, permission, upgrade and rollback state must be visible.
+
+### Admin
+
+Keep platform/agency administration away from the ordinary daily operating flow.
+
+## 5. UX principles
+
+Keep the existing Geist/shadcn foundation and move toward a calm professional operating environment:
+
+- restrained surfaces/borders;
+- clear active states;
+- one obvious primary action;
+- progressive disclosure;
+- responsive desktop/mobile;
+- status color only when meaningful.
+
+Avoid:
+
+- architecture diagrams as primary UX;
+- giant metric-card dashboards;
+- glassmorphism/gradient-heavy presentation;
+- database-object navigation;
+- technical identifiers in normal agency copy.
+
+## 6. Three-worker orchestration
+
+### Worker A — Console
+
+First:
+
+**P0 Console Source Recovery**
+
+Then, after source reconciliation:
+
+**UI-002 → UI-003 → UI-004 → UI-005 → UI-006**
+
+Worker A owns frontend source and presentation journeys.
+
+### Worker B — Deployment
+
+Can work independently where safe:
+
+**DEP-001 → DEP-002 → DEP-003 → DEP-004 → DEP-005**
+
+Worker B owns reproducible environment/deployment wiring.
+
+### Worker C — Verification
+
+While A recovers source:
+
+- browser/E2E harness;
+- live API-backed smoke journeys;
+- client-isolation/bypass checks.
+
+After A has repository-owned source:
+
+- bind browser tests to repository-built preview;
+- execute owner/client/human/sales/app journeys;
+- final regression/security/responsive checks.
+
+## 7. Dependency rules
+
+- Do not start UI implementation before console source exists in MOS.
+- Do not create alternate API/mocks just to unblock UI.
+- Do not let two Workers modify the same deployment manifest, composition root, route registry or frontend shell simultaneously.
+- Recompute readiness after every merge.
+- A Worker slot is free only after accepted/merged or explicitly stopped.
+- Do not fill all three slots merely for parallelism.
+
+## 8. Non-negotiable architectural invariants
+
+- PostgreSQL is authoritative for durable MOS state.
+- Client isolation is enforced server-side before dependent traversal.
+- Workflow is the only workflow authority.
+- Execution is the only execution authority.
+- Deployment is the only deployment lifecycle authority.
+- Evidence/provenance remains server-owned.
+- Profit Intelligence is derived and read-only.
+- Decision Ledger is append-oriented and never rewrites history.
+- Operating Graph is derived/contextual and not a replacement authority.
+- AI Operator ranks attention; consequential actions use existing policy/approval contracts.
+- Apps are composition packages; they cannot become CRM/reporting/workflow/tenant authorities.
+- App UI is presentation-only.
+- Published App Versions are immutable.
+- Upgrade/rollback affects future selection only.
+- UNKNOWN execution outcomes are unresolved and are never treated as success.
+- Provider SDKs remain behind provider adapters/capability contracts.
+
+## 9. Definition of done
+
+Do not declare the product complete until all are true:
+
+### Source of truth
+- [ ] Console source is present in MOS.
+- [ ] Console builds from clean repo.
+- [ ] Console tests run from repo.
+- [ ] Vercel deployment is repository-driven.
+
+### Core UX
+- [ ] Today / Clients / Work / Apps / Admin.
+- [ ] Command Center next-action hierarchy.
+- [ ] Client Operating Workspace.
+- [ ] Operating Graph trace.
+- [ ] Decision Ledger visible at agency/client context.
+- [ ] Profit Intelligence actionable.
+- [ ] Experiment Lab.
+- [ ] Workflow/Execution timeline.
+- [ ] Deployment Center.
+- [ ] Human Work queue.
+- [ ] Sales → Delivery continuity.
+- [ ] App Marketplace/Installed/Developer Portal.
+- [ ] Client Portal contextual entry.
+
+### Verification
+- [ ] Owner/operator journey.
+- [ ] Client journey.
+- [ ] Human-agent journey.
+- [ ] Sales-to-delivery journey.
+- [ ] App install/upgrade/rollback journey.
+- [ ] Cross-client isolation.
+- [ ] Frontend-bypass security tests.
+- [ ] Responsive/mobile checks.
+- [ ] Backend lint/typecheck/arch/unit/architecture/integration gates.
+- [ ] Console lint/typecheck/build/component/browser gates.
+- [ ] Production health verification.
+- [ ] Exact limitations disclosed.
+
+## 10. Known production note
+
+An older Vercel deployment emitted:
+
+`Cannot find package 'pg' imported from /var/task/mos-bundle/mos.mjs`.
+
+No runtime errors were found in the separately inspected window beginning 2026-09-14T21:00:00Z through the audit time.
+
+Keep the historical failure documented because a future rollback to that old artifact could reintroduce it.
+
+## 11. Immediate takeover action
+
+The Tech Lead's first report must contain only:
+
+1. actual current main SHA;
+2. open PRs;
+3. confirmation MKT-001..MKT-052 are still present on current main;
+4. console source location (or explicit P0 recovery status);
+5. deployment/config source location;
+6. current READY set;
+7. Worker A/B/C assignments;
+8. blockers.
+
+Do not redesign the architecture and do not reopen completed Work Items.
+
+## 12. Final completion proof
+
+The end state must demonstrate:
+
+```
+Prospect
+ → Client
+ → Goal
+ → Strategy/Hypothesis
+ → Playbook
  → Deployment
  → Workflow
  → Task
+ → Human / AI / App
  → Execution
+ → Evidence
  → Outcome
+ → Revenue / Cost / Margin
+ → Decision
  → Learning
- → next decision/deployment
+ → next action / deployment
 ```
 
-AI remains a replaceable reasoning layer, not a system-of-record authority.
+The frontend is the human presentation layer over this chain. It is not another system of record.
