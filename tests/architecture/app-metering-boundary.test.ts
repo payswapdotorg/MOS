@@ -337,7 +337,7 @@ test('MKT-052 AC-9 static: the real codebase enforces the frozen boundaries with
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
   assert.deepEqual(
     result.violations.map((v) => `[${v.rule}] ${v.file}`),

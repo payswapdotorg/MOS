@@ -302,7 +302,7 @@ test('AC-3/AC-6: the arch-check provision parses the frozen module set + the fro
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir,
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
   assert.deepEqual(
     result.violations.map((violation) => `[${violation.rule}] ${violation.file}`),

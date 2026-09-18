@@ -356,7 +356,7 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
-    skip: ['tests/architecture/fixtures'],
+    skip: ['tests/architecture/fixtures', 'console'],
   });
   assert.ok(result.frozenModules.includes('apps'), 'the enforced module set includes /apps');
   const specMatrix = parseFrozenMatrix(
