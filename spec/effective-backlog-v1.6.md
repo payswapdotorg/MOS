@@ -137,3 +137,20 @@ Acceptance:
 3. commerce discovery → niche/product search → demand experiment → viable product → listing → orders → learning;
 4. platform-health anomaly → compliant adaptation;
 5. human-required blocker → notification → action → resume.
+
+## G. Human growth marketplace
+
+### MKT-076 — Human Growth Work Extensions
+Objective: extend the existing Human Agent and Job authorities with creator/UGC specialization metadata and growth-work Job descriptors.
+Dependencies: MKT-025, MKT-026, MKT-053, MKT-054.
+Acceptance: eligible humans can receive and accept governed growth Jobs; no second human/job authority; existing concurrency-safe offer semantics remain intact.
+
+### MKT-077 — UGC and Creator Offer Model
+Objective: support governed UGC creation, creator posting and creator-ad/authorization offers as experiment treatments.
+Dependencies: MKT-063, MKT-064, MKT-065, MKT-076.
+Acceptance: offer terms persist deliverables, compensation, disclosure, destination, usage rights, expiry and experiment/mission references; rights and destination-policy gates are enforced before publication.
+
+### MKT-078 — Human Amplification Optimization
+Objective: make authentic human work a measurable experiment arm alongside owned-account and automated strategies.
+Dependencies: MKT-054, MKT-067, MKT-076, MKT-077.
+Acceptance: allocate bounded human/automated treatments, measure outcomes, preserve attribution/evidence, learn cost and quality, and reallocate without creating fake engagement or bypassing platform controls.
