@@ -22,6 +22,11 @@ v1.5 module dependencies remain valid. v1.6 adds these bounded domains:
 /social-commerce-attribution → /cross-platform-distribution, /integrations, /metrics, /evidence, /growth-missions
 /notification-delivery → /notifications, /policies, /credentials
 
+## Optional human-growth domains
+
+/growth-human-work → /field-agents, /jobs, /growth-missions, /content-assets, /content-rights, /policies
+/human-growth-optimization → /growth-missions, /growth-operator, /jobs, /experiments, /metrics, /evidence, /learnings
+
 ## Boundary rules
 
 1. Social adapters are concrete provider implementations and may be imported only by the composition root.
@@ -34,6 +39,5 @@ v1.5 module dependencies remain valid. v1.6 adds these bounded domains:
 8. Commerce Discovery never writes directly to catalog/order tables; store mutations flow through Integrations.
 9. Notification Delivery delivers messages only; it does not become canonical task/action state.
 10. All new modules preserve Client/Workspace scope and fail closed before dependent traversal.
-
-/growth-human-work → /field-agents, /jobs, /growth-missions, /content-assets, /content-rights, /policies
-/human-growth-optimization → /growth-missions, /growth-operator, /jobs, /experiments, /metrics, /evidence, /learnings
+11. Optional human-growth domains may enrich experiments but may not sit on the dependency path required to start or continue a non-human mission.
+12. Human-growth availability, offer fill-rate and budget are runtime evidence/constraints, not platform authorities or mandatory prerequisites.
