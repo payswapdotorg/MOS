@@ -1,0 +1,88 @@
+{
+  "architectureVersion": "1.6",
+  "status": "FROZEN",
+  "supersedes": "1.5",
+  "product": "MOS",
+  "newCapabilities": [
+    "growth-missions",
+    "growth-operator",
+    "multi-platform-social-adapters",
+    "cross-platform-distribution",
+    "content-intelligence",
+    "web-research",
+    "content-rights",
+    "content-assets-and-transformations",
+    "platform-health",
+    "experiment-analysis",
+    "pluggable-notifications",
+    "product-intelligence",
+    "product-marketing",
+    "commerce-discovery",
+    "social-to-commerce-attribution",
+    "human-growth-marketplace",
+    "ugc-and-creator-offers",
+    "human-amplification-optimization"
+  ],
+  "mvpSocialPlatforms": [
+    "youtube",
+    "instagram",
+    "facebook-pages",
+    "tiktok",
+    "x"
+  ],
+  "missionObjectiveTypes": [
+    "audience_growth",
+    "creator_growth",
+    "product_marketing",
+    "acquisition",
+    "lead_generation",
+    "revenue",
+    "commerce_discovery",
+    "hybrid"
+  ],
+  "singularAuthorities": [
+    "client",
+    "workspace",
+    "goal",
+    "playbook",
+    "deployment",
+    "workflow",
+    "task",
+    "execution",
+    "evidence",
+    "experiment",
+    "learning",
+    "policy",
+    "credential",
+    "job",
+    "integration"
+  ],
+  "hardPublicationRules": {
+    "rightsUncertaintyFailsClosed": true,
+    "sourceLineageRequired": true,
+    "destinationPolicyGateRequired": true
+  },
+  "growthOperatorRules": {
+    "isSecondWorkflowEngine": false,
+    "isSecondExecutionEngine": false,
+    "persistentStateIsDurable": true,
+    "boundedExperimentsOnly": true,
+    "humanAmplificationIsOptional": true,
+    "zeroHumanBudgetIsSupported": true,
+    "noEligibleHumanIsNonBlocking": true
+  },
+  "commerceRules": {
+    "ordersRemainExternalAuthority": true,
+    "productRecommendationsRequireEvidence": true,
+    "attributionIsNotCausality": true
+  },
+  "humanGrowthRules": {
+    "usesExistingHumanAgentJobAuthority": true,
+    "authenticActivityOnly": true,
+    "fakeEngagementForbidden": true,
+    "compensationIsNotPaymentAuthority": true,
+    "explicitRightsAndDisclosureRequired": true,
+    "isOptionalAcceleration": true,
+    "coreAutonomyDoesNotDependOnHumanOffers": true
+  }
+}

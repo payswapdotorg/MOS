@@ -1,105 +1,90 @@
-# MOS Implementation State — v1.5
+# MOS Unified Implementation State — v1.5 + v1.6
 
 **Repository:** `payswapdotorg/MOS`  
-**Architecture:** v1.5 FROZEN  
-**Canonical main at reconciliation:** `2e071d0c313b5dc9fa634fc90ade894bcd2754f0`  
-**Open PRs at reconciliation:** none
+**Architecture:** v1.6 FROZEN  
+**Program:** v1.5 completion/verification + v1.6 Growth Autonomy  
+**Maximum active implementation workers:** 3  
+**Current state:** ARCHITECTURE / HANDOFF READY — IMPLEMENTATION EXECUTION NOT YET STARTED FROM THIS UNIFIED PROGRAM
 
-This file is a coordination ledger, not an architectural authority. Actual Git history, source, tests, PRs, Vercel state and objective verification evidence outrank stale entries.
+This file is the canonical implementation-state ledger for the combined delivery program. It is a coordination document, not an architectural authority.
 
-## Backend/platform completion
+## Current truth rule
 
-**MKT-001..MKT-052: ACCEPTED/MERGED**
+The v1.5 documents report MKT-001..MKT-052 as accepted/merged. The implementation program must still verify those claims against actual source, migrations, tests, Git history and runtime evidence before treating them as satisfied dependencies.
 
-The v1.5 roadmap is complete on `main`, including:
+Classify each item as VERIFIED, INCOMPLETE, BROKEN, BLOCKED or N/A with evidence. Only VERIFIED satisfies downstream dependencies.
 
-- Agency Operating Graph.
-- Decision Ledger.
-- Profit Intelligence.
-- Client Operating Memory.
-- AI Operator / Attention Queue.
-- Sales-to-Delivery Continuity.
-- App manifest/packaging.
-- App install/upgrade/rollback.
-- App SDK / Developer Portal.
-- App Marketplace / Trust / Certification.
-- Incumbent Capability App Program.
-- App Metering / Commercial Attribution.
-- MKT-040 deployment amendment for App/Extension capability validation.
+## v1.5 baseline
 
-The detailed implementation reports under `docs/implementation/` remain the evidence trail for those merged Work Items.
+The v1.5 architecture remains the required platform foundation, including:
 
-## Product-console state
+- core Client/Workspace isolation and authorities;
+- Goal / Strategy / Playbook / Deployment / Workflow / Task / Execution lifecycle;
+- Evidence / Metrics / Experiment / Learning;
+- Integrations / Credentials / Policies;
+- Human Agent / Job surfaces;
+- Agency Operating Graph;
+- Decision Ledger;
+- Profit Intelligence;
+- Client Operating Memory;
+- AI Operator / Attention Queue;
+- Sales-to-Delivery Continuity;
+- App manifest/install/upgrade/rollback/SDK/marketplace;
+- incumbent capability Apps and metering;
+- repository-owned console and reproducible deployment.
 
-The user-facing console is live as a Vercel project but its frontend source is not currently present in this repository.
+Do not rebuild these as second authorities while implementing v1.6.
 
-Verified Vercel state:
+## v1.6 outcome
 
-- Project: `mos-product`
-- Project id: `prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq`
-- Latest inspected production deployment: `dpl_Ggjek4trEkcAMa9WN2AB2DVwBSAA`
-- Deployment state: READY
-- Framework: Next.js
-- Source reported by Vercel: CLI
-- Production alias: `https://mos-product.vercel.app`
+The combined product must support:
 
-GitHub inspection found no console frontend source in `payswapdotorg/MOS`.
+A. **Creator growth:** a user declares a target, connects one or more social accounts, and MOS performs evidence-driven experiments until the target is achieved or an explicit terminal condition occurs.
 
-Therefore the **repository is backend/platform-complete but not yet product-source-complete**.
+B. **Product marketing:** a user supplies a product URL and optionally an authorized source repository/workspace; MOS builds a product/market model, chooses an evidence-backed platform/metric strategy and optimizes toward a declared business outcome.
 
-## P0 handoff gate
+C. **Commerce discovery:** a user can start without a niche/product; MOS researches markets, tests content/product combinations, identifies viable candidates, supports listing, drives social distribution and learns from real orders.
 
-Recover the original console source into MOS before declaring the product repository complete.
+D. **Human amplification as an optional treatment:** UGC, creator posting, creator-ad/authorization and human review can be used when eligible, accepted and funded, but the product must not require them for autonomous growth.
 
-The authoritative instructions are in:
+## Human-growth non-dependency rule
 
-`docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`
+A mission must remain valid when all of the following are true simultaneously:
 
-Do not reverse-engineer compiled Next.js bundles as the canonical frontend source.
+- human-growth budget = 0;
+- no eligible creator/field agent is available;
+- no human offer is accepted;
+- offers expire or are declined;
+- a human treatment is too expensive for the configured budget.
 
-## Product-console work backlog
+The Growth Operator must continue with other valid strategies, reallocate, pause, notify or terminate according to mission policy. It must not invent a successful human result.
 
-After source recovery:
+A genuinely mandatory human approval required by rights/policy/capability is a truthful `blocked_pending_human_action` state, not an implicit dependency on the optional human marketplace.
 
-- UI-001 console/source integration and reproducible package.
-- UI-002 calm responsive shell: Today / Clients / Work / Apps / Admin.
-- UI-003 Agency Today / Command Center.
-- UI-004 Client Operating Workspace and decision trace.
-- UI-005 Workflow/Execution/Deployment/Experiment/Learning journeys.
-- UI-006 Sales-to-Delivery, Human Work and App ecosystem journeys.
-- DEP-001 reproducible provider/environment contract.
-- DEP-002 staging/preview.
-- DEP-003 commercial production.
-- DEP-004 CI/CD, migrations, secrets, rollback.
-- DEP-005 observability, cost guards, backups/recovery.
-- UX-E2E final agency/client/human/sales/app/security/responsive proof.
+## Current v1.6 implementation state
 
-Use `docs/product/PRODUCT-CONSOLE-V1.5.md` as the implementation contract.
+- MKT-053..MKT-075: architecture defined; implementation must be scheduled through the unified plan.
+- MKT-076..MKT-078: optional human-amplification branch; implementation does not gate core autonomous mission completion.
+- v1.5 console source recovery remains a P0 gate for repository-owned UI work.
+- provider facts for YouTube, Instagram, Facebook Pages, TikTok and X must be revalidated in adapter-specific runbooks before acceptance.
 
-## Verification status
+## Canonical completion gates
 
-Production runtime verification:
+The combined program is complete only when:
 
-- An older deployment emitted `Cannot find package 'pg' imported from /var/task/mos-bundle/mos.mjs`.
-- No runtime errors were found in the inspected window beginning `2026-09-14T21:00:00Z`.
+1. required v1.5 items are objectively VERIFIED or explicitly N/A;
+2. MKT-053..MKT-075 are VERIFIED or explicitly N/A;
+3. the core autonomous loop works with zero human budget and no human offers;
+4. the five MVP social adapters have objective capability evidence;
+5. rights/provenance and cross-platform lineage are proven;
+6. product-marketing and commerce-discovery golden paths pass;
+7. platform-health anomaly handling is observable and compliant;
+8. repository-owned console journeys and security tests pass;
+9. preview/staging/production are reproducible from the repository;
+10. production health and recovery are verified.
 
-This historical runtime defect remains a rollback warning until the source-controlled deployment pipeline proves the corrected build reproducibly.
+MKT-076..MKT-078, when implemented, require their own acceptance evidence but are not completion prerequisites for autonomous mission execution.
 
-## Concurrency
+## Evidence standard
 
-Maximum active implementation workers: **3**.
-
-Do not fill slots just to increase parallelism. The source-recovery gate is intentionally first because all console changes must become repository-owned source changes.
-
-## Completion condition
-
-The product program is complete only when:
-
-1. MKT-001..MKT-052 remain verified on main.
-2. Console source is committed to MOS.
-3. Console build/test/deployment is reproducible from MOS.
-4. Today / Clients / Work / Apps / Admin journeys work.
-5. Owner/operator, client, human-agent, sales and app journeys pass.
-6. Client isolation and frontend-bypass security tests pass.
-7. Production health is verified from the repository-built deployment.
-8. Final handoff contains exact SHA, test commands/results, deployment identifiers and disclosed limitations.
+Never mark a Work Item complete because an agent says it is complete. Record exact commands, results, changed files, relevant deployment/runtime evidence and limitations.
