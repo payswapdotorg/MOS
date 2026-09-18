@@ -49,6 +49,11 @@ Expand MOS into a provider-independent autonomous growth system that can:
 - PostgreSQL remains authoritative for durable MOS state.
 - v1.5 remains frozen for existing behavior except the explicit v1.6 additions in this request.
 
+## Human growth marketplace
+
 17. Generalize the existing Human Agent/Job authorities into a Growth Human Marketplace. Growth missions may create governed human work for UGC creation, creator posts, creator-ad placements/authorizations, product trials and other authentic creator work.
 18. Add offer types and compensation terms for creator/UGC work without creating a second job, payment or order authority. Human work remains `/jobs`; settlement remains an external/composed capability.
 19. Human participation is an experiment arm alongside owned-account publishing and other automated strategies. The system may shift allocation based on measured outcomes while preserving authentic-human and platform-policy constraints.
+20. Human participation is optional acceleration, not a prerequisite for autonomous mission activation or continuation. Core Growth Missions MUST work when human budget is zero, no eligible creator is available, no offer is accepted, or offers expire/are declined.
+21. When human treatment is unavailable or unfunded, Growth Operator must continue with another valid treatment, reallocate, pause, notify or reach an explicit terminal state. Unavailability must not be represented as hidden failure or simulated success.
+22. A specific action may still require human approval because of a rights/policy/capability gate; that state must be represented explicitly as blocked pending human action and does not make the human marketplace a general mission dependency.
