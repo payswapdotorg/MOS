@@ -103,3 +103,28 @@ The user gets a direct action and a resume path; the system does not hide the bl
 ## 11. Product constraints
 
 The console must never promise that a target will be reached, imply an inferred restriction is a confirmed shadow ban, treat a viral source's performance as causal proof, show a rights-cleared badge without persisted evidence, bypass server authorization, or expose provider credentials.
+
+## 12. Human growth
+
+When automated distribution is not sufficient, the mission can add a human experiment arm.
+
+Examples:
+- UGC creator offer;
+- creator post offer;
+- creator-ad/authorization offer;
+- product trial/review offer;
+- human review or approval.
+
+The mission view shows:
+- brief and required deliverables;
+- eligible creator/human capabilities;
+- compensation terms;
+- disclosure requirements;
+- usage/redistribution rights;
+- target platforms;
+- expected and measured outcomes;
+- experiment treatment identity.
+
+Human work is authentic creator activity, not purchased engagement. MOS never commissions fake likes, comments, testimonials or other inauthentic signals.
+
+Human-created assets enter the same rights/provenance and transformation pipeline as other content.
