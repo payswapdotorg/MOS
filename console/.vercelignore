@@ -1,0 +1,18 @@
+# P0-SRC — keep the Vercel deployment upload lean: only what `next build`
+# and the traced runtime assets need. (.vercelignore REPLACES .gitignore for
+# the Vercel CLI upload, so the local secrets files are excluded HERE too.)
+# NOTE (differs from the source workspace): mos-build/ is NOT excluded — the
+# remote build runs `bun run build:bundle` (vercel.json buildCommand), which
+# compiles the repository's own ../src backend through mos-build/entry.ts;
+# and the generated mos-bundle/ artifacts are rebuilt before next build, so
+# the local generated copies are not uploaded either.
+.env
+.env.*
+.git
+node_modules
+.next
+.vercel
+mos-bundle/mos.mjs
+mos-bundle/migrations
+scripts
+*.log
