@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-09-18T20:13:13.812Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/auth/authorization-context"
+  },
+  "status": 200,
+  "body": {
+    "principal": {
+      "kind": "user",
+      "userId": "01a0a1a5-05ac-7945-afb0-5ace274c2718",
+      "email": "casey@northwind.demo",
+      "displayName": "Casey Okafor",
+      "status": "active"
+    },
+    "platformRoles": [],
+    "memberships": [
+      {
+        "membershipId": "01a0a1a9-9845-7054-812f-e195e81ac4b4",
+        "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+        "agencySlug": "northwind-growth-partners",
+        "agencyStatus": "active",
+        "role": "agency_owner",
+        "membershipStatus": "active"
+      }
+    ],
+    "resolvedAt": "2026-09-18T20:13:13.707Z"
+  }
+}

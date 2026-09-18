@@ -25,10 +25,15 @@ async function request(method, url, { token, body } = {}) {
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let response;
   try {
+    // Node >= 18 global fetch (the repo eslint config declares only
+    // process/console as globals for .mjs files, so no-undef needs a scoped
+    // waiver here — this is the ONLY stdlib transport in the harness).
+    // eslint-disable-next-line no-undef
     response = await fetch(url, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      // eslint-disable-next-line no-undef
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {

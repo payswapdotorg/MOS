@@ -42,6 +42,21 @@ node tests/e2e/run.mjs --api-only        # sets MOS_E2E_SKIP_UI=1
 node tests/e2e/run.mjs --throwaway-credentials-file=/tmp/mos-e2e-throwaway.json
 ```
 
+Constrained sandboxes (where a long-lived harness process is reaped) can run
+the battery as per-journey invocations sharing ONE run id and ONE throwaway:
+
+```bash
+node tests/e2e/run.mjs --journey=signup --throwaway-credentials-file=/tmp/t.json   # creates the tenant
+TH=$(cat /tmp/t.json)   # then for every remaining journey:
+MOS_E2E_RUN_ID=<same-run-id> MOS_E2E_THROWAWAY_EMAIL=… MOS_E2E_THROWAWAY_PASSWORD=… \
+  node tests/e2e/run.mjs --journey=owner        # (client, human-agent, app-lifecycle, …)
+```
+
+`run-summary.json` accumulates per-journey entries under the shared run id
+(each invocation replaces only its own journeys), and `ensureThrowawayClient`
+discovers the tenant's existing client instead of creating a second one, so
+chunked and single-process runs are equivalent.
+
 Exit code is `0` only when every selected journey passes. Each journey prints
 per-step `[PASS]/[FAIL]` lines; a failing step fails the journey loudly.
 

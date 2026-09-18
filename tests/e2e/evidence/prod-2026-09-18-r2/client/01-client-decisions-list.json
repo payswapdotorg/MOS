@@ -1,0 +1,135 @@
+{
+  "recordedAt": "2026-09-18T20:12:09.346Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/clients/01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7/decisions"
+  },
+  "status": 200,
+  "body": {
+    "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+    "decisions": [
+      {
+        "decisionId": "01a0a1a9-f1d7-7e21-bcaf-1796f5810361",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+        "objective": "Offer a flat fifteen percent discount for annual prepayment",
+        "context": "Finance asked whether annual prepay discounts would accelerate the Q4 close plan.",
+        "hypothesisSummary": "A flat 15% annual-prepay discount accelerates closes enough to offset the margin give.",
+        "evidenceRefs": [],
+        "expectedImpact": {
+          "summary": "Close rate expected to rise modestly.",
+          "direction": "increase",
+          "magnitude": "+5% close rate"
+        },
+        "expectedCost": "15% margin give on prepaid accounts.",
+        "alternatives": [
+          "Tiered prepay discounts (10%/12%/15%).",
+          "No discount; keep monthly terms."
+        ],
+        "proposer": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "role": "agency_owner"
+        },
+        "disposition": "rejected",
+        "dispositionAt": "2026-09-14T20:44:24.671Z",
+        "idempotencyKey": "dep002-decision-3",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-f1c4-704a-b4c6-6db7a54ab6e2",
+          "recordedAt": "2026-09-14T20:44:24.407Z"
+        }
+      },
+      {
+        "decisionId": "01a0a1a9-f0e1-7b7f-a035-f429a12ec94e",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+        "objective": "Shift thirty percent of Atlas-sourced retargeting spend into localized industrial search",
+        "context": "Retargeting CPMs climbed 18% quarter-over-quarter while industrial-search conversion held steady.",
+        "hypothesisSummary": "Localized industrial search converts Helio-sourced traffic at a lower effective CAC than retargeting at the margin.",
+        "evidenceRefs": [
+          "01a0a1a9-cdf6-73ef-bc1a-e4fa75cb7030"
+        ],
+        "expectedImpact": {
+          "summary": "Blended CAC expected to fall with unchanged lead volume.",
+          "direction": "decrease",
+          "magnitude": "CAC −8% at constant lead volume"
+        },
+        "uncertainty": {
+          "kind": "interval",
+          "lower": 0.03,
+          "upper": 0.13,
+          "level": 0.9
+        },
+        "expectedCost": "One-time creative localisation for three regions.",
+        "alternatives": [
+          "Hold the current retargeting mix.",
+          "Shift fifty percent for one month as a probe."
+        ],
+        "proposer": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "role": "agency_owner"
+        },
+        "disposition": "proposed",
+        "idempotencyKey": "dep002-decision-2",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-f0b2-747d-a85f-c41759303689",
+          "recordedAt": "2026-09-14T20:44:24.161Z"
+        }
+      },
+      {
+        "decisionId": "01a0a1a9-eb9d-70a5-8ec2-6887b7292d6e",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+        "workspaceId": "01a0a1a9-a65d-76f8-be80-e163ef1112ae",
+        "objective": "Roll out the five-touch onboarding sequence to all new Helio accounts",
+        "context": "Q3 activation sat at 39%; the warehouse export and the onboarding experiment both point the same way.",
+        "hypothesisSummary": "A five-touch onboarding email sequence increases new-account activation versus the three-touch sequence.",
+        "evidenceRefs": [
+          "01a0a1a9-cdf6-73ef-bc1a-e4fa75cb7030",
+          "01a0a1a9-cbfe-7ce3-997c-c4426f31fe2a"
+        ],
+        "expectedImpact": {
+          "summary": "New-account activation is expected to rise by roughly two points.",
+          "direction": "increase",
+          "magnitude": "+2.1pp activation (42% vs 39.9%)"
+        },
+        "uncertainty": {
+          "kind": "interval",
+          "lower": 0.012,
+          "upper": 0.041,
+          "level": 0.95
+        },
+        "expectedCost": "One additional email send per new account (~$0.003/account).",
+        "alternatives": [
+          "Keep the three-touch sequence (status quo).",
+          "Roll out only to standard-tier accounts first."
+        ],
+        "proposer": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "role": "agency_owner"
+        },
+        "disposition": "accepted",
+        "dispositionAt": "2026-09-14T20:44:23.114Z",
+        "observedOutcome": {
+          "summary": "Activation rose to 42%, in line with the expected interval.",
+          "asExpected": true,
+          "notes": "Delivery was stable; no unsubscribe spike."
+        },
+        "executionRef": "01a0a1a9-db22-7293-96cb-15227cf86f8d",
+        "learningRef": "01a0a1a9-d004-7db1-8886-d65a6f4c638e",
+        "outcomeAt": "2026-09-14T20:44:23.640Z",
+        "idempotencyKey": "dep002-decision-1",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-eb7d-75ce-909b-f00d5d668d30",
+          "recordedAt": "2026-09-14T20:44:22.813Z"
+        }
+      }
+    ]
+  }
+}

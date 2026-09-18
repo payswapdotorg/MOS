@@ -60,6 +60,12 @@ export async function loginThrowaway(shared, api) {
 /**
  * Ensure the throwaway tenant has a client (created through the real contract)
  * and return { clientId, created }.
+ *
+ * Cross-process safe: when a journey runs standalone (`--journey=…`) with an
+ * env-provided throwaway, the shared in-memory clientId is gone — so an
+ * existing client of the throwaway agency is discovered and reused BEFORE
+ * creating a new one (a second client would break the single-client UI
+ * auto-selection in the Apps screen and duplicate tenant state).
  */
 export async function ensureThrowawayClient(shared, api, evidence, steps, clientName) {
   const { token, agencyId } = await loginThrowaway(shared, api);
@@ -69,6 +75,15 @@ export async function ensureThrowawayClient(shared, api, evidence, steps, client
       await steps.info(`throwaway client reused from earlier journey (${shared.throwaway.clientId})`);
       return { clientId: shared.throwaway.clientId, created: false, token, agencyId };
     }
+  }
+  const existing = await api.get(`agencies/${agencyId}/clients`, { token });
+  const firstExisting = existing.body?.clients?.[0];
+  if (firstExisting !== undefined) {
+    shared.throwaway.clientId = firstExisting.clientId;
+    await steps.info(
+      `throwaway client discovered on the tenant (${firstExisting.name}) — reusing instead of creating a second one`,
+    );
+    return { clientId: firstExisting.clientId, created: false, token, agencyId };
   }
   const create = await api.post(`agencies/${agencyId}/clients`, { token, body: { name: clientName } });
   evidence.response('throwaway-create-client', create);

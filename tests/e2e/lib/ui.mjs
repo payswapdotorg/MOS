@@ -83,4 +83,29 @@ async function uiHealth(browser) {
   return { pageErrors: errors, console: consoleText };
 }
 
-export { openConsole, uiSignIn, uiSignOut, uiCreateAccount, uiHealth };
+/**
+ * Poll the FULL a11y snapshot until predicate(text) passes (bounded grace for
+ * view-transition/load races: a single networkidle wait can snapshot the
+ * pre-navigation DOM because client-side navigation + query fetches land
+ * slightly after the click). Returns the LAST snapshot either way — callers
+ * keep asserting strictly on the returned text. When `evidence` is given the
+ * final snapshot is recorded as a text artifact (diagnosing load stalls).
+ */
+async function waitForSnapshot(
+  browser,
+  predicate,
+  { attempts = 12, intervalMs = 1000, evidence = null, name = 'wait-final-snapshot' } = {},
+) {
+  let last = '';
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    last = await browser.snapshot({});
+    if (predicate(last)) return last;
+    await browser.wait(intervalMs);
+  }
+  if (evidence !== null) {
+    evidence.text(name, last);
+  }
+  return last;
+}
+
+export { openConsole, uiSignIn, uiSignOut, uiCreateAccount, uiHealth, waitForSnapshot };

@@ -1,0 +1,153 @@
+- complementary
+  - paragraph
+    - StaticText "MOS"
+  - paragraph
+    - StaticText "Marketing Operating System"
+  - button "Switch agency" [expanded=false, ref=e4]
+    - StaticText "AGENCY"
+    - StaticText "E2E Verification 7143554841"
+  - navigation "Primary" [ref=e5]
+    - button "Command Center" [ref=e9]
+      - StaticText "Command Center"
+    - button "Clients" [ref=e10]
+      - StaticText "Clients"
+    - button "Attention" [ref=e11]
+      - StaticText "Attention"
+    - button "Profit Intelligence" [ref=e12]
+      - StaticText "Profit Intelligence"
+    - button "Human Work" [ref=e13]
+      - StaticText "Human Work"
+    - button "Apps" [ref=e14]
+      - StaticText "Apps"
+    - button "Administration" [ref=e15]
+      - StaticText "Administration"
+  - paragraph
+    - StaticText "Presentation layer over the live MOS API. All authority state is server-held; every mutation flows through existing MOS contracts."
+- banner
+  - button "Account menu" [expanded=false, ref=e6]
+    - StaticText "[REDACTED]"
+- main
+  - sectionheader
+    - heading "Command Center" [level=1, ref=e16]
+    - paragraph
+      - StaticText "Agency 01a0b61f-338a-7181-be8e-d6e1058c72e9 · 1 live client · generated Sep 18, 2026, 8:13 PM · source: GET /api/reporting/command-center/:agencyId"
+  - StaticText "Clients"
+  - StaticText "1"
+  - button "Open portfolio" [ref=e17]
+  - StaticText "Goals (all states)"
+  - StaticText "0"
+  - paragraph
+    - StaticText "No goals recorded."
+  - StaticText "Workflow instances"
+  - StaticText "0"
+  - paragraph
+    - StaticText "No instances recorded."
+  - StaticText "Blocked work (attention)"
+  - StaticText "0"
+  - button "Open attention queue" [ref=e18]
+  - StaticText "Attention — top ranked items"
+  - generic
+    - StaticText "Source: GET /api/ai-operator/:agencyId/attention-queue (rank ao-rank-v1)"
+  - status
+    - paragraph
+      - StaticText "The AI Operator queue is empty"
+    - paragraph
+      - StaticText "No attention items were derived for this agency."
+  - StaticText "Portfolio goals"
+  - generic
+    - StaticText "Basis: command-center aggregation"
+  - status
+    - paragraph
+      - StaticText "No goals yet"
+    - paragraph
+      - StaticText "Goals appear here once they are created for the agency's clients."
+  - paragraph
+    - StaticText "PER CLIENT"
+  - button "01a0b61f-4a7… No entries recorded." [ref=e7]
+    - StaticText "01a0b61f-4a7…"
+    - paragraph
+      - StaticText "No entries recorded."
+  - StaticText "Workflow state"
+  - StaticText "Instance counts by status across the agency's workspaces."
+  - status
+    - paragraph
+      - StaticText "No workflows yet"
+    - paragraph
+      - StaticText "Workflow containers appear once created in a workspace."
+  - StaticText "Evidence quality"
+  - generic
+    - StaticText "Read window: evidence-authority-bounded-newest-first-listing-per-client"
+  - paragraph
+    - StaticText "TOTAL RECORDS"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "LOW-GRADE RECORDS"
+  - paragraph
+    - StaticText "0"
+  - status
+    - paragraph
+      - StaticText "No evidence records yet"
+    - paragraph
+      - StaticText "Evidence appears once recorded for the agency's clients."
+  - StaticText "Risks"
+  - generic
+    - StaticText "Basis: declared_goal_risk_constraints_and_operational_and_evidence_quality_signals"
+  - status
+    - paragraph
+      - StaticText "No derived risks"
+    - paragraph
+      - StaticText "Risk items are derived from goal constraints and execution state."
+  - StaticText "Pending approvals"
+  - StaticText "Experiments awaiting decision and gated workflow transitions."
+  - status
+    - paragraph
+      - StaticText "Nothing awaiting approval"
+    - paragraph
+      - StaticText "Approvals appear when experiments or workflow instances need a decision."
+  - StaticText "Margin & scope signals"
+  - generic
+    - StaticText "Source: GET /api/profit-intelligence/:agencyId · calculation pi-calc-v1"
+  - paragraph
+    - StaticText "REALIZED MARGIN"
+  - paragraph
+    - StaticText "USD 0"
+  - paragraph
+    - StaticText "observed · pi-calc-v1 · assumptions: revenueMetricNames, latestObservationWinsPerMetricIdentity, deterministicExecutionCostUsd, extensionExecutionCostUsd, humanDeliveredJobCostUsd, costingCurrency, telemetryCostCurrency, humanExecutionCostAttribution"
+  - paragraph
+    - StaticText "ESTIMATED MARGIN"
+  - paragraph
+    - StaticText "USD 0"
+  - paragraph
+    - StaticText "estimated · pi-calc-v1 · assumptions: revenueMetricNames, costingCurrency, humanHourlyRateUsd, capacityWindowRecurrence"
+  - paragraph
+    - StaticText "TOTAL DELIVERY COST"
+  - paragraph
+    - StaticText "USD 0"
+  - paragraph
+    - StaticText "observed · pi-calc-v1 · assumptions: deterministicExecutionCostUsd, extensionExecutionCostUsd, humanDeliveredJobCostUsd, costingCurrency, telemetryCostCurrency, humanExecutionCostAttribution"
+  - paragraph
+    - StaticText "SCOPE LEAKAGE INDICATORS"
+  - StaticText "executions-outside-deployed-envelope"
+  - StaticText "0"
+  - paragraph
+    - StaticText "an execution counts when its task-linked workflow instance pins a definition that NO ACTIVE deployment of the workspace declares (delivery outside the deployed envelope; external-request executions are out of rule)"
+  - StaticText "none"
+  - StaticText "work-without-active-goal"
+  - StaticText "0"
+  - paragraph
+    - StaticText "a non-terminal workflow instance counts when NO ACTIVE goal of the client covers its workspace (client-wide goals cover every workspace; workspace-scoped goals cover exactly their own)"
+  - StaticText "none"
+  - StaticText "active-goals-without-delivery"
+  - StaticText "0"
+  - paragraph
+    - StaticText "an ACTIVE goal counts when zero workflow instances exist in its scope (its own workspace, or any workspace of the client when client-wide)"
+  - StaticText "none"
+  - button "Open Profit Intelligence" [ref=e8]
+- contentinfo
+  - paragraph
+    - StaticText "MOS — Marketing Operating System · single-route presentation app · every datum comes from the MOS API, honestly rendered."
+- region "Notifications alt+T" [ref=e2]
+- region "Notifications (F8)" [ref=e3]
+  - list
+- alert

@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:12:51.630Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/workspaces/01a0b626-78eb-746f-9592-82f8758c1eb4/app-installs"
+  },
+  "status": 409,
+  "body": {
+    "error": {
+      "code": "CONFLICT",
+      "message": "app mos-portal is already installed in this workspace (current selection 1.0.0; new versions arrive by upgrade, prior versions by rollback)",
+      "retryable": true,
+      "retrySafe": true
+    }
+  }
+}

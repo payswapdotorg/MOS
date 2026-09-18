@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-09-18T20:17:12.883Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/auth/logout"
+  },
+  "status": 200,
+  "body": {
+    "revoked": true
+  }
+}

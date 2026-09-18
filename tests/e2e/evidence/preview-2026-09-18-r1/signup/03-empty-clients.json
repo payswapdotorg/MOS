@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-09-18T20:14:59.357Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/agencies/01a0b628-5b9e-7f6f-b37e-8b998359a2da/clients"
+  },
+  "status": 200,
+  "body": {
+    "agencyId": "01a0b628-5b9e-7f6f-b37e-8b998359a2da",
+    "clients": []
+  }
+}

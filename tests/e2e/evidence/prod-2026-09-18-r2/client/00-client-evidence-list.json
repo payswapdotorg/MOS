@@ -1,0 +1,80 @@
+{
+  "recordedAt": "2026-09-18T20:12:09.021Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/clients/01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7/evidence"
+  },
+  "status": 200,
+  "body": {
+    "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+    "evidence": [
+      {
+        "evidenceId": "01a0a1a9-cdf6-73ef-bc1a-e4fa75cb7030",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "class": "source_fact",
+        "source": {
+          "system": "internal-warehouse",
+          "ref": "warehouse/activation-export"
+        },
+        "observedAt": "2026-09-14T08:00:00.000Z",
+        "content": {
+          "unit": "ratio",
+          "value": 0.42,
+          "metric": "activation_rate"
+        },
+        "quality": "C",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-cde4-7778-9b28-f4671d2012f7",
+          "recordedAt": "2026-09-14T20:44:15.222Z"
+        }
+      },
+      {
+        "evidenceId": "01a0a1a9-cd01-7aa1-a237-b0651483a01f",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "class": "observation",
+        "source": {
+          "system": "meta-ads",
+          "ref": "report/2026-09-job-outcome"
+        },
+        "observedAt": "2026-09-16T14:00:00.000Z",
+        "content": {
+          "unit": "count",
+          "value": 1,
+          "metric": "visit_outcome"
+        },
+        "quality": "B",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-ccec-7d20-8de3-ba948cd0cc26",
+          "recordedAt": "2026-09-14T20:44:14.977Z"
+        }
+      },
+      {
+        "evidenceId": "01a0a1a9-cbfe-7ce3-997c-c4426f31fe2a",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "class": "observation",
+        "source": {
+          "system": "meta-ads",
+          "ref": "report/2026-09-revenue"
+        },
+        "observedAt": "2026-09-15T10:30:00.000Z",
+        "content": {
+          "unit": "USD",
+          "value": 5000,
+          "metric": "revenue"
+        },
+        "quality": "B",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-cbe8-74cc-9fb5-676cd91d6e57",
+          "recordedAt": "2026-09-14T20:44:14.718Z"
+        }
+      }
+    ]
+  }
+}

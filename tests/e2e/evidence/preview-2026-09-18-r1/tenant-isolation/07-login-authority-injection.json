@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-09-18T20:17:06.262Z",
+  "note": "roles is a forbidden authority field",
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/auth/login"
+  },
+  "status": 422,
+  "body": {
+    "error": {
+      "code": "INVALID_REQUEST",
+      "message": "Request body failed validation",
+      "retryable": false,
+      "retrySafe": true,
+      "details": [
+        "roles: forbidden authority field; this value is derived server-side and must not be supplied",
+        "roles: unknown field"
+      ]
+    }
+  }
+}

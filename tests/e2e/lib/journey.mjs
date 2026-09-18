@@ -20,7 +20,7 @@ export function journey(name, { description, checklist, requires = [] } = {}) {
   return { name, description, checklist, requires, run: null };
 }
 
-export function createRunner(name) {
+export function createRunner(_name) {
   const steps = [];
   const state = {
     step(name_, expect, actual, pass, note) {
@@ -63,6 +63,27 @@ export function createRunner(name) {
       }
       return value;
     },
+    /**
+     * Record a pass/fail WITHOUT aborting the journey — for independent
+     * per-item sweeps (e.g. every workspace tab) where recording each item's
+     * result is worth more than stopping at the first failure. The journey
+     * still FAILS overall when any soft step failed (see outcome()).
+     */
+    async checkSoft(name, expectText, fn) {
+      let actual;
+      let pass;
+      let note = null;
+      let evidenceFiles = [];
+      try {
+        const value = await fn();
+        ({ actual, pass, note, evidence: evidenceFiles } = value);
+        if (!Array.isArray(evidenceFiles)) evidenceFiles = [];
+      } catch (error) {
+        ({ actual, pass, note } = { actual: `threw: ${String(error.message ?? error)}`, pass: false, note: null });
+      }
+      steps.push({ name, expect: expectText, actual, pass, note, evidence: evidenceFiles });
+      return { actual, pass, note, evidence: evidenceFiles };
+    },
     info(name, note) {
       steps.push({ name, expect: 'recorded', actual: 'recorded', pass: true, note, evidence: [] });
     },
@@ -85,8 +106,15 @@ export function outcome(journeyName, steps, error) {
   const failed = steps.filter((s) => !s.pass);
   return {
     journey: journeyName,
-    status: error === null ? 'PASS' : 'FAIL',
-    failedStep: error instanceof StepError ? error.message : error === null ? null : String(error.message ?? error),
+    status: error === null && failed.length === 0 ? 'PASS' : 'FAIL',
+    failedStep:
+      error instanceof StepError
+        ? error.message
+        : error === null
+          ? failed.length > 0
+            ? failed.map((s) => s.name).join('; ')
+            : null
+          : String(error.message ?? error),
     passedSteps: steps.filter((s) => s.pass).length,
     failedSteps: failed.length,
     steps,

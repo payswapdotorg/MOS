@@ -63,12 +63,14 @@ export function browserSession(sessionName, timeoutMs = 60000) {
       return result.stdout ?? '';
     },
     /**
-     * Default is the FULL compact a11y tree: interactive-only snapshots
-     * ("-i") prune static text (card titles, ledger rows, badges), which
-     * content assertions need. Pass { interactive: true } for elements+refs
-     * only (interaction planning).
+     * Default is the FULL a11y tree (NOT compact): in agent-browser 0.38.x the
+     * compact form ("-c") strips StaticText content (card titles, ledger rows,
+     * offer titles), which content assertions need — verified live against the
+     * deployed console. Pass { compact: true } only for interaction planning
+     * where role/ref names suffice. { interactive: true } returns elements+refs
+     * only.
      */
-    snapshot({ interactive = false, compact = true } = {}) {
+    snapshot({ interactive = false, compact = false } = {}) {
       const args = ['snapshot'];
       if (interactive) args.push('-i');
       if (compact) args.push('-c');

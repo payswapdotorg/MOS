@@ -13,7 +13,7 @@
 
 import { createRunner, outcome } from '../lib/journey.mjs';
 import { firstAgencyId } from '../lib/http.mjs';
-import { uiSignIn, uiSignOut, uiHealth } from '../lib/ui.mjs';
+import { uiSignIn, uiSignOut, uiHealth, waitForSnapshot } from '../lib/ui.mjs';
 import { browserSession, parseEvalResult } from '../lib/browser.mjs';
 
 export const name = 'owner';
@@ -104,9 +104,12 @@ async function apiChecks(steps, api, evidence, token, agencyId, label) {
 }
 
 async function workspaceTabSweep(steps, browser, evidence) {
-  // The workspace tablist is unnamed; Radix concatenates the tab names into
-  // the tablist's accessible name (verified live: tablist "OverviewGoals…").
-  // Assert on the individual tab roles — the stable, contract-shaped signal.
+  // The workspace tablist is UNNAMED in the deployed build's a11y tree
+  // (agent-browser 0.38.x renders `- tablist [ref=…]` with no accessible
+  // name), so the stable contract-shaped signal is the individual tab roles
+  // themselves: `tab "Overview"` … `tab "Memory"`.
+  // Each tab is checked SOFT (recorded, non-aborting): a render failure on
+  // one tab must not hide the render results of the remaining tabs.
   const tabsList = await browser.snapshot({});
   await steps.checkFn(
     'workspace renders all nine tabs',
@@ -123,7 +126,7 @@ async function workspaceTabSweep(steps, browser, evidence) {
     const panelError = /An error occurred|Application error|Unhandled Runtime Error/i.test(panel);
     const shotPath = evidence.screenshotPath(`workspace-tab-${tab.toLowerCase()}`);
     await browser.screenshot(shotPath);
-    await steps.checkFn(
+    await steps.checkSoft(
       `workspace tab ${tab} renders real content`,
       'tab panel renders without an error boundary',
       async () => ({
@@ -193,12 +196,14 @@ export async function run(ctx) {
 
     // --- 3. transport proof: the console sends only Bearer, no authority -----
     await browser.eval(FETCH_PATCH);
-    // Navigate to surfaces NOT yet mounted (react-query staleTime is 15s, so
-    // re-mounting an already-loaded surface may serve cache and fetch
-    // nothing): Clients and Profit Intelligence guarantee fresh API calls.
+    // Navigate to surfaces Today has NOT already mounted. The Today/command
+    // center view itself mounts useCommandCenter + useAttentionQueue +
+    // useProfitAgency (verified in console/src/components/mos/command-center.tsx),
+    // so re-visiting Attention/Profit serves the react-query cache and records
+    // nothing. Clients + Apps guarantee fresh /api/ traffic on every run.
     await browser.findByRole('button', 'click', { name: 'Clients' });
     await browser.waitForLoad();
-    await browser.findByRole('button', 'click', { name: 'Profit Intelligence' });
+    await browser.findByRole('button', 'click', { name: 'Apps' });
     await browser.waitForLoad();
     const requestsJson = await browser.eval('JSON.stringify(window.__mosE2eRequests || [])');
     const apiRequests = parseEvalResult(requestsJson);
@@ -240,18 +245,27 @@ export async function run(ctx) {
     // Click the first "Open workspace" button (Helio Robotics is first in the list).
     await browser.findByRole('button', 'click', { name: 'Open workspace' });
     await browser.waitForLoad();
+    // Bounded poll for the workspace signal (view-transition race guard); the
+    // final tree is recorded as evidence either way (load-stall diagnosis).
+    const ws = await waitForSnapshot(
+      browser,
+      (text) => /tab "Overview"/.test(text) && text.includes('Helio Robotics'),
+      { evidence, name: '04-workspace-final-tree' },
+    );
     const wsShot = evidence.screenshotPath('04-owner-workspace-open');
     await browser.screenshot(wsShot);
     await steps.checkFn(
       'client workspace opens',
       'heading = client name, tab strip present',
       async () => {
-        const ws = await browser.snapshot({});
-        const pass =
-          ws.includes('Helio Robotics') &&
-          /tablist "Overview/.test(ws) &&
-          /tab "Overview"/.test(ws);
-        return { actual: pass ? 'workspace open' : `snapshot head: ${ws.slice(0, 160)}`, pass, evidence: [wsShot] };
+        const hasName = ws.includes('Helio Robotics');
+        const hasOverviewTab = /tab "Overview"/.test(ws);
+        const pass = hasName && hasOverviewTab;
+        return {
+          actual: pass ? 'workspace open' : `clientName=${hasName} overviewTab=${hasOverviewTab}; snapshot head: ${ws.slice(0, 120)}`,
+          pass,
+          evidence: [wsShot],
+        };
       },
     );
     await workspaceTabSweep(steps, browser, evidence);

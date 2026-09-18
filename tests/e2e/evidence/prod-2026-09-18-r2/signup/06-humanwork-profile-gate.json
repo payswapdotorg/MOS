@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:04:56.644Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/jobs/queue"
+  },
+  "status": 403,
+  "body": {
+    "error": {
+      "code": "FORBIDDEN",
+      "message": "The work queue requires an active user identity with a Human Agent profile",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

@@ -52,7 +52,10 @@ async function checkViewport(steps, browser, env, evidence, label) {
     },
   );
   const loginOverflow = await measureOverflow(browser);
-  await steps.checkFn(
+  // SOFT: an overflow catastrophe is a PRODUCT finding (e.g. the demo
+  // quick-login buttons' whitespace-nowrap defeating truncation) — it must
+  // fail the journey without hiding the remaining mobile/desktop checks.
+  await steps.checkSoft(
     `${label.name}: login screen has no horizontal overflow catastrophe`,
     `overflow ≤ ${OVERFLOW_TOLERANCE_PX}px`,
     async () => ({
@@ -89,7 +92,8 @@ async function checkViewport(steps, browser, env, evidence, label) {
     },
   );
   const ccOverflow = await measureOverflow(browser);
-  await steps.checkFn(
+  // SOFT: same reasoning as the login overflow check above.
+  await steps.checkSoft(
     `${label.name}: command center has no horizontal overflow catastrophe`,
     `overflow ≤ ${OVERFLOW_TOLERANCE_PX}px`,
     async () => ({

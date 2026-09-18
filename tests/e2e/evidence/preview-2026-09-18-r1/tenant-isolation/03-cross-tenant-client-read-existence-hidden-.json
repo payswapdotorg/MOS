@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:17:04.161Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/clients/01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7"
+  },
+  "status": 404,
+  "body": {
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "client not found: 01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

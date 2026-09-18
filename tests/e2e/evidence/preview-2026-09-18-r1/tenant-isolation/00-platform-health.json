@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-09-18T20:17:01.307Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/platform/health"
+  },
+  "status": 200,
+  "body": {
+    "status": "ok",
+    "service": "marketingos-platform-api",
+    "env": "prod",
+    "time": "2026-09-18T20:17:01.186Z"
+  }
+}

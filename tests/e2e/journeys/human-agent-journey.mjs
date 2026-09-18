@@ -21,7 +21,7 @@
  */
 
 import { createRunner, outcome } from '../lib/journey.mjs';
-import { uiSignIn, uiHealth } from '../lib/ui.mjs';
+import { uiSignIn, uiHealth, waitForSnapshot } from '../lib/ui.mjs';
 import { browserSession } from '../lib/browser.mjs';
 
 export const name = 'human-agent';
@@ -104,8 +104,11 @@ export async function run(ctx) {
         pass: unauthClaim.status === 401 && unauthClaim.body?.error?.code === 'UNAUTHORIZED',
       }),
     );
-    if (shared.throwaway.signedUp) {
+    if (shared.throwaway.signedUp || !shared.throwaway.generated) {
       // A REAL non-agent identity proving the profile gate (fresh session).
+      // Usable when an earlier journey in this process signed the throwaway
+      // up OR when it was provided via environment (MOS_E2E_THROWAWAY_*) —
+      // standalone journey runs must not silently lose this probe.
       const { loginThrowaway } = await import('../lib/throwaway.mjs');
       const session = await loginThrowaway(shared, api);
       const nonAgentClaim = await api.post(`jobs/queue/offers/${offer.offerId}/accept`, {
@@ -122,7 +125,7 @@ export async function run(ctx) {
         }),
       );
     } else {
-      await steps.info('non-agent claim probe skipped (throwaway tenant not yet created in this run)');
+      await steps.info('non-agent claim probe skipped (no throwaway identity available in this run — run the signup journey first or provide MOS_E2E_THROWAWAY_*)');
     }
     const foreignClaim = await api.post('jobs/queue/offers/00000000-0000-0000-0000-000000000000/accept', {
       token: agent.token,
@@ -143,6 +146,8 @@ export async function run(ctx) {
     await uiSignIn(browser, env.baseUrl, { email: env.agent.email, password: env.agent.password });
     await browser.findByRole('button', 'click', { name: 'Human Work' });
     await browser.waitForLoad();
+    // Bounded poll: the claim buttons render only once the queue loaded.
+    await waitForSnapshot(browser, (text) => /button "Accept"/.test(text) || /button "Decline"/.test(text));
     await browser.wait(800);
     const queueUi = await browser.snapshot({});
     const queueShot = evidence.screenshotPath('06-human-work-queue-formatted');
@@ -211,8 +216,17 @@ export async function run(ctx) {
         async () => {
           const openAfter = (after.body?.offers ?? []).length;
           if (action === 'accept') {
+            // Queue activeJobs entries are { job, obligations, visits } — the
+            // descriptor (jobId/status) lives under .job (verified live: the
+            // accepted job appears with job.status === 'accepted').
             const active = after.body?.activeJobs ?? [];
-            const claimed = active.some((job) => job.jobId === offer.job.jobId || job.status === 'accepted');
+            const claimed = active.some(
+              (entry) =>
+                entry?.job?.jobId === offer.job.jobId ||
+                entry?.job?.status === 'accepted' ||
+                entry?.jobId === offer.job.jobId ||
+                entry?.status === 'accepted',
+            );
             return { actual: `open=${openAfter} activeJobs=${active.length} claimed=${claimed}`, pass: openAfter === 0 && claimed };
           }
           return { actual: `open=${openAfter}`, pass: openAfter === 0 };

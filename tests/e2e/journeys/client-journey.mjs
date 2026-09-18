@@ -13,7 +13,7 @@
  */
 
 import { createRunner, outcome } from '../lib/journey.mjs';
-import { uiSignIn, uiHealth } from '../lib/ui.mjs';
+import { uiSignIn, uiHealth, waitForSnapshot } from '../lib/ui.mjs';
 import { browserSession } from '../lib/browser.mjs';
 
 export const name = 'client';
@@ -134,6 +134,8 @@ export async function run(ctx) {
     await browser.waitForLoad();
     await browser.findByRole('button', 'click', { name: 'Open workspace' });
     await browser.waitForLoad();
+    // Bounded poll for the workspace tab strip (view-transition race guard).
+    await waitForSnapshot(browser, (text) => /tab "Decisions"/.test(text) && /tab "Memory"/.test(text));
 
     for (const tab of ['Evidence', 'Decisions', 'Learning', 'Memory']) {
       await browser.findByRole('tab', 'click', { name: tab });
@@ -142,7 +144,10 @@ export async function run(ctx) {
       const tabShot = evidence.screenshotPath(`06-workspace-tab-${tab.toLowerCase()}`);
       await browser.screenshot(tabShot);
       const errorBoundary = /An error occurred|Application error|Unhandled Runtime Error/i.test(panel);
-      await steps.checkFn(
+      // SOFT check: a formatting failure on one intelligence tab must not
+      // hide the render results of the remaining tabs (the journey still
+      // fails overall when any tab fails — see outcome()).
+      await steps.checkSoft(
         `UI: ${tab} tab renders formatted real data (no raw JSON, no error boundary)`,
         'content renders; no <pre> dump in main',
         async () => {

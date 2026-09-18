@@ -19,13 +19,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { resolveEnv, describeEnv } from './lib/env.mjs';
 import { apiClient } from './lib/http.mjs';
 import { evidenceFor, EVIDENCE_ROOT } from './lib/evidence.mjs';
 import { redact } from './lib/evidence.mjs';
-
-const E2E_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 
 const JOURNEYS = [
   { module: './journeys/signup-journey.mjs', needs: [] },
@@ -193,10 +190,32 @@ async function main() {
   };
   const summaryPath = path.join(EVIDENCE_ROOT, env.runId, 'run-summary.json');
   fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
-  fs.writeFileSync(summaryPath, `${JSON.stringify(redact(summary), null, 2)}\n`);
+  // Merge with any existing summary for the SAME run id: journeys may be run
+  // as separate invocations sharing one run id (e.g. per-journey foreground
+  // chunks on constrained sandboxes) — each invocation replaces its own
+  // journeys' entries and keeps the others, so the final file is the complete
+  // record of every journey executed under the run id.
+  let merged = summary;
+  if (fs.existsSync(summaryPath)) {
+    try {
+      const previous = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+      if (previous !== null && typeof previous === 'object' && Array.isArray(previous.journeys)) {
+        const byName = new Map(previous.journeys.map((journey) => [journey.journey, journey]));
+        for (const journey of summary.journeys) byName.set(journey.journey, journey);
+        merged = {
+          ...summary,
+          startedAt: previous.startedAt ?? summary.startedAt,
+          journeys: [...byName.values()],
+        };
+      }
+    } catch {
+      // A corrupt/unreadable previous summary is replaced wholesale.
+    }
+  }
+  fs.writeFileSync(summaryPath, `${JSON.stringify(redact(merged), null, 2)}\n`);
 
   banner('run summary');
-  for (const journey of summary.journeys) {
+  for (const journey of merged.journeys) {
     process.stdout.write(
       `  ${journey.status.padEnd(4)} ${journey.journey.padEnd(16)} ${journey.passedSteps} passed / ${journey.failedSteps} failed${journey.failedStep ? ` — ${journey.failedStep.slice(0, 140)}` : ''}\n`,
     );

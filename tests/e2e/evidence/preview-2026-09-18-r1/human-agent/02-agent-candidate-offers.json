@@ -1,0 +1,101 @@
+{
+  "recordedAt": "2026-09-18T20:16:26.829Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/jobs/offers"
+  },
+  "status": 200,
+  "body": {
+    "offers": [
+      {
+        "offerId": "01a0a336-0df8-70ab-969a-2ebc6e769cab",
+        "job": {
+          "jobId": "01a0a1a9-fcec-7556-802c-f9889d9f208e",
+          "title": "Field visit — collect signed inspection feedback at the Helio hangar",
+          "description": "Visit the hangar, collect the signed feedback form, capture photos of the inspection line.",
+          "eligibility": {
+            "specialization": "field_agent",
+            "requiredCapabilities": [
+              "canvassing"
+            ],
+            "territory": {
+              "kind": "city",
+              "value": "accra"
+            },
+            "availability": {
+              "dayOfWeek": 2,
+              "startMinute": 540,
+              "endMinute": 1020
+            }
+          },
+          "status": "outcome_submitted",
+          "createdAt": "2026-09-14T20:44:27.244Z"
+        },
+        "status": "accepted",
+        "terminalReason": "claimed",
+        "expiresAt": "2026-09-15T04:57:03.715Z",
+        "acceptedAt": "2026-09-15T03:57:04.129Z",
+        "createdAt": "2026-09-15T03:57:03.864Z"
+      },
+      {
+        "offerId": "01a0a330-64e8-78a6-bcfb-0f92a31b6263",
+        "job": {
+          "jobId": "01a0a330-62cc-7342-9ea2-366bb6333fff",
+          "title": "Field follow-up — deliver the printed inspection summary at the Helio hangar",
+          "description": "Deliver the printed summary to the operations desk and collect the signed acknowledgment slip.",
+          "eligibility": {
+            "specialization": "field_agent",
+            "requiredCapabilities": [
+              "canvassing"
+            ],
+            "territory": {
+              "kind": "city",
+              "value": "accra"
+            },
+            "availability": {
+              "dayOfWeek": 2,
+              "startMinute": 540,
+              "endMinute": 1020
+            }
+          },
+          "status": "offered",
+          "createdAt": "2026-09-15T03:50:52.364Z"
+        },
+        "status": "open",
+        "expiresAt": "2026-10-15T03:50:52.747Z",
+        "createdAt": "2026-09-15T03:50:52.904Z"
+      },
+      {
+        "offerId": "01a0a32e-0088-71cd-813f-1d2a31dbbce8",
+        "job": {
+          "jobId": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c",
+          "title": "Field follow-up — deliver the printed inspection summary at the Helio hangar",
+          "description": "Deliver the printed summary to the operations desk and collect the signed acknowledgment slip.",
+          "eligibility": {
+            "specialization": "field_agent",
+            "requiredCapabilities": [
+              "canvassing"
+            ],
+            "territory": {
+              "kind": "city",
+              "value": "accra"
+            },
+            "availability": {
+              "dayOfWeek": 2,
+              "startMinute": 540,
+              "endMinute": 1020
+            }
+          },
+          "status": "outcome_submitted",
+          "createdAt": "2026-09-15T03:48:15.611Z"
+        },
+        "status": "accepted",
+        "terminalReason": "claimed",
+        "expiresAt": "2026-10-15T03:48:15.991Z",
+        "acceptedAt": "2026-09-15T03:50:28.707Z",
+        "createdAt": "2026-09-15T03:48:16.136Z"
+      }
+    ]
+  }
+}
