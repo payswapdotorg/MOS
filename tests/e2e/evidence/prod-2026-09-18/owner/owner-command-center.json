@@ -1,0 +1,280 @@
+{
+  "recordedAt": "2026-09-18T06:48:03.038Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/reporting/command-center/01a0a1a9-9845-7997-a341-ebdf67934944"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "agency-command-center",
+      "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+      "clientCount": 2
+    },
+    "generatedAt": "2026-09-18T06:48:02.923Z",
+    "portfolioGoals": {
+      "goalStatusCounts": {
+        "draft": 0,
+        "active": 2,
+        "achieved": 0,
+        "abandoned": 0
+      },
+      "goals": [
+        {
+          "goalId": "01a0a1a9-a97c-7837-b6f7-2e0535fdf58e",
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "workspaceId": "01a0a1a9-a65d-76f8-be80-e163ef1112ae",
+          "objective": "Grow monthly recurring revenue from Helio Robotics inspection subscriptions to $5,000",
+          "status": "active",
+          "successCriteria": [
+            {
+              "metric": "revenue",
+              "comparator": ">=",
+              "targetValue": 5000,
+              "unit": "USD",
+              "description": "Monthly recurring revenue"
+            },
+            {
+              "metric": "pipeline_accounts",
+              "comparator": ">=",
+              "targetValue": 12,
+              "unit": "accounts",
+              "description": "Qualified accounts in pipeline"
+            }
+          ],
+          "metrics": [
+            {
+              "name": "revenue",
+              "unit": "USD",
+              "description": "MRR from inspection subscriptions"
+            },
+            {
+              "name": "pipeline_accounts",
+              "unit": "accounts",
+              "description": "Qualified pipeline accounts"
+            }
+          ],
+          "constraints": [
+            {
+              "kind": "resource",
+              "description": "Media spend capped at $2,500/month"
+            }
+          ],
+          "timeHorizon": {
+            "startsOn": "2026-09-01",
+            "endsOn": "2026-12-31"
+          }
+        },
+        {
+          "goalId": "01a0a1a9-acbf-7b69-a765-c898d4ecb913",
+          "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+          "objective": "Bring Atlas Freight Systems customer-acquisition payback under nine months",
+          "status": "active",
+          "successCriteria": [
+            {
+              "metric": "cac",
+              "comparator": "<=",
+              "targetValue": 900,
+              "unit": "USD",
+              "description": "Blended CAC at or under $900"
+            }
+          ],
+          "metrics": [
+            {
+              "name": "cac",
+              "unit": "USD",
+              "description": "Blended customer acquisition cost"
+            }
+          ],
+          "constraints": [],
+          "timeHorizon": {
+            "startsOn": "2026-09-01",
+            "endsOn": "2026-11-30"
+          }
+        }
+      ],
+      "perClient": [
+        {
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "total": 1,
+          "goalStatusCounts": {
+            "draft": 0,
+            "active": 1,
+            "achieved": 0,
+            "abandoned": 0
+          }
+        },
+        {
+          "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+          "total": 1,
+          "goalStatusCounts": {
+            "draft": 0,
+            "active": 1,
+            "achieved": 0,
+            "abandoned": 0
+          }
+        }
+      ]
+    },
+    "workflowState": {
+      "instanceStatusCounts": {
+        "draft": 0,
+        "ready": 0,
+        "running": 3,
+        "paused": 1,
+        "blocked": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0
+      },
+      "workflows": [
+        {
+          "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+          "workspaceId": "01a0a1a9-a65d-76f8-be80-e163ef1112ae",
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "name": "Helio Inspection Demand Workflow",
+          "description": "Prep → field visit → done: the delivery workflow for the Q4 demand playbook.",
+          "instanceCounts": {
+            "draft": 0,
+            "ready": 0,
+            "running": 3,
+            "paused": 1,
+            "blocked": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "cancelled": 0
+          },
+          "instances": [
+            {
+              "workflowInstanceId": "01a0a1a9-c249-7f96-af70-43a15d750c2e",
+              "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+              "status": "running",
+              "createdAt": "2026-09-14T20:44:12.233Z",
+              "updatedAt": "2026-09-14T20:44:13.052Z"
+            },
+            {
+              "workflowInstanceId": "01a0a1a9-c6a1-7929-9b6b-58b2e92b928a",
+              "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+              "status": "paused",
+              "createdAt": "2026-09-14T20:44:13.345Z",
+              "updatedAt": "2026-09-14T20:44:14.206Z"
+            },
+            {
+              "workflowInstanceId": "01a0a32d-fb4b-7f13-a00a-cc7e48006d39",
+              "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+              "status": "running",
+              "createdAt": "2026-09-15T03:48:14.795Z",
+              "updatedAt": "2026-09-15T03:48:15.344Z"
+            },
+            {
+              "workflowInstanceId": "01a0a330-5ed4-736f-9ba9-978c36c39277",
+              "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+              "status": "running",
+              "createdAt": "2026-09-15T03:50:51.348Z",
+              "updatedAt": "2026-09-15T03:50:52.074Z"
+            }
+          ]
+        }
+      ],
+      "perClient": [
+        {
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "total": 4,
+          "instanceStatusCounts": {
+            "draft": 0,
+            "ready": 0,
+            "running": 3,
+            "paused": 1,
+            "blocked": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "cancelled": 0
+          }
+        },
+        {
+          "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+          "total": 0,
+          "instanceStatusCounts": {
+            "draft": 0,
+            "ready": 0,
+            "running": 0,
+            "paused": 0,
+            "blocked": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "cancelled": 0
+          }
+        }
+      ]
+    },
+    "evidenceQuality": {
+      "totalRecords": 3,
+      "lowGradeRecords": 0,
+      "window": "evidence-authority-bounded-newest-first-listing-per-client",
+      "byClass": [
+        {
+          "class": "source_fact",
+          "total": 1,
+          "gradeCounts": {
+            "A": 0,
+            "B": 0,
+            "C": 1,
+            "D": 0,
+            "E": 0,
+            "F": 0
+          }
+        },
+        {
+          "class": "observation",
+          "total": 2,
+          "gradeCounts": {
+            "A": 0,
+            "B": 2,
+            "C": 0,
+            "D": 0,
+            "E": 0,
+            "F": 0
+          }
+        }
+      ],
+      "perClient": [
+        {
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "totalRecords": 3,
+          "lowGradeRecords": 0
+        },
+        {
+          "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+          "totalRecords": 0,
+          "lowGradeRecords": 0
+        }
+      ]
+    },
+    "risks": {
+      "basis": "declared_goal_risk_constraints_and_operational_and_evidence_quality_signals",
+      "summary": {
+        "goalRiskConstraintCount": 0,
+        "blockedInstanceCount": 0,
+        "pausedInstanceCount": 1,
+        "failedExecutionCount": 0,
+        "unknownExecutionCount": 0,
+        "reconcilingExecutionCount": 0,
+        "lowGradeEvidenceRecords": 0
+      },
+      "items": []
+    },
+    "pendingApprovals": {
+      "items": [
+        {
+          "kind": "workflow_instance_awaiting_continuation",
+          "workflowInstanceId": "01a0a1a9-c6a1-7929-9b6b-58b2e92b928a",
+          "workflowId": "01a0a1a9-b6f7-7475-bdd2-2b597c616e30",
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "instanceStatus": "paused",
+          "updatedAt": "2026-09-14T20:44:14.206Z"
+        }
+      ]
+    }
+  }
+}

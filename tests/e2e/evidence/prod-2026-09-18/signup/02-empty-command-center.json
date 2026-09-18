@@ -1,0 +1,64 @@
+{
+  "recordedAt": "2026-09-18T06:47:55.695Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/reporting/command-center/01a0b345-828c-76a1-99d9-0cc61f9e6fc3"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "agency-command-center",
+      "agencyId": "01a0b345-828c-76a1-99d9-0cc61f9e6fc3",
+      "clientCount": 0
+    },
+    "generatedAt": "2026-09-18T06:47:55.579Z",
+    "portfolioGoals": {
+      "goalStatusCounts": {
+        "draft": 0,
+        "active": 0,
+        "achieved": 0,
+        "abandoned": 0
+      },
+      "goals": [],
+      "perClient": []
+    },
+    "workflowState": {
+      "instanceStatusCounts": {
+        "draft": 0,
+        "ready": 0,
+        "running": 0,
+        "paused": 0,
+        "blocked": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0
+      },
+      "workflows": [],
+      "perClient": []
+    },
+    "evidenceQuality": {
+      "totalRecords": 0,
+      "lowGradeRecords": 0,
+      "window": "evidence-authority-bounded-newest-first-listing-per-client",
+      "byClass": [],
+      "perClient": []
+    },
+    "risks": {
+      "basis": "declared_goal_risk_constraints_and_operational_and_evidence_quality_signals",
+      "summary": {
+        "goalRiskConstraintCount": 0,
+        "blockedInstanceCount": 0,
+        "pausedInstanceCount": 0,
+        "failedExecutionCount": 0,
+        "unknownExecutionCount": 0,
+        "reconcilingExecutionCount": 0,
+        "lowGradeEvidenceRecords": 0
+      },
+      "items": []
+    },
+    "pendingApprovals": {
+      "items": []
+    }
+  }
+}

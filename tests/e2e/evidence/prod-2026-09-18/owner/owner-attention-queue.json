@@ -1,0 +1,178 @@
+{
+  "recordedAt": "2026-09-18T06:48:03.656Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/ai-operator/01a0a1a9-9845-7997-a341-ebdf67934944/attention-queue"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "agency-attention-queue",
+      "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+      "clientCount": 2,
+      "humanAgentCount": 1
+    },
+    "items": [
+      {
+        "itemId": "ao:blocked-work:workflow-instance:01a0a1a9-c6a1-7929-9b6b-58b2e92b928a",
+        "category": "blocked-work",
+        "scope": {
+          "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+          "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+          "workspaceId": "01a0a1a9-a65d-76f8-be80-e163ef1112ae"
+        },
+        "priorityScore": 84,
+        "rank": 1,
+        "sourceRefs": [
+          {
+            "kind": "workflow-instance",
+            "id": "01a0a1a9-c6a1-7929-9b6b-58b2e92b928a"
+          },
+          {
+            "kind": "workspace",
+            "id": "01a0a1a9-a65d-76f8-be80-e163ef1112ae"
+          }
+        ],
+        "rationale": {
+          "headline": "workflow instance 01a0a1a9-c6a1-7929-9b6b-58b2e92b928a is paused",
+          "factors": [
+            {
+              "key": "instance-status",
+              "value": "paused"
+            },
+            {
+              "key": "linked-failed-executions",
+              "value": "0"
+            }
+          ]
+        },
+        "actionContract": {
+          "kind": "workflow-instance-transition",
+          "surface": "/workflows instance transition (POST /api/workflows/:workflowId/instances/:instanceId/transitions)",
+          "policyDimension": null,
+          "policyScopeKind": null,
+          "targetRef": {
+            "kind": "workflow-instance",
+            "id": "01a0a1a9-c6a1-7929-9b6b-58b2e92b928a"
+          },
+          "note": "resuming or abandoning the blocked work continues through the workflow instance transition contract (its own legal-transition authority; approval nodes carry their humanApproval requirement there)"
+        },
+        "scoreAssumptionKeys": [
+          "categoryBaseWeights",
+          "severityModifierRange",
+          "recurrenceModifierRange"
+        ]
+      },
+      {
+        "itemId": "ao:scope-leakage:client:01a0a1a9-a425-7a95-aaa5-53851e4e8d62:active-goals-without-delivery",
+        "category": "scope-leakage",
+        "scope": {
+          "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+          "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+          "workspaceId": null
+        },
+        "priorityScore": 56,
+        "rank": 2,
+        "sourceRefs": [
+          {
+            "kind": "client",
+            "id": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62"
+          },
+          {
+            "kind": "goal",
+            "id": "01a0a1a9-acbf-7b69-a765-c898d4ecb913"
+          }
+        ],
+        "rationale": {
+          "headline": "scope leakage on client 01a0a1a9-a425-7a95-aaa5-53851e4e8d62: 1 × active-goals-without-delivery",
+          "factors": [
+            {
+              "key": "leakage-kind",
+              "value": "active-goals-without-delivery"
+            },
+            {
+              "key": "leaked-count",
+              "value": "1"
+            },
+            {
+              "key": "source-calculation-version",
+              "value": "pi-calc-v1"
+            }
+          ]
+        },
+        "actionContract": {
+          "kind": "decision-recording",
+          "surface": "/decisions record (the append-only Decision Ledger)",
+          "policyDimension": null,
+          "policyScopeKind": null,
+          "targetRef": {
+            "kind": "client",
+            "id": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62"
+          },
+          "note": "the scope response (expand the deployed envelope, re-scope the goal, or stop the work) continues through the decision-recording contract — the consequential re-deployment/re-scoping then flows through the deployment and workflow authorities under their own policy gates"
+        },
+        "scoreAssumptionKeys": [
+          "categoryBaseWeights",
+          "severityModifierRange",
+          "recurrenceModifierRange",
+          "scopeLeakageSeverityCap"
+        ]
+      }
+    ],
+    "counts": {
+      "blocked-work": 1,
+      "approval": 0,
+      "client-risk": 0,
+      "anomaly": 0,
+      "scope-leakage": 1,
+      "margin-pressure": 0,
+      "capacity-constraint": 0,
+      "opportunity": 0
+    },
+    "ranking": {
+      "rankVersion": "ao-rank-v1",
+      "categoryVocabularyVersion": "ao-categories-v1",
+      "assumptions": {
+        "categoryBaseWeights": {
+          "approval": 90,
+          "anomaly": 85,
+          "blocked-work": 80,
+          "client-risk": 75,
+          "margin-pressure": 70,
+          "capacity-constraint": 60,
+          "scope-leakage": 55,
+          "opportunity": 40
+        },
+        "severityModifierRange": [
+          0,
+          10
+        ],
+        "recurrenceModifierRange": [
+          0,
+          5
+        ],
+        "clientRiskWeakEvidenceGrades": [
+          "D",
+          "E",
+          "F"
+        ],
+        "clientRiskWeakEvidenceThreshold": 1,
+        "marginPressureThresholdRatio": 0.15,
+        "marginPressureNegativeIsAlwaysPressure": true,
+        "capacityConstraintTriggerRatio": 1,
+        "capacityDemandMinutesPerJob": 120,
+        "capacityWindowRecurrence": "weekly",
+        "approvalDimensionRecurrenceCap": 5,
+        "anomalyAttemptRecurrenceCap": 5,
+        "scopeLeakageSeverityCap": 10,
+        "clientRiskSeverityCap": 10
+      },
+      "sortRule": "priorityScore DESC, then category ASC (vocabulary order is irrelevant; the tiebreak is lexicographic), then itemId ASC — a total deterministic order: identical authority rows always rank identically",
+      "basis": "live-derivation-over-canonical-authorities",
+      "persistence": "none-derived-read-model",
+      "consumedProfitIntelligenceVersion": "pi-calc-v1"
+    },
+    "generatedAt": "2026-09-18T06:48:03.549Z"
+  }
+}

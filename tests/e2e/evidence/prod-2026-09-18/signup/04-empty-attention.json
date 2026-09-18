@@ -1,0 +1,72 @@
+{
+  "recordedAt": "2026-09-18T06:47:56.202Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/ai-operator/01a0b345-828c-76a1-99d9-0cc61f9e6fc3/attention-queue"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "agency-attention-queue",
+      "agencyId": "01a0b345-828c-76a1-99d9-0cc61f9e6fc3",
+      "clientCount": 0,
+      "humanAgentCount": 0
+    },
+    "items": [],
+    "counts": {
+      "blocked-work": 0,
+      "approval": 0,
+      "client-risk": 0,
+      "anomaly": 0,
+      "scope-leakage": 0,
+      "margin-pressure": 0,
+      "capacity-constraint": 0,
+      "opportunity": 0
+    },
+    "ranking": {
+      "rankVersion": "ao-rank-v1",
+      "categoryVocabularyVersion": "ao-categories-v1",
+      "assumptions": {
+        "categoryBaseWeights": {
+          "approval": 90,
+          "anomaly": 85,
+          "blocked-work": 80,
+          "client-risk": 75,
+          "margin-pressure": 70,
+          "capacity-constraint": 60,
+          "scope-leakage": 55,
+          "opportunity": 40
+        },
+        "severityModifierRange": [
+          0,
+          10
+        ],
+        "recurrenceModifierRange": [
+          0,
+          5
+        ],
+        "clientRiskWeakEvidenceGrades": [
+          "D",
+          "E",
+          "F"
+        ],
+        "clientRiskWeakEvidenceThreshold": 1,
+        "marginPressureThresholdRatio": 0.15,
+        "marginPressureNegativeIsAlwaysPressure": true,
+        "capacityConstraintTriggerRatio": 1,
+        "capacityDemandMinutesPerJob": 120,
+        "capacityWindowRecurrence": "weekly",
+        "approvalDimensionRecurrenceCap": 5,
+        "anomalyAttemptRecurrenceCap": 5,
+        "scopeLeakageSeverityCap": 10,
+        "clientRiskSeverityCap": 10
+      },
+      "sortRule": "priorityScore DESC, then category ASC (vocabulary order is irrelevant; the tiebreak is lexicographic), then itemId ASC — a total deterministic order: identical authority rows always rank identically",
+      "basis": "live-derivation-over-canonical-authorities",
+      "persistence": "none-derived-read-model",
+      "consumedProfitIntelligenceVersion": "pi-calc-v1"
+    },
+    "generatedAt": "2026-09-18T06:47:56.097Z"
+  }
+}
