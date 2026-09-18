@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-09-18T20:04:55.860Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/agencies/01a0b61f-338a-7181-be8e-d6e1058c72e9/clients"
+  },
+  "status": 200,
+  "body": {
+    "agencyId": "01a0b61f-338a-7181-be8e-d6e1058c72e9",
+    "clients": []
+  }
+}

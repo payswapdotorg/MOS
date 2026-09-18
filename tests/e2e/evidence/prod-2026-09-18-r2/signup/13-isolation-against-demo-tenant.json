@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:05:10.093Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/reporting/command-center/01a0a1a9-9845-7997-a341-ebdf67934944"
+  },
+  "status": 404,
+  "body": {
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "agency not found: 01a0a1a9-9845-7997-a341-ebdf67934944",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

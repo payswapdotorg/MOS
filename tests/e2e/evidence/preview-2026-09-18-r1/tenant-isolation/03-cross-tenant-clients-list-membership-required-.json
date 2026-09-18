@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:17:03.905Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/agencies/01a0a1a9-9845-7997-a341-ebdf67934944/clients"
+  },
+  "status": 403,
+  "body": {
+    "error": {
+      "code": "FORBIDDEN",
+      "message": "Active membership in this agency required",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

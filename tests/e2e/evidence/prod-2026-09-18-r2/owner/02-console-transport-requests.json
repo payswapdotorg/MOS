@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-09-18T20:11:41.062Z",
+  "note": "header KEY NAMES only — values never recorded",
+  "data": [
+    {
+      "url": "/api/mos/agencies/01a0a1a9-9845-7997-a341-ebdf67934944/clients",
+      "method": "GET",
+      "headerKeys": [
+        "accept",
+        "authorization"
+      ]
+    },
+    {
+      "url": "/api/mos/clients/01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7/workspaces",
+      "method": "GET",
+      "headerKeys": [
+        "accept",
+        "authorization"
+      ]
+    },
+    {
+      "url": "/api/mos/workspaces/01a0a1a9-a65d-76f8-be80-e163ef1112ae/app-installs",
+      "method": "GET",
+      "headerKeys": [
+        "accept",
+        "authorization"
+      ]
+    }
+  ]
+}

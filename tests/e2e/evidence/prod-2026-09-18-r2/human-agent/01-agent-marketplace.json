@@ -1,0 +1,36 @@
+{
+  "recordedAt": "2026-09-18T20:12:32.405Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/jobs/marketplace"
+  },
+  "status": 200,
+  "body": {
+    "matched": 1,
+    "jobs": [
+      {
+        "jobId": "01a0a330-62cc-7342-9ea2-366bb6333fff",
+        "title": "Field follow-up — deliver the printed inspection summary at the Helio hangar",
+        "description": "Deliver the printed summary to the operations desk and collect the signed acknowledgment slip.",
+        "eligibility": {
+          "specialization": "field_agent",
+          "requiredCapabilities": [
+            "canvassing"
+          ],
+          "territory": {
+            "kind": "city",
+            "value": "accra"
+          },
+          "availability": {
+            "dayOfWeek": 2,
+            "startMinute": 540,
+            "endMinute": 1020
+          }
+        },
+        "status": "offered",
+        "createdAt": "2026-09-15T03:50:52.364Z"
+      }
+    ]
+  }
+}

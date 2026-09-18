@@ -1,0 +1,836 @@
+{
+  "recordedAt": "2026-09-18T20:11:33.879Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/profit-intelligence/01a0a1a9-9845-7997-a341-ebdf67934944"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "agency-profit-intelligence",
+      "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+      "clientCount": 2,
+      "humanAgentCount": 1
+    },
+    "perClient": [
+      {
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "revenue": {
+          "value": 5500,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+            },
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+            }
+          ],
+          "assumptionKeys": [
+            "revenueMetricNames",
+            "latestObservationWinsPerMetricIdentity",
+            "costingCurrency"
+          ]
+        },
+        "deliveryCost": {
+          "value": 150.06,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "execution",
+              "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+            },
+            {
+              "kind": "usage-telemetry",
+              "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+            }
+          ],
+          "assumptionKeys": [
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        },
+        "margin": {
+          "value": 5349.94,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+            },
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+            },
+            {
+              "kind": "execution",
+              "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+            },
+            {
+              "kind": "usage-telemetry",
+              "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+            }
+          ],
+          "assumptionKeys": [
+            "revenueMetricNames",
+            "latestObservationWinsPerMetricIdentity",
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        }
+      },
+      {
+        "clientId": "01a0a1a9-a425-7a95-aaa5-53851e4e8d62",
+        "revenue": {
+          "value": 0,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [],
+          "assumptionKeys": [
+            "revenueMetricNames",
+            "latestObservationWinsPerMetricIdentity",
+            "costingCurrency"
+          ]
+        },
+        "deliveryCost": {
+          "value": 0,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [],
+          "assumptionKeys": [
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        },
+        "margin": {
+          "value": 0,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [],
+          "assumptionKeys": [
+            "revenueMetricNames",
+            "latestObservationWinsPerMetricIdentity",
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        }
+      }
+    ],
+    "serviceContributions": [
+      {
+        "playbookId": "01a0a1a9-afcf-7b6f-823a-e8059dc9a718",
+        "deliveryCost": {
+          "value": 150.06,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "execution",
+              "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+            },
+            {
+              "kind": "usage-telemetry",
+              "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+            }
+          ],
+          "assumptionKeys": [
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        },
+        "revenue": {
+          "value": null,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [],
+          "assumptionKeys": [
+            "revenueMetricNames"
+          ],
+          "notDerivableReason": "metric observations carry no playbook reference — per-service revenue attribution arrives with the v1.5 sales-to-delivery continuity work (MKT-046)"
+        },
+        "deliveredJobCount": 2,
+        "executionCount": 1
+      }
+    ],
+    "unattributedServiceDeliveryCost": {
+      "value": 0,
+      "currency": "USD",
+      "provenance": "observed",
+      "calculationVersion": "pi-calc-v1",
+      "sourceRefs": [],
+      "assumptionKeys": [
+        "deterministicExecutionCostUsd",
+        "extensionExecutionCostUsd",
+        "humanDeliveredJobCostUsd",
+        "costingCurrency",
+        "telemetryCostCurrency",
+        "humanExecutionCostAttribution"
+      ]
+    },
+    "projectContributions": [
+      {
+        "deploymentId": "01a0a1a9-bd4b-77fe-ba80-c18d58ab9777",
+        "deploymentStatus": "active",
+        "deliveryCost": {
+          "value": 150.06,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "execution",
+              "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+            },
+            {
+              "kind": "usage-telemetry",
+              "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+            },
+            {
+              "kind": "job",
+              "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+            },
+            {
+              "kind": "job-offer",
+              "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+            }
+          ],
+          "assumptionKeys": [
+            "deterministicExecutionCostUsd",
+            "extensionExecutionCostUsd",
+            "humanDeliveredJobCostUsd",
+            "costingCurrency",
+            "telemetryCostCurrency",
+            "humanExecutionCostAttribution"
+          ]
+        },
+        "revenue": {
+          "value": null,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [],
+          "assumptionKeys": [
+            "revenueMetricNames"
+          ],
+          "notDerivableReason": "metric observations carry no deployment reference — per-project revenue attribution arrives with the v1.5 sales-to-delivery continuity work (MKT-046)"
+        },
+        "deliveredJobCount": 2,
+        "executionCount": 2
+      }
+    ],
+    "unattributedProjectDeliveryCost": {
+      "value": 0,
+      "currency": "USD",
+      "provenance": "observed",
+      "calculationVersion": "pi-calc-v1",
+      "sourceRefs": [],
+      "assumptionKeys": [
+        "deterministicExecutionCostUsd",
+        "extensionExecutionCostUsd",
+        "humanDeliveredJobCostUsd",
+        "costingCurrency",
+        "telemetryCostCurrency",
+        "humanExecutionCostAttribution"
+      ]
+    },
+    "revenue": {
+      "byCurrency": [
+        {
+          "currency": "EUR",
+          "total": {
+            "value": 90,
+            "currency": "EUR",
+            "provenance": "observed",
+            "calculationVersion": "pi-calc-v1",
+            "sourceRefs": [
+              {
+                "kind": "metric-observation",
+                "id": "01a0a1a9-d512-799e-b1c7-2e97793b3348"
+              }
+            ],
+            "assumptionKeys": [
+              "revenueMetricNames",
+              "latestObservationWinsPerMetricIdentity"
+            ]
+          },
+          "identityCount": 1,
+          "sourceRefs": [
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d512-799e-b1c7-2e97793b3348"
+            }
+          ]
+        },
+        {
+          "currency": "USD",
+          "total": {
+            "value": 5500,
+            "currency": "USD",
+            "provenance": "observed",
+            "calculationVersion": "pi-calc-v1",
+            "sourceRefs": [
+              {
+                "kind": "metric-observation",
+                "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+              },
+              {
+                "kind": "metric-observation",
+                "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+              }
+            ],
+            "assumptionKeys": [
+              "revenueMetricNames",
+              "latestObservationWinsPerMetricIdentity"
+            ]
+          },
+          "identityCount": 2,
+          "sourceRefs": [
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+            },
+            {
+              "kind": "metric-observation",
+              "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+            }
+          ]
+        }
+      ],
+      "observationCount": 4,
+      "restatedIdentityCount": 1,
+      "supersededObservationCount": 1,
+      "qualityCounts": {
+        "ok": 2,
+        "restated": 1
+      },
+      "evidenceRefs": [
+        {
+          "kind": "evidence",
+          "id": "01a0a1a9-cbfe-7ce3-997c-c4426f31fe2a"
+        }
+      ]
+    },
+    "costs": {
+      "humanDeliveryCost": {
+        "value": 150,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+          }
+        ],
+        "assumptionKeys": [
+          "humanDeliveredJobCostUsd",
+          "costingCurrency"
+        ]
+      },
+      "deliveredJobCount": 2,
+      "inFlightJobCount": 0,
+      "automationDeliveryCost": {
+        "value": 0.05,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "execution",
+            "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+          }
+        ],
+        "assumptionKeys": [
+          "deterministicExecutionCostUsd",
+          "extensionExecutionCostUsd",
+          "costingCurrency"
+        ]
+      },
+      "totalDeliveryCost": {
+        "value": 150.06,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "execution",
+            "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+          },
+          {
+            "kind": "usage-telemetry",
+            "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+          }
+        ],
+        "assumptionKeys": [
+          "deterministicExecutionCostUsd",
+          "extensionExecutionCostUsd",
+          "humanDeliveredJobCostUsd",
+          "costingCurrency",
+          "telemetryCostCurrency",
+          "humanExecutionCostAttribution"
+        ]
+      },
+      "executionCounts": {
+        "deterministic": 1,
+        "ai": 0,
+        "human": 1,
+        "extension": 0
+      },
+      "executionStatusCounts": {
+        "succeeded": 1,
+        "created": 1
+      },
+      "aiProvider": {
+        "telemetryCost": {
+          "value": 0.01,
+          "currency": "USD",
+          "provenance": "observed",
+          "calculationVersion": "pi-calc-v1",
+          "sourceRefs": [
+            {
+              "kind": "usage-telemetry",
+              "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+            }
+          ],
+          "assumptionKeys": [
+            "telemetryCostCurrency"
+          ]
+        },
+        "telemetryRowCount": 1,
+        "adapterActivity": [],
+        "adapterActivityNote": "integrations adapter activity is presented as counts + canonical references only: the /integrations authority carries no provider-billing amounts, and no per-event price assumption is invented"
+      },
+      "humanExecutionCostAttribution": "utilization-indicator-only"
+    },
+    "capacity": {
+      "activeProfileCount": 1,
+      "skippedProfileCount": 0,
+      "weeklyCapacityMinutes": 600,
+      "weeklyCapacityCost": {
+        "value": 550,
+        "currency": "USD",
+        "provenance": "estimated",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "human-agent-profile",
+            "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+          }
+        ],
+        "assumptionKeys": [
+          "humanHourlyRateUsd",
+          "capacityWindowRecurrence",
+          "costingCurrency"
+        ]
+      },
+      "profileRefs": [
+        {
+          "kind": "human-agent-profile",
+          "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+        }
+      ]
+    },
+    "utilization": {
+      "deliveredWorkMinutes": {
+        "value": 240,
+        "currency": "minutes",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          }
+        ],
+        "assumptionKeys": [
+          "deliveredJobMinutes"
+        ]
+      },
+      "capacityMinutes": {
+        "value": 600,
+        "currency": "minutes",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "human-agent-profile",
+            "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+          }
+        ],
+        "assumptionKeys": [
+          "capacityWindowRecurrence"
+        ]
+      },
+      "utilization": {
+        "value": 0.4,
+        "currency": "ratio",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          },
+          {
+            "kind": "human-agent-profile",
+            "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+          }
+        ],
+        "assumptionKeys": [
+          "deliveredJobMinutes",
+          "capacityWindowRecurrence"
+        ]
+      },
+      "humanExecutionCount": 1,
+      "numeratorNote": "the numerator counts delivered jobs only; human-kind executions are disclosed as a runtime indicator and deliberately NOT added (the jobs surface owns delivered human work — counting both would double-count)"
+    },
+    "scopeLeakage": {
+      "indicators": [
+        {
+          "kind": "executions-outside-deployed-envelope",
+          "rule": "an execution counts when its task-linked workflow instance pins a definition that NO ACTIVE deployment of the workspace declares (delivery outside the deployed envelope; external-request executions are out of rule)",
+          "count": 0,
+          "sourceRefs": []
+        },
+        {
+          "kind": "work-without-active-goal",
+          "rule": "a non-terminal workflow instance counts when NO ACTIVE goal of the client covers its workspace (client-wide goals cover every workspace; workspace-scoped goals cover exactly their own)",
+          "count": 0,
+          "sourceRefs": []
+        },
+        {
+          "kind": "active-goals-without-delivery",
+          "rule": "an ACTIVE goal counts when zero workflow instances exist in its scope (its own workspace, or any workspace of the client when client-wide)",
+          "count": 1,
+          "sourceRefs": [
+            {
+              "kind": "goal",
+              "id": "01a0a1a9-acbf-7b69-a765-c898d4ecb913"
+            }
+          ]
+        }
+      ]
+    },
+    "margin": {
+      "realizedRevenue": {
+        "value": 5500,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "metric-observation",
+            "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+          },
+          {
+            "kind": "metric-observation",
+            "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+          }
+        ],
+        "assumptionKeys": [
+          "revenueMetricNames",
+          "latestObservationWinsPerMetricIdentity",
+          "costingCurrency"
+        ]
+      },
+      "realizedDeliveryCost": {
+        "value": 150.06,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "execution",
+            "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+          },
+          {
+            "kind": "usage-telemetry",
+            "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+          }
+        ],
+        "assumptionKeys": [
+          "deterministicExecutionCostUsd",
+          "extensionExecutionCostUsd",
+          "humanDeliveredJobCostUsd",
+          "costingCurrency",
+          "telemetryCostCurrency",
+          "humanExecutionCostAttribution"
+        ]
+      },
+      "realizedMargin": {
+        "value": 5349.94,
+        "currency": "USD",
+        "provenance": "observed",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "metric-observation",
+            "id": "01a0a1a9-d609-7d07-a402-decd2748c94b"
+          },
+          {
+            "kind": "metric-observation",
+            "id": "01a0a1a9-d414-7c97-9613-a29572790d35"
+          },
+          {
+            "kind": "execution",
+            "id": "01a0a1a9-db22-7293-96cb-15227cf86f8d"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a1a9-fcec-7556-802c-f9889d9f208e"
+          },
+          {
+            "kind": "job",
+            "id": "01a0a32d-fe7b-7083-ad93-bdc51b06f61c"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a336-0df8-70ab-969a-2ebc6e769cab"
+          },
+          {
+            "kind": "job-offer",
+            "id": "01a0a32e-0088-71cd-813f-1d2a31dbbce8"
+          },
+          {
+            "kind": "usage-telemetry",
+            "id": "01a0a1a9-f91b-7a60-ab8f-20f9d87c1f51"
+          }
+        ],
+        "assumptionKeys": [
+          "revenueMetricNames",
+          "latestObservationWinsPerMetricIdentity",
+          "deterministicExecutionCostUsd",
+          "extensionExecutionCostUsd",
+          "humanDeliveredJobCostUsd",
+          "costingCurrency",
+          "telemetryCostCurrency",
+          "humanExecutionCostAttribution"
+        ]
+      },
+      "estimatedRevenue": {
+        "value": 5000,
+        "currency": "USD",
+        "provenance": "estimated",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "goal",
+            "id": "01a0a1a9-a97c-7837-b6f7-2e0535fdf58e"
+          }
+        ],
+        "assumptionKeys": [
+          "revenueMetricNames",
+          "costingCurrency"
+        ]
+      },
+      "estimatedDeliveryCost": {
+        "value": 550,
+        "currency": "USD",
+        "provenance": "estimated",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "human-agent-profile",
+            "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+          }
+        ],
+        "assumptionKeys": [
+          "humanHourlyRateUsd",
+          "capacityWindowRecurrence",
+          "costingCurrency"
+        ]
+      },
+      "estimatedMargin": {
+        "value": 4450,
+        "currency": "USD",
+        "provenance": "estimated",
+        "calculationVersion": "pi-calc-v1",
+        "sourceRefs": [
+          {
+            "kind": "goal",
+            "id": "01a0a1a9-a97c-7837-b6f7-2e0535fdf58e"
+          },
+          {
+            "kind": "human-agent-profile",
+            "id": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117"
+          }
+        ],
+        "assumptionKeys": [
+          "revenueMetricNames",
+          "costingCurrency",
+          "humanHourlyRateUsd",
+          "capacityWindowRecurrence"
+        ]
+      },
+      "currencyPolicyNote": "revenue is grouped by declared unit and margin derives only in the costing currency (USD); revenue recorded in EUR is NOT converted and NOT part of the margin (no FX assumption exists)"
+    },
+    "calculation": {
+      "calculationVersion": "pi-calc-v1",
+      "assumptions": {
+        "costingCurrency": "USD",
+        "revenueMetricNames": [
+          "revenue",
+          "gross_revenue",
+          "net_revenue",
+          "recurring_revenue",
+          "mrr",
+          "arr"
+        ],
+        "latestObservationWinsPerMetricIdentity": true,
+        "telemetryCostCurrency": "USD",
+        "humanDeliveredJobCostUsd": 75,
+        "deliveredJobMinutes": 120,
+        "deterministicExecutionCostUsd": 0.05,
+        "extensionExecutionCostUsd": 0.02,
+        "humanHourlyRateUsd": 55,
+        "capacityWindowRecurrence": "weekly",
+        "humanExecutionCostAttribution": "utilization-indicator-only"
+      },
+      "basis": "live-derivation-over-canonical-authorities",
+      "persistence": "none-derived-read-model"
+    },
+    "generatedAt": "2026-09-18T20:11:33.767Z"
+  }
+}

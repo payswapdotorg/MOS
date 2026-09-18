@@ -1,0 +1,20 @@
+{
+  "recordedAt": "2026-09-18T20:12:49.895Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/clients/01a0b61f-4a7c-7b35-8654-002780b83e28/workspaces"
+  },
+  "status": 201,
+  "body": {
+    "workspaceId": "01a0b626-78eb-746f-9592-82f8758c1eb4",
+    "clientId": "01a0b61f-4a7c-7b35-8654-002780b83e28",
+    "name": "E2E Lifecycle Workspace",
+    "slug": "e2e-lifecycle-workspace",
+    "status": "active",
+    "version": 1,
+    "createdBy": "01a0b61f-331e-7bfc-ae41-965b3171c3cb",
+    "createdAt": "2026-09-18T20:12:49.771Z",
+    "updatedAt": "2026-09-18T20:12:49.771Z"
+  }
+}

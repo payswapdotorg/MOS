@@ -1,0 +1,62 @@
+{
+  "recordedAt": "2026-09-18T20:17:47.582Z",
+  "note": "DESTRUCTIVE: consumes the seeded offer fixture",
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/jobs/queue/offers/01a0a330-64e8-78a6-bcfb-0f92a31b6263/accept"
+  },
+  "status": 200,
+  "body": {
+    "job": {
+      "jobId": "01a0a330-62cc-7342-9ea2-366bb6333fff",
+      "workflowInstanceId": "01a0a330-5ed4-736f-9ba9-978c36c39277",
+      "nodeId": "visit",
+      "workspaceId": "01a0a1a9-a65d-76f8-be80-e163ef1112ae",
+      "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+      "agencyId": "01a0a1a9-9845-7997-a341-ebdf67934944",
+      "title": "Field follow-up — deliver the printed inspection summary at the Helio hangar",
+      "description": "Deliver the printed summary to the operations desk and collect the signed acknowledgment slip.",
+      "eligibility": {
+        "specialization": "field_agent",
+        "requiredCapabilities": [
+          "canvassing"
+        ],
+        "territory": {
+          "kind": "city",
+          "value": "accra"
+        },
+        "availability": {
+          "dayOfWeek": 2,
+          "startMinute": 540,
+          "endMinute": 1020
+        }
+      },
+      "status": "accepted",
+      "accepted": {
+        "agentId": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117",
+        "userId": "01a0a1a9-9354-7ff7-a9ca-2f1d1ed569c9",
+        "offerId": "01a0a330-64e8-78a6-bcfb-0f92a31b6263",
+        "at": "2026-09-18T20:17:47.444Z"
+      },
+      "createdBy": "01a0a1a5-05ac-7945-afb0-5ace274c2718",
+      "version": 3,
+      "createdAt": "2026-09-15T03:50:52.364Z",
+      "updatedAt": "2026-09-18T20:17:47.455Z"
+    },
+    "offer": {
+      "offerId": "01a0a330-64e8-78a6-bcfb-0f92a31b6263",
+      "jobId": "01a0a330-62cc-7342-9ea2-366bb6333fff",
+      "candidateAgentId": "01a0a1a9-fbe1-78fd-8e61-cf26cd97c117",
+      "candidateUserId": "01a0a1a9-9354-7ff7-a9ca-2f1d1ed569c9",
+      "status": "accepted",
+      "terminalReason": "claimed",
+      "expiresAt": "2026-10-15T03:50:52.747Z",
+      "acceptedAt": "2026-09-18T20:17:47.444Z",
+      "createdBy": "01a0a1a5-05ac-7945-afb0-5ace274c2718",
+      "version": 2,
+      "createdAt": "2026-09-15T03:50:52.904Z",
+      "updatedAt": "2026-09-18T20:17:47.444Z"
+    },
+    "replayed": false
+  }
+}

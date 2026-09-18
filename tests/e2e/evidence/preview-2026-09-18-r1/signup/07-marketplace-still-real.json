@@ -1,0 +1,225 @@
+{
+  "recordedAt": "2026-09-18T20:15:00.446Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/app-marketplace/01a0b628-5b9e-7f6f-b37e-8b998359a2da/apps"
+  },
+  "status": 200,
+  "body": {
+    "apps": [
+      {
+        "appKey": "mos-portal",
+        "publisher": "svc:internal-api-token",
+        "publisherKind": "first-party",
+        "latestVersion": {
+          "appVersionId": "01a0a1aa-06a7-70d0-9ba8-ced221ace58e",
+          "version": "1.1.0",
+          "publishedAt": "2026-09-14T20:44:29.735Z",
+          "capabilities": [
+            "compose-portal-client-room",
+            "compose-portal-report",
+            "compose-portal-highlights"
+          ],
+          "runtimeClass": "pooled-worker"
+        },
+        "versions": [
+          {
+            "appVersionId": "01a0a1aa-06a7-70d0-9ba8-ced221ace58e",
+            "version": "1.1.0",
+            "publishedAt": "2026-09-14T20:44:29.735Z",
+            "capabilities": [
+              "compose-portal-client-room",
+              "compose-portal-report",
+              "compose-portal-highlights"
+            ],
+            "runtimeClass": "pooled-worker"
+          },
+          {
+            "appVersionId": "01a0a1aa-05b3-7170-b826-06de180d98b8",
+            "version": "1.0.0",
+            "publishedAt": "2026-09-14T20:44:29.491Z",
+            "capabilities": [
+              "compose-portal-client-room",
+              "compose-portal-report"
+            ],
+            "runtimeClass": "pooled-worker"
+          }
+        ],
+        "trustState": {
+          "appKey": "mos-portal",
+          "trustLevel": "MOS_CERTIFIED",
+          "sinceEventId": "01a0a1aa-0fda-78dd-852b-d204bb5b5860",
+          "transitionCount": 2
+        },
+        "reviewSummary": {
+          "reviewCount": 0,
+          "verdictCounts": {
+            "positive": 0,
+            "mixed": 0,
+            "negative": 0
+          }
+        }
+      },
+      {
+        "appKey": "mos-sheets",
+        "publisher": "svc:internal-api-token",
+        "publisherKind": "first-party",
+        "latestVersion": {
+          "appVersionId": "01a0a1aa-04be-7af7-ba24-6fce3161c3ff",
+          "version": "1.1.0",
+          "publishedAt": "2026-09-14T20:44:29.246Z",
+          "capabilities": [
+            "compose-observation-workbook",
+            "compose-spreadsheet-editor",
+            "compose-formula-summary"
+          ],
+          "runtimeClass": "pooled-worker"
+        },
+        "versions": [
+          {
+            "appVersionId": "01a0a1aa-04be-7af7-ba24-6fce3161c3ff",
+            "version": "1.1.0",
+            "publishedAt": "2026-09-14T20:44:29.246Z",
+            "capabilities": [
+              "compose-observation-workbook",
+              "compose-spreadsheet-editor",
+              "compose-formula-summary"
+            ],
+            "runtimeClass": "pooled-worker"
+          },
+          {
+            "appVersionId": "01a0a1aa-03ce-7fdc-b1dc-6b2df3f4276c",
+            "version": "1.0.0",
+            "publishedAt": "2026-09-14T20:44:29.006Z",
+            "capabilities": [
+              "compose-observation-workbook",
+              "compose-spreadsheet-editor"
+            ],
+            "runtimeClass": "pooled-worker"
+          }
+        ],
+        "trustState": {
+          "appKey": "mos-sheets",
+          "trustLevel": "MOS_CERTIFIED",
+          "sinceEventId": "01a0a1aa-0ddc-7165-8bf5-dd01e67b7b30",
+          "transitionCount": 2
+        },
+        "reviewSummary": {
+          "reviewCount": 0,
+          "verdictCounts": {
+            "positive": 0,
+            "mixed": 0,
+            "negative": 0
+          }
+        }
+      },
+      {
+        "appKey": "mos-crm",
+        "publisher": "svc:internal-api-token",
+        "publisherKind": "first-party",
+        "latestVersion": {
+          "appVersionId": "01a0a1aa-02d1-7760-91ce-8727b07125e1",
+          "version": "1.1.0",
+          "publishedAt": "2026-09-14T20:44:28.753Z",
+          "capabilities": [
+            "compose-client-pipeline-panel",
+            "compose-pipeline-action-menu",
+            "compose-pipeline-summary"
+          ],
+          "runtimeClass": "pooled-worker"
+        },
+        "versions": [
+          {
+            "appVersionId": "01a0a1aa-02d1-7760-91ce-8727b07125e1",
+            "version": "1.1.0",
+            "publishedAt": "2026-09-14T20:44:28.753Z",
+            "capabilities": [
+              "compose-client-pipeline-panel",
+              "compose-pipeline-action-menu",
+              "compose-pipeline-summary"
+            ],
+            "runtimeClass": "pooled-worker"
+          },
+          {
+            "appVersionId": "01a0a1aa-01d4-7bed-9730-999db51a8d92",
+            "version": "1.0.0",
+            "publishedAt": "2026-09-14T20:44:28.500Z",
+            "capabilities": [
+              "compose-client-pipeline-panel",
+              "compose-pipeline-action-menu"
+            ],
+            "runtimeClass": "pooled-worker"
+          }
+        ],
+        "trustState": {
+          "appKey": "mos-crm",
+          "trustLevel": "MOS_CERTIFIED",
+          "sinceEventId": "01a0a1aa-0bd9-7edf-ba66-6d8da64e84c3",
+          "transitionCount": 2
+        },
+        "reviewSummary": {
+          "reviewCount": 0,
+          "verdictCounts": {
+            "positive": 0,
+            "mixed": 0,
+            "negative": 0
+          }
+        }
+      },
+      {
+        "appKey": "mos-analytics",
+        "publisher": "svc:internal-api-token",
+        "publisherKind": "first-party",
+        "latestVersion": {
+          "appVersionId": "01a0a1aa-00dd-7444-8d10-a4ffef18a593",
+          "version": "1.1.0",
+          "publishedAt": "2026-09-14T20:44:28.253Z",
+          "capabilities": [
+            "compose-command-center-card",
+            "compose-workspace-profit-report",
+            "compose-margin-breakdown"
+          ],
+          "runtimeClass": "pooled-worker"
+        },
+        "versions": [
+          {
+            "appVersionId": "01a0a1aa-00dd-7444-8d10-a4ffef18a593",
+            "version": "1.1.0",
+            "publishedAt": "2026-09-14T20:44:28.253Z",
+            "capabilities": [
+              "compose-command-center-card",
+              "compose-workspace-profit-report",
+              "compose-margin-breakdown"
+            ],
+            "runtimeClass": "pooled-worker"
+          },
+          {
+            "appVersionId": "01a0a1a9-ffd7-7dee-9876-be21b77edb13",
+            "version": "1.0.0",
+            "publishedAt": "2026-09-14T20:44:27.991Z",
+            "capabilities": [
+              "compose-command-center-card",
+              "compose-workspace-profit-report"
+            ],
+            "runtimeClass": "pooled-worker"
+          }
+        ],
+        "trustState": {
+          "appKey": "mos-analytics",
+          "trustLevel": "MOS_CERTIFIED",
+          "sinceEventId": "01a0a1aa-09d6-7313-b76f-e2684d772e22",
+          "transitionCount": 2
+        },
+        "reviewSummary": {
+          "reviewCount": 0,
+          "verdictCounts": {
+            "positive": 0,
+            "mixed": 0,
+            "negative": 0
+          }
+        }
+      }
+    ]
+  }
+}

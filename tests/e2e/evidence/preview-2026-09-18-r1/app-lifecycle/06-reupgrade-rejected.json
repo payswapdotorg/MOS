@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:16:38.330Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/workspaces/01a0b629-ee72-781a-ad4f-348c0231cf69/app-installs/01a0b629-f338-74e1-987a-3f68829a4d30/upgrade"
+  },
+  "status": 422,
+  "body": {
+    "error": {
+      "code": "INVALID_REQUEST",
+      "message": "app upgrade of mos-portal to 1.1.0 is rejected: version 1.1.0 was previously installed in this workspace — upgrade selects a NEW version; rollback reselects previously installed versions",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

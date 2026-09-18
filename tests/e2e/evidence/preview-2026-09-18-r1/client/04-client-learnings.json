@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-09-18T20:16:00.667Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/clients/01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7/learnings"
+  },
+  "status": 200,
+  "body": {
+    "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+    "learnings": [
+      {
+        "learningId": "01a0a1a9-d105-7b73-acae-9472a319a36d",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "statement": "On-site visits close signed-feedback loops roughly twice as fast as email reminders for industrial clients.",
+        "applicability": {
+          "channel": "field",
+          "segment": "industrial-buyers"
+        },
+        "evidenceRefs": [
+          "01a0a1a9-cd01-7aa1-a237-b0651483a01f"
+        ],
+        "experimentRefs": [],
+        "confidence": 0.61,
+        "status": "active",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-d0f2-743f-be32-62870f5cd7b4",
+          "recordedAt": "2026-09-14T20:44:16.005Z"
+        }
+      },
+      {
+        "learningId": "01a0a1a9-d004-7db1-8886-d65a6f4c638e",
+        "clientId": "01a0a1a9-a31c-7cb0-8b25-2c3c615d8fd7",
+        "statement": "The five-touch onboarding sequence lifted new-account activation by 2.1 points against the three-touch baseline.",
+        "applicability": {
+          "channel": "email",
+          "segment": "industrial-buyers"
+        },
+        "evidenceRefs": [
+          "01a0a1a9-cdf6-73ef-bc1a-e4fa75cb7030"
+        ],
+        "experimentRefs": [],
+        "confidence": 0.72,
+        "status": "active",
+        "provenance": {
+          "actor": "user:01a0a1a5-05ac-7945-afb0-5ace274c2718",
+          "recordedVia": "api",
+          "correlationId": "01a0a1a9-cff2-7e7c-93d1-80a7bdf868de",
+          "recordedAt": "2026-09-14T20:44:15.748Z"
+        }
+      }
+    ]
+  }
+}

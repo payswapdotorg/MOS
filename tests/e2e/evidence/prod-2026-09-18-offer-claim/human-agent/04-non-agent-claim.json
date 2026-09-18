@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:17:40.292Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/jobs/queue/offers/01a0a330-64e8-78a6-bcfb-0f92a31b6263/accept"
+  },
+  "status": 404,
+  "body": {
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "human-agent-profile not found: 01a0b61f-331e-7bfc-ae41-965b3171c3cb",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

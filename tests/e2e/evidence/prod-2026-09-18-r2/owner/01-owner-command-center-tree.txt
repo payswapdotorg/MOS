@@ -1,0 +1,268 @@
+- complementary
+  - paragraph
+    - StaticText "MOS"
+  - paragraph
+    - StaticText "Marketing Operating System"
+  - button "Switch agency" [expanded=false, ref=e4]
+    - StaticText "AGENCY"
+    - StaticText "Northwind Growth Partners"
+  - navigation "Primary" [ref=e5]
+    - button "Command Center" [ref=e14]
+      - StaticText "Command Center"
+    - button "Clients" [ref=e15]
+      - StaticText "Clients"
+    - button "Attention" [ref=e16]
+      - StaticText "Attention"
+    - button "Profit Intelligence" [ref=e17]
+      - StaticText "Profit Intelligence"
+    - button "Human Work" [ref=e18]
+      - StaticText "Human Work"
+    - button "Apps" [ref=e19]
+      - StaticText "Apps"
+    - button "Administration" [ref=e20]
+      - StaticText "Administration"
+  - paragraph
+    - StaticText "Presentation layer over the live MOS API. All authority state is server-held; every mutation flows through existing MOS contracts."
+- banner
+  - button "Account menu" [expanded=false, ref=e6]
+    - StaticText "casey@northwind.demo"
+    - StaticText "Demo — pre-seeded data"
+- main
+  - sectionheader
+    - heading "Command Center" [level=1, ref=e21]
+    - paragraph
+      - StaticText "Agency 01a0a1a9-9845-7997-a341-ebdf67934944 · 2 live clients · generated Sep 18, 2026, 8:11 PM · source: GET /api/reporting/command-center/:agencyId"
+  - StaticText "Clients"
+  - StaticText "2"
+  - button "Open portfolio" [ref=e22]
+  - StaticText "Goals (all states)"
+  - StaticText "2"
+  - StaticText "active"
+  - StaticText ": "
+  - StaticText "2"
+  - StaticText "Workflow instances"
+  - StaticText "4"
+  - StaticText "running"
+  - StaticText ": "
+  - StaticText "3"
+  - StaticText "paused"
+  - StaticText ": "
+  - StaticText "1"
+  - StaticText "Blocked work (attention)"
+  - StaticText "1"
+  - button "Open attention queue" [ref=e23]
+  - StaticText "Attention — top ranked items"
+  - generic
+    - StaticText "Source: GET /api/ai-operator/:agencyId/attention-queue (rank ao-rank-v1)"
+  - region "Top attention items" [ref=e7]
+    - button "#1 blocked-work score 84 client 01a0a1a9-a31… workflow instance 01a0a1a9-c6a1-7929-9b6b-58b2e92b928a is paused Next: resuming or abandoning the blocked work continues through the workflow instance transition contract (its own legal-transition authority; approval nodes carry their humanApproval requirement there)" [ref=e24]
+      - StaticText "#"
+      - StaticText "1"
+      - StaticText "blocked-work"
+      - StaticText "score "
+      - StaticText "84"
+      - StaticText "client "
+      - StaticText "01a0a1a9-a31…"
+      - paragraph
+        - StaticText "workflow instance 01a0a1a9-c6a1-7929-9b6b-58b2e92b928a is paused"
+      - paragraph
+        - StaticText "Next: resuming or abandoning the blocked work continues through the workflow instance transition contract (its own legal-transition authority; approval nodes carry their humanApproval requirement there)"
+    - button "#2 scope-leakage score 56 client 01a0a1a9-a42… scope leakage on client 01a0a1a9-a425-7a95-aaa5-53851e4e8d62: 1 × active-goals-without-delivery Next: the scope response (expand the deployed envelope, re-scope the goal, or stop the work) continues through the decision-recording contract — the consequential re-deployment/re-scoping then flows through the deployment and workflow authorities under their own policy gates" [ref=e25]
+      - StaticText "#"
+      - StaticText "2"
+      - StaticText "scope-leakage"
+      - StaticText "score "
+      - StaticText "56"
+      - StaticText "client "
+      - StaticText "01a0a1a9-a42…"
+      - paragraph
+        - StaticText "scope leakage on client 01a0a1a9-a425-7a95-aaa5-53851e4e8d62: 1 × active-goals-without-delivery"
+      - paragraph
+        - StaticText "Next: the scope response (expand the deployed envelope, re-scope the goal, or stop the work) continues through the decision-recording contract — the consequential re-deployment/re-scoping then flows through the deployment and workflow authorities under their own policy gates"
+  - StaticText "Portfolio goals"
+  - generic
+    - StaticText "Basis: command-center aggregation"
+  - region "Portfolio goals" [ref=e8]
+    - button "active client 01a0a1a9-a31… horizon 2026-09-01 → 2026-12-31 Grow monthly recurring revenue from Helio Robotics inspection subscriptions to $5,000 Constraints: resource — Media spend capped at $2,500/month" [ref=e26]
+      - StaticText "active"
+      - StaticText "client "
+      - StaticText "01a0a1a9-a31…"
+      - StaticText "horizon "
+      - StaticText "2026-09-01 → 2026-12-31"
+      - paragraph
+        - StaticText "Grow monthly recurring revenue from Helio Robotics inspection subscriptions to $5,000"
+      - paragraph
+        - StaticText "Constraints: resource — Media spend capped at $2,500/month"
+    - button "active client 01a0a1a9-a42… horizon 2026-09-01 → 2026-11-30 Bring Atlas Freight Systems customer-acquisition payback under nine months" [ref=e27]
+      - StaticText "active"
+      - StaticText "client "
+      - StaticText "01a0a1a9-a42…"
+      - StaticText "horizon "
+      - StaticText "2026-09-01 → 2026-11-30"
+      - paragraph
+        - StaticText "Bring Atlas Freight Systems customer-acquisition payback under nine months"
+  - paragraph
+    - StaticText "PER CLIENT"
+  - button "01a0a1a9-a31… active: 1" [ref=e9]
+    - StaticText "01a0a1a9-a31…"
+    - StaticText "active"
+    - StaticText ": "
+    - StaticText "1"
+  - button "01a0a1a9-a42… active: 1" [ref=e10]
+    - StaticText "01a0a1a9-a42…"
+    - StaticText "active"
+    - StaticText ": "
+    - StaticText "1"
+  - StaticText "Workflow state"
+  - StaticText "Instance counts by status across the agency's workspaces."
+  - region "Workflows" [ref=e11]
+    - button "Helio Inspection Demand Workflow Prep → field visit → done: the delivery workflow for the Q4 demand playbook. running: 3 paused: 1 client 01a0a1a9-a31…" [ref=e28]
+      - paragraph
+        - StaticText "Helio Inspection Demand Workflow"
+      - paragraph
+        - StaticText "Prep → field visit → done: the delivery workflow for the Q4 demand playbook."
+      - StaticText "running"
+      - StaticText ": "
+      - StaticText "3"
+      - StaticText "paused"
+      - StaticText ": "
+      - StaticText "1"
+      - StaticText "client "
+      - StaticText "01a0a1a9-a31…"
+  - StaticText "Evidence quality"
+  - generic
+    - StaticText "Read window: evidence-authority-bounded-newest-first-listing-per-client"
+  - paragraph
+    - StaticText "TOTAL RECORDS"
+  - paragraph
+    - StaticText "3"
+  - paragraph
+    - StaticText "LOW-GRADE RECORDS"
+  - paragraph
+    - StaticText "0"
+  - StaticText "source_fact"
+  - StaticText "1"
+  - StaticText "C"
+  - StaticText ": "
+  - StaticText "1"
+  - StaticText "observation"
+  - StaticText "2"
+  - StaticText "B"
+  - StaticText ": "
+  - StaticText "2"
+  - StaticText "Risks"
+  - generic
+    - StaticText "Basis: declared_goal_risk_constraints_and_operational_and_evidence_quality_signals"
+  - status
+    - paragraph
+      - StaticText "No derived risks"
+    - paragraph
+      - StaticText "Risk items are derived from goal constraints and execution state."
+  - StaticText "Pending approvals"
+  - StaticText "Experiments awaiting decision and gated workflow transitions."
+  - region "Pending approvals" [ref=e12]
+    - StaticText "workflow_instance_awaiting_continuation"
+    - paragraph
+      - StaticText "paused"
+    - paragraph
+      - StaticText "instance 01a0a1a9-c6a… · client 01a0a1a9-a31…"
+    - button "Go to decisions" [ref=e29]
+  - StaticText "Margin & scope signals"
+  - generic
+    - StaticText "Source: GET /api/profit-intelligence/:agencyId · calculation pi-calc-v1"
+  - paragraph
+    - StaticText "REALIZED MARGIN"
+  - paragraph
+    - StaticText "USD 5,349.94"
+  - paragraph
+    - StaticText "observed · pi-calc-v1 · assumptions: revenueMetricNames, latestObservationWinsPerMetricIdentity, deterministicExecutionCostUsd, extensionExecutionCostUsd, humanDeliveredJobCostUsd, costingCurrency, telemetryCostCurrency, humanExecutionCostAttribution"
+  - generic
+    - StaticText "metric-observation"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "metric-observation"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "execution"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "job"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "job"
+    - StaticText ":"
+    - StaticText "01a0a32d"
+    - StaticText "job-offer"
+    - StaticText ":"
+    - StaticText "01a0a336"
+    - StaticText "job-offer"
+    - StaticText ":"
+    - StaticText "01a0a32e"
+    - StaticText "usage-telemetry"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+  - paragraph
+    - StaticText "ESTIMATED MARGIN"
+  - paragraph
+    - StaticText "USD 4,450"
+  - paragraph
+    - StaticText "estimated · pi-calc-v1 · assumptions: revenueMetricNames, costingCurrency, humanHourlyRateUsd, capacityWindowRecurrence"
+  - generic
+    - StaticText "goal"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "human-agent-profile"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+  - paragraph
+    - StaticText "TOTAL DELIVERY COST"
+  - paragraph
+    - StaticText "USD 150.06"
+  - paragraph
+    - StaticText "observed · pi-calc-v1 · assumptions: deterministicExecutionCostUsd, extensionExecutionCostUsd, humanDeliveredJobCostUsd, costingCurrency, telemetryCostCurrency, humanExecutionCostAttribution"
+  - generic
+    - StaticText "execution"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "job"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+    - StaticText "job"
+    - StaticText ":"
+    - StaticText "01a0a32d"
+    - StaticText "job-offer"
+    - StaticText ":"
+    - StaticText "01a0a336"
+    - StaticText "job-offer"
+    - StaticText ":"
+    - StaticText "01a0a32e"
+    - StaticText "usage-telemetry"
+    - StaticText ":"
+    - StaticText "01a0a1a9"
+  - paragraph
+    - StaticText "SCOPE LEAKAGE INDICATORS"
+  - StaticText "executions-outside-deployed-envelope"
+  - StaticText "0"
+  - paragraph
+    - StaticText "an execution counts when its task-linked workflow instance pins a definition that NO ACTIVE deployment of the workspace declares (delivery outside the deployed envelope; external-request executions are out of rule)"
+  - StaticText "none"
+  - StaticText "work-without-active-goal"
+  - StaticText "0"
+  - paragraph
+    - StaticText "a non-terminal workflow instance counts when NO ACTIVE goal of the client covers its workspace (client-wide goals cover every workspace; workspace-scoped goals cover exactly their own)"
+  - StaticText "none"
+  - StaticText "active-goals-without-delivery"
+  - StaticText "1"
+  - paragraph
+    - StaticText "an ACTIVE goal counts when zero workflow instances exist in its scope (its own workspace, or any workspace of the client when client-wide)"
+  - StaticText "goal"
+  - StaticText ":"
+  - StaticText "01a0a1a9"
+  - button "Open Profit Intelligence" [ref=e13]
+- contentinfo
+  - paragraph
+    - StaticText "MOS — Marketing Operating System · single-route presentation app · every datum comes from the MOS API, honestly rendered."
+- region "Notifications alt+T" [ref=e2]
+- region "Notifications (F8)" [ref=e3]
+  - list
+- alert

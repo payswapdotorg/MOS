@@ -1,0 +1,60 @@
+{
+  "runId": "prod-2026-09-18-r2",
+  "baseUrl": "https://mos-product.vercel.app",
+  "target": "https://mos-product.vercel.app",
+  "startedAt": "2026-09-18T20:04:49.152Z",
+  "finishedAt": "2026-09-18T20:14:33.423Z",
+  "skipUi": false,
+  "allowDemoOfferConsumption": false,
+  "journeys": [
+    {
+      "journey": "signup",
+      "status": "PASS",
+      "passedSteps": 14,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "owner",
+      "status": "PASS",
+      "passedSteps": 28,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "client",
+      "status": "FAIL",
+      "passedSteps": 12,
+      "failedSteps": 1,
+      "failedStep": "UI: Evidence tab renders formatted real data (no raw JSON, no error boundary)"
+    },
+    {
+      "journey": "human-agent",
+      "status": "PASS",
+      "passedSteps": 11,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "app-lifecycle",
+      "status": "PASS",
+      "passedSteps": 13,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "tenant-isolation",
+      "status": "PASS",
+      "passedSteps": 23,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "responsive",
+      "status": "FAIL",
+      "passedSteps": 13,
+      "failedSteps": 2,
+      "failedStep": "mobile-390x844: login screen has no horizontal overflow catastrophe; mobile-390x844: command center has no horizontal overflow catastrophe"
+    }
+  ]
+}

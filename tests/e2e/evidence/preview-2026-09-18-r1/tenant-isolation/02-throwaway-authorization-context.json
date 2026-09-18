@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-09-18T20:17:02.663Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/auth/authorization-context"
+  },
+  "status": 200,
+  "body": {
+    "principal": {
+      "kind": "user",
+      "userId": "01a0b628-5b25-771c-a7cb-af62d033da3f",
+      "email": "[REDACTED]",
+      "displayName": "MOS E2E 35e65cad1a",
+      "status": "active"
+    },
+    "platformRoles": [],
+    "memberships": [
+      {
+        "membershipId": "01a0b628-5b9e-7923-83ae-2a074fa8e761",
+        "agencyId": "01a0b628-5b9e-7f6f-b37e-8b998359a2da",
+        "agencySlug": "e2e-verification-35e65cad1a",
+        "agencyStatus": "active",
+        "role": "agency_owner",
+        "membershipStatus": "active"
+      }
+    ],
+    "resolvedAt": "2026-09-18T20:17:02.551Z"
+  }
+}

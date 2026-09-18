@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:12:34.005Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/jobs/queue/offers/00000000-0000-0000-0000-000000000000/accept"
+  },
+  "status": 404,
+  "body": {
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "job-offer not found: 00000000-0000-0000-0000-000000000000",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

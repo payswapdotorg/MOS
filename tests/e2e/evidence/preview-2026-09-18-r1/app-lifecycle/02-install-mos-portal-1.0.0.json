@@ -1,0 +1,34 @@
+{
+  "recordedAt": "2026-09-18T20:16:37.182Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product-jj1kfiiih-ekonplacidegmailcoms-projects.vercel.app/api/mos/workspaces/01a0b629-ee72-781a-ad4f-348c0231cf69/app-installs"
+  },
+  "status": 201,
+  "body": {
+    "install": {
+      "installId": "01a0b629-f0c9-72b6-9bb2-5a33b6ca5b29",
+      "agencyId": "01a0b628-5b9e-7f6f-b37e-8b998359a2da",
+      "clientId": "01a0b628-7fa8-7187-a764-373547c07425",
+      "workspaceId": "01a0b629-ee72-781a-ad4f-348c0231cf69",
+      "appKey": "mos-portal",
+      "appVersionId": "01a0a1aa-05b3-7170-b826-06de180d98b8",
+      "version": "1.0.0",
+      "operation": "install",
+      "grantedDataScopes": [
+        "client:read"
+      ],
+      "grantedMutationScopes": [],
+      "policyDecisionId": "01a0b629-f0b9-76c7-97de-c2ef7ee6a880",
+      "selectionSeq": 1,
+      "status": "ACTIVE",
+      "supersededAt": null,
+      "installedBy": "01a0b628-5b25-771c-a7cb-af62d033da3f",
+      "installedAt": "2026-09-18T20:16:37.065Z",
+      "idempotencyKey": "e2e-install-01a0b629-ee72-781a-ad4f-348c0231cf69",
+      "createFingerprint": "aa6b0b4c16e5a4a2c07b87378dcfc735c8568ad9fe228d694eeac62025e052af"
+    },
+    "replayed": false
+  }
+}

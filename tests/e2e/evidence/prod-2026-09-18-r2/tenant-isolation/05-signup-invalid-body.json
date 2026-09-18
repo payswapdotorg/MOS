@@ -1,0 +1,23 @@
+{
+  "recordedAt": "2026-09-18T20:13:17.728Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos-signup"
+  },
+  "status": 400,
+  "body": {
+    "error": {
+      "code": "INVALID_REQUEST",
+      "message": "Sign-up request failed validation.",
+      "retryable": false,
+      "retrySafe": true,
+      "details": [
+        "displayName: must be 1–100 characters",
+        "email: must be a valid email address",
+        "agencyName: must be 1–100 characters",
+        "password: must be 12–256 characters"
+      ]
+    }
+  }
+}

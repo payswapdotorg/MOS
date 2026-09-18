@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-09-18T20:12:50.990Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos/workspaces/01a0b626-78eb-746f-9592-82f8758c1eb4/app-installs/01a0b626-7bb0-7468-bd00-96a8d6e9bfab/upgrade"
+  },
+  "status": 201,
+  "body": {
+    "install": {
+      "installId": "01a0b626-7d25-7cbd-a8fc-83d48b9a60aa",
+      "agencyId": "01a0b61f-338a-7181-be8e-d6e1058c72e9",
+      "clientId": "01a0b61f-4a7c-7b35-8654-002780b83e28",
+      "workspaceId": "01a0b626-78eb-746f-9592-82f8758c1eb4",
+      "appKey": "mos-portal",
+      "appVersionId": "01a0a1aa-06a7-70d0-9ba8-ced221ace58e",
+      "version": "1.1.0",
+      "operation": "upgrade",
+      "grantedDataScopes": [
+        "client:read"
+      ],
+      "grantedMutationScopes": [],
+      "policyDecisionId": "01a0b626-7d0d-7c16-b1f4-d299dc1123c0",
+      "selectionSeq": 2,
+      "status": "ACTIVE",
+      "supersededAt": null,
+      "installedBy": "01a0b61f-331e-7bfc-ae41-965b3171c3cb",
+      "installedAt": "2026-09-18T20:12:50.853Z",
+      "idempotencyKey": "e2e-upgrade-01a0b626-78eb-746f-9592-82f8758c1eb4",
+      "createFingerprint": "2836ff0c107263fc2f380238fb97219a428411d29ead7977fbac5cef17aa1acf"
+    },
+    "prior": {
+      "installId": "01a0b626-7bb0-7468-bd00-96a8d6e9bfab",
+      "agencyId": "01a0b61f-338a-7181-be8e-d6e1058c72e9",
+      "clientId": "01a0b61f-4a7c-7b35-8654-002780b83e28",
+      "workspaceId": "01a0b626-78eb-746f-9592-82f8758c1eb4",
+      "appKey": "mos-portal",
+      "appVersionId": "01a0a1aa-05b3-7170-b826-06de180d98b8",
+      "version": "1.0.0",
+      "operation": "install",
+      "grantedDataScopes": [
+        "client:read"
+      ],
+      "grantedMutationScopes": [],
+      "policyDecisionId": "01a0b626-7b89-7c9e-988e-d78eb72df722",
+      "selectionSeq": 1,
+      "status": "SUPERSEDED",
+      "supersededAt": "2026-09-18T20:12:50.853Z",
+      "installedBy": "01a0b61f-331e-7bfc-ae41-965b3171c3cb",
+      "installedAt": "2026-09-18T20:12:50.480Z",
+      "idempotencyKey": "e2e-install-01a0b626-78eb-746f-9592-82f8758c1eb4",
+      "createFingerprint": "aa6b0b4c16e5a4a2c07b87378dcfc735c8568ad9fe228d694eeac62025e052af"
+    },
+    "replayed": false
+  }
+}

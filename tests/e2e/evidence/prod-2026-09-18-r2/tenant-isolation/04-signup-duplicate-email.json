@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-09-18T20:13:17.493Z",
+  "note": null,
+  "request": {
+    "method": "POST",
+    "url": "https://mos-product.vercel.app/api/mos-signup"
+  },
+  "status": 409,
+  "body": {
+    "error": {
+      "code": "EMAIL_ALREADY_REGISTERED",
+      "message": "An account with this email already exists. Try signing in instead.",
+      "retryable": false,
+      "retrySafe": true
+    }
+  }
+}

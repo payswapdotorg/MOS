@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-09-18T20:04:55.299Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "https://mos-product.vercel.app/api/mos/auth/authorization-context"
+  },
+  "status": 200,
+  "body": {
+    "principal": {
+      "kind": "user",
+      "userId": "01a0b61f-331e-7bfc-ae41-965b3171c3cb",
+      "email": "[REDACTED]",
+      "displayName": "MOS E2E 7143554841",
+      "status": "active"
+    },
+    "platformRoles": [],
+    "memberships": [
+      {
+        "membershipId": "01a0b61f-338a-7f5d-9983-f7f78ad9a379",
+        "agencyId": "01a0b61f-338a-7181-be8e-d6e1058c72e9",
+        "agencySlug": "e2e-verification-7143554841",
+        "agencyStatus": "active",
+        "role": "agency_owner",
+        "membershipStatus": "active"
+      }
+    ],
+    "resolvedAt": "2026-09-18T20:04:55.194Z"
+  }
+}

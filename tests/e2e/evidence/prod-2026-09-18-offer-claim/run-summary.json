@@ -1,0 +1,18 @@
+{
+  "runId": "prod-2026-09-18-offer-claim",
+  "baseUrl": "https://mos-product.vercel.app",
+  "target": "https://mos-product.vercel.app",
+  "startedAt": "2026-09-18T20:17:37.943Z",
+  "finishedAt": "2026-09-18T20:17:48.058Z",
+  "skipUi": false,
+  "allowDemoOfferConsumption": true,
+  "journeys": [
+    {
+      "journey": "human-agent",
+      "status": "FAIL",
+      "passedSteps": 11,
+      "failedSteps": 1,
+      "failedStep": "queue reflects the honest post-accept state: expected open offers 0; job moved to activeJobs (outcome due); got open=0 activeJobs=3 claimed=false"
+    }
+  ]
+}
