@@ -66,7 +66,10 @@
     "isSecondWorkflowEngine": false,
     "isSecondExecutionEngine": false,
     "persistentStateIsDurable": true,
-    "boundedExperimentsOnly": true
+    "boundedExperimentsOnly": true,
+    "humanAmplificationIsOptional": true,
+    "zeroHumanBudgetIsSupported": true,
+    "noEligibleHumanIsNonBlocking": true
   },
   "commerceRules": {
     "ordersRemainExternalAuthority": true,
@@ -78,6 +81,8 @@
     "authenticActivityOnly": true,
     "fakeEngagementForbidden": true,
     "compensationIsNotPaymentAuthority": true,
-    "explicitRightsAndDisclosureRequired": true
+    "explicitRightsAndDisclosureRequired": true,
+    "isOptionalAcceleration": true,
+    "coreAutonomyDoesNotDependOnHumanOffers": true
   }
 }
