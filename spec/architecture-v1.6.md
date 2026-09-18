@@ -238,3 +238,35 @@ No model, extension, adapter or transformation provider receives broader tenant 
 v1.6 does not make MOS a social-network clone, ad-fraud or engagement-manipulation system, anti-ban evasion system, generic video editor replacing every media tool, alternate workflow engine, legal-advice authority, or second commerce order authority.
 
 Growth Operator orchestrates existing authorities; it never replaces them.
+
+## 20. Human growth marketplace
+
+The existing `/field-agents` and `/jobs` authorities are the canonical human-participation plane. v1.6 extends their specialization metadata and Job descriptors for growth work; it does not introduce a second human marketplace or execution engine.
+
+Supported growth work types may include:
+- ugc_creation: an eligible human creates original content under a governed brief;
+- creator_post: an eligible creator publishes the approved asset or creator-original content on their own connected audience surface;
+- creator_ad_offer: a creator offers an authorized creator-ad/boosting/whitelisting placement where the destination platform and account support it;
+- product_trial_content: a human tries the product and creates an authentic review/demo/testimonial when permitted;
+- creator_distribution: a human distributes an approved asset through an authorized creator channel;
+- human_review: a human performs a required review or approval that automation cannot safely complete.
+
+Every human growth Job retains the existing canonical Task/Workflow/Execution linkage and the existing candidate-specific Offer acceptance semantics.
+
+A growth offer may additionally carry:
+- missionId and experimentId references;
+- workType;
+- creative brief/reference;
+- deliverables;
+- target platform/account capability requirements;
+- timing window;
+- compensation terms or a reference to an external settlement capability;
+- disclosure/attribution requirements;
+- content-rights and usage-right requirements;
+- success metrics and guardrails.
+
+Compensation terms are contract data, not payment authority. Payment/settlement flows through an approved external capability or future financial authority and never through `/jobs` itself.
+
+Human-created assets enter the same Content Asset, Rights and Provenance pipeline as machine-produced assets. Creator ownership, license/usage grant, permitted destinations, duration and revocation state remain explicit.
+
+Human work is a legitimate optimization route, not an engagement-manipulation escape hatch. MOS may test human-created content and authentic creator distribution; it may not commission fake comments, fake likes, fabricated testimonials, bot-like activity or other inauthentic engagement.
