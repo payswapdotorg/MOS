@@ -47,3 +47,11 @@ The product must present capability limitations honestly on a per-platform basis
 ## Completion condition
 
 v1.6 is complete only when MKT-053..MKT-075 are accepted/merged or explicitly classified N/A by approved architecture decision; all five MVP social adapters have objective capability evidence; creator, product-marketing and commerce-discovery proofs pass; platform-health anomaly and human-blocker paths are proven; cross-platform rights/provenance lineage is proven; repository-owned console journeys are implemented and verified; and production deployment is reproducible from the repository.
+
+## Human growth outcome
+
+v1.6 also supports a fourth route when owned-account reposting or automated distribution underperforms:
+
+mission → human-growth hypothesis → eligible creator offer → accepted Job → original UGC/creator distribution → rights/disclosure verification → publish → measure → learn → reallocate.
+
+Human amplification is a scientific treatment, not an informal side channel.
