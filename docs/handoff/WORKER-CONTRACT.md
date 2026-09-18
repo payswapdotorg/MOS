@@ -1,35 +1,54 @@
-# MarketingOS Worker Contract
+# MOS Worker Contract — v1.5 Product Console Completion
 
-Workers are implementation participants under the Tech Lead. They do not own architecture or acceptance.
+Workers operate under the Tech Lead. They do not own architecture or acceptance.
+
+## Non-negotiable
+
+- MOS v1.5 is frozen.
+- MKT-001..MKT-052 are accepted/merged; do not reopen them for convenience.
+- The console is presentation-only.
+- The repository must become the sole source of truth for console source, tests and deployment configuration.
+- PostgreSQL/MOS APIs remain authoritative.
+- No frontend state may become tenant, workflow, execution, evidence, decision, profit, deployment, app-registry or AI-routing authority.
+- Server-side authorization remains authoritative.
+- No provider SDK leakage into core domain/application modules.
 
 ## Before coding
 
-1. Inspect current `main`, open PRs, relevant module code and tests.
-2. Read `AGENTS.md` and the exact effective v1.4 requirements/work item.
-3. Confirm every dependency is merged into current `main`.
-4. Identify the single authoritative module for the concern.
-5. Stop and report an Architecture Change Request need if the frozen contract cannot be implemented as written.
+1. Inspect current `main`, open PRs and the exact task's changed-file surface.
+2. Read the v1.5 frozen documents and `docs/product/PRODUCT-CONSOLE-V1.5.md`.
+3. Confirm dependencies are accepted on current main.
+4. Confirm ownership boundaries with other active workers.
+5. If the task is UI work, verify the console source is already in the repository.
+6. Stop and escalate only for a genuine frozen-architecture contradiction.
 
-## While coding
+## Frontend-specific
 
-- Implement exactly one Work Item.
-- Do not redesign frozen architecture.
-- Do not create a second workflow, task, execution, deployment, evidence, policy, credential, AI-routing, Job or integration authority.
-- Resolve canonical Client ownership before dependent traversal.
-- Keep secrets outside ordinary domain records.
-- Keep provider SDKs in adapters/extensions.
-- Use PostgreSQL as authoritative persistence.
-- Add database backstops for material relational invariants.
-- Add negative security and concurrency regressions for material invariants.
-- Preserve historical records; never rewrite prior execution/evidence/learning history.
-- Treat external UNKNOWN outcomes as unresolved and reconcile explicitly.
+- Use existing API contracts; do not invent mock-only authority endpoints.
+- Never recompute Profit Intelligence figures in the browser.
+- Never infer authorization from client-side state.
+- Show source/rationale/action-contract context for AI Operator items.
+- Keep UNKNOWN execution outcomes unresolved.
+- Preserve App Version identity in app UI and history.
+- Treat Client Portal and incumbent-capability surfaces as Apps, not new core modules.
+- Keep integrations contextual rather than exposing infrastructure internals as ordinary product navigation.
 
 ## Verification
 
-Run the Work Item's exact required tests, plus repository lint/typecheck/static architecture checks when applicable. Report the exact command, exit status and meaningful result. Real PostgreSQL integration is required for persistence claims; mocks alone are not production proof.
+Report exact commands, exit status, screenshots/browser observations where appropriate, API responses where required, and environment limitations.
+
+A green UI test without a production-backed API or a clean build is not sufficient evidence of completion.
 
 ## Pull request
 
-Open a PR against the **current `main`**. The PR must include Work Item ID, requirements, acceptance criteria, changed files, objective evidence, security/concurrency evidence, limitations, and the exact head/base SHAs. Never reuse a stale base.
+Every implementation PR must:
 
-A worker report saying "complete" is not acceptance. The Tech Lead and Architect/reviewer independently decide acceptance from repository evidence.
+- target current `main`;
+- name the Work Item;
+- list changed files;
+- map requirements/acceptance;
+- show exact verification commands;
+- disclose external/environmental limitations;
+- avoid unrelated refactors.
+
+The Tech Lead and Architect independently decide acceptance.
