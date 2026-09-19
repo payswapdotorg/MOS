@@ -296,7 +296,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration and 35 → 36 through the MKT-051 /first-party-apps
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
-  assert.equal(specModules.length, 36, 'the spec module list (36 spec-parsed after the MKT-051 /first-party-apps sibling registration) parses cleanly');
+  assert.equal(specModules.length, 37, 'the spec module list (37 spec-parsed after the MKT-055 /social-accounts sibling registration) parses cleanly');
   assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
   // /apps entry (this Work Item appends nothing).

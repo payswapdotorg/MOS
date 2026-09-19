@@ -204,6 +204,14 @@ import type { AppMeteringModuleApi } from '../modules/app-metering/public.ts';
 // export/delete semantics and lineage; NO mutation verbs over ANY
 // authority — composition, never a transfer of authority).
 import type { FirstPartyAppsModuleApi } from '../modules/first-party-apps/public.ts';
+// MKT-055: /social-accounts module contract (the Social Account and OAuth
+// Connection Model — the account identity bindings over EXISTING
+// authorized integrations, the append-oriented OAuth authorization-grant
+// lifecycle with verbatim scope records + platform-normalized capability
+// tags, the append-only history tail and the fail-closed disconnect/
+// revocation death semantics; tokens live in the /credentials vault by
+// canonical reference — NEVER in the module's tables).
+import type { SocialAccountsModuleApi } from '../modules/social-accounts/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -383,4 +391,16 @@ export interface ApplicationModules {
   // authorities; the app-state mutations touch app-owned bounded state
   // only — never an authority table.
   readonly firstPartyApps: FirstPartyAppsModuleApi;
+
+  // MKT-055: the Social Account and OAuth Connection Model authority (the
+  // account identity bindings attached to a Client/Workspace through an
+  // EXISTING authorized integration — canonical reference READ-ONLY; the
+  // OAuth connect-flow grant lifecycle pending → authorized →
+  // expired/revoked/refreshed/superseded as append-only records with the
+  // EXACT granted scope list recorded verbatim plus the
+  // platform-normalized capability tags; the provider-neutral OAuth flow
+  // port — empty until the MKT-056+ adapter deliveries wire real flows;
+  // the fail-closed disconnect/revocation death semantics with the vault
+  // references disabled — no zombie grants).
+  readonly socialAccounts: SocialAccountsModuleApi;
 }

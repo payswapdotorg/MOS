@@ -253,6 +253,18 @@ import { registerAppMeteringRoutes } from './app-metering-routes.ts';
 // app-state mutations touch app-owned state only (never an authority
 // table — proven by direct SQL in the integration tests).
 import { registerFirstPartyAppsRoutes } from './first-party-apps-routes.ts';
+// MKT-055: the /social-accounts routes (the Social Account and OAuth
+// Connection Model surface: the provider-neutral OAuth flow family —
+// authorize-start, callback/complete, refresh, reauthorize, disconnect,
+// external-revocation — plus the authorization reads: the client/workspace
+// binding listings, the account detail, the grant tail with the VERBATIM
+// scope records + capability tags (REFUSES 409 on dead connections) and
+// the append-only history tail. NO usable-authorization route: the
+// fail-closed consumer read is module-level for the MKT-056+ adapters;
+// NO update route: recorded authorization facts are immutable; NO delete
+// route: the death is the disconnect/revocation transition and the history
+// is append-only).
+import { registerSocialAccountsRoutes } from './social-accounts-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -488,5 +500,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // composed-surface invoke/read + the bounded app-state family (see
   // the import block above).
   registerFirstPartyAppsRoutes(router, services, modules);
+  // MKT-055: the /social-accounts surfaces — the provider-neutral OAuth
+  // flow family + the authorization reads (see the import block above).
+  registerSocialAccountsRoutes(router, services, modules);
   return router;
 }

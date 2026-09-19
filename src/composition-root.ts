@@ -419,6 +419,13 @@ import { createAppMeteringModule } from './modules/app-metering/public.ts';
 // bounded app state is in-memory with export/delete semantics — the
 // MKT-051 required preference, disclosed in the runbook).
 import { createFirstPartyAppsModule } from './modules/first-party-apps/public.ts';
+// MKT-055: /social-accounts — the Social Account and OAuth Connection
+// Model authority (the account identity bindings over EXISTING authorized
+// integrations, the append-oriented OAuth authorization-grant lifecycle
+// with verbatim scope records + capability tags, the append-only history
+// tail and the fail-closed disconnect/revocation death semantics).
+import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
+import type { SocialAccountFlowImplementation } from './modules/social-accounts/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -427,6 +434,17 @@ export interface AppOptions {
   readonly extraSinks?: ReadonlyArray<ObservabilitySink> | undefined;
   /** Override the primary sink (tests capture records without console noise). */
   readonly primarySink?: ObservabilitySink | undefined;
+  /**
+   * MKT-055: additional provider-neutral OAuth flow implementations for
+   * the /social-accounts module (the extraSinks composition precedent).
+   * EMPTY by default — the production composition registers NO flow
+   * until the MKT-056+ adapter deliveries wire real platform flows (a
+   * flow step against a platform with no registered flow is refused
+   * fail-closed). Integration tests supply the DISCLOSED LOCAL provider
+   * double through this seam (a test double at the provider boundary
+   * ONLY — the connection model under test is fully real).
+   */
+  readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
 }
 
 /**
@@ -1018,6 +1036,31 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     workspaceOwnership: workspaces,
   });
 
+  // MKT-055: /social-accounts — the Social Account and OAuth Connection
+  // Model authority (the account identity bindings attached to a
+  // Client/Workspace through an EXISTING authorized integration — the
+  // canonical connection reference consumed READ-ONLY through the
+  // /integrations public contract, which also owns the client ownership
+  // chain; the OAuth grant lifecycle records with their OWN
+  // least-privilege /credentials vault references — kind
+  // 'social_account_oauth', never shared with product/source/store
+  // credentials, architecture-lock-v1.6 rule 28; the /policies
+  // fail-closed gates run before every provider-touching flow step; the
+  // /workspaces ownership port narrows the optional attachment).
+  // The provider-neutral flow registry is EMPTY here — real platform
+  // flows arrive with the MKT-056+ adapter deliveries (fail-closed until
+  // then; the disclosed composition seam is AppOptions.socialAccountFlows).
+  const socialAccounts = createSocialAccountsModule({
+    db,
+    clock,
+    ids,
+    integrations,
+    credentials,
+    policies,
+    workspaceOwnership: workspaces,
+    flows: options.socialAccountFlows ?? [],
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1206,7 +1249,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, socialAccounts },
     runtime: { aiProvider },
   };
 }

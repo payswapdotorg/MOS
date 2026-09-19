@@ -423,7 +423,10 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '044_app_metering.sql');
+  // The MKT-055 delivery appends 046_social_accounts.sql (the number is
+  // PRE-ASSIGNED to that Work Item; 045 is reserved for a sibling).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');
