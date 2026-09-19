@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-09-19T19:14:26.086Z",
+  "recordedAt": "2026-09-19T19:18:40.359Z",
   "note": null,
   "request": {
     "method": "GET",
@@ -246,6 +246,6 @@
       "persistence": "none-derived-read-model",
       "retrievalTechnology": "none-live-composition-only"
     },
-    "generatedAt": "2026-09-19T19:14:26.055Z"
+    "generatedAt": "2026-09-19T19:18:40.307Z"
   }
 }
