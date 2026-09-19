@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-09-19T22:55:48.260Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:3100/api/mos/clients/01a0bbe1-97e5-72fc-a5e9-6eed0753674a/learnings"
+  },
+  "status": 200,
+  "body": {
+    "clientId": "01a0bbe1-97e5-72fc-a5e9-6eed0753674a",
+    "learnings": [
+      {
+        "learningId": "01a0bbe1-9c95-7982-809e-cf36fa28e9a5",
+        "clientId": "01a0bbe1-97e5-72fc-a5e9-6eed0753674a",
+        "statement": "On-site visits close signed-feedback loops roughly twice as fast as email reminders for industrial clients.",
+        "applicability": {
+          "channel": "field",
+          "segment": "industrial-buyers"
+        },
+        "evidenceRefs": [
+          "01a0bbe1-9c57-721f-b977-b11c63aced6e"
+        ],
+        "experimentRefs": [],
+        "confidence": 0.61,
+        "status": "active",
+        "provenance": {
+          "actor": "user:01a0bbe1-9551-7b90-891a-ca2faf9d4a27",
+          "recordedVia": "api",
+          "correlationId": "01a0bbe1-9c91-79d4-9026-a0bb01b5e7b8",
+          "recordedAt": "2026-09-19T22:55:20.213Z"
+        }
+      },
+      {
+        "learningId": "01a0bbe1-9c84-70f0-90a2-d10e608dc596",
+        "clientId": "01a0bbe1-97e5-72fc-a5e9-6eed0753674a",
+        "statement": "The five-touch onboarding sequence lifted new-account activation by 2.1 points against the three-touch baseline.",
+        "applicability": {
+          "channel": "email",
+          "segment": "industrial-buyers"
+        },
+        "evidenceRefs": [
+          "01a0bbe1-9c66-7d76-9940-0401eeafa9b4"
+        ],
+        "experimentRefs": [],
+        "confidence": 0.72,
+        "status": "active",
+        "provenance": {
+          "actor": "user:01a0bbe1-9551-7b90-891a-ca2faf9d4a27",
+          "recordedVia": "api",
+          "correlationId": "01a0bbe1-9c7f-75b6-9ea8-6f0c4041a1b3",
+          "recordedAt": "2026-09-19T22:55:20.196Z"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "recordedAt": "2026-09-19T19:18:40.359Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:3100/api/mos/client-memory/01a0bb0a-9fc9-73fd-8266-923d7f678c32/clients/01a0bb0a-a338-7599-8dc5-93abbe7a5722"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "client-memory",
+      "agencyId": "01a0bb0a-9fc9-73fd-8266-923d7f678c32",
+      "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+      "workspaceCount": 1
+    },
+    "profile": {
+      "sourceRef": {
+        "kind": "client",
+        "id": "01a0bb0a-a338-7599-8dc5-93abbe7a5722"
+      },
+      "name": "Helio Robotics",
+      "slug": "helio-robotics",
+      "status": "active",
+      "createdAt": "2026-09-19T19:00:31.672Z",
+      "updatedAt": "2026-09-19T19:00:31.672Z"
+    },
+    "workspaces": [
+      {
+        "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+        "name": "Helio Growth Workspace",
+        "status": "active"
+      }
+    ],
+    "items": [
+      {
+        "kind": "goal",
+        "id": "01a0bb0a-a6d7-7adf-a6db-cf5e47d9e99b",
+        "summary": "Grow monthly recurring revenue from Helio Robotics inspection subscriptions to $5,000",
+        "status": "active",
+        "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+        "recordedAt": "2026-09-19T19:00:32.599Z",
+        "links": []
+      },
+      {
+        "kind": "playbook",
+        "id": "01a0bb0a-aaed-7ac9-8bbc-b0781bf5a4f0",
+        "summary": "Helio Q4 Demand Playbook",
+        "status": null,
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:33.645Z",
+        "links": [
+          {
+            "kind": "goal",
+            "id": "01a0bb0a-a6d7-7adf-a6db-cf5e47d9e99b"
+          }
+        ]
+      },
+      {
+        "kind": "playbook-version",
+        "id": "01a0bb0a-ac44-7803-81ec-19b78c7ddab2",
+        "summary": "v1",
+        "status": "published",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:33.988Z",
+        "links": [
+          {
+            "kind": "playbook",
+            "id": "01a0bb0a-aaed-7ac9-8bbc-b0781bf5a4f0"
+          }
+        ]
+      },
+      {
+        "kind": "deployment",
+        "id": "01a0bb0a-b324-7803-93aa-c2544d9684ac",
+        "summary": "active",
+        "status": "active",
+        "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+        "recordedAt": "2026-09-19T19:00:35.748Z",
+        "links": [
+          {
+            "kind": "playbook-version",
+            "id": "01a0bb0a-ac44-7803-81ec-19b78c7ddab2"
+          }
+        ]
+      },
+      {
+        "kind": "evidence",
+        "id": "01a0bb0a-be2c-743a-beb1-7887d9c959fe",
+        "summary": "source_fact internal-warehouse warehouse/activation-export — observed 2026-09-14T08:00:00.000Z",
+        "status": "C",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:38.572Z",
+        "links": []
+      },
+      {
+        "kind": "evidence",
+        "id": "01a0bb0a-bd55-71e2-b281-e6bdbea29f0c",
+        "summary": "observation meta-ads report/2026-09-job-outcome — observed 2026-09-16T14:00:00.000Z",
+        "status": "B",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:38.357Z",
+        "links": []
+      },
+      {
+        "kind": "evidence",
+        "id": "01a0bb0a-bc8e-78dd-a364-aed6cada6487",
+        "summary": "observation meta-ads report/2026-09-revenue — observed 2026-09-15T10:30:00.000Z",
+        "status": "B",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:38.158Z",
+        "links": []
+      },
+      {
+        "kind": "outcome",
+        "id": "01a0bb0d-076d-7d8d-b284-a94cd90414d9",
+        "summary": "Activation rose to 42%, in line with the expected interval.",
+        "status": "as-expected",
+        "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+        "recordedAt": "2026-09-19T19:03:08.951Z",
+        "links": [
+          {
+            "kind": "learning",
+            "id": "01a0bb0a-bf64-790c-8387-497a0d97b9e6"
+          }
+        ]
+      },
+      {
+        "kind": "decision",
+        "id": "01a0bb0d-0af1-7523-9907-0047d48a6540",
+        "summary": "Offer a flat fifteen percent discount for annual prepayment",
+        "status": "rejected",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:03:09.297Z",
+        "links": []
+      },
+      {
+        "kind": "decision",
+        "id": "01a0bb0d-0a49-7598-af18-0c11e6db6158",
+        "summary": "Shift thirty percent of Atlas-sourced retargeting spend into localized industrial search",
+        "status": "proposed",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:03:09.129Z",
+        "links": [
+          {
+            "kind": "evidence",
+            "id": "01a0bb0a-be2c-743a-beb1-7887d9c959fe"
+          }
+        ]
+      },
+      {
+        "kind": "decision",
+        "id": "01a0bb0d-076d-7d8d-b284-a94cd90414d9",
+        "summary": "Roll out the five-touch onboarding sequence to all new Helio accounts",
+        "status": "accepted",
+        "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+        "recordedAt": "2026-09-19T19:03:08.397Z",
+        "links": [
+          {
+            "kind": "evidence",
+            "id": "01a0bb0a-be2c-743a-beb1-7887d9c959fe"
+          },
+          {
+            "kind": "evidence",
+            "id": "01a0bb0a-bc8e-78dd-a364-aed6cada6487"
+          },
+          {
+            "kind": "learning",
+            "id": "01a0bb0a-bf64-790c-8387-497a0d97b9e6"
+          }
+        ]
+      },
+      {
+        "kind": "learning",
+        "id": "01a0bb0a-c02c-7270-bd02-223b45e01683",
+        "summary": "On-site visits close signed-feedback loops roughly twice as fast as email reminders for industrial clients.",
+        "status": "active",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:39.084Z",
+        "links": [
+          {
+            "kind": "evidence",
+            "id": "01a0bb0a-bd55-71e2-b281-e6bdbea29f0c"
+          }
+        ]
+      },
+      {
+        "kind": "learning",
+        "id": "01a0bb0a-bf64-790c-8387-497a0d97b9e6",
+        "summary": "The five-touch onboarding sequence lifted new-account activation by 2.1 points against the three-touch baseline.",
+        "status": "active",
+        "workspaceId": null,
+        "recordedAt": "2026-09-19T19:00:38.884Z",
+        "links": [
+          {
+            "kind": "evidence",
+            "id": "01a0bb0a-be2c-743a-beb1-7887d9c959fe"
+          }
+        ]
+      }
+    ],
+    "perKind": {
+      "client": 0,
+      "goal": 1,
+      "playbook": 1,
+      "playbook-version": 1,
+      "deployment": 1,
+      "evidence": 3,
+      "experiment": 0,
+      "outcome": 1,
+      "decision": 3,
+      "learning": 2
+    },
+    "supersededEvidenceCount": 0,
+    "projection": {
+      "projectionVersion": "cm-proj-v1",
+      "recordKinds": [
+        "client",
+        "goal",
+        "playbook",
+        "playbook-version",
+        "deployment",
+        "evidence",
+        "experiment",
+        "outcome",
+        "decision",
+        "learning"
+      ],
+      "selectionRules": {
+        "clientProfile": "live-canonical-ownership-resolution-tombstones-never-resolve",
+        "goals": "all-lifecycle-states-retained",
+        "playbooks": "client-scoped-own-playbooks-only-agency-reusable-ip-excluded",
+        "playbookVersions": "every-immutable-version-of-the-own-playbooks",
+        "deployments": "every-deployment-across-live-workspaces-all-states",
+        "evidence": "current-rows-only-superseded-predecessors-counted-never-presented",
+        "experiments": "all-records-any-lifecycle-or-result-state",
+        "outcomes": "observed-outcomes-on-accepted-decisions-recorded-exactly-once",
+        "decisions": "all-records-any-disposition-corrections-are-new-records",
+        "learnings": "all-records-derived-states-history-retained",
+        "ordering": "kind-vocabulary-order-then-recordedAt-desc-then-id-asc",
+        "summaryBound": 280,
+        "freshness": "live-derivation-next-read",
+        "workspaceSliceCovering": "client-wide-plus-own-workspace",
+        "linkCitations": "composed-kinds-only"
+      },
+      "basis": "live-derivation-over-canonical-authorities",
+      "persistence": "none-derived-read-model",
+      "retrievalTechnology": "none-live-composition-only"
+    },
+    "generatedAt": "2026-09-19T19:18:40.307Z"
+  }
+}
