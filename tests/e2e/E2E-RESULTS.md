@@ -291,3 +291,59 @@ Console gates on the delivery tree: `cd console && bun run lint` → 0 errors; `
   when their spawning shell exits; the local API/console/worker were kept alive via immediate
   orphaning to the container init (double-fork). No effect on the harness itself (per-journey
   foreground invocations, as before).
+
+---
+
+# Re-run 2026-09-19 22:55 UTC (console/e2e-fixes resume re-verification, local target)
+
+**Recorded:** 2026-09-19 22:55–22:56 UTC · **Branch:** `console/e2e-fixes` (head `9c01f99` at run
+time — the resumed worker session re-verified the pushed fixes before completing the delivery;
+no source changed for this record) · **Scope:** independent re-run of the exact combined
+invocation `--journey=client,responsive` against a fresh locally served target, confirming the
+2026-09-19 fixes hold on a clean environment rebuild.
+
+## Target
+
+Same local target shape as the 2026-09-19 record, rebuilt from scratch in the resume session:
+repository API (`src/entrypoints/api.ts`, Node 24) on `127.0.0.1:3010` over a fresh embedded
+PostgreSQL 18 instance (integration-harness binaries, fresh `mos` database), `MOS_ENV=dev`,
+object store `fs`, bootstrap admin `admin@mos.demo`, continuous `src/entrypoints/worker.ts`
+running so queued executions settle (the console drain route still requires the built
+in-process bundle — the worker is the local stand-in, as disclosed above); console on
+`http://127.0.0.1:3100` in proxy mode (`MOS_UPSTREAM_ORIGIN=http://127.0.0.1:3010`,
+`--webpack`, port 3100 — same two sandbox deviations as the earlier 2026-09-19 run).
+Demo data: one uninterrupted `console/scripts/seed-production.ts` pass through the bridge
+(70 creations, 0 reused — the seed requires `MOS_INTERNAL_API_TOKEN` to be set on BOTH the API
+and the seed invocation for the first-party app publishes; a first attempt without it failed at
+the publish step and the database was reset for the clean single pass recorded here).
+
+## Run matrix
+
+| Journey | Result | Steps | Key assertions |
+| --- | --- | --- | --- |
+| `client` | **PASS** | 13/13 | Evidence tab `preBlocks=0` (panelChars=3068, no error boundary); Decisions/Learning/Memory `preBlocks=0`; decision detail rationale+provenance; decision room read model; zero page errors |
+| `responsive` | **PASS** | 15/15 | mobile 390×844 login overflow=**0px** (scrollWidth 390 / viewport 390); mobile command center overflow=**0px** (scrollWidth 390 / viewport 390); desktop 1280×800 overflow=0px on both screens; drawer with all 7 destinations; Clients reachable; zero page errors |
+
+Command (repository root, single combined invocation):
+
+```bash
+MOS_E2E_RUN_ID=local-2026-09-19-fixes-r2 MOS_E2E_BASE_URL=http://127.0.0.1:3100 \
+  MOS_E2E_OWNER_EMAIL=casey@northwind.demo MOS_E2E_OWNER_PASSWORD=<per SEEDING.md> \
+  node tests/e2e/run.mjs --journey=client,responsive   # exit 0, ALL PASS
+```
+
+Console gates re-run in the same session: `cd console && bun run lint` → 0 errors;
+`bun run typecheck` → 0 errors. Repo `eslint .` → 0 errors.
+
+## Evidence
+
+- Run artifacts: `evidence/local-2026-09-19-fixes-r2/` — `run-summary.json` (machine record),
+  `client/06-workspace-tab-evidence.png` (formatted Evidence tab — an independent vision-model
+  inspection of this screenshot confirmed formatted UI rendering: metric figures with units,
+  no monospaced JSON block anywhere), `responsive/00-mobile-390x844-login.png` and
+  `responsive/01-mobile-390x844-command-center.png` (both overflow-free — the same vision-model
+  inspection confirmed no clipped content at the right edge and clean ellipsis truncation on the
+  demo login buttons), desktop 1280×800 twins, drawer/clients navigation shots, API captures
+  (redacted; demo persona only — no throwaway tenant was created by this run; secret sweep over
+  the evidence directory found no credentials).
+- The 2026-09-18 sections and the earlier 2026-09-19 record above are unchanged (append-only).
