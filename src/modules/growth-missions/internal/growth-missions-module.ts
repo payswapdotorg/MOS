@@ -141,7 +141,7 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
       assertValidGrowthMissionProvenance(provenance);
       assertValidGrowthMissionDeclaration(input.declaration);
 
-      return deps.db.transaction(async (tx) => {
+      await deps.db.transaction(async (tx) => {
         // CAS-serialized: row lock + explicit version check.
         const current = await lockMissionOrThrow(store, tx, input.missionId);
         if (current.version !== input.expectedVersion) {
@@ -188,15 +188,19 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
           detail,
           provenance,
         });
-        return await getDetailOrThrow(store, goals, input.missionId);
+        return input.missionId;
       });
+      // The honest read-back composes AFTER the commit — the post-commit
+      // state is the committed truth (reads inside the open transaction
+      // could observe the pre-commit snapshot on the pool connections).
+      return await getDetailOrThrow(store, goals, input.missionId);
     },
 
     async setGrowthMissionStatus(input, provenance) {
       assertValidGrowthMissionProvenance(provenance);
       assertValidGrowthMissionReason(input.reason);
 
-      return deps.db.transaction(async (tx) => {
+      await deps.db.transaction(async (tx) => {
         // CAS-serialized: row lock + explicit version check + the frozen
         // transition table — deterministic conflict behavior under
         // concurrent lifecycle operations.
@@ -264,8 +268,10 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
         if (outcome !== 'ok') {
           throw new ConflictError('mission status update lost the version race');
         }
-        return await getDetailOrThrow(store, goals, input.missionId);
+        return input.missionId;
       });
+      // The honest read-back composes AFTER the commit.
+      return await getDetailOrThrow(store, goals, input.missionId);
     },
 
     async addGrowthMissionGoalMapping(input, provenance) {
@@ -281,7 +287,7 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
         throw new NotFoundError('goal', input.goalId);
       }
 
-      return deps.db.transaction(async (tx) => {
+      await deps.db.transaction(async (tx) => {
         const current = await lockMissionOrThrow(store, tx, input.missionId);
         if (goalOwnership.scope.agencyId !== current.agencyId) {
           // The cross-agency goal reference is indistinguishable from an
@@ -321,15 +327,17 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
           detail,
           provenance,
         });
-        return await getDetailOrThrow(store, goals, input.missionId);
+        return input.missionId;
       });
+      // The honest read-back composes AFTER the commit.
+      return await getDetailOrThrow(store, goals, input.missionId);
     },
 
     async removeGrowthMissionGoalMapping(input, provenance) {
       assertValidGrowthMissionProvenance(provenance);
       assertValidGrowthMissionReason(input.reason);
 
-      return deps.db.transaction(async (tx) => {
+      await deps.db.transaction(async (tx) => {
         const current = await lockMissionOrThrow(store, tx, input.missionId);
         // Terminal history is frozen.
         if (isTerminalGrowthMissionStatus(current.status)) {
@@ -364,8 +372,10 @@ export function createGrowthMissionsModule(deps: GrowthMissionsModuleDeps): Grow
           detail,
           provenance,
         });
-        return await getDetailOrThrow(store, goals, input.missionId);
+        return input.missionId;
       });
+      // The honest read-back composes AFTER the commit.
+      return await getDetailOrThrow(store, goals, input.missionId);
     },
   };
 }

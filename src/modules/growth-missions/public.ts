@@ -679,5 +679,6 @@ export { createGrowthMissionsModule } from './internal/growth-missions-module.ts
 export {
   assertValidGrowthMissionDeclaration,
   assertValidGrowthMissionProvenance,
+  assertValidGrowthMissionReason,
   composeGrowthMissionOwnerContext,
 } from './internal/growth-missions-store.ts';

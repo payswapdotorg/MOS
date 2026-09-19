@@ -445,7 +445,7 @@ export function registerGrowthMissionsRoutes(
   services: AppServices,
   modules: ApplicationModules,
 ): void {
-  const logger = services.observability.loggerFactory.forModule('growth-missions.api');
+  const logger = services.observability.loggerFactory.forModule('growthmissions.api');
 
   // -------------------------------------------------------------------------
   // POST /api/agencies/:agencyId/growth-missions — create an agency-scoped
@@ -493,7 +493,7 @@ export function registerGrowthMissionsRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('growth-missions.mission.created', undefined, {
+        logger.info('growthmissions.mission.created', undefined, {
           mission_id: ctx.result.mission.missionId,
           agency_id: ctx.params.agencyId,
           status: ctx.result.mission.status,
@@ -501,11 +501,11 @@ export function registerGrowthMissionsRoutes(
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'growth-missions.mission.created',
+          action: 'growthmissions.mission.created',
           targetType: 'growth_mission',
           targetId: ctx.result.mission.missionId,
           afterVersion: ctx.result.mission.version,
-          idempotencyKey: `growth-missions.mission.created:${ctx.result.mission.missionId}`,
+          idempotencyKey: `growthmissions.mission.created:${ctx.result.mission.missionId}`,
           details: {
             status: ctx.result.mission.status,
             objectiveFamily: ctx.result.currentVersion.objectiveFamily,
@@ -671,17 +671,17 @@ export function registerGrowthMissionsRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('growth-missions.mission.version_recorded', undefined, {
+        logger.info('growthmissions.mission.versionrecorded', undefined, {
           mission_id: ctx.params.missionId,
           version_seq: ctx.result.mission.currentVersionSeq,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'growth-missions.mission.version_recorded',
+          action: 'growthmissions.mission.versionrecorded',
           targetType: 'growth_mission',
           targetId: ctx.params.missionId,
           afterVersion: ctx.result.mission.version,
-          idempotencyKey: `growth-missions.mission.version_recorded:${ctx.result.mission.version}`,
+          idempotencyKey: `growthmissions.mission.versionrecorded:${ctx.result.mission.version}`,
           details: {
             versionSeq: ctx.result.mission.currentVersionSeq,
             objectiveFamily: ctx.result.currentVersion.objectiveFamily,
@@ -744,17 +744,17 @@ export function registerGrowthMissionsRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('growth-missions.mission.transitioned', undefined, {
+        logger.info('growthmissions.mission.transitioned', undefined, {
           mission_id: ctx.params.missionId,
           status: ctx.result.mission.status,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'growth-missions.mission.transitioned',
+          action: 'growthmissions.mission.transitioned',
           targetType: 'growth_mission',
           targetId: ctx.params.missionId,
           afterVersion: ctx.result.mission.version,
-          idempotencyKey: `growth-missions.mission.transitioned:${ctx.result.mission.version}`,
+          idempotencyKey: `growthmissions.mission.transitioned:${ctx.result.mission.version}`,
           details: {
             status: ctx.result.mission.status,
           },
@@ -811,18 +811,18 @@ export function registerGrowthMissionsRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('growth-missions.goal.mapped', undefined, {
+        logger.info('growthmissions.goal.mapped', undefined, {
           mission_id: ctx.params.missionId,
           mapping_count: ctx.result.goalMappings.filter((mapping) => mapping.removedAt === null)
             .length,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'growth-missions.goal.mapped',
+          action: 'growthmissions.goal.mapped',
           targetType: 'growth_mission',
           targetId: ctx.params.missionId,
           afterVersion: ctx.result.mission.version,
-          idempotencyKey: `growth-missions.goal.mapped:${ctx.result.mission.version}`,
+          idempotencyKey: `growthmissions.goal.mapped:${ctx.result.mission.version}`,
           details: {
             activeMappings: ctx.result.goalMappings.filter((mapping) => mapping.removedAt === null)
               .length,
@@ -881,17 +881,17 @@ export function registerGrowthMissionsRoutes(
         );
       },
       emit: async (ctx) => {
-        logger.info('growth-missions.goal.unmapped', undefined, {
+        logger.info('growthmissions.goal.unmapped', undefined, {
           mission_id: ctx.params.missionId,
           goal_id: ctx.params.goalId,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
-          action: 'growth-missions.goal.unmapped',
+          action: 'growthmissions.goal.unmapped',
           targetType: 'growth_mission',
           targetId: ctx.params.missionId,
           afterVersion: ctx.result.mission.version,
-          idempotencyKey: `growth-missions.goal.unmapped:${ctx.result.mission.version}`,
+          idempotencyKey: `growthmissions.goal.unmapped:${ctx.result.mission.version}`,
           details: {
             goalId: ctx.params.goalId,
           },
