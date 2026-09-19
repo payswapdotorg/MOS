@@ -1,0 +1,80 @@
+{
+  "recordedAt": "2026-09-19T19:14:23.590Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:3100/api/mos/clients/01a0bb0a-a338-7599-8dc5-93abbe7a5722/evidence"
+  },
+  "status": 200,
+  "body": {
+    "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+    "evidence": [
+      {
+        "evidenceId": "01a0bb0a-be2c-743a-beb1-7887d9c959fe",
+        "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+        "class": "source_fact",
+        "source": {
+          "system": "internal-warehouse",
+          "ref": "warehouse/activation-export"
+        },
+        "observedAt": "2026-09-14T08:00:00.000Z",
+        "content": {
+          "unit": "ratio",
+          "value": 0.42,
+          "metric": "activation_rate"
+        },
+        "quality": "C",
+        "provenance": {
+          "actor": "user:01a0bb0a-9677-79e6-b3fb-1510b9c924d0",
+          "recordedVia": "api",
+          "correlationId": "01a0bb0a-be28-71da-969f-dfdad5eac6e8",
+          "recordedAt": "2026-09-19T19:00:38.572Z"
+        }
+      },
+      {
+        "evidenceId": "01a0bb0a-bd55-71e2-b281-e6bdbea29f0c",
+        "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+        "class": "observation",
+        "source": {
+          "system": "meta-ads",
+          "ref": "report/2026-09-job-outcome"
+        },
+        "observedAt": "2026-09-16T14:00:00.000Z",
+        "content": {
+          "unit": "count",
+          "value": 1,
+          "metric": "visit_outcome"
+        },
+        "quality": "B",
+        "provenance": {
+          "actor": "user:01a0bb0a-9677-79e6-b3fb-1510b9c924d0",
+          "recordedVia": "api",
+          "correlationId": "01a0bb0a-bd4f-79c7-9b21-673486a4bc38",
+          "recordedAt": "2026-09-19T19:00:38.357Z"
+        }
+      },
+      {
+        "evidenceId": "01a0bb0a-bc8e-78dd-a364-aed6cada6487",
+        "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+        "class": "observation",
+        "source": {
+          "system": "meta-ads",
+          "ref": "report/2026-09-revenue"
+        },
+        "observedAt": "2026-09-15T10:30:00.000Z",
+        "content": {
+          "unit": "USD",
+          "value": 5000,
+          "metric": "revenue"
+        },
+        "quality": "B",
+        "provenance": {
+          "actor": "user:01a0bb0a-9677-79e6-b3fb-1510b9c924d0",
+          "recordedVia": "api",
+          "correlationId": "01a0bb0a-bc86-72e8-b5ea-fc182ff4c254",
+          "recordedAt": "2026-09-19T19:00:38.158Z"
+        }
+      }
+    ]
+  }
+}

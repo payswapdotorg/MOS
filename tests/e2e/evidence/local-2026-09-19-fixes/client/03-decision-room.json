@@ -1,0 +1,238 @@
+{
+  "recordedAt": "2026-09-19T19:14:24.952Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:3100/api/mos/reporting/decision-room/01a0bb0a-a338-7599-8dc5-93abbe7a5722"
+  },
+  "status": 200,
+  "body": {
+    "scope": {
+      "kind": "client-decision-room",
+      "clientId": "01a0bb0a-a338-7599-8dc5-93abbe7a5722",
+      "agencyId": "01a0bb0a-9fc9-73fd-8266-923d7f678c32"
+    },
+    "generatedAt": "2026-09-19T19:14:24.939Z",
+    "whatHappened": {
+      "goalStatusCounts": {
+        "draft": 0,
+        "active": 1,
+        "achieved": 0,
+        "abandoned": 0
+      },
+      "instanceStatusCounts": {
+        "draft": 0,
+        "ready": 0,
+        "running": 2,
+        "paused": 1,
+        "blocked": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0
+      },
+      "goals": [
+        {
+          "goalId": "01a0bb0a-a6d7-7adf-a6db-cf5e47d9e99b",
+          "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+          "objective": "Grow monthly recurring revenue from Helio Robotics inspection subscriptions to $5,000",
+          "status": "active",
+          "successCriteria": [
+            {
+              "metric": "revenue",
+              "comparator": ">=",
+              "targetValue": 5000,
+              "unit": "USD",
+              "description": "Monthly recurring revenue"
+            },
+            {
+              "metric": "pipeline_accounts",
+              "comparator": ">=",
+              "targetValue": 12,
+              "unit": "accounts",
+              "description": "Qualified accounts in pipeline"
+            }
+          ],
+          "metrics": [
+            {
+              "name": "revenue",
+              "unit": "USD",
+              "description": "MRR from inspection subscriptions"
+            },
+            {
+              "name": "pipeline_accounts",
+              "unit": "accounts",
+              "description": "Qualified pipeline accounts"
+            }
+          ],
+          "constraints": [
+            {
+              "kind": "resource",
+              "description": "Media spend capped at $2,500/month"
+            }
+          ],
+          "timeHorizon": {
+            "startsOn": "2026-09-01",
+            "endsOn": "2026-12-31"
+          }
+        }
+      ],
+      "workflows": [
+        {
+          "workflowId": "01a0bb0a-aee6-7f3d-9b1f-8e17bedb60de",
+          "workspaceId": "01a0bb0a-a555-77ca-9bde-bdb72cf4c7ea",
+          "name": "Helio Inspection Demand Workflow",
+          "description": "Prep → field visit → done: the delivery workflow for the Q4 demand playbook.",
+          "instanceCounts": {
+            "draft": 0,
+            "ready": 0,
+            "running": 2,
+            "paused": 1,
+            "blocked": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "cancelled": 0
+          },
+          "instances": [
+            {
+              "workflowInstanceId": "01a0bb0a-b6d9-737b-8d48-f0a5cfcc0c40",
+              "workflowId": "01a0bb0a-aee6-7f3d-9b1f-8e17bedb60de",
+              "status": "running",
+              "createdAt": "2026-09-19T19:00:36.697Z",
+              "updatedAt": "2026-09-19T19:00:37.097Z"
+            },
+            {
+              "workflowInstanceId": "01a0bb0a-b926-70cf-8275-6608f1b7620d",
+              "workflowId": "01a0bb0a-aee6-7f3d-9b1f-8e17bedb60de",
+              "status": "paused",
+              "createdAt": "2026-09-19T19:00:37.286Z",
+              "updatedAt": "2026-09-19T19:00:37.786Z"
+            },
+            {
+              "workflowInstanceId": "01a0bb0d-168e-7486-93fc-5e4a9455533e",
+              "workflowId": "01a0bb0a-aee6-7f3d-9b1f-8e17bedb60de",
+              "status": "running",
+              "createdAt": "2026-09-19T19:03:12.270Z",
+              "updatedAt": "2026-09-19T19:03:12.602Z"
+            }
+          ]
+        }
+      ]
+    },
+    "why": {
+      "learningStatusCounts": {
+        "active": 2,
+        "superseded": 0,
+        "contradicted": 0,
+        "retired": 0
+      },
+      "learnings": [
+        {
+          "learningId": "01a0bb0a-c02c-7270-bd02-223b45e01683",
+          "statement": "On-site visits close signed-feedback loops roughly twice as fast as email reminders for industrial clients.",
+          "applicability": {
+            "channel": "field",
+            "segment": "industrial-buyers"
+          },
+          "status": "active",
+          "confidence": 0.61,
+          "evidenceRefs": [
+            "01a0bb0a-bd55-71e2-b281-e6bdbea29f0c"
+          ],
+          "experimentRefs": []
+        },
+        {
+          "learningId": "01a0bb0a-bf64-790c-8387-497a0d97b9e6",
+          "statement": "The five-touch onboarding sequence lifted new-account activation by 2.1 points against the three-touch baseline.",
+          "applicability": {
+            "channel": "email",
+            "segment": "industrial-buyers"
+          },
+          "status": "active",
+          "confidence": 0.72,
+          "evidenceRefs": [
+            "01a0bb0a-be2c-743a-beb1-7887d9c959fe"
+          ],
+          "experimentRefs": []
+        }
+      ]
+    },
+    "evidenceQuality": {
+      "totalRecords": 3,
+      "window": "evidence-authority-bounded-newest-first-listing",
+      "byClass": [
+        {
+          "class": "source_fact",
+          "total": 1,
+          "gradeCounts": {
+            "A": 0,
+            "B": 0,
+            "C": 1,
+            "D": 0,
+            "E": 0,
+            "F": 0
+          }
+        },
+        {
+          "class": "observation",
+          "total": 2,
+          "gradeCounts": {
+            "A": 0,
+            "B": 2,
+            "C": 0,
+            "D": 0,
+            "E": 0,
+            "F": 0
+          }
+        }
+      ]
+    },
+    "experiments": {
+      "experimentStatusCounts": {
+        "draft": 0,
+        "ready": 0,
+        "running": 0,
+        "analyzing": 0,
+        "concluded": 0,
+        "stopped": 0,
+        "invalidated": 0
+      },
+      "experiments": []
+    },
+    "recommendations": {
+      "basis": "applicable_learnings_and_declared_experiment_decisions",
+      "items": [
+        {
+          "kind": "applicable_learning",
+          "learningId": "01a0bb0a-c02c-7270-bd02-223b45e01683",
+          "statement": "On-site visits close signed-feedback loops roughly twice as fast as email reminders for industrial clients.",
+          "applicability": {
+            "channel": "field",
+            "segment": "industrial-buyers"
+          },
+          "confidence": 0.61
+        },
+        {
+          "kind": "applicable_learning",
+          "learningId": "01a0bb0a-bf64-790c-8387-497a0d97b9e6",
+          "statement": "The five-touch onboarding sequence lifted new-account activation by 2.1 points against the three-touch baseline.",
+          "applicability": {
+            "channel": "email",
+            "segment": "industrial-buyers"
+          },
+          "confidence": 0.72
+        }
+      ]
+    },
+    "approvals": {
+      "items": [
+        {
+          "kind": "workflow_instance_awaiting_continuation",
+          "workflowInstanceId": "01a0bb0a-b926-70cf-8275-6608f1b7620d",
+          "workflowId": "01a0bb0a-aee6-7f3d-9b1f-8e17bedb60de",
+          "instanceStatus": "paused",
+          "updatedAt": "2026-09-19T19:00:37.786Z"
+        }
+      ]
+    }
+  }
+}

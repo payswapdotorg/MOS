@@ -1,0 +1,25 @@
+{
+  "runId": "local-2026-09-19-fixes",
+  "baseUrl": "http://127.0.0.1:3100",
+  "target": "http://127.0.0.1:3100",
+  "startedAt": "2026-09-19T19:14:21.902Z",
+  "finishedAt": "2026-09-19T19:15:20.655Z",
+  "skipUi": false,
+  "allowDemoOfferConsumption": false,
+  "journeys": [
+    {
+      "journey": "client",
+      "status": "PASS",
+      "passedSteps": 13,
+      "failedSteps": 0,
+      "failedStep": null
+    },
+    {
+      "journey": "responsive",
+      "status": "PASS",
+      "passedSteps": 15,
+      "failedSteps": 0,
+      "failedStep": null
+    }
+  ]
+}
