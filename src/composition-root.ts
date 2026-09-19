@@ -419,6 +419,22 @@ import { createAppMeteringModule } from './modules/app-metering/public.ts';
 // bounded app state is in-memory with export/delete semantics — the
 // MKT-051 required preference, disclosed in the runbook).
 import { createFirstPartyAppsModule } from './modules/first-party-apps/public.ts';
+// MKT-053: /growth-missions — the Growth Mission and Objective Model
+// authority (spec/effective-backlog-v1.6.md section A; spec/
+// architecture-v1.6.md §1/§2/§3; spec/architecture-lock-v1.6.md rules
+// 16/17/41): the agency-scoped durable mission records (the declared
+// objective VERBATIM + the frozen §3 objective-family vocabulary + the
+// product/market context + the lifecycle state), the append-only version
+// tail (immutable objective — corrections are NEW version records), the
+// append-only history tail (state transitions with actor + provenance +
+// reason, terminal transitions citing the declared-family decision basis)
+// and the mission→goal mapping rows (canonical goal references through the
+// /goals public contract, READ-ONLY). A durable orchestration LAYER over
+// the existing Goals — never a replacement authority, never a second
+// workflow/execution engine, and NO controller/scheduler/replanner (the
+// Growth Operator is MKT-054, a later Work Item that composes these
+// module commands server-side).
+import { createGrowthMissionsModule } from './modules/growth-missions/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1132,6 +1148,26 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     fieldAgents,
     profitIntelligence,
   });
+  // MKT-053: /growth-missions — the Growth Mission and Objective Model
+  // authority (see the import block above). Composition is the frozen-matrix
+  // row added by this Work Item: the /agencies agency-row authority and the
+  // /goals Goal authority are consumed READ-ONLY through the module's
+  // declared narrow STRUCTURAL PORTS (the /experiments canonical-ownership
+  // port precedent — the real AgenciesModuleApi/GoalsModuleApi instances
+  // satisfy the port types structurally at this wiring point; zero
+  // cross-module imports exist inside src/modules/growth-missions, proven
+  // by tools/arch-check and the boundary tests). The Goal authority stays
+  // the sole measurable business-intent authority — the mission layer maps
+  // INTO existing goals and never re-states, re-computes or owns goal
+  // progress (architecture-lock-v1.6.md rule 16).
+  const growthMissions = createGrowthMissionsModule({
+    db,
+    clock,
+    ids,
+    agencies,
+    goals,
+  });
+
   // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
   // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
   // (resolveDecisionOwnership + getDecision); the playbook and
@@ -1206,7 +1242,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions },
     runtime: { aiProvider },
   };
 }

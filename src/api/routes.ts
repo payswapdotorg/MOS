@@ -253,6 +253,16 @@ import { registerAppMeteringRoutes } from './app-metering-routes.ts';
 // app-state mutations touch app-owned state only (never an authority
 // table — proven by direct SQL in the integration tests).
 import { registerFirstPartyAppsRoutes } from './first-party-apps-routes.ts';
+// MKT-053: the /growth-missions routes (the Growth Mission and Objective
+// Model surface: the agency-scoped create + list family, the composed
+// honest read-back with the version + history tails, the objective
+// CORRECTION path (a NEW declared version — never an in-place rewrite),
+// the frozen-lifecycle transitions with the REQUIRED reason, and the
+// goal-mapping family including the honest recorded removal. GET/POST
+// ONLY — no PUT/PATCH/DELETE exists anywhere in this family (asserted by
+// the boundary tests); NO controller/scheduler/execution verb — MKT-054
+// (the Growth Operator) composes the module commands server-side).
+import { registerGrowthMissionsRoutes } from './growth-missions-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -488,5 +498,11 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // composed-surface invoke/read + the bounded app-state family (see
   // the import block above).
   registerFirstPartyAppsRoutes(router, services, modules);
+  // MKT-053: the /growth-missions surfaces — the durable mission record
+  // family (see the import block above): create/list under the agency,
+  // the composed honest read-back (+versions/history tails), the
+  // version-correction POST, the frozen-lifecycle status POST (REQUIRED
+  // reason) and the goal-mapping family with the honest recorded removal.
+  registerGrowthMissionsRoutes(router, services, modules);
   return router;
 }
