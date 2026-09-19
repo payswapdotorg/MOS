@@ -188,7 +188,8 @@ redaction rules, operator procedures).
 # Re-run 2026-09-19 (console/e2e-fixes, local target)
 
 **Recorded:** 2026-09-19 (UTC) · **Branch:** `console/e2e-fixes` (base `1bf699b`; code fix commit
-`eab3cce`, final head `cc236f3` — the later commits only append this record and the run evidence)
+`eab3cce` — every commit after it only appends/refreshes this record and the run evidence, no
+source changes)
 · **Scope:** the two product findings F-1 and F-2 only — both affected journeys re-run against
 the FIXED console after the fixes landed (the other five journeys are untouched by the diff and
 are not re-run here; their 2026-09-18 production/preview PASS records stand).
