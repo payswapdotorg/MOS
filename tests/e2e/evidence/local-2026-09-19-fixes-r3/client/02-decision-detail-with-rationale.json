@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-09-19T23:45:05.553Z",
+  "note": null,
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:3100/api/mos/decisions/01a0bc0c-5f05-70bb-862b-e05346bafc72"
+  },
+  "status": 200,
+  "body": {
+    "decisionId": "01a0bc0c-5f05-70bb-862b-e05346bafc72",
+    "clientId": "01a0bc0c-532f-70ab-ba40-cf0ad6c4a558",
+    "agencyId": "01a0bc0c-52d1-7a99-bc56-03c3d6476dcd",
+    "objective": "Offer a flat fifteen percent discount for annual prepayment",
+    "context": "Finance asked whether annual prepay discounts would accelerate the Q4 close plan.",
+    "hypothesisSummary": "A flat 15% annual-prepay discount accelerates closes enough to offset the margin give.",
+    "evidenceRefs": [],
+    "expectedImpact": {
+      "summary": "Close rate expected to rise modestly.",
+      "direction": "increase",
+      "magnitude": "+5% close rate"
+    },
+    "expectedCost": "15% margin give on prepaid accounts.",
+    "alternatives": [
+      "Tiered prepay discounts (10%/12%/15%).",
+      "No discount; keep monthly terms."
+    ],
+    "proposer": {
+      "actor": "user:01a0bc0c-508e-7216-ad2d-c6831662aeb5",
+      "role": "agency_owner"
+    },
+    "disposition": "rejected",
+    "dispositionAt": "2026-09-19T23:42:02.538Z",
+    "idempotencyKey": "dep002-decision-3",
+    "provenance": {
+      "actor": "user:01a0bc0c-508e-7216-ad2d-c6831662aeb5",
+      "recordedVia": "api",
+      "correlationId": "01a0bc0c-5f01-74ec-9c00-1007701c540a",
+      "recordedAt": "2026-09-19T23:42:02.501Z"
+    }
+  }
+}

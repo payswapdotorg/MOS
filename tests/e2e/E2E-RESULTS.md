@@ -347,3 +347,74 @@ Console gates re-run in the same session: `cd console && bun run lint` → 0 err
   (redacted; demo persona only — no throwaway tenant was created by this run; secret sweep over
   the evidence directory found no credentials).
 - The 2026-09-18 sections and the earlier 2026-09-19 record above are unchanged (append-only).
+
+---
+
+# Re-run 2026-09-19 23:45 UTC (console/e2e-fixes resume re-verification #2, local target)
+
+**Recorded:** 2026-09-19 23:45–23:52 UTC · **Branch:** `console/e2e-fixes` (head `85f90aa` at run
+time — the second resumed worker session rebuilt the local target from scratch and re-verified the
+pushed fixes; no source changed for this record) · **Scope:** independent re-run of the exact
+combined invocation `--journey=client,responsive` against a fresh locally served target, confirming
+the F-1/F-2 fixes hold on a second clean environment rebuild (third PASSing local re-run overall).
+
+## Target
+
+Same local target shape as both 2026-09-19 records, rebuilt from scratch in this session:
+repository API (`src/entrypoints/api.ts`, Node 24) on `127.0.0.1:3010` over a fresh embedded
+PostgreSQL 18 instance (integration-harness binaries + ICU provisioning, fresh `mos` database),
+`MOS_ENV=dev`, object store `fs`, bootstrap admin `admin@mos.demo`, continuous
+`src/entrypoints/worker.ts` running so queued executions settle; console on `http://127.0.0.1:3100`
+in proxy mode (`MOS_UPSTREAM_ORIGIN=http://127.0.0.1:3010`, `--webpack`, port 3100 — the same two
+sandbox deviations as the earlier records: the sandbox's unrelated dev server occupies 3000, and
+turbopack dev fails to externalize the `pg` trace pin). Demo data: one uninterrupted
+`console/scripts/seed-production.ts` pass through the bridge (70 creations, 0 reused —
+`MOS_INTERNAL_API_TOKEN` set on both the API and the seed invocation, matching the r2 recipe).
+
+Environment-rebuild notes (no product impact, disclosed for reproducibility): the API and worker
+were started concurrently on the fresh database and the API lost the startup-migration race
+(`duplicate key … pg_type_typname_nsp_index`); it came up cleanly on immediate restart after the
+worker's migrations landed. Long-lived processes (postgres, API, worker, console) were kept alive
+across harness invocations via double-fork orphaning to the container init, as disclosed on
+2026-09-18.
+
+## Run matrix
+
+| Journey | Result | Steps | Key assertions |
+| --- | --- | --- | --- |
+| `client` | **PASS** | 13/13 | Evidence tab `preBlocks=0` (panelChars=3068, no error boundary); Decisions/Learning/Memory `preBlocks=0` unchanged; decision detail rationale+provenance; decision room read model; zero page errors |
+| `responsive` | **PASS** | 15/15 | mobile 390×844 login overflow=**0px** (scrollWidth 390 / viewport 390); mobile command center overflow=**0px** (scrollWidth 390 / viewport 390); desktop 1280×800 overflow=0px on both screens (unchanged); drawer with all 7 destinations; Clients reachable; zero page errors |
+
+Command (repository root, single combined invocation):
+
+```bash
+MOS_E2E_RUN_ID=local-2026-09-19-fixes-r3 MOS_E2E_BASE_URL=http://127.0.0.1:3100 \
+  MOS_E2E_OWNER_EMAIL=casey@northwind.demo MOS_E2E_OWNER_PASSWORD=<per SEEDING.md> \
+  node tests/e2e/run.mjs --journey=client,responsive   # exit 0, ALL PASS
+```
+
+Console gates re-run in the same session on the branch head: `cd console && bun run lint` → 0
+errors; `bun run typecheck` → 0 errors. Repo `eslint .` → 0 errors.
+
+## Evidence
+
+- Run artifacts: `evidence/local-2026-09-19-fixes-r3/` — `run-summary.json` (machine record),
+  `client/06-workspace-tab-evidence.png` (formatted Evidence tab — an independent vision-model
+  inspection confirmed labeled fields, metric figures with units and quality badges, and NO
+  monospaced JSON block or error boundary anywhere), `responsive/00-mobile-390x844-login.png`,
+  `responsive/01-mobile-390x844-command-center.png` (both overflow-free — vision-model inspection
+  confirmed no horizontal overflow and all cards inside the viewport), desktop 1280×800 twins,
+  drawer/clients navigation shots, API captures (redacted; demo persona only — no throwaway tenant
+  was created by this run; secret sweep over the evidence directory found no credentials — the demo
+  quick-login buttons render label+hint only, never passwords).
+- `responsive/05-mobile-390x844-login-demo-panel.png` (manual agent-browser capture, recorded here
+  with the harness artifacts) + direct per-element measurement at 390×844 on the live login page:
+  all four Demo quick-login buttons now measure **324px** each (baseline: 474px), their inner
+  spans actively truncate with `text-overflow: ellipsis` (e.g. scrollWidth 440 clipped to
+  clientWidth 290), and `document.documentElement.scrollWidth === 390 === window.innerWidth`;
+  `document.querySelectorAll('main pre').length === 0` on the page.
+- A first invocation of the same combined command under a mislabeled run id
+  (`local-2026-09-20-fixes-r3`, anticipating a UTC rollover that had not happened) also passed
+  13/13 + 15/15 with identical assertions; its evidence directory was discarded in favour of the
+  correctly dated id recorded here.
+- The 2026-09-18 sections and the earlier 2026-09-19 records above are unchanged (append-only).
