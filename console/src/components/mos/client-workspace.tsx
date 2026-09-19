@@ -28,6 +28,7 @@ import {
 } from "./hooks";
 import { useMosSession, type ClientWorkspaceTab } from "./session-store";
 import {
+  AssumptionDisclosure,
   CountChips,
   EmptyState,
   LoadingSkeleton,
@@ -542,9 +543,7 @@ function EvidenceTab({ clientId }: { clientId: string }) {
             {record.source.system}
             {record.source.ref ? `:${record.source.ref}` : ""} · observed {formatWhen(record.observedAt)}
           </p>
-          <pre className="mos-scroll mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2 font-mono text-xs">
-            {JSON.stringify(record.content, null, 2)}
-          </pre>
+          <EvidenceContent content={record.content} />
           {record.supersedes ? (
             <p className="font-mono text-xs text-muted-foreground">supersedes {shortId(record.supersedes)}</p>
           ) : null}
@@ -552,6 +551,76 @@ function EvidenceTab({ clientId }: { clientId: string }) {
       ))}
     </ScrollList>
   );
+}
+
+/**
+ * F-1 (VER-001): the evidence content payload as FORMATTED UI — never a raw
+ * JSON dump, never a <pre> block. Typed presentation per KNOWN content
+ * shape; every other shape falls back to the labeled key/value disclosure
+ * (the same formatted style the neighbouring intelligence tabs pass with —
+ * every key stays visible, nothing is dropped or synthesized).
+ *
+ * Content-shape inventory handled (the honest-shape rule — the backend
+ * contract is a free-form non-empty JSON object, so the renderer must stay
+ * total over every possible shape):
+ *   1. metric observation `{ metric, value, unit?, … }` — the dominant shape
+ *      of the authoritative classes (all three seeded Helio records are
+ *      exactly this): metric name, the measured value and its unit as one
+ *      formatted figure, remaining fields as labeled rows;
+ *   2. statement-bearing claims `{ statement, … }` — the prose carrier of the
+ *      claim classes (the attribution/causal_estimate classes additionally
+ *      carry the contract-required `content.method`, rendered as a labeled
+ *      row by the disclosure);
+ *   3. any other / future shape — the `AssumptionDisclosure` labeled key/value
+ *      list (nested records as sub-rows, vocabularies as chips, numbers
+ *      tabular), still not a JSON dump.
+ */
+function EvidenceContent({ content }: { content: Record<string, unknown> }) {
+  const entries = Object.entries(content);
+  const metricName = typeof content["metric"] === "string" ? content["metric"] : null;
+  const value = content["value"];
+  if (
+    metricName !== null &&
+    (typeof value === "number" || typeof value === "string" || typeof value === "boolean")
+  ) {
+    const unit = typeof content["unit"] === "string" ? content["unit"] : null;
+    const rest = Object.fromEntries(
+      entries.filter(([key]) => key !== "metric" && key !== "value" && key !== "unit"),
+    );
+    return (
+      <div className="mt-2 space-y-2">
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="font-mono text-xs text-muted-foreground">{metricName}</span>
+          <span className="font-mono text-lg font-semibold tabular-nums">
+            {formatMetricValue(value)}
+          </span>
+          {unit !== null ? <span className="font-mono text-xs text-muted-foreground">{unit}</span> : null}
+        </p>
+        {Object.keys(rest).length > 0 ? (
+          <AssumptionDisclosure assumptions={rest} label="Additional evidence content fields" />
+        ) : null}
+      </div>
+    );
+  }
+  const statement = typeof content["statement"] === "string" ? content["statement"] : null;
+  if (statement !== null && statement !== "") {
+    const rest = Object.fromEntries(entries.filter(([key]) => key !== "statement"));
+    return (
+      <div className="mt-2 space-y-2">
+        <p className="text-sm">{statement}</p>
+        {Object.keys(rest).length > 0 ? (
+          <AssumptionDisclosure assumptions={rest} label="Additional evidence content fields" />
+        ) : null}
+      </div>
+    );
+  }
+  return <AssumptionDisclosure assumptions={content} label="Evidence content fields" />;
+}
+
+/** A measured metric value, formatted by kind (grouping only — never rounded). */
+function formatMetricValue(value: number | string | boolean): string {
+  if (typeof value === "number" && Number.isInteger(value)) return value.toLocaleString();
+  return String(value);
 }
 
 function DecisionsTab({ clientId }: { clientId: string }) {

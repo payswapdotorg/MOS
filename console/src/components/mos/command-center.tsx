@@ -69,7 +69,12 @@ export function CommandCenterScreen() {
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* F-2 (VER-001): grid-cols-1 on every grid below its first explicit
+          breakpoint — an implicit auto track sizes to the cards' max-content,
+          so one unbreakable server token can blow the whole document out
+          (measured 581px at 390px before this fix). minmax(0, 1fr) tracks
+          keep the cards at viewport width. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Clients</CardDescription>
@@ -268,7 +273,8 @@ export function CommandCenterScreen() {
         <CardHeader>
           <CardTitle className="text-base">Evidence quality</CardTitle>
           <CardDescription>
-            Read window: <span className="font-mono text-xs">{view.evidenceQuality.window}</span>
+            Read window:{" "}
+            <span className="break-all font-mono text-xs">{view.evidenceQuality.window}</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -299,12 +305,17 @@ export function CommandCenterScreen() {
       </Card>
 
       {/* Risks + approvals */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Risks</CardTitle>
             <CardDescription>
-              Basis: <span className="font-mono text-xs">{view.risks.basis}</span>
+              Basis:{" "}
+              {/* F-2 (VER-001): the basis is a server vocabulary token with no
+                  break opportunities (snake_case) — measured 540px wide at
+                  390px, the direct cause of the 581px overflow. break-all
+                  wraps it inside the card. */}
+              <span className="break-all font-mono text-xs">{view.risks.basis}</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -392,7 +403,7 @@ export function CommandCenterScreen() {
             <MosErrorView error={profit.error} what="profit intelligence" />
           ) : profit.data ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <FigureDisplay label="Realized margin" figure={profit.data.margin.realizedMargin} />
                 <FigureDisplay label="Estimated margin" figure={profit.data.margin.estimatedMargin} />
                 <FigureDisplay label="Total delivery cost" figure={profit.data.costs.totalDeliveryCost} />

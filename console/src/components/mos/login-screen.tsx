@@ -368,7 +368,13 @@ export function LoginScreen() {
             workflows, evidence, apps and a live work queue). Demo accounts are for exploration
             only — they are real identities on this platform, but their data is demo staging data.
           </p>
-          <div className="grid gap-2">
+          {/* F-2 (VER-001): grid-cols-1 = repeat(1, minmax(0, 1fr)) — the
+              track can shrink below the buttons' whitespace-nowrap
+              max-content, so the inner min-w-0 + truncate spans actually
+              truncate inside the max-w-md card on 390px viewports (an
+              implicit auto track sizes to the max-content width and blew the
+              document out to 507px). */}
+          <div className="grid grid-cols-1 gap-2">
             {DEMO_LOGINS.map((demo) => (
               <Button
                 key={demo.email}
