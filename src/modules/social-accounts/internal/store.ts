@@ -453,6 +453,97 @@ export class SocialAccountsStore {
     return row === undefined ? null : toGrantRecord(row);
   }
 
+  /**
+   * The account's CURRENT REFRESHABLE grant (MKT-055 AC-2 — the frozen
+   * contract: authorized OR expired, the refresh-token recovery path).
+   * FILLED grants only (`credential_reference_id IS NOT NULL`): a dead
+   * expired round that never completed carries no vault reference and is
+   * never a refresh candidate. At most one filled authorized-or-expired
+   * grant exists at any time (the authorized fence + the supersede
+   * discipline), so newest-first + LIMIT 1 is exact.
+   */
+  async getCurrentRefreshableGrant(
+    socialAccountId: string,
+  ): Promise<SocialGrantRecord | null> {
+    const result = await this.db.query<SocialGrantRow>(
+      `${GRANT_SELECT} WHERE social_account_id = $1
+         AND grant_state IN ('authorized', 'expired')
+         AND credential_reference_id IS NOT NULL
+       ORDER BY created_at DESC, grant_id DESC
+       LIMIT 1`,
+      [socialAccountId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toGrantRecord(row);
+  }
+
+  /**
+   * Locks an account row (FOR UPDATE) on the caller's transaction — the
+   * completion/refresh/death serialization point: every lifecycle
+   * transaction that can land an authorized grant on, or kill, an
+   * EXISTING binding takes the account lock FIRST, so a completion that
+   * races a disconnect/revocation either observes the terminal state and
+   * refuses, or commits before the death sweep reads the live-grant set
+   * (no authorized grant can survive on a dead binding).
+   */
+  async lockAccount(
+    runner: DbTransaction,
+    socialAccountId: string,
+  ): Promise<SocialAccountRecord | null> {
+    const result = await runner.query<SocialAccountRow>(
+      `${ACCOUNT_SELECT} WHERE social_account_id = $1 FOR UPDATE`,
+      [socialAccountId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toAccountRecord(row);
+  }
+
+  /**
+   * The account's CURRENT FILLED grant (authorized or expired, WITH a
+   * vault reference) FOR UPDATE on the caller's transaction — the
+   * supersede target of a completion. The FILLED filter is load-bearing:
+   * a stale expired round that never completed (no credential) must NEVER
+   * be picked as the supersede target (transitioning it to 'superseded'
+   * would violate the migration-046 payload-shape CHECK — only a
+   * revoked/revoked-with-expiry death is legal for a never-completed row).
+   */
+  async lockCurrentFilledGrant(
+    runner: DbTransaction,
+    socialAccountId: string,
+  ): Promise<SocialGrantRecord | null> {
+    const result = await runner.query<SocialGrantRow>(
+      `${GRANT_SELECT} WHERE social_account_id = $1
+         AND grant_state IN ('authorized', 'expired')
+         AND credential_reference_id IS NOT NULL
+       ORDER BY created_at DESC, grant_id DESC
+       LIMIT 1 FOR UPDATE`,
+      [socialAccountId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toGrantRecord(row);
+  }
+
+  /**
+   * The account's live grants (authorized + expired — the death sweep
+   * set) FOR UPDATE on the caller's transaction. Includes never-completed
+   * expired rounds: their only legal moves are 'expired' → revoked, which
+   * the shape CHECK admits. Read AFTER the account lock inside the death
+   * transaction — the definitive set no straggler can escape.
+   */
+  async lockLiveGrants(
+    runner: DbTransaction,
+    socialAccountId: string,
+  ): Promise<readonly SocialGrantRecord[]> {
+    const result = await runner.query<SocialGrantRow>(
+      `${GRANT_SELECT} WHERE social_account_id = $1
+         AND grant_state IN ('authorized', 'expired')
+       ORDER BY created_at DESC, grant_id DESC
+       FOR UPDATE`,
+      [socialAccountId],
+    );
+    return result.rows.map(toGrantRecord);
+  }
+
   /** The account's grant tail (the authorization history, newest first). */
   async listGrantsForAccount(socialAccountId: string): Promise<readonly SocialGrantRecord[]> {
     const result = await this.db.query<SocialGrantRow>(

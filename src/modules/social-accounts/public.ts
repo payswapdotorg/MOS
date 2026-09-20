@@ -841,6 +841,7 @@ export {
   assertValidTokenSecretHandle,
   buildFlowRegistry,
   classifySocialWriteConflict,
+  composeExternalRevocationReason,
   composeGrantStartEvent,
   composeGrantCompletedEvent,
   composeSocialAccountEvent,

@@ -311,6 +311,24 @@ export function assertValidExpiresAt(expiresAt: string | null): void {
   }
 }
 
+/**
+ * Composes the reason recorded on externally-signalled revocation events:
+ * the signal source is embedded (disclosure) and the COMPOSED string is
+ * validated against the event reason budget BEFORE any side effect runs
+ * (an over-budget composition is a fail-closed 422 — it must never fire
+ * mid-death after vault references were already disabled).
+ */
+export function composeExternalRevocationReason(
+  signalledVia: string,
+  reason: string | null,
+): string {
+  const composed = reason === null
+    ? `external revocation signalled via ${signalledVia}`
+    : `external revocation signalled via ${signalledVia}: ${reason}`;
+  assertValidReason(composed);
+  return composed;
+}
+
 /** Validates the bounded reason of a lifecycle command. */
 export function assertValidReason(reason: string | null): void {
   if (

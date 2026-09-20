@@ -69,6 +69,7 @@ import {
   assertValidRequestedScopes,
   assertValidTokenSecretHandle,
   buildFlowRegistry,
+  composeExternalRevocationReason,
   composeGrantCompletedEvent,
   composeGrantStartEvent,
   composeSocialAccountEvent,
@@ -194,13 +195,16 @@ export function createSocialAccountsModule(
   /**
    * Disables a replaced/dead grant's vault reference through the
    * /credentials public contract (no zombie grants). Idempotent
-   * (already-disabled/deleted references are skipped) and ordered BEFORE
-   * the durable state transition so an unexpected failure aborts the
-   * whole operation with nothing recorded; if the state transition were
-   * to fail after a successful disablement, every downstream use still
-   * fails closed (the authorized-execution resolution of a disabled
-   * reference returns null) — the disable-first ordering can never
-   * zombify INTO use.
+   * (already-disabled/deleted references are skipped). In the death
+   * transactions it runs INSIDE the transaction, disable-first per grant,
+   * before that grant's revoked transition: a transaction that fails
+   * after a disablement aborts with the grant still authorized but its
+   * reference dead — every downstream use still fails closed (the
+   * authorized-execution resolution of a disabled reference returns
+   * null) — and the retry converges (the disable is idempotent). In the
+   * completion/refresh paths it runs BEFORE the durable transition with
+   * the same fail-closed convergence property. The disable-first
+   * ordering can never zombify INTO use.
    */
   async function disableTokenReference(credentialReferenceId: string): Promise<void> {
     const reference = await credentials.getCredentialReference(credentialReferenceId);
@@ -406,7 +410,7 @@ export function createSocialAccountsModule(
       );
 
       const outcome = await flow.exchangeAuthorizationCode(
-        flowContext(ownership, null),
+        flowContext(ownership, round.workspaceId),
         { code: input.code, state: input.state },
       );
       validateExchangeOutcome(outcome);
@@ -449,13 +453,14 @@ export function createSocialAccountsModule(
       }
       const targetAccount = preboundAccount ?? existingBinding;
 
-      // The supersede target: the account's CURRENT grant (authorized, or
-      // EXPIRED — the reauthorize recovery of an expired authorization).
-      // Its vault reference dies FIRST (the disable-first ordering).
+      // The supersede target: the account's CURRENT FILLED grant
+      // (authorized, or expired — the reauthorize recovery of an expired
+      // authorization; FILLED only, exactly like the in-transaction
+      // supersede below). Its vault reference dies FIRST (the
+      // disable-first ordering). Never-completed expired rounds carry no
+      // reference and are never the supersede target.
       const currentForSupersede = targetAccount !== null
-        ? (await store.listGrantsForAccount(targetAccount.socialAccountId)).find(
-            (grant) => grant.grantState === 'authorized' || grant.grantState === 'expired',
-          ) ?? null
+        ? await store.getCurrentRefreshableGrant(targetAccount.socialAccountId)
         : null;
       if (
         currentForSupersede !== null
@@ -479,100 +484,116 @@ export function createSocialAccountsModule(
       // THE BINDING + THE FILL, inside ONE transaction with the round
       // LOCKED first (concurrent completions of the same round serialize;
       // the loser re-reads a consumed round and refuses before touching
-      // anything). The superseded grant's vault reference is disabled
-      // BEFORE the transaction (the disable-first ordering — an abort
-      // leaves no zombie INTO use, and the round stays retryable).
-      // The superseded grant's vault reference dies BEFORE the transaction
-      // (the disable-first ordering — an abort leaves no zombie INTO use,
-      // and the round stays retryable).
-      if (targetAccount !== null) {
-        const currentGrant = await store.getCurrentAuthorizedGrant(targetAccount.socialAccountId);
-        if (currentGrant !== null && currentGrant.credentialReferenceId !== null) {
-          await disableTokenReference(currentGrant.credentialReferenceId);
-        }
-      }
-
-      const { account, grant } = await db.transaction(async (tx) => {
-        const locked = await store.lockGrant(tx, round.grantId);
-        if (locked === null || locked.grantState !== 'pending') {
-          throw new ConflictError(
-            `authorization round ${round.grantId} was consumed concurrently — the completion refuses (fail-closed)`,
-          );
-        }
-        const account = targetAccount !== null
-          ? targetAccount
-          : await store.insertAccount(
-              tx,
-              {
-                integrationConnectionId: ownership.connection.connectionId,
-                agencyId: ownership.connection.agencyId,
-                clientId: ownership.connection.clientId,
-                workspaceId: round.workspaceId,
-                platformId: ownership.connection.adapterKey,
-                externalAccountId: outcome.identity.externalAccountId,
-                displayIdentity: outcome.identity.displayIdentity,
-                verifiedAt: outcome.identity.verifiedAt,
-              },
-              provenance,
-            );
-        // The idempotent-reconnect / reauthorize supersession: the
-        // target account's current grant (authorized or expired) is
-        // superseded by THIS round inside the same transaction (the
-        // single-active-authorization fence requires the transition
-        // BEFORE the fill).
-        if (targetAccount !== null) {
-          const current =
-            (await store.listGrantsForAccount(account.socialAccountId)).find(
-              (grant) => grant.grantState === 'authorized' || grant.grantState === 'expired',
-            ) ?? null;
-          if (current !== null) {
-            await store.transitionGrantState(tx, {
-              grantId: current.grantId,
-              grantState: 'superseded',
-              successorGrantId: locked.grantId,
-              expectedVersion: current.version,
-            });
-            await store.appendEvent(
-              tx,
-              composeSocialAccountEvent(
-                {
-                  socialAccountId: account.socialAccountId,
-                  grantId: current.grantId,
-                  eventType: 'grant_superseded',
-                  initiatedBy: 'operator',
-                  reason: null,
-                  providerRevokeOutcome: null,
-                },
-                provenance,
-              ),
+      // anything). For an EXISTING binding the account row is locked and
+      // re-checked as CONNECTED under the lock — a completion racing a
+      // concurrent disconnect/revocation either observes the terminal
+      // state and refuses, or commits before the death sweep reads the
+      // live-grant set (no authorized grant survives on a dead binding,
+      // and no fresh vault reference is left behind: a refusal here
+      // triggers the compensation below). The superseded grant's vault
+      // reference is disabled BEFORE the transaction (the disable-first
+      // ordering — an abort leaves no zombie INTO use, and the round
+      // stays retryable).
+      let completed;
+      try {
+        completed = await db.transaction(async (tx) => {
+          const locked = await store.lockGrant(tx, round.grantId);
+          if (locked === null || locked.grantState !== 'pending') {
+            throw new ConflictError(
+              `authorization round ${round.grantId} was consumed concurrently — the completion refuses (fail-closed)`,
             );
           }
-        }
-        const grant = await store.completeGrant(
-          tx,
-          {
-            grantId: locked.grantId,
-            socialAccountId: account.socialAccountId,
-            credentialReferenceId,
-            expiresAt: outcome.expiresAt,
-            expectedVersion: locked.version,
-          },
-          provenance,
-        );
-        await store.insertGrantScopes(tx, {
-          grantId: grant.grantId,
-          grantedScopes: outcome.grantedScopes,
-          capabilityTags: outcome.capabilityTags,
-        });
-        await store.appendEvent(
-          tx,
-          composeGrantCompletedEvent(
-            { socialAccountId: account.socialAccountId, grantId: grant.grantId },
+          const account = targetAccount !== null
+            ? targetAccount
+            : await store.insertAccount(
+                tx,
+                {
+                  integrationConnectionId: ownership.connection.connectionId,
+                  agencyId: ownership.connection.agencyId,
+                  clientId: ownership.connection.clientId,
+                  workspaceId: round.workspaceId,
+                  platformId: ownership.connection.adapterKey,
+                  externalAccountId: outcome.identity.externalAccountId,
+                  displayIdentity: outcome.identity.displayIdentity,
+                  verifiedAt: outcome.identity.verifiedAt,
+                },
+                provenance,
+              );
+          if (targetAccount !== null) {
+            const lockedAccount = await store.lockAccount(tx, account.socialAccountId);
+            if (lockedAccount === null || lockedAccount.status !== 'connected') {
+              throw new ConflictError(
+                `social account ${account.socialAccountId} is '${lockedAccount?.status ?? 'unknown'}' — the completion on a binding that died concurrently refuses (fail-closed)`,
+              );
+            }
+          }
+          // The idempotent-reconnect / reauthorize supersession: the
+          // target account's CURRENT FILLED grant (authorized or expired,
+          // WITH a vault reference) is superseded by THIS round inside the
+          // same transaction (the single-active-authorization fence
+          // requires the transition BEFORE the fill). Never-completed
+          // expired rounds carry no reference and are NEVER the supersede
+          // target (their shape cannot legally become 'superseded').
+          if (targetAccount !== null) {
+            const current = await store.lockCurrentFilledGrant(tx, account.socialAccountId);
+            if (current !== null && current.grantId !== locked.grantId) {
+              await store.transitionGrantState(tx, {
+                grantId: current.grantId,
+                grantState: 'superseded',
+                successorGrantId: locked.grantId,
+                expectedVersion: current.version,
+              });
+              await store.appendEvent(
+                tx,
+                composeSocialAccountEvent(
+                  {
+                    socialAccountId: account.socialAccountId,
+                    grantId: current.grantId,
+                    eventType: 'grant_superseded',
+                    initiatedBy: 'operator',
+                    reason: null,
+                    providerRevokeOutcome: null,
+                  },
+                  provenance,
+                ),
+              );
+            }
+          }
+          const grant = await store.completeGrant(
+            tx,
+            {
+              grantId: locked.grantId,
+              socialAccountId: account.socialAccountId,
+              credentialReferenceId,
+              expiresAt: outcome.expiresAt,
+              expectedVersion: locked.version,
+            },
             provenance,
-          ),
-        );
-        return { account, grant };
-      });
+          );
+          await store.insertGrantScopes(tx, {
+            grantId: grant.grantId,
+            grantedScopes: outcome.grantedScopes,
+            capabilityTags: outcome.capabilityTags,
+          });
+          await store.appendEvent(
+            tx,
+            composeGrantCompletedEvent(
+              { socialAccountId: account.socialAccountId, grantId: grant.grantId },
+              provenance,
+            ),
+          );
+          return { account, grant };
+        });
+      } catch (error) {
+        // COMPENSATION (no orphan vault references): the transaction rolled
+        // back, so no grant row ever pointed at the freshly created
+        // reference — it is disabled best-effort right here so the aborted
+        // attempt leaves no active orphan (the vault material slot is
+        // reclaimed fail-closed; the original error still surfaces).
+        await disableTokenReference(credentialReferenceId).catch(() => undefined);
+        throw error;
+      }
+      const { account, grant } = completed;
       return {
         account,
         grant,
@@ -596,7 +617,11 @@ export function createSocialAccountsModule(
         );
       }
 
-      const current = await store.getCurrentAuthorizedGrant(account.socialAccountId);
+      // The CURRENT REFRESHABLE grant (AC-2 — the frozen contract:
+      // authorized OR expired, the refresh-token recovery path; FILLED
+      // grants only — a dead expired round that never completed carries
+      // no vault reference and never refreshes).
+      const current = await store.getCurrentRefreshableGrant(account.socialAccountId);
       if (current === null || !isGrantRefreshable(current.grantState)) {
         throw new ConflictError(
           `social account ${account.socialAccountId} holds no refreshable grant (authorized or expired) — reauthorize instead`,
@@ -656,7 +681,12 @@ export function createSocialAccountsModule(
       // reference dies next — the disable-first ordering), then the
       // append-only transition pair inside ONE transaction: the old grant
       // moves to 'refreshed' with the successor link and the new grant is
-      // born authorized.
+      // born authorized. The account row is locked FIRST under the
+      // transaction (a refresh racing a concurrent disconnect/revocation
+      // either observes the terminal state and refuses, or commits before
+      // the death sweep reads the live-grant set); the scope records ride
+      // INSIDE the same transaction (an authorized successor grant is
+      // never committed without its verbatim scope records).
       const successorGrantId = deps.ids.newId();
       const successorReferenceId = await createTokenReference({
         agencyId: ownership.connection.agencyId,
@@ -667,62 +697,78 @@ export function createSocialAccountsModule(
       });
       await disableTokenReference(current.credentialReferenceId!);
 
-      const grant = await db.transaction(async (tx) => {
-        const locked = await store.lockGrant(tx, current.grantId);
-        if (
-          locked === null
-          || !isGrantRefreshable(locked.grantState)
-          || locked.credentialReferenceId !== current.credentialReferenceId
-        ) {
-          throw new ConflictError(
-            `grant ${current.grantId} lost the refresh race — retry the operation`,
-          );
-        }
-        await store.transitionGrantState(tx, {
-          grantId: locked.grantId,
-          grantState: 'refreshed',
-          successorGrantId,
-          expectedVersion: locked.version,
-        });
-        const successor = await store.insertAuthorizedSuccessorGrant(
-          tx,
-          {
-            grantId: successorGrantId,
-            integrationConnectionId: ownership.connection.connectionId,
-            agencyId: ownership.connection.agencyId,
-            clientId: ownership.connection.clientId,
-            workspaceId: account.workspaceId,
-            socialAccountId: account.socialAccountId,
-            platformId: ownership.connection.adapterKey,
-            stateToken: deps.ids.newId(),
-            requestedScopes: current.requestedScopes,
-            credentialReferenceId: successorReferenceId,
-            expiresAt: outcome.expiresAt,
-            startedByProvenance: provenance,
-          },
-          provenance,
-        );
-        await store.appendEvent(
-          tx,
-          composeSocialAccountEvent(
+      let grant;
+      try {
+        grant = await db.transaction(async (tx) => {
+          const lockedAccount = await store.lockAccount(tx, account.socialAccountId);
+          if (lockedAccount === null || lockedAccount.status !== 'connected') {
+            throw new ConflictError(
+              `social account ${account.socialAccountId} is '${lockedAccount?.status ?? 'unknown'}' — the refresh on a binding that died concurrently refuses (fail-closed)`,
+            );
+          }
+          const locked = await store.lockGrant(tx, current.grantId);
+          if (
+            locked === null
+            || !isGrantRefreshable(locked.grantState)
+            || locked.credentialReferenceId !== current.credentialReferenceId
+          ) {
+            throw new ConflictError(
+              `grant ${current.grantId} lost the refresh race — retry the operation`,
+            );
+          }
+          await store.transitionGrantState(tx, {
+            grantId: locked.grantId,
+            grantState: 'refreshed',
+            successorGrantId,
+            expectedVersion: locked.version,
+          });
+          const successor = await store.insertAuthorizedSuccessorGrant(
+            tx,
             {
+              grantId: successorGrantId,
+              integrationConnectionId: ownership.connection.connectionId,
+              agencyId: ownership.connection.agencyId,
+              clientId: ownership.connection.clientId,
+              workspaceId: account.workspaceId,
               socialAccountId: account.socialAccountId,
-              grantId: locked.grantId,
-              eventType: 'grant_refreshed',
-              initiatedBy: 'operator',
-              reason: null,
-              providerRevokeOutcome: null,
+              platformId: ownership.connection.adapterKey,
+              stateToken: deps.ids.newId(),
+              requestedScopes: current.requestedScopes,
+              credentialReferenceId: successorReferenceId,
+              expiresAt: outcome.expiresAt,
+              startedByProvenance: provenance,
             },
             provenance,
-          ),
-        );
-        return successor;
-      });
-      await store.insertGrantScopes(db, {
-        grantId: grant.grantId,
-        grantedScopes: outcome.grantedScopes,
-        capabilityTags: outcome.capabilityTags,
-      });
+          );
+          await store.insertGrantScopes(tx, {
+            grantId: successor.grantId,
+            grantedScopes: outcome.grantedScopes,
+            capabilityTags: outcome.capabilityTags,
+          });
+          await store.appendEvent(
+            tx,
+            composeSocialAccountEvent(
+              {
+                socialAccountId: account.socialAccountId,
+                grantId: locked.grantId,
+                eventType: 'grant_refreshed',
+                initiatedBy: 'operator',
+                reason: null,
+                providerRevokeOutcome: null,
+              },
+              provenance,
+            ),
+          );
+          return successor;
+        });
+      } catch (error) {
+        // COMPENSATION (no orphan vault references): the transaction rolled
+        // back, so no grant row ever pointed at the successor reference —
+        // it is disabled best-effort right here so the aborted refresh
+        // leaves no active orphan (the original error still surfaces).
+        await disableTokenReference(successorReferenceId).catch(() => undefined);
+        throw error;
+      }
       return {
         account,
         grant,
@@ -854,17 +900,27 @@ export function createSocialAccountsModule(
         }
       }
 
-      // The vault references die FIRST (no zombie grants), then the
-      // durable death inside ONE transaction: the live grants are
-      // revoked, the binding moves to the terminal state and every event
-      // is appended.
-      for (const grant of liveGrants) {
-        if (grant.credentialReferenceId !== null) {
-          await disableTokenReference(grant.credentialReferenceId);
-        }
-      }
+      // The durable death inside ONE transaction, account row locked
+      // FIRST (the serialization point against concurrent completions/
+      // refreshes: they take the same lock before landing an authorized
+      // grant, so the live-grant set read here under the lock is the
+      // DEFINITIVE set — no straggler authorized grant or active vault
+      // reference can survive on a dead binding): the live grants'
+      // vault references are disabled (idempotently — disable-first per
+      // grant, inside the transaction), the grants are revoked, the
+      // binding moves to the terminal state and every event is appended.
       await db.transaction(async (tx) => {
-        for (const grant of liveGrants) {
+        const lockedAccount = await store.lockAccount(tx, account.socialAccountId);
+        if (lockedAccount === null || lockedAccount.status !== 'connected') {
+          throw new ConflictError(
+            `social account ${account.socialAccountId} is '${lockedAccount?.status ?? 'unknown'}' — the disconnect lost the death race (fail-closed)`,
+          );
+        }
+        const definitive = await store.lockLiveGrants(tx, account.socialAccountId);
+        for (const grant of definitive) {
+          if (grant.credentialReferenceId !== null) {
+            await disableTokenReference(grant.credentialReferenceId);
+          }
           await store.transitionGrantState(tx, {
             grantId: grant.grantId,
             grantState: 'revoked',
@@ -889,7 +945,7 @@ export function createSocialAccountsModule(
         await store.transitionAccountStatus(tx, {
           socialAccountId: account.socialAccountId,
           status: 'disconnected',
-          expectedVersion: account.version,
+          expectedVersion: lockedAccount.version,
         });
         await store.appendEvent(
           tx,
@@ -933,22 +989,28 @@ export function createSocialAccountsModule(
         );
       }
 
+      // The composed reason is validated against the event reason budget
+      // BEFORE any side effect (an over-budget composition is a fail-closed
+      // 422 — it must never fire mid-death after vault references were
+      // already disabled).
+      const reason = composeExternalRevocationReason(input.signalledVia, input.reason);
+
       // The externally-signalled death: identical failure modes to the
       // operator disconnect — the live grants are revoked, the vault
       // references die, the binding moves to the terminal 'revoked'
       // state. The signal source is recorded on the reason.
-      const reason =
-        input.reason === null
-          ? `external revocation signalled via ${input.signalledVia}`
-          : `external revocation signalled via ${input.signalledVia}: ${input.reason}`;
-      const liveGrants = await liveGrantsOf(account.socialAccountId);
-      for (const grant of liveGrants) {
-        if (grant.credentialReferenceId !== null) {
-          await disableTokenReference(grant.credentialReferenceId);
-        }
-      }
       await db.transaction(async (tx) => {
-        for (const grant of liveGrants) {
+        const lockedAccount = await store.lockAccount(tx, account.socialAccountId);
+        if (lockedAccount === null || lockedAccount.status !== 'connected') {
+          throw new ConflictError(
+            `social account ${account.socialAccountId} is '${lockedAccount?.status ?? 'unknown'}' — the external revocation lost the death race (fail-closed)`,
+          );
+        }
+        const definitive = await store.lockLiveGrants(tx, account.socialAccountId);
+        for (const grant of definitive) {
+          if (grant.credentialReferenceId !== null) {
+            await disableTokenReference(grant.credentialReferenceId);
+          }
           await store.transitionGrantState(tx, {
             grantId: grant.grantId,
             grantState: 'revoked',
@@ -973,7 +1035,7 @@ export function createSocialAccountsModule(
         await store.transitionAccountStatus(tx, {
           socialAccountId: account.socialAccountId,
           status: 'revoked',
-          expectedVersion: account.version,
+          expectedVersion: lockedAccount.version,
         });
         await store.appendEvent(
           tx,
@@ -1005,8 +1067,10 @@ export function createSocialAccountsModule(
       if (grant === null) return null;
       // LAZY EXPIRY: an authorized grant whose token expiry has passed is
       // NOT usable (the recorded 'expired' state is the observation; this
-      // is the enforcement — belt and braces).
-      if (grant.expiresAt !== null && Date.parse(grant.expiresAt) <= Date.now()) {
+      // is the enforcement — belt and braces). The INJECTED clock keeps
+      // the decision testable and consistent with every other timestamp
+      // the module records.
+      if (grant.expiresAt !== null && Date.parse(grant.expiresAt) <= Date.parse(clock.nowIso())) {
         return null;
       }
       const scopeFacts = await store.getGrantScopeFacts(grant.grantId);

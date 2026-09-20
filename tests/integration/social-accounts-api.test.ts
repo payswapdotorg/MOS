@@ -431,12 +431,16 @@ test('AC-1/AC-2 golden path: authorize-start appends the PENDING round; the comp
 
   // The odd, provider-specific scope strings must ride through VERBATIM
   // (never normalized — lock rule 19: a record, not an interpretation).
+  // The refresh fixture grants a DIFFERENT (smaller) scope set on
+  // refresh — the verbatim re-recording proof for the successor grant.
   const weirdScopes = ['read:content', 'Write.CONTENT', 'https://provider.example/scope/all'];
+  const refreshScopes = ['read:content', 'offline:all'];
   const issued = oauth().issueAuthorization({
     accountId: 'ext-channel-91',
     displayIdentity: 'The Growth Channel ✅',
     verifiedAt: '2026-07-01T09:30:00.000Z',
     scopes: weirdScopes,
+    refreshScopes,
     capabilityTags: ['account-read', 'content.publish', 'analytics:read'],
     expiresInMs: 3_600_000,
   });
@@ -556,7 +560,8 @@ test('AC-2 refresh: the successor grant is a NEW record with its OWN vault refer
   const exchangesBefore = oauth().exchangeCount();
 
   // The provider returns a DIFFERENT scope set on refresh — the verbatim
-  // re-recording proof (the grant records what the platform NOW grants).
+  // re-recording proof (the grant records what the platform NOW grants,
+  // never the originally-requested list).
   const refreshed = await accounts().refreshAuthorization(
     { socialAccountId: account.socialAccountId },
     MODULE_PROVENANCE,
@@ -565,7 +570,7 @@ test('AC-2 refresh: the successor grant is a NEW record with its OWN vault refer
   assert.equal(refreshed.grant.grantState, 'authorized');
   assert.notEqual(refreshed.grant.grantId, oldGrant.grantId, 'the successor is a NEW record');
   assert.notEqual(refreshed.grant.credentialReferenceId, oldReferenceId, 'the successor has its OWN vault reference');
-  assert.deepEqual(refreshed.scopeFacts.grantedScopes, ['read:content', 'Write.CONTENT', 'https://provider.example/scope/all']);
+  assert.deepEqual(refreshed.scopeFacts.grantedScopes, ['read:content', 'offline:all']);
 
   // The predecessor: refreshed + the successor link (append-only history).
   const predecessor = await accounts().getAuthorizationGrant(oldGrant.grantId);
@@ -713,6 +718,122 @@ test('AC-2 lazy expiry: a grant whose platform-reported expiry has passed refuse
   void issued;
 });
 
+test('AC-2 explicit-expiry refresh (regression): a grant in the EXPLICIT expired state IS refreshable — expired → refreshed, the frozen transition edge', async () => {
+  const explicitConnection = await freshConnection('alice_crm_explicit_expired');
+  const connected = await connectAccount(aliceClientId, explicitConnection, null, {
+    accountId: 'ext-explicit-expiry',
+    displayIdentity: 'Explicit Expiry Channel',
+    scopes: ['read:content'],
+    capabilityTags: ['account-read'],
+  });
+  const account = (await accounts().listSocialAccountsForClient(aliceClientId)).find(
+    (candidate) => candidate.socialAccountId === connected.accountId,
+  )!;
+
+  // The recorded expiry observation: authorized → expired (the state the
+  // frozen transition table says must remain refreshable).
+  const expired = await accounts().expireAuthorizationGrant(
+    { grantId: connected.grantId, reason: 'the access token expired at the provider' },
+    MODULE_PROVENANCE,
+  );
+  assert.equal(expired.grantState, 'expired');
+  assert.equal(
+    await accounts().getUsableAuthorization(account.socialAccountId),
+    null,
+    'an explicitly expired grant is not usable',
+  );
+
+  // The refresh-token recovery of an EXPLICITLY expired grant.
+  const refreshed = await accounts().refreshAuthorization(
+    { socialAccountId: account.socialAccountId },
+    MODULE_PROVENANCE,
+  );
+  assert.equal(refreshed.grant.grantState, 'authorized');
+  assert.notEqual(refreshed.grant.grantId, connected.grantId, 'a NEW successor record');
+  const predecessor = await accounts().getAuthorizationGrant(connected.grantId);
+  assert.equal(predecessor.grantState, 'refreshed', 'expired → refreshed (the frozen edge)');
+  assert.equal(predecessor.successorGrantId, refreshed.grant.grantId);
+  const predecessorReference = await credentialsModule().getCredentialReference(
+    predecessor.credentialReferenceId!,
+  );
+  assert.equal(predecessorReference!.status, 'disabled', 'no zombie grants');
+  const usable = await accounts().getUsableAuthorization(account.socialAccountId);
+  assert.equal(usable!.grant.grantId, refreshed.grant.grantId, 'recovered: usable again');
+});
+
+test('AC-2 stale pre-bound rounds (regression): expiring a stale PENDING reauthorize round never breaks the next reauthorize completion — only FILLED grants are supersede targets', async () => {
+  const staleConnection = await freshConnection('alice_crm_stale_round');
+  const connected = await connectAccount(aliceClientId, staleConnection, null, {
+    accountId: 'ext-stale-round',
+    displayIdentity: 'Stale Round Channel',
+    scopes: ['read:content'],
+    capabilityTags: ['account-read'],
+  });
+  const account = (await accounts().listSocialAccountsForClient(aliceClientId)).find(
+    (candidate) => candidate.socialAccountId === connected.accountId,
+  )!;
+
+  // A reauthorize round goes stale and is expired as a round (pending →
+  // expired — a never-completed dead round carrying NO credential).
+  const staleRound = await accounts().startAuthorization(
+    {
+      clientId: aliceClientId,
+      integrationConnectionId: staleConnection,
+      workspaceId: null,
+      requestedScopes: null,
+      expectedAccountId: account.socialAccountId,
+    },
+    MODULE_PROVENANCE,
+  );
+  const deadRound = await accounts().expireAuthorizationGrant(
+    { grantId: staleRound.grant.grantId, reason: 'the operator never finished the round' },
+    MODULE_PROVENANCE,
+  );
+  assert.equal(deadRound.grantState, 'expired');
+  assert.equal(deadRound.credentialReferenceId, null, 'the dead round never carried a credential');
+
+  // The NEXT reauthorize completion must supersede the FILLED grant (not
+  // the newer dead round — transitioning a never-completed row to
+  // 'superseded' is illegal under the migration-046 payload shape).
+  const round = await accounts().startAuthorization(
+    {
+      clientId: aliceClientId,
+      integrationConnectionId: staleConnection,
+      workspaceId: null,
+      requestedScopes: null,
+      expectedAccountId: account.socialAccountId,
+    },
+    MODULE_PROVENANCE,
+  );
+  const issued = oauth().issueAuthorization({
+    accountId: account.externalAccountId,
+    displayIdentity: account.displayIdentity,
+    verifiedAt: account.verifiedAt,
+    scopes: ['read:content', 'write:content'],
+    capabilityTags: ['account-read'],
+    expiresInMs: 3_600_000,
+  });
+  const completion = await accounts().completeAuthorization(
+    { clientId: aliceClientId, state: round.grant.stateToken, code: issued.code },
+    MODULE_PROVENANCE,
+  );
+  assert.equal(completion.account.socialAccountId, account.socialAccountId);
+  assert.equal(completion.grant.grantState, 'authorized');
+
+  // The FILLED predecessor is superseded with the successor link; the
+  // dead round stays exactly as recorded (append-only).
+  const filledPredecessor = await accounts().getAuthorizationGrant(connected.grantId);
+  assert.equal(filledPredecessor.grantState, 'superseded');
+  assert.equal(filledPredecessor.successorGrantId, completion.grant.grantId);
+  const deadRoundAfter = await accounts().getAuthorizationGrant(staleRound.grant.grantId);
+  assert.equal(deadRoundAfter.grantState, 'expired', 'the dead round is untouched');
+
+  const grants = await accounts().listAuthorizationGrantsForAccount(account.socialAccountId);
+  assert.equal(grants.filter((grant) => grant.grantState === 'authorized').length, 1);
+  const usable = await accounts().getUsableAuthorization(account.socialAccountId);
+  assert.equal(usable!.grant.grantId, completion.grant.grantId);
+});
+
 // ---------------------------------------------------------------------------
 // AC-4: IDENTITY BINDING — idempotent reconnect + conflicting bindings
 // ---------------------------------------------------------------------------
@@ -800,6 +921,13 @@ test('AC-4 conflicting bindings: the SAME external identity on ANOTHER connectio
     },
     MODULE_PROVENANCE,
   );
+  const activeSocialReferences = async (): Promise<number> =>
+    countRows(
+      'credential_references',
+      'client_id = $1 AND kind = $2 AND status = $3',
+      [aliceClientId, 'social_account_oauth', 'active'],
+    );
+  const activeBefore = await activeSocialReferences();
   const issued = oauth().issueAuthorization({
     accountId: 'ext-reconnect',
     displayIdentity: 'Reconnect Channel',
@@ -816,6 +944,15 @@ test('AC-4 conflicting bindings: the SAME external identity on ANOTHER connectio
       ),
     (error: unknown) =>
       error instanceof Error && error.message.includes('already has an active binding in this client'),
+  );
+  // ORPHAN-REFERENCE COMPENSATION (regression): the fence rejection fires
+  // AFTER the round's vault reference was created (the fence is only
+  // checkable at INSERT time) — the aborted completion must leave NO
+  // active orphan reference behind (the compensation disabled it).
+  assert.equal(
+    await activeSocialReferences(),
+    activeBefore,
+    'the rejected conflicting binding leaves no active orphan vault reference',
   );
 });
 
@@ -1162,6 +1299,53 @@ test('AC-5 externally-signalled revocation: identical failure modes — the bind
     (account) => account.externalAccountId === 'ext-revoked-externally' && account.status === 'connected',
   );
   assert.equal(activeBindings.length, 1, 'exactly one ACTIVE binding after the fresh cycle');
+});
+
+test('AC-5 composed-reason budget (regression): an external revocation whose COMPOSED reason overflows the event budget is rejected BEFORE any side effect — the connection stays connected, the vault reference stays active, zero death events', async () => {
+  const budgetConnection = await freshConnection('alice_crm_reason_budget');
+  const connected = await connectAccount(aliceClientId, budgetConnection, null, {
+    accountId: 'ext-reason-budget',
+    displayIdentity: 'Reason Budget Channel',
+    scopes: ['read:content'],
+    capabilityTags: ['account-read'],
+  });
+  const referenceBefore = await credentialsModule().getCredentialReference(
+    (await accounts().getAuthorizationGrant(connected.grantId)).credentialReferenceId!,
+  );
+  assert.equal(referenceBefore!.status, 'active');
+
+  // A per-part legal reason whose COMPOSED string (signal prefix + ': ' +
+  // reason) exceeds the 2000-char event reason budget.
+  const longReason = 'r'.repeat(2000);
+  await assert.rejects(
+    () =>
+      accounts().recordExternalRevocation(
+        { socialAccountId: connected.accountId, reason: longReason, signalledVia: 'provider-webhook-relay' },
+        MODULE_PROVENANCE,
+      ),
+    (error: unknown) =>
+      error instanceof Error && error.message.includes('reason'),
+  );
+
+  // Zero side effects: the binding is still connected, the reference is
+  // still active and no death event was appended.
+  const accountAfter = await accounts().getSocialAccount(connected.accountId);
+  assert.equal(accountAfter!.status, 'connected', 'no durable death from the rejected request');
+  const referenceAfter = await credentialsModule().getCredentialReference(referenceBefore!.credentialId);
+  assert.equal(referenceAfter!.status, 'active', 'no vault disablement from the rejected request');
+  const events = await accounts().listAccountEvents(connected.accountId);
+  assert.equal(
+    events.filter((event) => event.eventType === 'account_revoked' || event.eventType === 'authorization_revoked').length,
+    0,
+    'zero death events',
+  );
+
+  // The same signal with a bounded reason proceeds normally.
+  const revoked = await accounts().recordExternalRevocation(
+    { socialAccountId: connected.accountId, reason: 'the user revoked app access at the platform', signalledVia: 'provider-webhook-relay' },
+    MODULE_PROVENANCE,
+  );
+  assert.equal(revoked.status, 'revoked');
 });
 
 test('AC-5 disconnect via the ROUTE (the operator surface): the same terminal death over HTTP', async () => {

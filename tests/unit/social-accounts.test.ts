@@ -53,6 +53,7 @@ import {
   assertValidTokenSecretHandle,
   buildFlowRegistry,
   classifySocialWriteConflict,
+  composeExternalRevocationReason,
   composeGrantCompletedEvent,
   composeGrantStartEvent,
   composeSocialAccountEvent,
@@ -227,6 +228,30 @@ test('MKT-055 grant validation: the token handle, expiry and reason guards', () 
   assert.doesNotThrow(() => assertValidReason('operator removed the connection'));
   assert.throws(() => assertValidReason(''), InvalidRequestError);
   assert.throws(() => assertValidReason('x'.repeat(MAX_EVENT_REASON_LENGTH + 1)), InvalidRequestError);
+});
+
+test('MKT-055 grant validation: the external-revocation reason composer embeds the signal source and fails CLOSED on a composed over-budget string (BEFORE any side effect)', () => {
+  // The signal source is embedded for disclosure.
+  assert.equal(
+    composeExternalRevocationReason('provider-webhook-relay', null),
+    'external revocation signalled via provider-webhook-relay',
+  );
+  assert.equal(
+    composeExternalRevocationReason('adapter-poll', 'the user revoked app access'),
+    'external revocation signalled via adapter-poll: the user revoked app access',
+  );
+  // A bounded reason composes within the event budget.
+  const longestLegalSignal = 'a'.repeat(64);
+  const longestLegalReason = 'x'.repeat(MAX_EVENT_REASON_LENGTH - longestLegalSignal.length - 'external revocation signalled via '.length - ': '.length);
+  const composed = composeExternalRevocationReason(longestLegalSignal, longestLegalReason);
+  assert.equal(composed.length, MAX_EVENT_REASON_LENGTH);
+  // One more character in the reason overflows the COMPOSED string — the
+  // rejection fires in the composer (pure, before any vault disablement
+  // or durable death step), never mid-transaction.
+  assert.throws(
+    () => composeExternalRevocationReason(longestLegalSignal, longestLegalReason + 'y'),
+    InvalidRequestError,
+  );
 });
 
 test('MKT-055 grant validation: the provenance guard — server-derived shape with the §21 material-shaped actor backstop', () => {
