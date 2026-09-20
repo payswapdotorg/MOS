@@ -565,12 +565,14 @@ test('MKT-053 AC-9 static: the disclosed spec registration exists — §6 line +
   );
   // 045_growth_missions.sql holds its numeric position (the PRE-ASSIGNED
   // number — 046 belongs to the MKT-055 sibling delivery, which appends
-  // it after this one per the pre-assignment).
+  // it after this one per the pre-assignment; the MKT-071 /integrations
+  // commerce extension appends 049 after 046 — 047/048 belong to siblings).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly growthMissions: GrowthMissionsModuleApi'), 'ApplicationModules.growthMissions');
   assert.ok(applicationTs.includes("from '../modules/growth-missions/public.ts'"), 'the module public entry import');

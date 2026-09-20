@@ -54,10 +54,18 @@ import type {
  * path after a fail-closed policy allow) is an opaque JSON document whose
  * fields the ADAPTER defines. Providers differ; the platform never inspects
  * the bytes, and nothing secret is ever logged or persisted.
+ *
+ * MKT-071: the shared convention gains the optional GRANTED-SCOPE list —
+ * the provider-granted authorization scopes carried in the credential
+ * material (the commerce provider convention; adapters of providers that
+ * report no scopes see null and make NO adapter-side claim — the provider
+ * decides at call time, the MKT-024 backward-compatible posture).
  */
 export interface ProviderCredentialShape {
   readonly accessToken: string | null;
   readonly webhookSecret: string | null;
+  /** MKT-071: the provider-granted scope list (verbatim), or null. */
+  readonly grantedScopes: readonly string[] | null;
 }
 
 /**
@@ -84,8 +92,13 @@ export function parseProviderCredential(material: Uint8Array | null): ProviderCr
   const record = parsed as Record<string, unknown>;
   const accessToken = typeof record['accessToken'] === 'string' ? (record['accessToken'] as string) : null;
   const webhookSecret = typeof record['webhookSecret'] === 'string' ? (record['webhookSecret'] as string) : null;
+  const grantedScopesRaw = record['grantedScopes'];
+  const grantedScopes =
+    Array.isArray(grantedScopesRaw) && grantedScopesRaw.every((scope) => typeof scope === 'string')
+      ? (grantedScopesRaw as readonly string[])
+      : null;
   if (accessToken === null && webhookSecret === null) return null;
-  return { accessToken, webhookSecret };
+  return { accessToken, webhookSecret, grantedScopes };
 }
 
 // ---------------------------------------------------------------------------

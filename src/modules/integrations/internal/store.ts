@@ -33,6 +33,10 @@ import type { Clock } from '../../../platform/clock/clock.ts';
 import type { Db, DbRow } from '../../../platform/db/contract.ts';
 import type { IdGenerator } from '../../../platform/ids/ids.ts';
 import type {
+  CommerceDeliveryOutcome,
+  CommerceEventKind,
+  CommerceEventRecord,
+  CommerceEventReceiptRecord,
   IntegrationAdapter,
   IntegrationCapability,
   IntegrationConnectionHealth,
@@ -83,6 +87,40 @@ interface EventRow extends DbRow {
   received_at: Date;
 }
 
+interface CommerceReceiptRow extends DbRow {
+  receipt_id: string;
+  adapter_key: string;
+  provider_event_id: string;
+  connection_id: string;
+  client_id: string;
+  delivery_outcome: string;
+  first_receipt_id: string | null;
+  raw_event_hash: string;
+  normalized_shape_version: string;
+  event_kind: string;
+  recorded_actor: string;
+  recorded_via: string;
+  correlation_id: string;
+  causation_id: string | null;
+  received_at: Date;
+}
+
+interface CommerceEventRow extends DbRow {
+  commerce_event_id: string;
+  receipt_id: string;
+  event_id: string;
+  connection_id: string;
+  client_id: string;
+  adapter_key: string;
+  provider_event_id: string;
+  event_kind: string;
+  normalized_shape_version: string;
+  provider_subject_id: string;
+  normalized_payload: unknown;
+  attribution: unknown;
+  received_at: Date;
+}
+
 const CONNECTION_SELECT = `
   SELECT c.connection_id, c.client_id, c.agency_id, c.adapter_key, c.provider_label,
          c.status, c.health, c.credential_reference_id, c.provider_config, c.rate_limit,
@@ -95,6 +133,21 @@ const EVENT_SELECT = `
          e.payload, e.evidence_ref, e.recorded_actor, e.recorded_via,
          e.correlation_id, e.causation_id, e.received_at
   FROM integration_events e
+`;
+
+const COMMERCE_RECEIPT_SELECT = `
+  SELECT r.receipt_id, r.adapter_key, r.provider_event_id, r.connection_id, r.client_id,
+         r.delivery_outcome, r.first_receipt_id, r.raw_event_hash, r.normalized_shape_version,
+         r.event_kind, r.recorded_actor, r.recorded_via, r.correlation_id, r.causation_id,
+         r.received_at
+  FROM commerce_event_receipts r
+`;
+
+const COMMERCE_EVENT_SELECT = `
+  SELECT c.commerce_event_id, c.receipt_id, c.event_id, c.connection_id, c.client_id,
+         c.adapter_key, c.provider_event_id, c.event_kind, c.normalized_shape_version,
+         c.provider_subject_id, c.normalized_payload, c.attribution, c.received_at
+  FROM commerce_events c
 `;
 
 // ---------------------------------------------------------------------------
@@ -680,6 +733,265 @@ export class IntegrationsStore {
     );
     return result.rows.map(toEventRecord);
   }
+
+  // -------------------------------------------------------------------------
+  // MKT-071: the commerce webhook dedup fence + normalized event projection
+  // -------------------------------------------------------------------------
+
+  /**
+   * The DEDUP LOOKUP: the INGESTED receipt of one (adapter_key,
+   * provider_event_id) pair, or null when the provider event has never
+   * been ingested. Duplicate receipts never match (only the first delivery
+   * carries outcome 'ingested' — the partial unique fence guarantees at
+   * most one).
+   */
+  async findIngestedCommerceEventReceipt(
+    adapterKey: string,
+    providerEventId: string,
+  ): Promise<CommerceEventReceiptRecord | null> {
+    const result = await this.db.query<CommerceReceiptRow>(
+      `${COMMERCE_RECEIPT_SELECT}
+       WHERE r.adapter_key = $1 AND r.provider_event_id = $2 AND r.delivery_outcome = 'ingested'`,
+      [adapterKey, providerEventId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toCommerceReceiptRecord(row);
+  }
+
+  /**
+   * The transactional FIRST-DELIVERY append (the fence claim + the ledger
+   * event + the normalized projection, ALL inside ONE transaction): the
+   * ingested receipt is inserted FIRST so concurrent first deliveries of
+   * the same provider event converge on the partial-unique fence — the
+   * loser's transaction aborts WHOLE (no ledger row, no projection), and
+   * the module then records the loser honestly as a duplicate. The event
+   * identity is pre-allocated by the module (the derived /evidence source
+   * reference carries it) BEFORE the evidence append outside this store.
+   */
+  async insertIngestedCommerceEvent(
+    input: {
+      readonly event: EventInsertRow;
+      readonly receipt: CommerceReceiptInsertRow;
+      readonly projection: CommerceEventProjectionInsertRow;
+    },
+    provenance: IntegrationProvenance,
+  ): Promise<{
+    readonly receipt: CommerceEventReceiptRecord;
+    readonly event: IntegrationIngestedEventRecord;
+    readonly projection: CommerceEventRecord;
+  }> {
+    const receivedAt = this.clock.nowIso();
+    const commerceEventId = this.ids.newId();
+    return this.db.transaction(async (tx) => {
+      // 1. The FENCE CLAIM (the idempotency gate — inserted first).
+      await tx.query(
+        `INSERT INTO commerce_event_receipts (receipt_id, adapter_key, provider_event_id,
+                                        connection_id, client_id, delivery_outcome,
+                                        first_receipt_id, raw_event_hash,
+                                        normalized_shape_version, event_kind,
+                                        recorded_actor, recorded_via, correlation_id,
+                                        causation_id, received_at)
+         VALUES ($1, $2, $3, $4, $5, 'ingested', NULL, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          input.receipt.receiptId,
+          input.receipt.adapterKey,
+          input.receipt.providerEventId,
+          input.receipt.connectionId,
+          input.receipt.clientId,
+          input.receipt.rawEventHash,
+          input.receipt.normalizedShapeVersion,
+          input.receipt.eventKind,
+          provenance.actor,
+          provenance.recordedVia,
+          provenance.correlationId,
+          provenance.causationId,
+          receivedAt,
+        ],
+      );
+      // 2. The append-only event-ledger row (the migration-029 path —
+      // event-stream continuity: webhook → dedup → normalized event append).
+      await tx.query(
+        `INSERT INTO integration_events (event_id, connection_id, client_id, adapter_key,
+                                    event_type, payload, evidence_ref,
+                                    recorded_actor, recorded_via, correlation_id, causation_id,
+                                    received_at)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12)`,
+        [
+          input.event.eventId,
+          input.event.connectionId,
+          input.event.clientId,
+          input.event.adapterKey,
+          input.event.eventType,
+          JSON.stringify(input.event.payload),
+          input.event.evidenceRef,
+          provenance.actor,
+          provenance.recordedVia,
+          provenance.correlationId,
+          provenance.causationId,
+          receivedAt,
+        ],
+      );
+      // 3. The NORMALIZED EVENT PROJECTION (with the attribution passthrough
+      // stored verbatim).
+      await tx.query(
+        `INSERT INTO commerce_events (commerce_event_id, receipt_id, event_id, connection_id,
+                                   client_id, adapter_key, provider_event_id, event_kind,
+                                   normalized_shape_version, provider_subject_id,
+                                   normalized_payload, attribution, received_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13)`,
+        [
+          commerceEventId,
+          input.receipt.receiptId,
+          input.event.eventId,
+          input.receipt.connectionId,
+          input.receipt.clientId,
+          input.receipt.adapterKey,
+          input.receipt.providerEventId,
+          input.receipt.eventKind,
+          input.receipt.normalizedShapeVersion,
+          input.projection.providerSubjectId,
+          JSON.stringify(input.projection.normalizedPayload),
+          JSON.stringify(input.projection.attribution),
+          receivedAt,
+        ],
+      );
+      const receiptRow = await tx.query<CommerceReceiptRow>(
+        `${COMMERCE_RECEIPT_SELECT} WHERE r.receipt_id = $1`,
+        [input.receipt.receiptId],
+      );
+      const eventRow = await tx.query<EventRow>(
+        `${EVENT_SELECT} WHERE e.event_id = $1`,
+        [input.event.eventId],
+      );
+      const projectionRow = await tx.query<CommerceEventRow>(
+        `${COMMERCE_EVENT_SELECT} WHERE c.commerce_event_id = $1`,
+        [commerceEventId],
+      );
+      const receipt = receiptRow.rows[0];
+      const event = eventRow.rows[0];
+      const projection = projectionRow.rows[0];
+      if (receipt === undefined || event === undefined || projection === undefined) {
+        throw new Error(
+          `ingested commerce event ${input.event.eventId} could not be read back completely`,
+        );
+      }
+      return {
+        receipt: toCommerceReceiptRecord(receipt),
+        event: toEventRecord(event),
+        projection: toCommerceEventRecord(projection),
+      };
+    });
+  }
+
+  /**
+   * The REPLAY receipt: one append-only 'duplicate' row referencing the
+   * first delivery's ingested receipt (the honest duplicate-received
+   * record — never a silent drop). The replay itself is a NO-OP for the
+   * event ledger, the evidence and the projection.
+   */
+  async insertDuplicateCommerceEventReceipt(
+    row: CommerceReceiptInsertRow,
+    firstReceiptId: string,
+    provenance: IntegrationProvenance,
+  ): Promise<CommerceEventReceiptRecord> {
+    const receivedAt = this.clock.nowIso();
+    await this.db.query(
+      `INSERT INTO commerce_event_receipts (receipt_id, adapter_key, provider_event_id,
+                                        connection_id, client_id, delivery_outcome,
+                                        first_receipt_id, raw_event_hash,
+                                        normalized_shape_version, event_kind,
+                                        recorded_actor, recorded_via, correlation_id,
+                                        causation_id, received_at)
+       VALUES ($1, $2, $3, $4, $5, 'duplicate', $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        row.receiptId,
+        row.adapterKey,
+        row.providerEventId,
+        row.connectionId,
+        row.clientId,
+        firstReceiptId,
+        row.rawEventHash,
+        row.normalizedShapeVersion,
+        row.eventKind,
+        provenance.actor,
+        provenance.recordedVia,
+        provenance.correlationId,
+        provenance.causationId,
+        receivedAt,
+      ],
+    );
+    const created = await this.getCommerceEventReceipt(row.receiptId);
+    if (created === null) {
+      throw new Error(`duplicate commerce event receipt ${row.receiptId} could not be read back`);
+    }
+    return created;
+  }
+
+  async getCommerceEventReceipt(
+    receiptId: string,
+  ): Promise<CommerceEventReceiptRecord | null> {
+    const result = await this.db.query<CommerceReceiptRow>(
+      `${COMMERCE_RECEIPT_SELECT} WHERE r.receipt_id = $1`,
+      [receiptId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toCommerceReceiptRecord(row);
+  }
+
+  /** The normalized projection of one ingested receipt (or null). */
+  async getCommerceEventByReceiptId(receiptId: string): Promise<CommerceEventRecord | null> {
+    const result = await this.db.query<CommerceEventRow>(
+      `${COMMERCE_EVENT_SELECT} WHERE c.receipt_id = $1`,
+      [receiptId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? null : toCommerceEventRecord(row);
+  }
+
+  /**
+   * The Client's commerce event receipts (the honest delivery history —
+   * ingested AND duplicate rows alike), newest first (bounded).
+   */
+  async listCommerceEventReceiptsForClient(
+    clientId: string,
+  ): Promise<readonly CommerceEventReceiptRecord[]> {
+    const result = await this.db.query<CommerceReceiptRow>(
+      `${COMMERCE_RECEIPT_SELECT} WHERE r.client_id = $1
+       ORDER BY r.received_at DESC, r.receipt_id LIMIT 500`,
+      [clientId],
+    );
+    return result.rows.map(toCommerceReceiptRecord);
+  }
+
+  /** The Client's normalized commerce events, newest first (bounded). */
+  async listCommerceEventsForClient(clientId: string): Promise<readonly CommerceEventRecord[]> {
+    const result = await this.db.query<CommerceEventRow>(
+      `${COMMERCE_EVENT_SELECT} WHERE c.client_id = $1
+       ORDER BY c.received_at DESC, c.commerce_event_id LIMIT 500`,
+      [clientId],
+    );
+    return result.rows.map(toCommerceEventRecord);
+  }
+}
+
+/** The MKT-071 receipt insert shape (the fence claim / replay record). */
+export interface CommerceReceiptInsertRow {
+  /** Pre-allocated by the module (the dedup fence row identity). */
+  readonly receiptId: string;
+  readonly adapterKey: string;
+  readonly providerEventId: string;
+  readonly connectionId: string;
+  readonly clientId: string;
+  readonly rawEventHash: string;
+  readonly normalizedShapeVersion: string;
+  readonly eventKind: string;
+}
+
+/** The MKT-071 normalized projection insert shape. */
+export interface CommerceEventProjectionInsertRow {
+  readonly providerSubjectId: string;
+  readonly normalizedPayload: Readonly<Record<string, unknown>>;
+  readonly attribution: Readonly<Record<string, unknown>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -738,6 +1050,60 @@ function toEventRecord(row: EventRow): IntegrationIngestedEventRecord {
       receivedAt: row.received_at.toISOString(),
     },
   };
+}
+
+function toCommerceReceiptRecord(row: CommerceReceiptRow): CommerceEventReceiptRecord {
+  return {
+    receiptId: row.receipt_id,
+    adapterKey: row.adapter_key,
+    providerEventId: row.provider_event_id,
+    connectionId: row.connection_id,
+    clientId: row.client_id,
+    deliveryOutcome: row.delivery_outcome as CommerceDeliveryOutcome,
+    firstReceiptId: row.first_receipt_id,
+    rawEventHash: row.raw_event_hash,
+    normalizedShapeVersion: row.normalized_shape_version,
+    eventKind: row.event_kind as CommerceEventKind,
+    provenance: {
+      actor: row.recorded_actor,
+      recordedVia: row.recorded_via,
+      correlationId: row.correlation_id,
+      causationId: row.causation_id,
+      receivedAt: row.received_at.toISOString(),
+    },
+  };
+}
+
+function toCommerceEventRecord(row: CommerceEventRow): CommerceEventRecord {
+  return {
+    commerceEventId: row.commerce_event_id,
+    receiptId: row.receipt_id,
+    eventId: row.event_id,
+    connectionId: row.connection_id,
+    clientId: row.client_id,
+    adapterKey: row.adapter_key,
+    providerEventId: row.provider_event_id,
+    eventKind: row.event_kind as CommerceEventKind,
+    normalizedShapeVersion: row.normalized_shape_version,
+    providerSubjectId: row.provider_subject_id,
+    normalizedPayload: (row.normalized_payload ?? {}) as Record<string, unknown>,
+    attribution: (row.attribution ?? {}) as Record<string, unknown>,
+    receivedAt: row.received_at.toISOString(),
+  };
+}
+
+/**
+ * Classifies a commerce first-delivery write failure into the INGESTED
+ * FENCE violation label (null when the error is not the idempotency
+ * fence): concurrent first deliveries of the same provider event converge
+ * on the partial-unique constraint — the module records the loser
+ * honestly as a duplicate, never a second ingested projection.
+ */
+export function classifyCommerceIngestedFenceViolation(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  if (/commerce_event_receipts_ingested_fence/.test(error.message)) return 'ingested-fence';
+  if (/uq_commerce_event_receipts/.test(error.message)) return 'ingested-fence';
+  return null;
 }
 
 /** Bounded length for administrative suspend reasons (module guard). */

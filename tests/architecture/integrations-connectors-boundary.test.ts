@@ -360,3 +360,253 @@ test('INT-001 static: the MKT-023 boundary surface is UNCHANGED in shape (no por
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// 8. MKT-071 — the commerce catalog and order capabilities (ADDITIVE: the
+//    commerce extension of this boundary; no existing assertion above is
+//    weakened or removed)
+// ---------------------------------------------------------------------------
+
+test('MKT-071 static: the commerce connector declares the normalized commerce capability catalog — subset-declarable, mutations only where the provider grants', () => {
+  const commerce = read(join(ADAPTERS_DIR, 'commerce', 'commerce-adapter.ts'));
+  // The construction-time capability profile: the adapter declares the
+  // SUBSET the provider grant includes (a read-only commerce adapter is
+  // first-class — AC-1), and the grant keys are validated against the
+  // closed commerce vocabulary.
+  assert.ok(
+    commerce.includes('grantedCapabilityKeys'),
+    'the commerce adapter is capability-profile constructible (the subset declaration)',
+  );
+  assert.ok(
+    commerce.includes('commerceCapabilitiesForProfile'),
+    'the declared capability list is built from the closed commerce vocabulary',
+  );
+  // The normalized commerce operations are mapped inside the adapter (the
+  // provider surface: catalog/product/price/inventory/order reads, the
+  // product write + listing lifecycle mutations, the paged reads).
+  for (const operation of [
+    'listCatalog',
+    'getProduct',
+    'upsertProduct',
+    'createListing',
+    'updateListing',
+    'endListing',
+    'getPrice',
+    'getInventory',
+    'listOrderDetails',
+  ]) {
+    assert.ok(
+      commerce.includes(`'${operation}'`),
+      `the commerce adapter maps the normalized operation '${operation}'`,
+    );
+  }
+  // The provider-scope pre-check (AC-2/AC-4): an operation whose required
+  // scope is not granted is refused BEFORE any provider traffic.
+  assert.ok(
+    commerce.includes('commerceScopeProblem'),
+    'the adapter-side authorization pre-check runs on every commerce operation',
+  );
+  // The webhook verification composes the event identity (the dedup key
+  // half + the normalized projection input) for deliveries carrying the
+  // provider's own event id — and keeps the legacy path otherwise.
+  assert.ok(
+    commerce.includes('normalizeCommerceWebhookEvent') && commerce.includes('commerceWebhookEventIdentity'),
+    'verified commerce event deliveries with a provider event id are normalized into the webhook event identity',
+  );
+  assert.ok(
+    commerce.includes('eventIdentity: null'),
+    'deliveries without a provider event id keep the legacy append-only path',
+  );
+});
+
+test('MKT-071 static: the commerce normalized contract is part of the module PUBLIC surface (the tested contract)', () => {
+  const publicContract = read(src('modules', 'integrations', 'public.ts'));
+  // The capability-key vocabulary + the pure mapping/normalization
+  // functions are exported through the public entry (AC-10: the normalized
+  // mapping semantics are unit-testable through the module contract only).
+  for (const exported of [
+    'COMMERCE_CAPABILITY_KEYS',
+    'COMMERCE_READ_ONLY_CAPABILITY_KEYS',
+    'COMMERCE_EVENT_KINDS',
+    'COMMERCE_DELIVERY_OUTCOMES',
+    'COMMERCE_EVENT_SHAPE_VERSIONS',
+    'commerceCapabilitiesForProfile',
+    'commerceScopeProblem',
+    'mapCommerceCatalogResponse',
+    'mapCommerceProductResponse',
+    'mapCommercePriceResponse',
+    'mapCommerceInventoryResponse',
+    'mapCommerceOrderDetailsResponse',
+    'mapCommerceListingResponse',
+    'normalizeCommerceWebhookEvent',
+    'sha256HexOfJson',
+  ]) {
+    assert.ok(
+      publicContract.includes(exported),
+      `the public entry re-exports the commerce contract symbol '${exported}'`,
+    );
+  }
+  // The generic port extensions: the webhook event identity (idempotency
+  // metadata) and the paged-read cursor are ADDITIVE optional fields.
+  assert.ok(
+    publicContract.includes('export interface WebhookEventIdentity'),
+    'the webhook event identity contract is declared on the public surface',
+  );
+  assert.ok(
+    publicContract.includes('readonly eventIdentity?: WebhookEventIdentity | null'),
+    'WebhookVerificationResult.eventIdentity is an additive optional field',
+  );
+  assert.ok(
+    publicContract.includes('readonly pageCursor?: string | null'),
+    'NormalizedReadResult.pageCursor is an additive optional field',
+  );
+  // The webhook idempotency outcome + the fence/projection read-backs.
+  assert.ok(
+    publicContract.includes('export interface IntegrationWebhookIngestionOutcome'),
+    'the webhook ingestion outcome contract (duplicate + receipt + projection) is declared',
+  );
+  assert.ok(
+    publicContract.includes('listCommerceEventReceiptsForClient') &&
+      publicContract.includes('listCommerceEventsForClient'),
+    'the commerce fence + projection read-back methods are declared on the module API',
+  );
+  // The attribution PASSTHROUGH discipline is documented on the projection
+  // record (recorded verbatim, never interpreted — MKT-073 owns linking).
+  assert.ok(
+    publicContract.includes('VERBATIM as PASSTHROUGH data'),
+    'the attribution passthrough discipline is explicit on the projection contract',
+  );
+  // The normalized commerce contract implementation lives under internal/
+  // (NOT under adapters/ — the adapter consumes it through the public
+  // entry, its only sanctioned import, so no connector import surface
+  // changed).
+  assert.ok(
+    existsSync(src('modules', 'integrations', 'internal', 'commerce-normalization.ts')),
+    'the commerce normalized contract implementation exists under internal/',
+  );
+});
+
+test('MKT-071 static: the module core gates mutations with the DECLARING capability key and ingests webhooks idempotently', () => {
+  const moduleCore = read(src('modules', 'integrations', 'internal', 'module.ts'));
+  // The policy gate carries the DECLARING capability key (AC-4: a policy
+  // not sanctioning THIS mutation capability fails closed with the honest
+  // 403 — capability-scoped sanctions are matchable by policy rules).
+  assert.ok(
+    moduleCore.includes('capability: declaringCapability.capabilityKey'),
+    'every read/mutation policy gate carries the declaring capability key',
+  );
+  assert.ok(
+    moduleCore.includes('requireDeclaredOperation(adapter, \'mutation\', input.operation)'),
+    'the capability-discovery gate runs before the mutation policy gate',
+  );
+  // The idempotent ingestion path: dedup by (adapterKey, providerEventId),
+  // the honest duplicate record, the tenant fence on the provider
+  // event-id namespace.
+  assert.ok(
+    moduleCore.includes('findIngestedCommerceEventReceipt') &&
+      moduleCore.includes('insertIngestedCommerceEvent') &&
+      moduleCore.includes('insertDuplicateCommerceEventReceipt'),
+    'the module core composes the webhook fence (lookup → first-delivery append or duplicate receipt)',
+  );
+  assert.ok(
+    moduleCore.includes('recordDuplicateDelivery'),
+    'replays surface as honest duplicate-received records',
+  );
+  assert.ok(
+    moduleCore.includes('sha256HexOfJson'),
+    'the raw-event hash is computed module-side for every idempotent delivery',
+  );
+  // No commerce-specific vocabulary leaked into the boundary core: the
+  // module core stays provider-neutral (the event kinds/shape versions are
+  // adapter-supplied data CHECK-fenced at storage, never core branches).
+  const coreCode = stripComments(moduleCore);
+  for (const token of ["'order.created'", "'commerce-order-v1'", "'ingested'", "'duplicate'"]) {
+    assert.ok(
+      !coreCode.includes(token),
+      `the boundary core must not hardcode the commerce vocabulary token ${token} (adapter-supplied data, storage-fenced)`,
+    );
+  }
+});
+
+test('MKT-071 static: migration 049 owns exactly the webhook dedup fence + normalized event projection (NO commerce state authority)', () => {
+  const migration = read(src('platform', 'db', 'migrations', '049_commerce_capabilities.sql'));
+  // The two OWN tables, following the module's migration-029 store pattern.
+  assert.ok(
+    migration.includes('CREATE TABLE IF NOT EXISTS commerce_event_receipts'),
+    'the webhook dedup fence table exists',
+  );
+  assert.ok(
+    migration.includes('CREATE TABLE IF NOT EXISTS commerce_events'),
+    'the normalized event projection table exists',
+  );
+  assert.equal(
+    (migration.match(/CREATE TABLE IF NOT EXISTS/g) ?? []).length,
+    2,
+    'exactly two tables (no catalog/product/listing/order state authority is created — the provider stays the commerce authority)',
+  );
+  // The dedup fence: at most ONE ingested receipt per (adapter_key,
+  // provider_event_id).
+  assert.ok(
+    migration.includes('commerce_event_receipts_ingested_fence') &&
+      migration.includes("WHERE delivery_outcome = 'ingested'"),
+    'the partial-unique ingested fence exists',
+  );
+  // CHECK-fenced vocabularies: delivery outcomes, event kinds, shape versions.
+  assert.ok(
+    migration.includes("delivery_outcome IN ('ingested', 'duplicate')"),
+    'the delivery-outcome vocabulary is CHECK-fenced',
+  );
+  for (const kind of [
+    'order.created',
+    'order.updated',
+    'order.fulfilled',
+    'order.cancelled',
+    'product.created',
+    'product.updated',
+  ]) {
+    assert.ok(
+      migration.includes(`'${kind}'`),
+      `the commerce event-kind vocabulary fences '${kind}'`,
+    );
+  }
+  assert.ok(
+    migration.includes('event_kind IN'),
+    'the event-kind column carries the CHECK fence',
+  );
+  assert.ok(
+    migration.includes("normalized_shape_version IN ('commerce-order-v1', 'commerce-product-v1')"),
+    'the normalized shape-version vocabulary is CHECK-fenced',
+  );
+  // Append-only discipline on BOTH tables (UPDATE/DELETE rejected).
+  assert.ok(
+    (migration.match(/_append_only_update_trigger/g) ?? []).length >= 2 &&
+      (migration.match(/_append_only_delete_trigger/g) ?? []).length >= 2,
+    'both tables reject UPDATE and DELETE (the append-only history)',
+  );
+  // The attribution passthrough column with the §21 material-key backstop.
+  assert.ok(
+    migration.includes('attribution') &&
+      migration.includes('integration_payload_has_no_material_keys(attribution)'),
+    'the attribution passthrough is stored with the §21 material-key backstop',
+  );
+  // The event-stream continuity: the projection references the
+  // migration-029 event ledger.
+  assert.ok(
+    migration.includes('REFERENCES integration_events(event_id)'),
+    'the projection references the append-only event ledger (event-stream continuity)',
+  );
+  // NO catalog/order/listing/product STATE table (boundary rule 8: store
+  // mutations flow through Integrations; the provider stays the authority).
+  for (const forbidden of [
+    'CREATE TABLE IF NOT EXISTS commerce_products',
+    'CREATE TABLE IF NOT EXISTS commerce_catalog',
+    'CREATE TABLE IF NOT EXISTS commerce_listings',
+    'CREATE TABLE IF NOT EXISTS commerce_orders',
+    'CREATE TABLE IF NOT EXISTS integration_connections', // migration 029 stays the sole connection authority — 049 never redefines it
+  ]) {
+    assert.ok(
+      !migration.includes(forbidden),
+      `migration 049 must not create a second authority table (${forbidden})`,
+    );
+  }
+});

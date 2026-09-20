@@ -427,10 +427,12 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   // The MKT-053 delivery appends 045_growth_missions.sql after 044 and
   // the MKT-055 delivery appends 046_social_accounts.sql after it (both
   // numbers PRE-ASSIGNED to their Work Items; 039/041/043 reserved-but-
-  // unused by the no-migration deliveries).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  // unused by the no-migration deliveries), and the MKT-071 /integrations
+  // commerce extension appends 049 after 046 (047/048 belong to siblings).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');

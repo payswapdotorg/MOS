@@ -64,5 +64,6 @@ export type {
   NormalizedReadRequest,
   NormalizedReadResult,
   WebhookDeliveryInput,
+  WebhookEventIdentity,
   WebhookVerificationResult,
 } from '../../public.ts';

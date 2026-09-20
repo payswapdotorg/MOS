@@ -481,11 +481,14 @@ test('MKT-055 static: the disclosed spec registration exists — §6 line + §6 
     'the matrix forbidden-directions bullet exists',
   );
   // 046_social_accounts.sql holds its numeric position (the
-  // PRE-ASSIGNED number — 045 is reserved for a sibling delivery).
+  // PRE-ASSIGNED number — 045 is reserved for a sibling delivery; the
+  // MKT-071 /integrations commerce extension appends 049 after 046 —
+  // 047/048 belong to sibling deliveries).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly socialAccounts: SocialAccountsModuleApi'), 'ApplicationModules.socialAccounts');
   assert.ok(applicationTs.includes("from '../modules/social-accounts/public.ts'"), 'the module public entry import');
