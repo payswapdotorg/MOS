@@ -442,6 +442,31 @@ import { createGrowthMissionsModule } from './modules/growth-missions/public.ts'
 // tail and the fail-closed disconnect/revocation death semantics).
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type { SocialAccountFlowImplementation } from './modules/social-accounts/public.ts';
+// MKT-068: /notification-delivery — the Notification Delivery Plane
+// authority (the delivery plane behind the MKT-001 /notifications
+// boundary stub). The two MVP adapters (in-app + email) are concrete
+// adapter implementations under the sanctioned internal/adapters/**
+// home, imported HERE ONLY (the composition root is the sole sanctioned
+// importer per the static architecture checker; CONCRETE_ADAPTER_ACCESS):
+// the in-app adapter's delivery effect is the module-owned durable
+// projection, and the email adapter resolves the recipient address
+// through the DISCLOSED off-matrix recipient-address structural port
+// (composed here from the /users + /agencies public contracts — an
+// ACTIVE member of the notification's agency; no address guessing),
+// runs the secrets-dimension credential gate and resolves the provider
+// credential material through the /credentials vault READ-ONLY
+// (in-process only), then sends through the DISCLOSED provider
+// TRANSPORT SEAM — the deterministic UnwiredEmailTransport below (the
+// NoCache/UnavailableLock degenerate-adapter precedent) until the
+// provider wiring work item lands a real transport over the platform
+// HttpCallPort (tests supply the deterministic double through
+// AppOptions.emailTransport — NO real network calls in the suite).
+import { createNotificationDeliveryModule } from './modules/notification-delivery/public.ts';
+import { UnwiredEmailTransport } from './modules/notification-delivery/public.ts';
+import { notificationsModule } from './modules/notifications/public.ts';
+import { InAppDeliveryAdapter } from './modules/notification-delivery/internal/adapters/in-app/in-app-adapter.ts';
+import { EmailDeliveryAdapter } from './modules/notification-delivery/internal/adapters/email/email-adapter.ts';
+import type { EmailTransport } from './modules/notification-delivery/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -461,6 +486,18 @@ export interface AppOptions {
    * ONLY — the connection model under test is fully real).
    */
   readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
+  /**
+   * MKT-068: the EMAIL PROVIDER TRANSPORT SEAM for the /notification-delivery
+   * email adapter (the socialAccountFlows composition precedent). The
+   * DISCLOSED degenerate UnwiredEmailTransport applies by default — every
+   * production email send honestly FAILS with the unwired reason (the
+   * receipt records the truth; nothing is silently dropped; no network is
+   * touched) until the provider-wiring work item registers a real
+   * transport (which will live under the sanctioned adapter subtree and
+   * be wired HERE ONLY). Integration tests supply the DETERMINISTIC
+   * in-repo double through this seam.
+   */
+  readonly emailTransport?: EmailTransport | undefined;
 }
 
 /**
@@ -1077,6 +1114,56 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     flows: options.socialAccountFlows ?? [],
   });
 
+  // MKT-068: /notification-delivery — the Notification Delivery Plane
+  // authority (the delivery plane behind the MKT-001 /notifications
+  // boundary stub: the agency-scoped durable §14 notification records,
+  // the per-channel fail-closed /policies gates, the idempotency dedup
+  // fence, the append-only receipt tail and the in-app inbox
+  // projection — migration 047). The /policies gates and the
+  // /credentials vault (READ-ONLY — the email provider credential
+  // reference resolves in-process inside the sanctioned email adapter
+  // subtree, never in the module core) are the matrix-listed module
+  // dependencies, together with the /notifications boundary identity
+  // itself (validated at construction); the recipient-address structural
+  // port composes the /users + /agencies public contracts at the EMAIL
+  // ADAPTER wiring below (the disclosed off-matrix /app-installs
+  // precedent: an address resolves ONLY for an ACTIVE member of the
+  // notification's agency — the workspace/client context, no address
+  // guessing); the two MVP adapters are wired HERE as DATA (the
+  // adapter-registry precedent) — future channels (WhatsApp/Telegram/
+  // SMS/Signal) register through the same seam with NO module changes,
+  // and until then their capability keys are refused honestly with
+  // receipts.
+  const notificationDelivery = createNotificationDeliveryModule({
+    db,
+    clock,
+    ids,
+    notifications: notificationsModule,
+    policies,
+    credentials,
+    adapters: [
+      new InAppDeliveryAdapter(),
+      new EmailDeliveryAdapter({
+        policies,
+        credentials,
+        recipientAddresses: {
+          resolveRecipientAddress: async ({ userId, agencyId }) => {
+            const user = await users.getUser(userId);
+            if (user === null) return null;
+            const context = await agencies.resolveAuthorizationContext(userId);
+            if (context === null) return null;
+            const activeMember = context.memberships.some(
+              (membership) =>
+                membership.agencyId === agencyId && membership.membershipStatus === 'active',
+            );
+            return activeMember ? { address: user.email } : null;
+          },
+        },
+        transport: options.emailTransport ?? new UnwiredEmailTransport(),
+      }),
+    ],
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1285,7 +1372,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery },
     runtime: { aiProvider },
   };
 }

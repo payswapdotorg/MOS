@@ -725,6 +725,30 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // mutated (migration 029/005 stay the sole authorities — consumed
     // READ-ONLY through the public contracts).
     '046_social_accounts.sql',
+    // MKT-068 (Notification Delivery Plane) appends the
+    // notification-delivery migration (047 — the number is PRE-ASSIGNED
+    // to this Work Item; 048/049 are reserved for sibling deliveries):
+    // the /notification-delivery delivery plane — the agency-scoped
+    // notification_records (the full §14 field set with the CHECK-fenced
+    // urgency/event-type vocabularies, the requested-channel vocabulary
+    // trigger, the email-context payload-shape fence, the scope-chain
+    // triggers and the frozen adapter-plane delivery lifecycle with
+    // delivered TERMINAL + record immutability + no-DELETE), the FULLY
+    // append-only notification_delivery_receipts (the per-(notification,
+    // channel) gapless attempt sequence, the outcome vocabulary with the
+    // duplicate_skipped fence receipt shape, the receipt-scope
+    // consistency trigger and the append-only UPDATE/DELETE rejection
+    // triggers), the immutable notification_delivery_dedup_fence (the
+    // GLOBAL unique (source kind, source id, event type, occurrence key)
+    // idempotency index) and the notification_inbox_states in-app
+    // projection (born unread; the single sanctioned unread → read
+    // transition, READ terminal, scope/in-app-channel consistency); NO
+    // credential, policy, tenant, workflow, execution, mission or job
+    // table is created or mutated (the /policies engine and the
+    // /credentials vault are consumed READ-ONLY through the public
+    // contracts; NO secret/material column exists anywhere — the email
+    // provider credential is a vault REFERENCE id).
+    '047_notification_delivery.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

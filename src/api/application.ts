@@ -225,6 +225,19 @@ import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.
 // revocation death semantics; tokens live in the /credentials vault by
 // canonical reference — NEVER in the module's tables).
 import type { SocialAccountsModuleApi } from '../modules/social-accounts/public.ts';
+// MKT-068: /notification-delivery module contract (the Notification
+// Delivery Plane — the agency-scoped durable §14 notification records
+// with the full field set (event type, urgency, human-readable
+// explanation, source reference, required action, deep link), the
+// pluggable DeliveryAdapter contract (the in-app + email MVP adapters;
+// WhatsApp/Telegram/SMS/Signal as declared-but-unimplemented capability
+// keys), the per-channel fail-closed /policies gates, the idempotency
+// dedup fence on (source kind, source id, event type, occurrence key),
+// the fully append-only receipt tail and the in-app inbox projection
+// with the single unread → read transition. delivery_status is the
+// ADAPTER-plane lifecycle ONLY — the module is NEVER task/action state
+// (boundary rule 9)).
+import type { NotificationDeliveryModuleApi } from '../modules/notification-delivery/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -433,4 +446,7 @@ export interface ApplicationModules {
   // the fail-closed disconnect/revocation death semantics with the vault
   // references disabled — no zombie grants).
   readonly socialAccounts: SocialAccountsModuleApi;
+  // MKT-068: the Notification Delivery Plane authority (see the import
+  // block above — the delivery plane behind the /notifications boundary).
+  readonly notificationDelivery: NotificationDeliveryModuleApi;
 }

@@ -275,6 +275,16 @@ import { registerGrowthMissionsRoutes } from './growth-missions-routes.ts';
 // route: the death is the disconnect/revocation transition and the history
 // is append-only).
 import { registerSocialAccountsRoutes } from './social-accounts-routes.ts';
+// MKT-068: the /notification-delivery routes (the Notification Delivery
+// Plane surface: the agency-scoped record + fan-out POST with the
+// honest per-channel receipts and the duplicate-skipped replay answer,
+// the record/receipt-tail reads, the channel-redelivery retry POST
+// (NEW receipts, never rewrites) and the in-app notification-inbox
+// read surface with the single unread → read transition. GET/POST ONLY
+// — no PUT/PATCH/DELETE exists anywhere in this family (asserted by
+// the boundary tests); NO adapter-registry mutation route (adapters
+// are composition-root DATA — the registry read stays module-level).
+import { registerNotificationDeliveryRoutes } from './notification-delivery-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -519,5 +529,10 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-055: the /social-accounts surfaces — the provider-neutral OAuth
   // flow family + the authorization reads (see the import block above).
   registerSocialAccountsRoutes(router, services, modules);
+  // MKT-068: the /notification-delivery surfaces — the record + fan-out
+  // family, the receipt-tail reads, the channel-redelivery retry and
+  // the in-app notification-inbox read surface (see the import block
+  // above).
+  registerNotificationDeliveryRoutes(router, services, modules);
   return router;
 }

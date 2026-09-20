@@ -485,7 +485,12 @@ test('MKT-055 static: the disclosed spec registration exists — §6 line + §6 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  // Order-based tail assertion (conflict-tolerant under sibling
+  // appends; the MKT-068 delivery appends 047_notification_delivery.sql
+  // after 046 — the PRE-ASSIGNED number of that Work Item).
+  const position = (name: string) => migrationsOnDisk.indexOf(name);
+  assert.ok(position('046_social_accounts.sql') >= 0);
+  assert.ok(position('046_social_accounts.sql') < position('047_notification_delivery.sql'));
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly socialAccounts: SocialAccountsModuleApi'), 'ApplicationModules.socialAccounts');
   assert.ok(applicationTs.includes("from '../modules/social-accounts/public.ts'"), 'the module public entry import');

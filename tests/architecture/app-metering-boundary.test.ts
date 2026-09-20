@@ -428,9 +428,14 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   // the MKT-055 delivery appends 046_social_accounts.sql after it (both
   // numbers PRE-ASSIGNED to their Work Items; 039/041/043 reserved-but-
   // unused by the no-migration deliveries).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  // Order-based tail assertions (conflict-tolerant under sibling
+  // appends; the MKT-068 delivery appends 047_notification_delivery.sql
+  // after 046 — the PRE-ASSIGNED number of that Work Item).
+  const position = (name: string) => migrationsOnDisk.indexOf(name);
+  assert.ok(position('044_app_metering.sql') >= 0);
+  assert.ok(position('044_app_metering.sql') < position('045_growth_missions.sql'));
+  assert.ok(position('045_growth_missions.sql') < position('046_social_accounts.sql'));
+  assert.ok(position('046_social_accounts.sql') < position('047_notification_delivery.sql'));
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');
