@@ -676,6 +676,35 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // table is created or mutated (migration 037/038/028 stay the sole
     // authorities — consumed READ-ONLY through the public contracts).
     '044_app_metering.sql',
+    // MKT-053 (Growth Mission and Objective Model) appends the
+    // growth-missions migration (045 — the number is PRE-ASSIGNED to
+    // this Work Item; 046 is reserved for a sibling delivery): the
+    // /growth-missions durable record layer — the agency-scoped
+    // growth_missions records (the frozen §2 lifecycle state vocabulary
+    // CHECK-fenced, the CAS version + the mission-record mutation guard
+    // with the identity-immutability, version-advance and
+    // version-pointer-only-advances triggers, no-DELETE), the append-only
+    // growth_mission_versions tail (the declared objective VERBATIM +
+    // the frozen §3 objective-family vocabulary; UPDATE/DELETE rejected
+    // — corrections are NEW version records) with the per-version
+    // growth_mission_target_metrics (the comparator CHECK + the
+    // INTERMEDIATE flag; append-only with the version snapshot), the
+    // append-only growth_mission_events history tail (the event-shape
+    // and terminal-decision-family CHECKs, the gapless per-mission
+    // sequence, the frozen transition-pair + current-state-match
+    // trigger — terminal states have no outgoing pairs, a block is never
+    // silently converted into success — and the append-only UPDATE/
+    // DELETE rejection triggers) and the growth_mission_goal_mappings
+    // rows (FK-anchored canonical goal references to the migration-007
+    // goals table, the agency scope-chain trigger, the terminal-freeze
+    // trigger, the removal-only UPDATE fence and no-DELETE; the ACTIVE
+    // (mission, goal) partial-unique fence); NO goal column is created
+    // or mutated (the /goals authority stays sole), NO workflow/
+    // execution/playbook/experiment/evidence/learning/job/deployment
+    // table is created (architecture-lock-v1.6.md rule 16), NO
+    // controller state of any kind (rule 17 — the Growth Operator is
+    // MKT-054).
+    '045_growth_missions.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

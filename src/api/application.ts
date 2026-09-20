@@ -204,6 +204,19 @@ import type { AppMeteringModuleApi } from '../modules/app-metering/public.ts';
 // export/delete semantics and lineage; NO mutation verbs over ANY
 // authority — composition, never a transfer of authority).
 import type { FirstPartyAppsModuleApi } from '../modules/first-party-apps/public.ts';
+// MKT-053: /growth-missions module contract (Growth Mission and Objective
+// Model — the agency-scoped durable mission records: the declared objective
+// VERBATIM with the frozen architecture-v1.6.md §3 objective-family
+// vocabulary, the product/market context, the frozen §2 lifecycle state
+// machine including every terminal state, the append-only version tail
+// (immutable objective — corrections are NEW version records), the
+// append-only history tail (state transitions with actor + provenance +
+// reason; terminal transitions citing the declared-family decision basis)
+// and the mission→goal mapping through the /goals public contract
+// READ-ONLY; a durable orchestration LAYER over the existing Goals — never
+// a replacement authority, and NO controller/scheduler/replanner: the
+// Growth Operator is MKT-054 and composes these commands server-side).
+import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -383,4 +396,22 @@ export interface ApplicationModules {
   // authorities; the app-state mutations touch app-owned bounded state
   // only — never an authority table.
   readonly firstPartyApps: FirstPartyAppsModuleApi;
+
+  // MKT-053: the Growth Mission and Objective Model authority (the
+  // agency-scoped durable mission records: the declared objective VERBATIM
+  // with the frozen §3 objective-family vocabulary, the product/market
+  // context, the frozen §2 lifecycle state machine including every terminal
+  // state — achieved; stopped by user; blocked pending human action; blocked
+  // by unavailable capability; budget/quota exhausted; policy-constrained;
+  // failed after bounded recovery — the append-only version tail (immutable
+  // objective — corrections are NEW version records, never in-place
+  // rewrites), the append-only history tail (state transitions with actor +
+  // provenance + reason; the record never silently converts a block into
+  // success) and the mission→goal mapping through the /goals public
+  // contract READ-ONLY (the Goal authority stays the sole measurable
+  // business-intent authority — goal progress is never re-stated or
+  // re-computed; architecture-lock-v1.6.md rules 16/17/41). NO controller,
+  // scheduler or replanner exists on this contract — the Growth Operator
+  // (MKT-054) is a later Work Item.
+  readonly growthMissions: GrowthMissionsModuleApi;
 }

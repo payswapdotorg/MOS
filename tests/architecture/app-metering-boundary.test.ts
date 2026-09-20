@@ -419,11 +419,13 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
     'the matrix forbidden-directions bullet exists',
   );
   // 044_app_metering.sql holds its numeric position (the PRE-ASSIGNED
-  // number — 039/041/043 are reserved-but-unused by sibling deliveries).
+  // number — 039/041/043 are reserved-but-unused by sibling deliveries;
+  // the MKT-053 delivery appends 045 after it, so 044 is second-to-last).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '045_growth_missions.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');
