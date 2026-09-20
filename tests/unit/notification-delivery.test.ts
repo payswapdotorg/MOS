@@ -192,7 +192,12 @@ const VALID_INPUT = {
  * consults its declared subsets EXACTLY like the real implementations
  * (the email adapter's declared-MVP discipline).
  */
-function adapterOf(overrides: Partial<NotificationDeliveryAdapter> = {}): NotificationDeliveryAdapter {
+/** The loose override shape (the registration tests may pass ANY channel key). */
+type AdapterOverrides = Partial<Omit<NotificationDeliveryAdapter, 'channel'>> & {
+  readonly channel?: string;
+};
+
+function adapterOf(overrides: AdapterOverrides = {}): NotificationDeliveryAdapter {
   const declared: NotificationDeliveryAdapter = {
     channel: 'email',
     acceptedUrgencies: ['important', 'urgent', 'critical'],
@@ -200,7 +205,7 @@ function adapterOf(overrides: Partial<NotificationDeliveryAdapter> = {}): Notifi
     accepts: () => true,
     deliver: async () => ({ outcome: 'delivered', providerMessageId: 'msg-1' }),
     ...overrides,
-  };
+  } as NotificationDeliveryAdapter;
   return {
     ...declared,
     accepts: ({ urgency, eventType }) =>
@@ -223,7 +228,7 @@ test('MKT-068 AC-2: a well-formed adapter registration passes; unimplemented cha
 
   // The DECLARED-but-UNIMPLEMENTED keys are refused with the honest reason.
   for (const key of PLUGGABLE_NOTIFICATION_CHANNEL_KEYS) {
-    const problems = isValidNotificationAdapterRegistration(adapterOf({ channel: key }));
+    const problems = isValidNotificationAdapterRegistration(adapterOf({ channel: key as never }));
     assert.ok(
       problems.some((problem) => problem.includes('UNIMPLEMENTED')),
       `registering the declared-but-unimplemented key '${key}' is refused fail-closed`,
@@ -232,7 +237,7 @@ test('MKT-068 AC-2: a well-formed adapter registration passes; unimplemented cha
 
   // A completely unknown channel is refused too.
   assert.ok(
-    isValidNotificationAdapterRegistration(adapterOf({ channel: 'pigeon' as never })).length > 0,
+    isValidNotificationAdapterRegistration(adapterOf({ channel: 'pigeon' })).length > 0,
     'an undeclared channel is refused',
   );
 
