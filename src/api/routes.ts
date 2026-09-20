@@ -263,6 +263,18 @@ import { registerFirstPartyAppsRoutes } from './first-party-apps-routes.ts';
 // the boundary tests); NO controller/scheduler/execution verb — MKT-054
 // (the Growth Operator) composes the module commands server-side).
 import { registerGrowthMissionsRoutes } from './growth-missions-routes.ts';
+// MKT-055: the /social-accounts routes (the Social Account and OAuth
+// Connection Model surface: the provider-neutral OAuth flow family —
+// authorize-start, callback/complete, refresh, reauthorize, disconnect,
+// external-revocation — plus the authorization reads: the client/workspace
+// binding listings, the account detail, the grant tail with the VERBATIM
+// scope records + capability tags (REFUSES 409 on dead connections) and
+// the append-only history tail. NO usable-authorization route: the
+// fail-closed consumer read is module-level for the MKT-056+ adapters;
+// NO update route: recorded authorization facts are immutable; NO delete
+// route: the death is the disconnect/revocation transition and the history
+// is append-only).
+import { registerSocialAccountsRoutes } from './social-accounts-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -504,5 +516,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // version-correction POST, the frozen-lifecycle status POST (REQUIRED
   // reason) and the goal-mapping family with the honest recorded removal.
   registerGrowthMissionsRoutes(router, services, modules);
+  // MKT-055: the /social-accounts surfaces — the provider-neutral OAuth
+  // flow family + the authorization reads (see the import block above).
+  registerSocialAccountsRoutes(router, services, modules);
   return router;
 }

@@ -180,10 +180,10 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
     '043_first_party_apps.sql was NOT taken (the required preference)',
   );
   // The migration list tail: the MKT-053 /growth-missions delivery appends
-  // 045 after the MKT-052 metering migration (the sibling-promotion
-  // precedent — this delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-2), ['044_app_metering.sql', '045_growth_missions.sql'], 'the migration list tail carries the sibling promotions only');
-});
+  // 045 and the MKT-055 /social-accounts delivery appends 046 after the
+  // MKT-052 metering migration (the sibling-promotion precedent — this
+  // delivery still owns NO migration).
+  assert.deepEqual(migrations.slice(-3), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql'], 'the migration list tail carries the sibling promotions only');});
 
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
@@ -325,7 +325,6 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   assert.ok(wiring.includes('appInstalls'));
   assert.ok(wiring.includes('integrations'));
   // The modules map carries the contract (the MKT-053 /growth-missions
-  // delivery appends its registration after this module — the sibling
-  // promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions },'));
-});
+  // and MKT-055 /social-accounts deliveries append their registrations
+  // after this module — the sibling promotion precedent).
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts },'));});

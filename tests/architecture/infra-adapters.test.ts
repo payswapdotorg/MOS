@@ -705,6 +705,26 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // controller state of any kind (rule 17 — the Growth Operator is
     // MKT-054).
     '045_growth_missions.sql',
+    // MKT-055 (Social Account and OAuth Connection Model) appends the
+    // social-accounts migration (046 — the number is PRE-ASSIGNED to
+    // this Work Item; 045 is reserved for a sibling delivery): the
+    // /social-accounts connection model — the account identity binding
+    // records (one connection binds one platform identity; the partial
+    // active-binding fences; the terminal connected → disconnected |
+    // revoked lifecycle with identity immutability), the append-oriented
+    // authorization-grant records (the pending → authorized →
+    // expired/revoked/refreshed/superseded lifecycle with the single
+    // completion fill and the frozen transition-table trigger, the
+    // credential-vault reference ONLY — no token/material column
+    // anywhere, the state-token and single-authorized-grant fences), the
+    // fully append-only authorization-grant/history event tail (the
+    // operator | external-signal initiation source, the best-effort
+    // provider-revoke disclosure) and the verbatim scope records
+    // (granted-scope + capability-tag kinds, order preserved, append-only
+    // triggers); NO integration, credential or tenant table is created or
+    // mutated (migration 029/005 stay the sole authorities — consumed
+    // READ-ONLY through the public contracts).
+    '046_social_accounts.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
