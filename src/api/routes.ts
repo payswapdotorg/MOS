@@ -275,6 +275,17 @@ import { registerGrowthMissionsRoutes } from './growth-missions-routes.ts';
 // route: the death is the disconnect/revocation transition and the history
 // is append-only).
 import { registerSocialAccountsRoutes } from './social-accounts-routes.ts';
+// MKT-068: the /notification-delivery routes (the Notification Delivery
+// Plane surface: the delivery command POST — occurrence claim + per-channel
+// policy gates + append-only receipts, with the honest duplicate-skipped
+// receipts on replay — plus the read surfaces: the in-app inbox view (the
+// future console's read surface with the append-only read transition) and
+// the notification detail with the full receipt tail. NO update route (§14
+// facts are immutable at creation; corrections are NEW notifications), NO
+// delete route (history is append-only — DB-trigger-fenced) and NO
+// dispatch/retry route (a dispatch/retry worker plane is future Work Item
+// territory; the receipt model already admits append-only retries).)
+import { registerNotificationDeliveryRoutes } from './notification-delivery-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -519,5 +530,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-055: the /social-accounts surfaces — the provider-neutral OAuth
   // flow family + the authorization reads (see the import block above).
   registerSocialAccountsRoutes(router, services, modules);
+  // MKT-068: the /notification-delivery surfaces — the delivery command +
+  // the in-app read surface + the notification/receipt reads (see the
+  // import block above).
+  registerNotificationDeliveryRoutes(router, services, modules);
   return router;
 }

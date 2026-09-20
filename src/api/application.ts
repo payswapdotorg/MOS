@@ -225,6 +225,17 @@ import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.
 // revocation death semantics; tokens live in the /credentials vault by
 // canonical reference — NEVER in the module's tables).
 import type { SocialAccountsModuleApi } from '../modules/social-accounts/public.ts';
+// MKT-068: /notification-delivery module contract (the Notification
+// Delivery Plane — the durable notification records carrying the full
+// architecture-v1.6.md §14 field set, the dedup fence on event
+// occurrences, the append-only delivery-attempt receipt tail, the
+// in-app read-state projection and the platform-neutral
+// DeliveryAdapter contract with the in-app + email MVP channels; the
+// per-channel /policies gates fail closed into honest refused receipts,
+// and the email provider credential resolves through the /credentials
+// vault by reference — delivery facts only, NEVER task/action state:
+// boundary rule 9).
+import type { NotificationDeliveryModuleApi } from '../modules/notification-delivery/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -433,4 +444,11 @@ export interface ApplicationModules {
   // the fail-closed disconnect/revocation death semantics with the vault
   // references disabled — no zombie grants).
   readonly socialAccounts: SocialAccountsModuleApi;
+  // MKT-068: the Notification Delivery Plane authority (the durable
+  // notification records with the §14 field set, the event-occurrence
+  // dedup fence, the append-only per-channel delivery-attempt receipts,
+  // the in-app read-state projection and the pluggable DeliveryAdapter
+  // contract — in-app + email MVP; delivery facts only, never
+  // task/action state: boundary rule 9).
+  readonly notificationDelivery: NotificationDeliveryModuleApi;
 }

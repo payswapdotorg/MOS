@@ -387,23 +387,25 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
   const infraAdapters = read(join(repoRoot, 'tests', 'architecture', 'infra-adapters.test.ts'));
   // MKT-048 appended 038 after 037; MKT-046 appends 040 after 038;
   // MKT-050 appends 042 after 040; MKT-052 appends 044 after 042; the
-  // MKT-053 delivery appends 045 after 044 and the MKT-055 delivery
-  // appends 046 after 045 (the numbers are PRE-ASSIGNED — 039/041/043
-  // reserved-but-unused by the no-migration deliveries): 037 and 038
-  // keep their numeric positions.
+  // MKT-053 delivery appends 045 after 044, the MKT-055 delivery appends
+  // 046 after 045 and the MKT-068 delivery appends 047 after 046 (the
+  // numbers are PRE-ASSIGNED — 039/041/043/048/049
+  // reserved-but-unused or reserved for siblings): 037 and 038 keep
+  // their numeric positions.
   const migrationNames = [...infraAdapters.matchAll(/'(\d{3})_[a-z_]+\.sql',/g)].map((match) => match[1]!);
   void migrationNames;
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '038_app_installs.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '040_sales_continuity.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '042_app_marketplace.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '038_app_installs.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '040_sales_continuity.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '042_app_marketplace.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '047_notification_delivery.sql');
   // The store/entrypoint exist (the module boundary is complete).
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'module.ts')));
