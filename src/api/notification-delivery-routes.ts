@@ -83,7 +83,6 @@ const NOTIFICATION_AUTHORITY_FIELDS = [
   'receiptId',
   'agencyId',
   'clientId',
-  'workspaceId',
   'deliveryStatus',
   'version',
   'receipts',
@@ -119,6 +118,12 @@ const NOTIFICATION_AUTHORITY_FIELDS = [
   'secretHandle',
   'credentialMaterial',
 ] as const;
+// NOTE: `workspaceId` is deliberately NOT on the forbidden list — it is the
+// OPTIONAL workspace narrowing of the delivery input (the social-accounts
+// authorize-start precedent): the route validates it against canonical
+// workspace ownership BEFORE the module call, so it is a validated
+// selection input, never a server-authoritative value the caller could
+// forge.
 
 /**
  * SERVER-DERIVED provenance for HTTP-surface notification mutations: actor
@@ -350,7 +355,7 @@ export function registerNotificationDeliveryRoutes(
             eventType: ctx.result.notification.eventType,
             urgency: ctx.result.notification.urgency,
             duplicate: ctx.result.duplicate,
-            receiptOutcomes: [...new Set(ctx.result.receipts.map((receipt) => receipt.outcome))],
+            receiptOutcomes: [...new Set(ctx.result.receipts.map((receipt) => receipt.outcome))].join(','),
           },
         });
       },

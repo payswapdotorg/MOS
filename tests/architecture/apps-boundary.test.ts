@@ -325,7 +325,7 @@ test('MKT-047 AC-1 static: application.ts exposes the module, routes.ts register
 // 7. The disclosed arch-check provision (no frozen-spec enforcement drift)
 // ---------------------------------------------------------------------------
 
-test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 38', () => {
+test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 39', () => {
   // The spec parser is untouched: the 26 v1.4 frozen modules + /decisions
   // (registered by the MKT-042 delivery) + /operating-graph (registered
   // by the MKT-041 delivery) + /app-installs (registered by the MKT-048
@@ -340,11 +340,13 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // /growth-missions (registered by the MKT-053 delivery — the v1.6
   // Growth Mission and Objective Model) + /social-accounts (registered
   // by the MKT-055 delivery — the v1.6 Social Account and OAuth
-  // Connection Model) — all per the disclosed promotion precedent.
+  // Connection Model) + /notification-delivery (registered by the
+  // MKT-068 delivery — the v1.6 Notification Delivery Plane) — all per
+  // the disclosed promotion precedent.
   // /apps itself is NOT in the spec set — it rides the
   // disclosed v1.5 composition provision.
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 38);
+  assert.equal(specModules.length, 39);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');
@@ -357,6 +359,7 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   assert.ok(specModules.includes('app-metering'), 'the MKT-052 /app-metering registration is parsed');
   assert.ok(specModules.includes('growth-missions'), 'the MKT-053 /growth-missions registration is parsed');
   assert.ok(specModules.includes('social-accounts'), 'the MKT-055 /social-accounts registration is parsed');
+  assert.ok(specModules.includes('notification-delivery'), 'the MKT-068 /notification-delivery registration is parsed');
   // The enforced set (spec + the disclosed v1.5 composition provision)
   // includes /apps and /apps only holds an EMPTY dependency allowance.
   const result = checkArchitecture({

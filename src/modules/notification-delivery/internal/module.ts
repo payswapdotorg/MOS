@@ -186,7 +186,7 @@ export function createNotificationDeliveryModule(
     notification: NotificationRecord,
     decisionId: string | null,
   ): string {
-    return `channel '${channel}' is not sanctioned for ${notification.urgency}/${notification.eventType} deliveries by policy (decision ${decisionId ?? 'unrecorded'}) — refused fail-closed, never silently dropped`;
+    return `policy key ${channelPolicyKey(channel)} refused the ${notification.urgency}/${notification.eventType} delivery (decision ${decisionId ?? 'unrecorded'}) — the channel is not sanctioned for this urgency/event type, refused fail-closed, never silently dropped`;
   }
 
   return {
