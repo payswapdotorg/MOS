@@ -39,8 +39,9 @@
  * channel attempts stay behind the module's fail-closed /policies gates.
  */
 
-import { NotFoundError } from '../platform/errors/errors.ts';
+import { NotFoundError, ForbiddenError } from '../platform/errors/errors.ts';
 import type { Principal } from '../platform/http/auth/contract.ts';
+import type { AgencyRoleKey } from '../modules/agencies/public.ts';
 import {
   defineMutationRoute,
   defineQueryRoute,
@@ -52,7 +53,7 @@ import type { Router } from '../platform/http/router.ts';
 import { currentCorrelation } from '../platform/observability/correlation.ts';
 import { optionalString, stringField, intField, validateObject } from '../platform/http/validation.ts';
 import type { ApplicationModules } from './application.ts';
-import { requireAgencyAccess } from './authorize.ts';
+import { resolveContext } from './authorize.ts';
 import { auditActor, recordMutationAudit } from './audit-emit.ts';
 import type {
   NotificationDeliveryProvenance,
@@ -248,6 +249,49 @@ export function registerNotificationDeliveryRoutes(
 ): void {
   const logger = services.observability.loggerFactory.forModule('notification-delivery.api');
 
+  /**
+   * The agency access gate with the uniform foreign≡unknown≡malformed
+   * 404 posture (the growth-missions requireGrowthMissionsAgency
+   * precedent): NOT a member of the agency is the SAME 404 as an
+   * unknown/malformed agency (no cross-agency existence oracle); an
+   * INACTIVE (suspended) membership is the 403; the role narrowing
+   * applies only to the mutation surfaces.
+   */
+  async function requireNotificationDeliveryAgency(
+    principal: Principal,
+    agencyId: string,
+    roles?: ReadonlyArray<AgencyRoleKey>,
+  ): Promise<void> {
+    if (!UUID_PATTERN.test(agencyId)) {
+      throw new NotFoundError('agency', agencyId);
+    }
+    const agency = await modules.agencies.getAgency(agencyId);
+    if (agency === null) {
+      throw new NotFoundError('agency', agencyId);
+    }
+
+    if (principal.kind === 'service') return;
+
+    const context = await resolveContext(modules, principal);
+    if (context === null || context.principal.status !== 'active') {
+      throw new ForbiddenError('Active user identity required');
+    }
+    if (context.platformRoles.includes('platform_administrator')) return;
+
+    const membership = context.memberships.find((entry) => entry.agencyId === agencyId);
+    if (membership === undefined) {
+      // Hard boundary: not a member of the agency → the same 404 as for
+      // an unknown agency (uniform, no cross-agency existence oracle).
+      throw new NotFoundError('agency', agencyId);
+    }
+    if (membership.membershipStatus !== 'active') {
+      throw new ForbiddenError('Active membership in this agency required');
+    }
+    if (roles !== undefined && !roles.includes(membership.role)) {
+      throw new ForbiddenError('This operation requires a different agency role');
+    }
+  }
+
   /** Canonical agency owner scope; 404 BEFORE dependent traversal (uniform for malformed/unknown). */
   async function agencyOwner(agencyId: string): Promise<OwnerScope> {
     if (!UUID_PATTERN.test(agencyId)) {
@@ -299,7 +343,7 @@ export function registerNotificationDeliveryRoutes(
       authenticator: services.auth,
       resolveOwner: async (_ctx, params) => agencyOwner(params.agencyId),
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId, [
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId, [
           'agency_owner',
           'agency_admin',
         ]);
@@ -426,7 +470,7 @@ export function registerNotificationDeliveryRoutes(
           details: {
             eventType: ctx.result.notification.eventType,
             urgency: ctx.result.notification.urgency,
-            channels: [...ctx.result.notification.requestedChannels],
+            channels: ctx.result.notification.requestedChannels.join(','),
             duplicate: ctx.result.duplicate,
             deliveryStatus: ctx.result.notification.deliveryStatus,
           },
@@ -452,7 +496,7 @@ export function registerNotificationDeliveryRoutes(
     >({
       authenticator: services.auth,
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       execute: async (ctx) => {
         const filters = parseClientIdFilter(ctx.request.path);
@@ -482,7 +526,7 @@ export function registerNotificationDeliveryRoutes(
     defineQueryRoute<{ agencyId: string; notificationId: string }, NotificationDeliveryRecord>({
       authenticator: services.auth,
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       execute: async (ctx) =>
         requireNotificationInAgency(ctx.params.notificationId, ctx.params.agencyId),
@@ -501,7 +545,7 @@ export function registerNotificationDeliveryRoutes(
     >({
       authenticator: services.auth,
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       execute: async (ctx) => {
         await requireNotificationInAgency(ctx.params.notificationId, ctx.params.agencyId);
@@ -527,7 +571,7 @@ export function registerNotificationDeliveryRoutes(
       authenticator: services.auth,
       resolveOwner: async (_ctx, params) => agencyOwner(params.agencyId),
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId, [
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId, [
           'agency_owner',
           'agency_admin',
         ]);
@@ -598,7 +642,7 @@ export function registerNotificationDeliveryRoutes(
     >({
       authenticator: services.auth,
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       execute: async (ctx) => {
         const filters = parseInboxFilters(ctx.request.path);
@@ -630,7 +674,7 @@ export function registerNotificationDeliveryRoutes(
     defineQueryRoute<{ agencyId: string; notificationId: string }, NotificationInboxEntry>({
       authenticator: services.auth,
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       execute: async (ctx) => {
         await requireNotificationInAgency(ctx.params.notificationId, ctx.params.agencyId);
@@ -655,7 +699,7 @@ export function registerNotificationDeliveryRoutes(
       authenticator: services.auth,
       resolveOwner: async (_ctx, params) => agencyOwner(params.agencyId),
       authorize: async (ctx) => {
-        await requireAgencyAccess(modules, ctx.principal, ctx.params.agencyId);
+        await requireNotificationDeliveryAgency(ctx.principal, ctx.params.agencyId);
       },
       validate: (ctx) =>
         validateObject<{ expectedVersion: number }>(ctx.request.body, {

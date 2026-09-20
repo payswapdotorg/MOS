@@ -607,7 +607,7 @@ export class NotificationDeliveryStore {
     try {
       const result = await this.db.query(
         `UPDATE notification_inbox_states i
-         SET read_status = 'read', read_at = $1, read_by_actor = $2, version = version + 1, updated_at = $1
+         SET read_status = 'read', read_at = $1, read_by_actor = $2, version = i.version + 1, updated_at = $1
          FROM notification_records n
          WHERE n.notification_id = i.notification_id
            AND i.notification_id = $3 AND i.version = $4 AND i.read_status = 'unread'`,

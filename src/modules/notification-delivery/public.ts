@@ -512,7 +512,12 @@ export interface EmailTransport {
  * transport at the composition root when the provider wiring arrives.
  */
 export class UnwiredEmailTransport implements EmailTransport {
-  async send(): Promise<{
+  async send(_input: {
+    readonly to: string;
+    readonly subject: string;
+    readonly body: string;
+    readonly credentialMaterial: Uint8Array;
+  }): Promise<{
     readonly outcome: 'failed';
     readonly providerMessageId: null;
     readonly reason: string;
