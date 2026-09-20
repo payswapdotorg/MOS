@@ -225,6 +225,18 @@ import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.
 // revocation death semantics; tokens live in the /credentials vault by
 // canonical reference — NEVER in the module's tables).
 import type { SocialAccountsModuleApi } from '../modules/social-accounts/public.ts';
+// MKT-069: /product-intelligence module contract (Product Intelligence —
+// the durable product/market INSPECTION and MODEL records of
+// architecture-v1.6.md §8: the agency-scoped Product Context records with
+// their declared inputs and authorization states, the deterministic
+// fetch/extract inspection pipeline (GET-only page reads + READ-ONLY
+// authorized reads through the /integrations public contract), the
+// retained source facts with FULL provenance, the derived model records
+// with evidence links + AI-assistance disclosure + the server-computed
+// verification state, and the append-only risk flags; NO mission-strategy
+// logic — MKT-070 attaches the model records BY REFERENCE through the
+// read surface; NO mutation toward any external source — boundary rule 7).
+import type { ProductIntelligenceModuleApi } from '../modules/product-intelligence/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -433,4 +445,17 @@ export interface ApplicationModules {
   // the fail-closed disconnect/revocation death semantics with the vault
   // references disabled — no zombie grants).
   readonly socialAccounts: SocialAccountsModuleApi;
+  // MKT-069: the Product Intelligence authority (the durable product/market
+  // inspection and model records — the agency-scoped Product Context with
+  // its IMMUTABLE versioned declared inputs, the deterministic inspection
+  // runs over public product/site pages and explicitly authorized
+  // repository/workspace/catalog/analytics reads through the /integrations
+  // public contract READ-ONLY, the retained source facts with FULL
+  // provenance, the derived model records whose verification state is
+  // SERVER-COMPUTED from their own evidence set, and the append-only risk
+  // flags; the model records are attachable BY REFERENCE from missions
+  // later — NO mission-strategy logic lives here, and NO mutation toward
+  // any external source exists — the read-only capability seam is
+  // documented, not built).
+  readonly productIntelligence: ProductIntelligenceModuleApi;
 }
