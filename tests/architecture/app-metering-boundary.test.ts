@@ -428,12 +428,14 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   // the MKT-055 delivery appends 046_social_accounts.sql after it (both
   // numbers PRE-ASSIGNED to their Work Items; 039/041/043 reserved-but-
   // unused by the no-migration deliveries).
-  // The MKT-069 /product-intelligence delivery appends 048 after 046 (the
-  // number PRE-ASSIGNED to that sibling Work Item), so this module's 044
-  // shifts one position earlier in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  // The MKT-068 /notification-delivery and MKT-069 /product-intelligence
+  // deliveries append 047 and 048 after 046 (both numbers PRE-ASSIGNED to
+  // those sibling Work Items), so this module's 044 shifts two positions
+  // earlier in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '047_notification_delivery.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '048_product_intelligence.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');

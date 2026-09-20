@@ -725,6 +725,30 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // mutated (migration 029/005 stay the sole authorities — consumed
     // READ-ONLY through the public contracts).
     '046_social_accounts.sql',
+    // MKT-068 (Notification Delivery Plane) appends the
+    // notification-delivery migration (047 — the number is PRE-ASSIGNED
+    // to this Work Item; 048/049 are reserved for sibling deliveries):
+    // the /notification-delivery plane — the durable notification records
+    // (the full architecture-v1.6.md §14 field set with the
+    // CHECK-fenced event-type/urgency/source-kind vocabularies, the
+    // RELATIVE deep-link fence, the tenant scope-chain trigger, the
+    // single pending → dispatched delivery-status fill and no-DELETE),
+    // the event-occurrence dedup fence rows (the unique
+    // (source_kind, source_id, event_type, occurrence_key) fence with
+    // append-only UPDATE/DELETE rejection), the append-only
+    // delivery-attempt receipt tail (the closed
+    // outcome/channel vocabularies, the honest payload-shape CHECK, the
+    // policy-decision linkage FK and the append-only UPDATE/DELETE
+    // rejection triggers — retries are NEW rows) and the in-app
+    // read-state projection rows (the 1:1 notification fence, the
+    // single append-only read transition and no-DELETE); NO token,
+    // secret, material or handle column exists anywhere (the provider
+    // credential resolves through the /credentials vault at delivery
+    // time — READ-ONLY), NO notifications-module/policy/credential/
+    // tenant/mission table is created or mutated (the /notifications
+    // MKT-001 boundary stays boundary-only — this migration IS the
+    // delivery plane behind it).
+    '047_notification_delivery.sql',
     // MKT-069 (Product Intelligence) appends the product-intelligence
     // migration (048 — the number is PRE-ASSIGNED to this Work Item;
     // 047/049 are reserved for sibling deliveries): the

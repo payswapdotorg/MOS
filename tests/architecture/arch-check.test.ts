@@ -40,6 +40,9 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
   // and OAuth Connection Model registration; the MKT-069 delivery
   // appends /product-intelligence — the v1.6 Product Intelligence
   // registration).
+  // and OAuth Connection Model registration; the MKT-068 delivery
+  // appends /notification-delivery — the v1.6 Notification Delivery
+  // Plane registration).
   assert.deepEqual(
     [...modules].sort(),
     [
@@ -47,6 +50,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
       'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
+      'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
       'reporting', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -143,6 +147,11 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // model-identity port — the DISCLOSED currently-satisfiable subset of
   // the frozen v1.6 row; /research joins at MKT-062 time):
   assert.deepEqual(matrix['product-intelligence'], ['evidence', 'integrations', 'ai-runtime']);
+  // The MKT-068 additive matrix line (the /notification-delivery
+  // Notification Delivery Plane over the /notifications boundary, the
+  // /policies per-channel gates and the /credentials vault — the frozen
+  // v1.6 row):
+  assert.deepEqual(matrix['notification-delivery'], ['notifications', 'policies', 'credentials']);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -248,6 +257,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // product-intelligence boundary a MISSING_MODULE violation (the same
     // additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/product-intelligence',
+    // The MKT-068 /notification-delivery §6 registration (the v1.6
+    // Notification Delivery Plane) makes the fixture's missing
+    // notification-delivery boundary a MISSING_MODULE violation (the
+    // same additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/notification-delivery',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -294,6 +308,10 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // /growth-missions registered by the MKT-053 delivery,
   // /social-accounts registered by the MKT-055 delivery and
   // /product-intelligence registered by the MKT-069 delivery, all per the
+  // delivery, /first-party-apps registered by the MKT-051 delivery and
+  // /growth-missions registered by the MKT-053 delivery and
+  // /social-accounts registered by the MKT-055 delivery and
+  // /notification-delivery registered by the MKT-068 delivery, all per the
   // disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
   // tools/arch-check/checker.ts); the fixture provides

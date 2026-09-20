@@ -325,7 +325,7 @@ test('MKT-047 AC-1 static: application.ts exposes the module, routes.ts register
 // 7. The disclosed arch-check provision (no frozen-spec enforcement drift)
 // ---------------------------------------------------------------------------
 
-test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 38', () => {
+test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowance; the spec-parsed set stays 39', () => {
   // The spec parser is untouched: the 26 v1.4 frozen modules + /decisions
   // (registered by the MKT-042 delivery) + /operating-graph (registered
   // by the MKT-041 delivery) + /app-installs (registered by the MKT-048
@@ -340,13 +340,16 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // /growth-missions (registered by the MKT-053 delivery — the v1.6
   // Growth Mission and Objective Model) + /social-accounts (registered
   // by the MKT-055 delivery — the v1.6 Social Account and OAuth
-  // Connection Model) — all per the disclosed promotion precedent.
+  // Connection Model) + /notification-delivery (registered by the
+  // MKT-068 delivery — the v1.6 Notification Delivery Plane) — all per
+  // the disclosed promotion precedent.
   // /apps itself is NOT in the spec set — it rides the
   // disclosed v1.5 composition provision.
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  // The MKT-069 /product-intelligence delivery registers its boundary
-  // (the v1.6 Product Intelligence authority), so the spec-parsed set is 39.
-  assert.equal(specModules.length, 39);
+  // The MKT-068 /notification-delivery and MKT-069 /product-intelligence
+  // deliveries register their boundaries (the v1.6 Notification Delivery
+  // Plane and Product Intelligence authorities), so the spec-parsed set is 40.
+  assert.equal(specModules.length, 40);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');
@@ -359,6 +362,7 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   assert.ok(specModules.includes('app-metering'), 'the MKT-052 /app-metering registration is parsed');
   assert.ok(specModules.includes('growth-missions'), 'the MKT-053 /growth-missions registration is parsed');
   assert.ok(specModules.includes('social-accounts'), 'the MKT-055 /social-accounts registration is parsed');
+  assert.ok(specModules.includes('notification-delivery'), 'the MKT-068 /notification-delivery registration is parsed');
   assert.ok(specModules.includes('product-intelligence'), 'the MKT-069 /product-intelligence registration is parsed');
   // The enforced set (spec + the disclosed v1.5 composition provision)
   // includes /apps and /apps only holds an EMPTY dependency allowance.
@@ -390,26 +394,28 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
   const infraAdapters = read(join(repoRoot, 'tests', 'architecture', 'infra-adapters.test.ts'));
   // MKT-048 appended 038 after 037; MKT-046 appends 040 after 038;
   // MKT-050 appends 042 after 040; MKT-052 appends 044 after 042; the
-  // MKT-053 delivery appends 045 after 044 and the MKT-055 delivery
-  // appends 046 after 045 (the numbers are PRE-ASSIGNED — 039/041/043
-  // reserved-but-unused by the no-migration deliveries): 037 and 038
-  // keep their numeric positions.
+  // MKT-053 delivery appends 045 after 044, the MKT-055 delivery appends
+  // 046 after 045 and the MKT-068 delivery appends 047 after 046 (the
+  // numbers are PRE-ASSIGNED — 039/041/043/048/049
+  // reserved-but-unused or reserved for siblings): 037 and 038 keep
+  // their numeric positions.
   const migrationNames = [...infraAdapters.matchAll(/'(\d{3})_[a-z_]+\.sql',/g)].map((match) => match[1]!);
   void migrationNames;
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  // The MKT-069 /product-intelligence delivery appends 048 after 046 (the
-  // number PRE-ASSIGNED to that sibling Work Item), so every tail position
-  // shifts one earlier.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '038_app_installs.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '040_sales_continuity.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '042_app_marketplace.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  // The MKT-068 /notification-delivery and MKT-069 /product-intelligence
+  // deliveries append 047 and 048 after 046 (both numbers PRE-ASSIGNED to
+  // those sibling Work Items), so every tail position shifts two earlier.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '038_app_installs.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '040_sales_continuity.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '042_app_marketplace.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '047_notification_delivery.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '048_product_intelligence.sql');
   // The store/entrypoint exist (the module boundary is complete).
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
