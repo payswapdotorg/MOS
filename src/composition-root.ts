@@ -442,6 +442,26 @@ import { createGrowthMissionsModule } from './modules/growth-missions/public.ts'
 // tail and the fail-closed disconnect/revocation death semantics).
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type { SocialAccountFlowImplementation } from './modules/social-accounts/public.ts';
+// MKT-069: /product-intelligence — the Product Intelligence authority
+// (the durable product/market inspection and model records of
+// spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
+// registered by this Work Item (the currently-satisfiable subset of the
+// frozen v1.6 row: /evidence, /integrations, /ai-runtime — /research
+// joins at MKT-062 time): the /integrations public contract arrives
+// through the module's declared narrow READ-ONLY STRUCTURAL PORT
+// (getConnection + executeRead ONLY — executeMutation is structurally
+// absent, so the read-only guarantee of boundary rule 7 is a compile-time
+// property of the wiring), the /ai-runtime registry through the model-
+// identity port (AI-assistance disclosure validation), and the ONE
+// /evidence import (the shared §21 material-key guard) lives inside the
+// module's store. The REAL page reader (the bounded GET-only public-page
+// read over the platform HttpCallPort — fetch-based, zero SDKs) is the
+// module-internal adapter imported HERE ONLY (the CONCRETE_ADAPTER_ACCESS
+// allowance); the test suites supply the disclosed in-repo test double
+// through the same port instead (NO live network in the test suite).
+import { createProductIntelligenceModule } from './modules/product-intelligence/public.ts';
+import { HttpPageReader } from './modules/product-intelligence/internal/adapters/http-page-reader.ts';
+import type { ProductPageReader } from './modules/product-intelligence/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -461,6 +481,16 @@ export interface AppOptions {
    * ONLY — the connection model under test is fully real).
    */
   readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
+  /**
+   * MKT-069: an override ProductPageReader for the /product-intelligence
+   * module (the socialAccountFlows composition precedent). UNSET by
+   * default — the production composition wires the REAL bounded GET-only
+   * HttpPageReader over the platform HttpCallPort. Integration tests
+   * supply the DISCLOSED in-repo test double through this seam (a test
+   * double at the fetch boundary ONLY — the inspection pipeline under
+   * test is fully real; NO live network in the test suite).
+   */
+  readonly productPageReader?: ProductPageReader | undefined;
 }
 
 /**
@@ -1211,6 +1241,26 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     goals,
   });
 
+  // MKT-069: /product-intelligence — the Product Intelligence authority
+  // (see the import block above). The REAL HttpPageReader (GET-only, over
+  // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
+  // public-contract instances satisfy the module's structural ports at
+  // this wiring point — zero cross-module imports exist inside
+  // src/modules/product-intelligence beyond the ONE /evidence §21-guard
+  // import in its store (proven by tools/arch-check and the boundary
+  // tests). The agency row is NOT resolvable from the module
+  // (/agencies is not a frozen allowance of its dependency row — the
+  // /app-metering precedent): agency-scope authorization is resolved at
+  // the route layer and the migration-048 FK anchor is the backstop.
+  const productIntelligence = createProductIntelligenceModule({
+    db,
+    clock,
+    ids,
+    pageReader: options.productPageReader ?? new HttpPageReader(httpCalls),
+    integrations,
+    aiRuntime,
+  });
+
   // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
   // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
   // (resolveDecisionOwnership + getDecision); the playbook and
@@ -1285,7 +1335,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, productIntelligence },
     runtime: { aiProvider },
   };
 }

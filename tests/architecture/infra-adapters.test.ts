@@ -725,6 +725,28 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // mutated (migration 029/005 stay the sole authorities — consumed
     // READ-ONLY through the public contracts).
     '046_social_accounts.sql',
+    // MKT-069 (Product Intelligence) appends the product-intelligence
+    // migration (048 — the number is PRE-ASSIGNED to this Work Item;
+    // 047/049 are reserved for sibling deliveries): the
+    // /product-intelligence authority — the agency-scoped product-context
+    // records with their IMMUTABLE versioned declared inputs (the
+    // kind-compatible authorization CHECK fence: public web kinds vs
+    // explicitly-authorized integration-connection kinds, the cross-agency
+    // connection scope trigger), the append-only inspection runs with
+    // their per-input honest outcome rows (the outcome vocabulary), the
+    // append-only retained source facts (FULL provenance: source ref,
+    // fetched-at, extractor identity, content hash, extraction notes; the
+    // frozen fact-kind vocabulary), the append-only derived model records
+    // (the eight §8 derivation kinds, the server-computed verification
+    // state with the DEFERRABLE evidence-presence invariant, the
+    // single-supersession fence, the AI-assistance disclosure shape) with
+    // their FK-anchored evidence links (the same-context scope triggers),
+    // and the append-only risk flags (the five categories + four
+    // severities) with their evidence links; NO integration, credential,
+    // tenant, evidence or mission table is created or mutated (the
+    // /integrations public contract is consumed READ-ONLY through the
+    // module's structural port).
+    '048_product_intelligence.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
