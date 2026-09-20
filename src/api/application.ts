@@ -225,6 +225,18 @@ import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.
 // revocation death semantics; tokens live in the /credentials vault by
 // canonical reference — NEVER in the module's tables).
 import type { SocialAccountsModuleApi } from '../modules/social-accounts/public.ts';
+// MKT-069: /product-intelligence module contract (Product Intelligence —
+// the agency-scoped Product Context records with the declared inputs and
+// their authorization states, the append-only version tail (corrections
+// are NEW version records), the READ-ONLY deterministic inspection
+// pipeline (public fetcher fetches + authorized reads through the
+// /integrations public contract), the append-only source-fact ledger with
+// full provenance, the derived model records with the server-derived
+// verification states + the ai-runtime assistance disclosure, and the
+// append-only risk flags; the read surface missions attach to BY
+// REFERENCE — NO mission-strategy logic: the Product Marketing Mission
+// Planner is MKT-070 and composes these commands server-side).
+import type { ProductIntelligenceModuleApi } from '../modules/product-intelligence/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -433,4 +445,13 @@ export interface ApplicationModules {
   // the fail-closed disconnect/revocation death semantics with the vault
   // references disabled — no zombie grants).
   readonly socialAccounts: SocialAccountsModuleApi;
+  // MKT-069: the Product Intelligence authority (the durable
+  // product/market inspection and model records — read-only source
+  // inspection: public fetcher fetches + authorized reads through the
+  // /integrations public contract ONLY; the derived model records carry
+  // their backing evidence references and the server-derived verification
+  // states — model output is a claim unless backed by evidence; the risk
+  // flags with the severity vocabulary; the documented future write seam
+  // is deliberately NOT built — boundary rule 7).
+  readonly productIntelligence: ProductIntelligenceModuleApi;
 }

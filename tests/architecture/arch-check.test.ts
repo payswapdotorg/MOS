@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (38 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 38);
+  assert.equal(modules.length, 39);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -37,14 +37,16 @@ test('frozen module set is parsed from spec/architecture.md §6 (38 modules)', (
   // composition home; the MKT-053 delivery appends /growth-missions —
   // the v1.6 Growth Mission and Objective Model registration; the
   // MKT-055 delivery appends /social-accounts — the v1.6 Social Account
-  // and OAuth Connection Model registration).
+  // and OAuth Connection Model registration; the MKT-069 delivery
+  // appends /product-intelligence — the v1.6 Product Intelligence
+  // registration).
   assert.deepEqual(
     [...modules].sort(),
     [
       'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
-      'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
+      'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'reporting', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -135,6 +137,11 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // authority, the /credentials vault, the /policies gates and the
   // /workspaces ownership structural port):
   assert.deepEqual(matrix['social-accounts'], ['integrations', 'credentials', 'policies', 'workspaces']);
+  // The MKT-069 additive matrix line (the /product-intelligence Product
+  // Intelligence authority over /evidence, /integrations and /ai-runtime
+  // — the currently-satisfiable subset of the frozen v1.6 row; /research
+  // joins at MKT-062 time, disclosed in the runbook):
+  assert.deepEqual(matrix['product-intelligence'], ['evidence', 'integrations', 'ai-runtime']);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -235,6 +242,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // social-accounts boundary a MISSING_MODULE violation (the same
     // additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/social-accounts',
+    // The MKT-069 /product-intelligence §6 registration (the v1.6
+    // Product Intelligence authority) makes the fixture's missing
+    // product-intelligence boundary a MISSING_MODULE violation (the
+    // same additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/product-intelligence',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -269,7 +281,7 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   assert.equal(byRule.get('UNKNOWN_MODULE_DIR'), 1);
   assert.equal(byRule.get('MISSING_MODULE_PUBLIC'), 1);
   assert.equal(byRule.get('MODULE_STRUCTURE'), 1);
-  // 39 enforced modules (the 38 spec-parsed frozen modules — the v1.4 26
+  // 40 enforced modules (the 39 spec-parsed frozen modules — the v1.4 26
   // PLUS /decisions registered by the MKT-042 delivery, /operating-graph
   // registered by the MKT-041 delivery, /app-installs registered by the
   // MKT-048 delivery, /profit-intelligence registered by the MKT-043
@@ -279,13 +291,14 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // the MKT-050 delivery, /app-metering registered by the MKT-052
   // delivery, /first-party-apps registered by the MKT-051 delivery and
   // /growth-missions registered by the MKT-053 delivery and
-  // /social-accounts registered by the MKT-055 delivery, both per the
-  // disclosed promotion precedent — PLUS the
+  // /social-accounts registered by the MKT-055 delivery and
+  // /product-intelligence registered by the MKT-069 delivery, all per
+  // the disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
   // tools/arch-check/checker.ts); the fixture provides
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    39,
+    40,
     'no unexpected violation categories may be reported',
   );
 

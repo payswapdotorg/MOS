@@ -420,17 +420,17 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   );
   // 044_app_metering.sql holds its numeric position (the PRE-ASSIGNED
   // number — 039/041/043 are reserved-but-unused by sibling deliveries;
-  // the MKT-053/MKT-055 deliveries append 045/046 after it, so 044 is third-to-last).
+  // the MKT-053/MKT-055/MKT-069 deliveries append 045/046/048 after it,
+  // each number PRE-ASSIGNED to its Work Item — the numeric ORDER of the
+  // delivered migrations is the invariant; 047/049 are reserved for
+  // sibling deliveries and append between 046 and 048 when they land).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  // The MKT-053 delivery appends 045_growth_missions.sql after 044 and
-  // the MKT-055 delivery appends 046_social_accounts.sql after it (both
-  // numbers PRE-ASSIGNED to their Work Items; 039/041/043 reserved-but-
-  // unused by the no-migration deliveries).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  assert.ok(migrationsOnDisk.includes('044_app_metering.sql'));
+  assert.ok(migrationsOnDisk.indexOf('044_app_metering.sql') < migrationsOnDisk.indexOf('045_growth_missions.sql'));
+  assert.ok(migrationsOnDisk.indexOf('045_growth_missions.sql') < migrationsOnDisk.indexOf('046_social_accounts.sql'));
+  assert.ok(migrationsOnDisk.indexOf('046_social_accounts.sql') < migrationsOnDisk.indexOf('048_product_intelligence.sql'));
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');

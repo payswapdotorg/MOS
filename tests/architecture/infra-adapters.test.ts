@@ -725,6 +725,30 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // mutated (migration 029/005 stay the sole authorities — consumed
     // READ-ONLY through the public contracts).
     '046_social_accounts.sql',
+    // MKT-069 (Product Intelligence) appends the
+    // product-intelligence migration (048 — the number is PRE-ASSIGNED to
+    // this Work Item; 047 and 049 are reserved for sibling deliveries):
+    // the /product-intelligence durable record layer — the agency-scoped
+    // product_contexts records (the CAS version + the record mutation
+    // guard with identity-immutability, version-advance and
+    // version-pointer-only-advances triggers, no-DELETE), the append-only
+    // product_context_versions tail + the per-version
+    // product_context_inputs (the frozen §8 input-kind vocabulary, the
+    // authorization-state + per-kind-authorization CHECK fences, the
+    // /integrations connection FK anchor for authorized inputs), the
+    // append-only product_source_facts ledger (full provenance — source
+    // reference, fetched-at, extractor identity, content hash, extraction
+    // notes; the same-version input fence + the unchanged-source fence),
+    // the append-only product_derived_models (the nine-kind §8 derivation
+    // vocabulary, the verification-state/hypothesis-kind/ai-pair shape
+    // CHECKs, the same-context source-fact fence, the same-agency
+    // evidence-citation fence, the repetition fence) and the append-only
+    // product_risk_flags (the five-kind risk + three-severity
+    // vocabularies, the same fences); NO evidence, integration, mission,
+    // workflow or tenant table is created or mutated (the /evidence
+    // ledger and the /integrations connection registry are read
+    // CHECK-ONLY + FK anchors).
+    '048_product_intelligence.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

@@ -275,6 +275,19 @@ import { registerGrowthMissionsRoutes } from './growth-missions-routes.ts';
 // route: the death is the disconnect/revocation transition and the history
 // is append-only).
 import { registerSocialAccountsRoutes } from './social-accounts-routes.ts';
+// MKT-069: the /product-contexts routes (the Product Intelligence surface:
+// the agency-scoped create + list family, the composed honest read-back
+// with the version/input/source-fact/derived-model/risk-flag ledgers, the
+// declared-content CORRECTION path (a NEW version — never an in-place
+// rewrite), the READ-ONLY inspection run (fetch public sources; read
+// authorized sources through /integrations) and the append-only
+// derived-model + risk-flag record family. GET/POST ONLY — no
+// PUT/PATCH/DELETE exists anywhere in this family (asserted by the
+// boundary tests); the documented future WRITE seam toward external
+// sources has NO route (boundary rule 7); NO mission-strategy verb —
+// MKT-070 (the Product Marketing Mission Planner) attaches these records
+// BY REFERENCE through the read surface, never this surface).
+import { registerProductIntelligenceRoutes } from './product-intelligence-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -519,5 +532,11 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-055: the /social-accounts surfaces — the provider-neutral OAuth
   // flow family + the authorization reads (see the import block above).
   registerSocialAccountsRoutes(router, services, modules);
+  // MKT-069: the /product-contexts surfaces — the Product Intelligence
+  // family (see the import block above): create/list under the agency,
+  // the composed honest read-back (+versions/source-facts/derived-models/
+  // risk-flags ledgers), the version-correction POST, the READ-ONLY
+  // inspection POST and the derived-model/risk-flag record POSTs.
+  registerProductIntelligenceRoutes(router, services, modules);
   return router;
 }
