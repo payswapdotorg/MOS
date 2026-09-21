@@ -375,10 +375,19 @@ export function createContentRightsModule(
       }
       if (nested.outcome === 'blocked') {
         for (const reason of nested.reasons) {
+          // The STRUCTURAL codes (cycle/depth/missing-lineage) surface
+          // verbatim — they name the graph defect, not the ingredient's
+          // rights; everything else is the ingredient's own blocked
+          // basis (or its absent record).
+          const structural =
+            reason.code === 'lineage_cycle' ||
+            reason.code === 'lineage_depth_exceeded' ||
+            reason.code === 'lineage_missing';
           blockedReasons.push({
-            code:
-              reason.code === 'no_rights_record'
-                ? 'ingredient_no_rights_record'
+            code: reason.code === 'no_rights_record'
+              ? 'ingredient_no_rights_record'
+              : structural
+                ? reason.code
                 : 'ingredient_blocked',
             detail: `ingredient '${link.ingredientAssetRef}' of '${assetRef}': ${reason.detail}`,
           });

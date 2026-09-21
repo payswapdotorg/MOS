@@ -768,4 +768,5 @@ export {
   CONTENT_ASSET_REF_PATTERN,
   PLATFORM_KEY_PATTERN,
   MAX_LINEAGE_DEPTH,
+  transitionProblems,
 } from './internal/validation.ts';
