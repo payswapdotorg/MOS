@@ -40,14 +40,17 @@ https://mos-product.vercel.app
 
 Production deployment:
 dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
-commit 039743a6e31f792c44d0fc646d3dcb53843730b1
+commit c6a35db9709cf0b343221952f724bc52cd7ddd4f
 READY
 
 Accepted implementation baseline:
 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 
-Current main handoff head:
+Current main source-audit head:
 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+
+Final handoff documentation commit:
+981f5d3dffbb7b3262efd91872785f1b50a6fd99
 
 Production:
 c6a35db9709cf0b343221952f724bc52cd7ddd4f (dpl_7wEndfiEdUsC38e2ttam2sjmMFdg)
