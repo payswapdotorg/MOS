@@ -14,9 +14,9 @@ Status: RESOLVED — repository-owned source + Git deployment
 - current production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
 - accepted implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 current main handoff head: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
-- production is five implementation commits behind the accepted implementation baseline; later main commits are documentation/handoff only
+- production contains the accepted implementation baseline; later main commits are documentation/handoff only
 - current production state: READY
-- MKT-064 main/preview deployment is READY, but it has not been promoted to production
+- MKT-064 is part of the accepted implementation baseline already running in production
 
 ## Remaining handoff gates
 
@@ -24,7 +24,7 @@ current main handoff head: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
 2. browser proof of Growth/Product/Commerce journeys;
 3. async worker deployment;
 4. provider/account/billing verification;
-5. promotion of the accepted main SHA.
+5. promotion of NEW accepted implementation SHAs after the current baseline.
 
 Historical runtime note:
 an older deployment emitted a missing pg package error. The recent 24-hour production 5xx query returned no logs.
