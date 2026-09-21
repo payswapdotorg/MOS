@@ -1,158 +1,106 @@
 # MOS v1.6 UX Discovery + Major-Journey Simulation
 
 Status: VERIFIED DISCOVERY INPUT FOR IMPLEMENTATION
-Date: 2026-09-21
+Audit date: 2026-09-21
 
-## 1. Simulation method
+## Method
 
-This is a repository-grounded journey simulation using the current console source, the recorded live E2E evidence, current production deployment metadata, implemented v1.6 source/runbooks, and the ShareNet source reference.
+Reviewed current main source, current architecture/backlog, current live production HTML, production deployment metadata, recorded real E2E results, latest MKT-054/056/063/064 runbooks, and the ShareNet source reference.
 
-The interactive browser binary was not available in this execution environment, so no new click-by-click browser run is represented as fresh live evidence. Claims below are limited to source-backed simulation and existing live E2E records.
+The available toolchain did not expose a live interactive browser driver, so this pass does not claim fresh click-by-click browser execution. It combines a live deployed HTML fetch with source-level journey simulation and previously recorded real E2E browser evidence.
 
-## 2. Journey results
+## Journey simulation
 
-### A. First visit / sign-up
+### 1. First visit
 
-Path:
-login -> create account -> real sign-in -> Command Center.
+The live production URL currently serves the real MOS authentication experience with Sign in, Create account and demo quick-login options.
 
-Result: GOOD for authentication, weak for first-run product discovery.
+Result: authentication discoverable; product positioning weak.
 
-The existing live E2E records proved signup and owner/operator flows. The current console contains real sign-in, real account creation and demo quick-login personas.
+After authentication, source inspection shows the operations-first navigation:
+Command Center -> Clients -> Attention -> Profit Intelligence -> Human Work -> Apps -> Administration.
 
-Finding:
-after authentication, MOS still presents itself primarily as an agency operations console. The v1.6 outcome-first experience is not yet the dominant entry.
+Learning: the first authenticated screen teaches users how MOS is structured instead of what outcome it can autonomously pursue.
 
-Change:
-make the authenticated home ask what outcome the user wants and make mission creation the primary action. Keep the v1.5 Command Center as a secondary Today / Operations destination.
+### 2. Creator growth
 
-### B. Creator growth
+Desired:
+Grow -> connect accounts -> research -> evidence -> hypothesis -> experiment -> rights -> transform -> publish -> measure -> learn.
 
-Expected:
-mission -> social connections -> research -> hypothesis -> strategy -> experiment -> rights -> transform -> publish -> measure -> learn -> repeat.
+Current: not discoverable.
 
-Result: NOT DISCOVERABLE TODAY.
+The backend now contains MKT-053 Growth Mission, MKT-054 Growth Operator, MKT-055 Social Account/OAuth and MKT-056 Social Adapter Contract, but no first-party MKT-057..061 adapter set and no mission-first console.
 
-Reason:
-the current navigation has no Growth Mission destination; MKT-053 exists in backend; MKT-055 exists in backend; MKT-054 is not implemented; the social adapters are not implemented.
+Learning: "Grow an audience" must be a first-class entry action. Internal operator/task/execution terms remain progressive disclosure.
 
-Change:
-primary action "Grow an audience", mission setup for target/platform/budget/autonomy, contextual social connections, mission progress, hypotheses, experiments, content, rights and platform health.
+### 3. Product marketing
 
-### C. Product marketing
+Desired:
+Paste product URL -> understand product -> audience/platform/metric plan -> approve -> execute -> measure.
 
-Expected:
-product URL -> product intelligence -> audience/problem hypotheses -> platform portfolio -> content experiments -> attribution -> conversion -> learning.
+Current: not discoverable.
 
-Result: NOT DISCOVERABLE TODAY.
+MKT-069 Product Intelligence exists, but MKT-070 and the mission UI are not implemented.
 
-Reason:
-MKT-069 exists in backend, but there is no product-marketing mission surface and MKT-070 is not implemented.
+Learning: "Market a product" must be a first-class entry action rather than something users discover through Apps or Client Workspace.
 
-Change:
-primary action "Market a product", URL-first intake, optional authorized source repository, evidence-backed product understanding, platform mix, business metrics and conversion trace.
+### 4. Commerce discovery
 
-### D. Commerce discovery
+Desired:
+I don't know what to sell -> research -> candidates -> demand tests -> viability -> listing -> traffic -> orders -> margin -> learning.
 
-Expected:
-market discovery -> product candidate -> content hypothesis -> social experiment -> viability -> listing -> traffic -> orders -> economics -> learning.
+Current: not discoverable.
 
-Result: NOT DISCOVERABLE TODAY.
+MKT-071 commerce capability exists, but MKT-072 and its mission UX are not implemented.
 
-Reason:
-MKT-071 exists in the integration boundary, but MKT-072 and the commerce mission UI are not implemented.
+Learning: commerce must be represented as an outcome lifecycle, not an integration configuration.
 
-Change:
-primary action "Find a product to sell", research-first mission workspace, candidate evidence/economics/risk, then listing -> traffic -> order -> margin -> learning.
+### 5. Rights and transformations
 
-### E. Human amplification
+MKT-063 and MKT-064 are now implemented on main, but their behavior is not exposed through a mission-first UI.
 
-Result: PARTIALLY DISCOVERABLE.
+Learning: content candidates must reveal source, evidence basis, rights decision, transformation lineage, destination capability and publication state before publish.
 
-The existing Human Work surface and human-agent journey are real and verified. However human amplification is not yet presented as an optional experiment arm inside a Growth Mission.
+### 6. Human amplification
 
-Change:
-add "Add human treatment" inside a mission. Show availability, offer state, budget, rights/disclosure and outcomes. Never make human offer acceptance a dependency.
+Existing Human Work is discoverable, but human amplification remains detached from growth strategy.
 
-### F. Scientific trace
+Learning: "Add human treatment" belongs inside a mission and should look like another experiment arm. Human capacity shortages are optional constraints, not mission failure.
 
-Result: GOOD for v1.5, missing at mission level.
+### 7. Scientific trace
 
-The Client Workspace already exposes Goals, Strategy, Deployments, Workflows, Evidence, Decisions, Learning and Memory. Existing E2E evidence covers these surfaces.
+The existing Client Workspace remains a strong v1.5 foundation:
+Goals, Strategy, Deployments, Workflows, Evidence, Decisions, Learning, Memory.
 
-Change:
-reuse these authorities but present the mission trace as:
-Question -> Research -> Evidence -> Hypothesis -> Experiment -> Publication -> Measurement -> Analysis -> Decision -> Learning.
+Learning: reuse these authorities as a mission trace instead of building a second analytics hierarchy.
 
-### G. Platform health / blocker handling
+### 8. Platform health
 
-Result: NOT DISCOVERABLE TODAY.
+No mission-level platform-health capability is implemented yet.
 
-MKT-066 is not implemented and there is no mission-level platform health UI.
+Learning: expose descriptive observable states, evidence basis and the next compliant action. Never assert an unobservable hidden moderation state.
 
-Change:
-mission-level health chips, evidence basis, confidence, compliant next action, and explicit human-required action when needed.
+### 9. Existing v1.5 operations
 
-### H. Rights / transformations / provenance
+Current Command Center, Clients, Attention, Profit Intelligence, Human Work, Apps and Administration remain useful and should be preserved.
 
-Result: NOT DISCOVERABLE TODAY.
+Learning: v1.6 should become the new front door over the same product rather than a second application.
 
-MKT-063, MKT-064 and MKT-065 are not implemented and there is no content-rights surface.
+## Global findings
 
-Change:
-every content candidate must show source, evidence, rights state, transformation lineage, destination capability and publication state.
+1. v1.6 backend maturity has advanced faster than the console.
+2. Outcome-first discoverability is still the dominant product gap.
+3. Internal architecture is too visible as the primary information architecture.
+4. Connections should be contextual during mission setup and also available in a reusable Connections center.
+5. Rights/provenance and platform-health decisions must be visible before actions.
+6. Human amplification belongs inside experiments, not only in a detached marketplace.
+7. Current production is five commits behind main; MKT-064 is previewed but not promoted.
 
-### I. Existing v1.5 operations
+## ShareNet-inspired design
 
-Result: GOOD.
+Use the already-frozen direction:
+warm neutral/light surfaces, graphite typography, restrained teal/green healthy state, amber warning, red failure, generous whitespace, minimal chrome, progressive disclosure and subtle state transitions.
 
-Current Command Center, Clients, Attention, Profit Intelligence, Human Work, Apps and Administration are discoverable and live. Existing E2E evidence covers owner/operator, client, human-agent, app lifecycle, tenant isolation and responsive behavior.
+## Browser acceptance
 
-Change:
-preserve these surfaces but move them behind a simpler outcome-first front door.
-
-## 3. Global UX findings
-
-1. Outcome-first discoverability is missing.
-2. v1.5 agency operations and v1.6 autonomous growth currently feel like different products.
-3. Internal architecture objects appear too early.
-4. Social/product/store connections are infrastructure-shaped rather than contextual.
-5. Human Work is detached from mission strategy.
-6. The v1.6 product contract is ahead of the actual console.
-
-## 4. ShareNet-inspired design direction
-
-Use ShareNet as interaction inspiration, not as a copied implementation.
-
-Adopt:
-
-- calm warm-light surface;
-- soft graphite text;
-- restrained teal/green for healthy state;
-- amber for warning/degraded state;
-- red only for genuine failure/blocking;
-- generous whitespace;
-- minimal border/card chrome;
-- one primary action per screen;
-- progressive disclosure;
-- readable state language;
-- subtle motion only for state changes;
-- accessible focus and contrast;
-- diagnostics secondary to the user outcome.
-
-The experience should feel like a calm operational instrument rather than a dense analytics dashboard.
-
-## 5. Required UX verification
-
-Every new major journey must be verified at:
-
-- 390x844;
-- 1280x800;
-- owner role;
-- operator role where applicable;
-- empty real account;
-- demo account;
-- zero page/browser errors;
-- zero horizontal overflow;
-- no raw JSON in visible UI;
-- explicit next action for empty, error and blocked states.
+Every new journey must be proven at 390x844 and 1280x800 with real APIs, real authorization, zero horizontal overflow, zero page/browser errors, no raw JSON and explicit next actions for empty/error/blocked states.
