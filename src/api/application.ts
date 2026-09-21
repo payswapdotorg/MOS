@@ -248,6 +248,21 @@ import type { ProductIntelligenceModuleApi } from '../modules/product-intelligen
 // vault by reference — delivery facts only, NEVER task/action state:
 // boundary rule 9).
 import type { NotificationDeliveryModuleApi } from '../modules/notification-delivery/public.ts';
+// MKT-063: /content-rights module contract (the Content Rights and
+// Provenance authority — the asset-level rights records over the OPAQUE
+// content-asset reference seam (the MKT-064 id-based integration), the
+// frozen rights state model owned/license/platform_permitted/cleared/
+// review/blocked + the explicit `unknown` initial state with transitions
+// as append-only recorded events, the human clearance records as the
+// ONLY review → cleared path, the immutable ingredient lineage links
+// resolving composites as the CONJUNCTION of their ingredients, the
+// destination-platform permission scope and THE fail-closed publication
+// gate (allow / review_required / blocked with reasons; absent
+// evaluation is blocked; unknown/review never auto-approve; the
+// destination policy gate rides /policies) — boundary rule 4: it can
+// block publication but can never silently approve unclear rights, and
+// it holds NO publication authority).
+import type { ContentRightsModuleApi } from '../modules/content-rights/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -476,4 +491,14 @@ export interface ApplicationModules {
   // contract — in-app + email MVP; delivery facts only, never
   // task/action state: boundary rule 9).
   readonly notificationDelivery: NotificationDeliveryModuleApi;
+  // MKT-063: the Content Rights and Provenance authority (the asset-level
+  // rights records over the opaque content-asset reference seam, the
+  // frozen rights state model with transitions as append-only recorded
+  // events and the human clearance records as the ONLY review → cleared
+  // path, the immutable ingredient lineage links resolving composites as
+  // the conjunction of their ingredients, the destination-platform
+  // permission scope and the fail-closed publication gate — allow /
+  // review_required / blocked with reasons; NO publication authority:
+  // boundary rule 4).
+  readonly contentRights: ContentRightsModuleApi;
 }

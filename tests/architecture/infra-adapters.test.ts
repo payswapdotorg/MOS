@@ -791,6 +791,39 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // authority accessed through the adapter port — the migration-029
     // store pattern extended, never a second commerce authority).
     '049_commerce_capabilities.sql',
+    // MKT-063 (Content Rights and Provenance) appends the
+    // content-rights migration (051 — the number PRE-ASSIGNED to this
+    // Work Item; 050 is reserved for a sibling delivery and the
+    // sibling workers are told 050/051 may collide — kept 051,
+    // disclosed; the Tech Lead reconciles at merge): the
+    // /content-rights authority — the asset-level rights records
+    // (the CHECK-fenced cr-vocab-v1 state vocabulary
+    // owned/license/platform_permitted/cleared/review/blocked/unknown,
+    // the REQUIRED /evidence-anchored source provenance + licence
+    // evidence with the licence-basis payload-shape CHECK, the
+    // valid_until expiry horizon evaluated fail-closed at gate time,
+    // the one-record-per-(client, asset ref) fence, the tenant
+    // scope-chain + same-Client evidence triggers, the disciplined
+    // state-move-only UPDATE along the frozen transition-table pairs
+    // and no-DELETE), the fully append-only state-transition event
+    // tail (the CHECK-fenced frozen (from, to, kind) transition table
+    // with clearance_id REQUIRED exactly for human_clearance rows —
+    // `cleared` reachable ONLY from `review` via the recorded human
+    // clearance; history is never mutated in place), the append-only
+    // human clearance records (actor identity + REQUIRED rationale +
+    // the optional /evidence review-evidence reference — fair-use
+    // reasoning rides HERE, never an auto-clear), the append-only
+    // destination-platform permission-scope rows (the newest row per
+    // platform is effective; each carrying its REQUIRED /evidence
+    // reference) and the fully append-only immutable ingredient
+    // lineage links (the unique (client, composite, ingredient) fence,
+    // no self-links — composites resolve as the CONJUNCTION of their
+    // ingredients); NO evidence, policy, credential, tenant or
+    // content-asset table is created or mutated (the /evidence and
+    // /policies authorities stay sole, consumed READ-ONLY through
+    // their public contracts; /content-assets is the FUTURE consumer
+    // of this gate — the id-based reference seam, never an import).
+    '051_content_rights.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

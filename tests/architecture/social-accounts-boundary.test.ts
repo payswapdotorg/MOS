@@ -491,10 +491,13 @@ test('MKT-055 static: the disclosed spec registration exists — §6 line + §6 
   // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
   // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so 046 is
   // now fourth-to-last in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
+  // The MKT-063 /content-rights sibling delivery appends 051 after 049
+  // (the same additive precedent — this module's positions shift once more).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '051_content_rights.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly socialAccounts: SocialAccountsModuleApi'), 'ApplicationModules.socialAccounts');
   assert.ok(applicationTs.includes("from '../modules/social-accounts/public.ts'"), 'the module public entry import');

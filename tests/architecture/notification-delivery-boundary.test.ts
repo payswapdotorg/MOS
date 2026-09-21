@@ -424,10 +424,13 @@ test('MKT-068: the disclosed spec registration exists (the §6 line + sentence, 
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 3], '047_notification_delivery.sql');
-  assert.equal(listEntries[listEntries.length - 4], '046_social_accounts.sql');
-  assert.equal(listEntries[listEntries.length - 2], '048_product_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 1], '049_commerce_capabilities.sql');
+  assert.equal(listEntries[listEntries.length - 4], '047_notification_delivery.sql');
+  assert.equal(listEntries[listEntries.length - 5], '046_social_accounts.sql');
+  assert.equal(listEntries[listEntries.length - 3], '048_product_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 2], '049_commerce_capabilities.sql');
+  // The MKT-063 /content-rights sibling delivery appends 051 after 049
+  // (the same additive precedent — this module's positions shift once more).
+  assert.equal(listEntries[listEntries.length - 1], '051_content_rights.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '047_notification_delivery.sql')));

@@ -25,7 +25,7 @@ const specDir = path.join(repoRoot, 'spec');
 
 test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 40);
+  assert.equal(modules.length, 41);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -43,10 +43,12 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
   // and OAuth Connection Model registration; the MKT-068 delivery
   // appends /notification-delivery — the v1.6 Notification Delivery
   // Plane registration).
+  // The MKT-063 delivery appends /content-rights — the v1.6 Content
+  // Rights and Provenance registration.
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-rights', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
@@ -151,6 +153,12 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // /policies per-channel gates and the /credentials vault — the frozen
   // v1.6 row):
   assert.deepEqual(matrix['notification-delivery'], ['notifications', 'policies', 'credentials']);
+  // The MKT-063 additive matrix line (the /content-rights Content
+  // Rights and Provenance authority over the /evidence canonical
+  // resolution and the /policies destination gate — the DISCLOSED
+  // currently-satisfiable subset of the frozen v1.6 row;
+  // /content-assets joins at MKT-064 time):
+  assert.deepEqual(matrix['content-rights'], ['evidence', 'policies']);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -261,6 +269,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // notification-delivery boundary a MISSING_MODULE violation (the
     // same additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/notification-delivery',
+    // The MKT-063 /content-rights §6 registration (the v1.6 Content
+    // Rights and Provenance authority) makes the fixture's missing
+    // content-rights boundary a MISSING_MODULE violation (the same
+    // additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/content-rights',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -314,9 +327,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
   // tools/arch-check/checker.ts); the fixture provides
+  // /content-rights registered by the MKT-063 delivery (the v1.6
+  // Content Rights and Provenance registration — the same additive
+  // count each sibling promotion adds).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    41,
+    42,
     'no unexpected violation categories may be reported',
   );
 

@@ -477,6 +477,23 @@ import type {
   NotificationRecipientCandidate,
 } from './modules/notification-delivery/public.ts';
 import { createEmailNotificationAdapter } from './modules/notification-delivery/internal/adapters/email-adapter.ts';
+// MKT-063: /content-rights — the Content Rights and Provenance authority
+// (the asset-level rights records over the OPAQUE content-asset
+// reference seam — the MKT-064 id-based integration, NOT an import of a
+// nonexistent module; the frozen rights state model with transitions as
+// append-only recorded events; the human clearance records as the ONLY
+// review → cleared path; the immutable ingredient lineage links resolving
+// composites as the CONJUNCTION of their ingredients; the
+// destination-platform permission scope; THE fail-closed publication gate
+// — absent evaluation blocked, unknown/review never auto-approve, the
+// destination policy gate through /policies). Composition is the
+// currently-satisfiable subset of the frozen v1.6 matrix row
+// (the /product-intelligence MKT-069 disclosed-registration precedent):
+// /evidence (canonical resolution of every evidence link) + /policies
+// (the destination gate of every publication-gate evaluation);
+// /content-assets joins the row at MKT-064 time. NO publication verb
+// exists anywhere in the module (boundary rule 4).
+import { createContentRightsModule } from './modules/content-rights/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1211,6 +1228,32 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     adapters: notificationEmailAdapter === null ? [] : [notificationEmailAdapter],
   });
 
+  // MKT-063: /content-rights — the Content Rights and Provenance
+  // authority. Composition is the frozen-matrix row's
+  // currently-satisfiable subset registered by this Work Item (the
+  // MKT-069 disclosed-registration pattern): the /evidence public
+  // contract is consumed READ-ONLY for the canonical resolution of
+  // every source-provenance/licence/permission/clearance evidence link
+  // (uniform 404 on unknown/foreign; the migration-051 same-Client
+  // triggers are the backstop), and the /policies public contract is
+  // consumed for the fail-closed destination gate of EVERY
+  // publication-gate evaluation (the policy key
+  // content.rights.publication.<platform> — every decision recorded in
+  // the policy engine's own append-only ledger; a non-allow BLOCKS).
+  // /content-assets (the frozen v1.6 row's third direction) arrives
+  // with MKT-064 — the content-asset relationship is the opaque
+  // id-based reference seam the module already speaks, never an
+  // import here. The module holds NO publication authority (boundary
+  // rule 4): MKT-065 will call evaluatePublicationGate before
+  // publishing.
+  const contentRights = createContentRightsModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    policies,
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1439,7 +1482,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, contentRights },
     runtime: { aiProvider },
   };
 }
