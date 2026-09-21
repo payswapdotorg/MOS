@@ -538,7 +538,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
     'the composition root constructs the module',
   );
   assert.ok(
-    compositionRoot.includes('growthOperator, contentRights },'),
+    compositionRoot.includes('growthOperator, contentRights, contentAssets },'),
     'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge)',
   );
   assert.ok(
@@ -549,7 +549,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 1], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 2], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------

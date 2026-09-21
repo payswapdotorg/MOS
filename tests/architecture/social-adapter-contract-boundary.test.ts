@@ -456,16 +456,18 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
     matrixSpec.includes('/social-accounts ──→ /integrations, /credentials, /policies, /workspaces'),
     'the /social-accounts matrix row is the unchanged MKT-055 registration',
   );
-  // 050 holds its numeric position SECOND-TO-LAST (the disclosed number
-  // — the MKT-063 sibling appended 051 after it at merge; the Tech Lead
-  // reconciled the sibling tails).
+  // 050 holds its numeric position (the disclosed number — the
+  // MKT-063 sibling appended 051 after it and the MKT-064 sibling
+  // appended 053 after that at merge; the Tech Lead reconciles the
+  // sibling tails — 052 is left for the MKT-054 renumber).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------

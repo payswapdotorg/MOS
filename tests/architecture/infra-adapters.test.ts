@@ -867,6 +867,31 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // referenced (rules 43/44 — the human-amplification inputs are
     // budget/evidence columns on the controller row, zero by default).
     '052_growth_operator.sql',
+    // MKT-064 (Content Asset and Transformation Authority) appends the
+    // content-assets migration (053 — the number PRE-ASSIGNED to this
+    // Work Item; after the 054 sibling merge the main tail is
+    // 052_growth_operator (the renumbered MKT-054 migration), so 053
+    // slots directly after it — the merged-tree truth): the
+    // /content-assets authority — the logical asset identities + the
+    // immutable VERSIONED artifact records (the 'ca:'-minted opaque
+    // refs — the OTHER side of the 063 seam, now completed; the
+    // explicit (asset, version) fence; the media/kind metadata; the
+    // content-addressed object references with the materialization
+    // shape CHECK; the /evidence-anchored source provenance as the
+    // id-based seam with the same-Client trigger backstop; the
+    // disciplined draft → materialized state move + no-DELETE), the
+    // append-only lifecycle event tail (the CHECK-frozen
+    // registration/materialization/derivation shapes), the append-only
+    // quality OBSERVATIONS (the closed metric vocabulary — a fabricated
+    // 'score' is unrepresentable), the recorded TRANSFORMATIONS (the
+    // frozen crop/reframe/padding/compilation/clip/caption/voice/
+    // translation/format family; the engine identity frozen at request;
+    // the /executions FK reference — one transformation per execution;
+    // the requested → completed|failed terminal moves only) and the
+    // fully append-only ingredient lineage links (the same-Client
+    // fence, the refs frozen at request time); NO rights, policy,
+    // evidence, tenant or execution table is created or mutated.
+    '053_content_assets.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

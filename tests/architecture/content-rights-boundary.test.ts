@@ -521,9 +521,9 @@ test('MKT-063: the real codebase enforces the frozen boundaries — zero violati
     join(repoRoot, 'spec', 'module-dependency-v1.3.md'),
     [...modules, 'apps'],
   );
-  // The DISCLOSED currently-satisfiable subset (the MKT-069 precedent):
-  // /content-assets joins the row at MKT-064 time.
-  assert.deepEqual(matrix['content-rights'], ['evidence', 'policies']);
+  // The disclosed subset was COMPLETED by the MKT-064 delivery (the
+  // mutual registration: /content-assets now exists and joined the row).
+  assert.deepEqual(matrix['content-rights'], ['evidence', 'policies', 'content-assets']);
 
   // The module public imports exactly the matrix-listed module publics
   // and platform contracts.
@@ -552,23 +552,25 @@ test('MKT-063: the disclosed spec registration exists (the §6 line + sentence, 
   assert.ok(/^\/content-rights$/m.test(architectureSpec));
   // §6 registration sentence.
   assert.ok(architectureSpec.includes('`/content-rights` is the v1.6 Content Rights and Provenance authority'));
-  // The matrix row (the DISCLOSED currently-satisfiable subset).
-  assert.ok(matrixSpec.includes('/content-rights ──→ /evidence, /policies'));
+  // The matrix row (the subset COMPLETED at MKT-064 time — the mutual registration).
+  assert.ok(matrixSpec.includes('/content-rights ──→ /evidence, /policies, /content-assets'));
   // The authority bullet (the disclosed /content-assets seam).
   assert.ok(matrixSpec.includes('- `/content-rights` is the v1.6 Content Rights and Provenance authority'));
-  assert.ok(matrixSpec.includes('`/content-assets` joins the row at MKT-064 time'));
+  assert.ok(matrixSpec.includes('`/content-assets` joined the row at MKT-064 time'));
 
-  // 051 holds its numeric position at the END of the ordered
-  // expected-migration list in the infra-adapters architecture test.
+  // 051 holds its numeric position; the MKT-064 delivery appends
+  // 053 after it in the ordered expected-migration list of the
+  // infra-adapters architecture test (the sibling-tail reconciliation
+  // precedent — the tail is the merged-tree truth).
   const infraAdapters = read(join(repoRoot, 'tests', 'architecture', 'infra-adapters.test.ts'));
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 1], '052_growth_operator.sql');
-  assert.equal(listEntries[listEntries.length - 2], '051_content_rights.sql');
-  assert.equal(listEntries[listEntries.length - 3], '050_social_adapter_contract.sql');
-  assert.equal(listEntries[listEntries.length - 4], '049_commerce_capabilities.sql');
-
+  assert.equal(listEntries[listEntries.length -2], '052_growth_operator.sql');
+  assert.equal(listEntries[listEntries.length -3], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length -4], '050_social_adapter_contract.sql');
+  assert.equal(listEntries[listEntries.length -5], '049_commerce_capabilities.sql');
+  assert.equal(listEntries[listEntries.length -1], '053_content_assets.sql');
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '051_content_rights.sql')));
 });

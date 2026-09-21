@@ -270,6 +270,20 @@ import type { NotificationDeliveryModuleApi } from '../modules/notification-deli
 // block publication but can never silently approve unclear rights, and
 // it holds NO publication authority).
 import type { ContentRightsModuleApi } from '../modules/content-rights/public.ts';
+// MKT-064: /content-assets module contract (the Content Asset and
+// Transformation Authority — the immutable VERSIONED artifact records
+// over the opaque 'ca:'-minted content-asset refs (the completed
+// /content-rights seam), explicit versions with no floating pointers,
+// content-addressed object-storage references, /evidence-anchored
+// source provenance, the draft → materialized lifecycle with derived as
+// the BIRTH state of transformation outputs, the append-only quality
+// OBSERVATIONS (closed metric vocabulary — never fabricated scores),
+// and the recorded TRANSFORMATIONS of the frozen family whose execution
+// flows through the EXISTING /executions authority with the engine as a
+// replaceable capability behind the TransformationEngine port (EMPTY in
+// production by default) — boundary rule 5: it stores/derives artifact
+// lineage and can never become a rights authority).
+import type { ContentAssetsModuleApi } from '../modules/content-assets/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -520,4 +534,10 @@ export interface ApplicationModules {
   // review_required / blocked with reasons; NO publication authority:
   // boundary rule 4).
   readonly contentRights: ContentRightsModuleApi;
+  // MKT-064: /content-assets — the Content Asset and Transformation
+  // Authority (the versioned asset records, the quality observations,
+  // the transformation family vocabulary, the execution delegation
+  // through /executions and the derivation seam into /content-rights
+  // lineage — NO rights authority of its own: boundary rule 5).
+  readonly contentAssets: ContentAssetsModuleApi;
 }

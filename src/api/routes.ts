@@ -314,6 +314,23 @@ import { registerNotificationDeliveryRoutes } from './notification-delivery-rout
 // (boundary rule 4: the gate blocks or refers to review; publishing is
 // MKT-065's execution surface).)
 import { registerContentRightsRoutes } from './content-rights-routes.ts';
+// MKT-064: the /content-assets routes (the Content Asset and
+// Transformation Authority surface: the versioned asset-record
+// registration POST + the reads, the by-ref seam resolution, the
+// materialization POST (draft → materialized, the single sanctioned
+// state move), the append-only quality-observation POST and the
+// transformation family: request (kind + EXPLICIT ingredient versions +
+// parameters + output spec) and execute (the module runner through the
+// /executions authority — the engine behind the port, output born
+// derived WITH lineage). Literal-segment routes (by-ref,
+// transformations) register BEFORE the :versionId patterns
+// (first-match-wins). NO update route (version records are immutable —
+// a correction is a NEW version), NO delete route (history is
+// append-only — DB-trigger-fenced) and NO rights-mutating route of any
+// kind (boundary rule 5: transforming an asset never checks or mutates
+// rights — the /content-rights surfaces own the rights records and the
+// publication gate).)
+import { registerContentAssetsRoutes } from './content-assets-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -572,5 +589,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-063: the /content-rights surfaces — the rights records + the
   // publication gate (see the import block above).
   registerContentRightsRoutes(router, services, modules);
+  // MKT-064: the /content-assets surfaces — the versioned asset records
+  // + the observations + the transformation family (see the import
+  // block above).
+  registerContentAssetsRoutes(router, services, modules);
   return router;
 }

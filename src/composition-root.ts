@@ -517,6 +517,23 @@ import { createEmailNotificationAdapter } from './modules/notification-delivery/
 // /content-assets joins the row at MKT-064 time. NO publication verb
 // exists anywhere in the module (boundary rule 4).
 import { createContentRightsModule } from './modules/content-rights/public.ts';
+// MKT-064: /content-assets — the Content Asset and Transformation
+// authority (the immutable versioned artifact records over the
+// opaque 'ca:'-minted refs — the OTHER side of the 063 seam, now
+// completed; explicit versions, no floating pointers;
+// content-addressed object references through the MKT-001 ObjectStore
+// platform port; /evidence-anchored source provenance as the id-based
+// seam (the /app-metering route-layer precedent); the append-only
+// quality OBSERVATIONS; and the recorded TRANSFORMATIONS of the frozen
+// family whose EXECUTION flows through the EXISTING /executions
+// authority — no second engine — with the engine as a replaceable
+// capability behind the TransformationEngine port registered as module
+// DATA, EMPTY in production by default). The derivation records the
+// /content-rights ingredient lineage links through the 063 public
+// contract; transforming an asset NEVER checks or mutates rights
+// (boundary rule 5).
+import { createContentAssetsModule } from './modules/content-assets/public.ts';
+import type { TransformationEngine } from './modules/content-assets/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -536,6 +553,19 @@ export interface AppOptions {
    * ONLY — the connection model under test is fully real).
    */
   readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
+  /**
+   * MKT-064: additional TRANSFORMATION ENGINES for the /content-assets
+   * module (the first-party/extension capability seam — the
+   * socialAccountFlows composition precedent). EMPTY by default: the
+   * production composition registers NO engine (the MKT-056 discipline —
+   * a transformation kind with no registered engine fails closed at
+   * request time, never a silent fallback). Integration tests supply
+   * the DISCLOSED first-party doubles through this seam (the passthrough
+   * no-op + the format/crop doubles, re-exported from the module's
+   * public entry); real media-processing capabilities and
+   * Extension/App engine bridges arrive as future registered engines.
+   */
+  readonly contentTransformationEngines?: ReadonlyArray<TransformationEngine> | undefined;
   /**
    * MKT-056: additional SOCIAL PLATFORM ADAPTER instances for the
    * /social-accounts module's normalized capability plane (the
@@ -1322,6 +1352,32 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     policies,
   });
 
+  // MKT-064: /content-assets — the Content Asset and Transformation
+  // authority. The frozen-matrix row's module-importable subset is
+  // consumed exactly: /executions for the transformation EXECUTION flow
+  // (createExecution + transitionExecution through the public contract —
+  // NO second engine) and /content-rights for the derivation seam
+  // (recordLineageLink when the module derives composites — the 063
+  // conjunction grammar, never a rights mutation); the /object-storage
+  // direction rides as the platform ObjectStore port (the same `objects`
+  // service the composition already wires — fs for tests, memory for
+  // unit doubles, S3-class in production); the /evidence-anchored source
+  // provenance rides as the id-based reference seam (the migration-053
+  // FK + same-Client triggers are the DB backstop; the route layer
+  // resolves evidence canonically first — the /app-metering precedent).
+  // The engine registry is module DATA: the options seam registers
+  // engines for tests and future Work Items; production registers NONE
+  // by default (the MKT-056 discipline).
+  const contentAssets = createContentAssetsModule({
+    db,
+    clock,
+    ids,
+    objects,
+    executions,
+    contentRights,
+    engines: options.contentTransformationEngines ?? [],
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1602,7 +1658,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets },
     runtime: { aiProvider },
   };
 }
