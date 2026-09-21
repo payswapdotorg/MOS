@@ -281,6 +281,7 @@ export function createContentAssetsModule(
       // external-request link makes the orphan self-describing).
       const transformation = await store.insertTransformation(
         {
+          transformationId,
           agencyId: input.agencyId,
           clientId: input.clientId,
           workspaceId: input.workspaceId,

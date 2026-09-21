@@ -394,6 +394,8 @@ export interface DerivedVersionInput {
 }
 
 export interface RequestTransformationRowInput {
+  /** The PRE-MINTED transformation id (the identity the execution's external-request link references). */
+  readonly transformationId: string;
   readonly agencyId: string;
   readonly clientId: string;
   readonly workspaceId: string;
@@ -828,7 +830,7 @@ export class ContentAssetsStore {
     }[],
     provenance: ContentAssetsProvenance,
   ): Promise<ContentTransformationRecord> {
-    const transformationId = this.ids.newId();
+    const transformationId = input.transformationId;
     const now = new Date(this.clock.nowIso());
     try {
       await this.db.transaction(async (tx) => {

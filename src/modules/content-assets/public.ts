@@ -822,6 +822,7 @@ export {
   assertValidRequestTransformationInput,
   assertValidExecuteTransformationInput,
   assertValidJsonPayload,
+  assertValidOutputSpecMetadata,
   MAX_JSON_PAYLOAD_BYTES,
   MAX_OBJECT_BYTES,
   transformationRequestProblems,

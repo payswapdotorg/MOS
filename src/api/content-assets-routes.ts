@@ -101,9 +101,12 @@ const MAX_BASE64_LENGTH = Math.ceil((8 * 1024 * 1024) / 3) * 4 + 8;
  * payloads; object bytes arrive as a bounded base64 payload only).
  */
 const CONTENT_ASSETS_AUTHORITY_FIELDS = [
-  // Server-derived identity/ownership/lifecycle/outcome.
+  // Server-derived identity/ownership/lifecycle/outcome — NEVER request
+  // fields. (The CALLER-supplied inputs — assetId, version, workspaceId,
+  // ingredients, engineId, sourceEvidenceRef — are deliberately absent:
+  // they are the honest request vocabulary of this surface; the module
+  // guards own their semantics.)
   'versionId',
-  'assetId',
   'assetRef',
   'eventId',
   'observationId',
@@ -111,21 +114,17 @@ const CONTENT_ASSETS_AUTHORITY_FIELDS = [
   'ingredientId',
   'agencyId',
   'clientId',
-  'workspaceId',
-  'version',
   'versionCas',
   'lifecycleState',
   'objectKey',
   'objectDigest',
   'objectSize',
-  'sourceEvidenceRef',
   'status',
   'executionRef',
   'executionId',
   'outputVersionId',
   'completedAt',
   'failureReason',
-  'engineId',
   'provenance',
   'actor',
   'recordedActor',
@@ -138,7 +137,20 @@ const CONTENT_ASSETS_AUTHORITY_FIELDS = [
   'updatedAt',
   'replayed',
   'output',
-  'ingredients',
+];
+
+/** The nested ingredient DTO's forbidden set (the caller names exactly
+ *  assetId + version — everything else is server-derived). */
+const INGREDIENT_AUTHORITY_FIELDS = [
+  'versionId',
+  'ingredientId',
+  'assetRef',
+  'inputAssetRef',
+  'position',
+  'inputVersionId',
+  'inputVersionNumber',
+  'provenance',
+  'created_at',
 ];
 
 function serverProvenance(principal: Principal): ContentAssetsProvenance {
@@ -561,7 +573,7 @@ export function registerContentAssetsRoutes(
               minItems: 1,
               maxItems: 16,
               item: objectField({
-                forbiddenKeys: CONTENT_ASSETS_AUTHORITY_FIELDS,
+                forbiddenKeys: INGREDIENT_AUTHORITY_FIELDS,
                 fields: {
                   assetId: stringField({ pattern: UUID_PATTERN }),
                   // The EXPLICIT version — required, one-based: a
@@ -918,7 +930,10 @@ export function registerContentAssetsRoutes(
           forbiddenKeys: CONTENT_ASSETS_AUTHORITY_FIELDS,
           fields: {
             metric: stringField({ pattern: METRIC_PATTERN }),
-            numericValue: stringField({
+            // The numeric value rides as a bounded numeric string when
+            // present (the module guard owns the per-metric value-shape
+            // semantics — which value class the metric requires).
+            numericValue: optionalString({
               pattern: /^\d+(\.\d+)?$/,
               minLength: 1,
               maxLength: 20,
