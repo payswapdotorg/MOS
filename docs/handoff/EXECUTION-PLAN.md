@@ -182,9 +182,9 @@ Tech Lead: MKT-075 and DEP-015 final acceptance.
 
 ## 8. Deployment gate
 
-Current production is READY but 5 commits behind main.
+Current production is READY and contains the accepted implementation baseline (1ef58f86afa0220a7fd546ad03c84bfb82e4656b). Current main is only ahead by documentation/handoff commits.
 
-DEP-015 must promote only an accepted main SHA after:
+DEP-015 is required only when a NEW implementation baseline is accepted. The promotion sequence is:
 CI -> preview -> browser smoke -> migration check -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
 
 ## 9. Final completion
