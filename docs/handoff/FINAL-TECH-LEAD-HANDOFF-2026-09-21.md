@@ -5,10 +5,10 @@
 Implementation baseline:
 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 
-Final main handoff head:
-bd089a752a309790d9cb148e700204ba302265ef
+Current main handoff head:
+34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
 
-The final handoff head contains documentation/handoff updates after the implementation baseline; do not treat those documentation-only commits as additional Work Item implementations.
+The current main head contains documentation/handoff updates after the implementation baseline; do not treat those documentation-only commits as additional Work Item implementations.
 
 Verified v1.6 on the implementation baseline:
 - MKT-053
@@ -33,12 +33,12 @@ Optional:
 ## Deployment truth
 
 Current production:
-dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
-039743a6e31f792c44d0fc646d3dcb53843730b1
+dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
+c6a35db9709cf0b343221952f724bc52cd7ddd4f
 READY
 https://mos-product.vercel.app
 
-Production is five implementation commits behind the accepted implementation baseline. MKT-064 is on the baseline and has a READY preview but is not production.
+Production is five implementation commits behind the accepted implementation baseline. Main is additionally ahead only because of documentation/handoff commits. MKT-064 is on the accepted implementation baseline and has READY preview evidence, but is not in current production.
 
 Confirmed provider: Vercel.
 Unproven: exact billing tier, production Postgres provider, R2, Upstash, Apify, Render.
@@ -84,6 +84,25 @@ Existing v1.5 operations become Today / Operations.
 
 Every mission must answer:
 target; progress; what MOS is doing now; what happens next; why; evidence; current experiment; platform health; content/rights; transformation; decision; learning; blocker/action.
+
+## Simulation learning
+
+The current production/recorded experience confirms that authentication and the v1.5 operations shell are usable, but the v1.6 autonomous-growth capabilities are not discoverable from the first authenticated screen.
+
+A fresh interactive browser run could not be executed in this environment because Chromium was unavailable and the browser binary could not be downloaded due network/DNS restrictions. The simulation therefore combines current repository source, recorded real E2E evidence, current deployment metadata, and live deployment state. No fresh click result is represented as live browser evidence.
+
+The missing discoverability surfaces are:
+- outcome-first mission launcher;
+- reusable mission creation;
+- mission workspace;
+- Connections;
+- content/rights/transformation;
+- platform health;
+- mission-level scientific trace;
+- optional human treatment inside missions;
+- commerce mission lifecycle.
+
+The existing Client / Human Work / Apps / Administration surfaces should be preserved as secondary operational surfaces.
 
 ## Acceptance journeys
 
