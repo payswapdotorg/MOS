@@ -1,271 +1,272 @@
 # MOS — Unified Successor Tech Lead Execution Plan (v1.5 + v1.6)
 
-**Architecture:** v1.6 FROZEN; v1.5 remains the implementation baseline  
-**Program:** implement and verify the complete v1.5 platform + v1.6 Growth Autonomy program as one coherent delivery  
-**Maximum concurrent implementation workers:** 3  
-**Canonical handoff:** this file  
-**Rule:** do not run a separate v1.5 prompt and then a separate v1.6 prompt
+Architecture: v1.6 FROZEN
+Maximum concurrent implementation workers: 3
+Canonical handoff: this file
 
-## 1. Mission of the Tech Lead
+## 1. Current baseline
 
-The Tech Lead owns orchestration, dependency scheduling, acceptance and repository truth.
+MKT-001..MKT-052 remain the v1.5 baseline.
 
-The objective is not merely to land MKT-001..MKT-078. The objective is a single production-grade MOS in which:
+Verified v1.6 deliveries on current main:
 
-- the v1.5 platform authorities are real, tested and deployable;
-- v1.6 Growth Missions and Growth Operator compose those authorities without creating alternate engines;
-- social, research, content, product-marketing and commerce capabilities are pluggable and evidence-driven;
-- human/UGC/creator amplification is an optional experiment treatment, never a prerequisite for autonomous growth;
-- the console and deployment are repository-owned and reproducible.
+- MKT-053 Growth Mission and Objective Model
+- MKT-055 Social Account and OAuth Connection Model
+- MKT-068 Notification Delivery Plane
+- MKT-069 Product Intelligence
+- MKT-071 Commerce Catalog and Order Capabilities
 
-Actual source, migrations, tests, Git history, provider verification, runtime evidence and deployment state outrank all handoff/status claims.
+Remaining v1.6 implementation is not complete.
 
-## 2. First gate: truth audit, not implementation assumptions
+The previous console-source P0 is resolved. Do not recreate it.
 
-The v1.5 documents report MKT-001..MKT-052 as accepted/merged. That is a coordination claim, not permission to assume they are implemented correctly.
+## 2. Truth-first rule
 
-Before scheduling v1.6 implementation, the Tech Lead must inspect the current repository and classify every v1.5 Work Item as:
+Before any implementation:
 
-- **VERIFIED** — source + tests + acceptance evidence prove it;
-- **INCOMPLETE** — implementation is missing or materially below acceptance;
-- **BROKEN** — implementation exists but objective verification fails;
-- **BLOCKED** — dependency/environment/source-recovery blocker is proven;
-- **N/A** — only when an explicit architecture decision documents why.
+1. inspect current main;
+2. inspect source, migrations, tests, implementation report and merged PR;
+3. classify VERIFIED / INCOMPLETE / BROKEN / BLOCKED / N/A;
+4. only VERIFIED satisfies dependency edges;
+5. never trust a completion message without objective evidence.
 
-Only VERIFIED items satisfy downstream dependencies.
+## 3. Worker ownership
 
-If a reported v1.5 item is not VERIFIED, the Tech Lead reopens its implementation work using the frozen v1.5 backlog. Do not create a parallel v1.5 implementation.
+### Worker A — platform capability plane
 
-## 3. Mandatory reading order
+Own:
 
-Every worker must read:
+- unresolved v1.5 provider/platform gaps;
+- MKT-056..MKT-061;
+- social account UX contracts and provider runbooks;
+- provider integration fixtures and conformance tests.
 
-1. `AGENTS.md`
-2. `spec/frozen-manifest-v1.6.json`
-3. `spec/architecture-v1.6.md`
-4. `spec/architecture-lock-v1.6.md`
-5. `spec/change-request-006.md`
-6. `spec/effective-backlog-v1.6.md`
-7. `spec/module-dependency-matrix-v1.6.md`
-8. applicable v1.5 frozen documents and explicit supersessions
-9. `spec/effective-backlog-v1.5.md`
-10. applicable v1.5 dependency / traceability / security / module matrices
-11. `docs/architecture/IMPLEMENTATION-GOVERNANCE.md`
-12. `docs/product/PRODUCT-CONSOLE-V1.6.md`
-13. `docs/handoff/IMPLEMENTATION-STATE.md`
-14. `docs/handoff/EXECUTION-PLAN.md`
-15. `docs/handoff/WORKER-CONTRACT.md`
-16. `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`
-17. the exact Work Item / task
+### Worker B — intelligence/content/science plane
 
-The `*-V1.6.md` handoff files are compatibility aliases only; this unified handoff is canonical.
+Own:
 
-## 4. Three-worker ownership model
+- MKT-062..MKT-067;
+- research;
+- rights/provenance;
+- transformations;
+- platform health;
+- experiment analysis;
+- optional MKT-076..MKT-078;
+- mission-trace data contracts.
 
-Ownership is by domain surface, not by calendar. The Tech Lead may reassign a lane after a worker finishes its ready queue, but two workers must never modify the same composition root, route registry, migration set or deployment manifest concurrently.
+### Worker C — mission/console/commerce/deployment plane
 
-### Worker A — Platform + provider capability plane
+Own:
 
-Primary ownership:
+- MKT-054;
+- MKT-070, MKT-072, MKT-073, MKT-074, MKT-075;
+- UX-001..UX-012;
+- DEP-006..DEP-014;
+- final E2E orchestration.
 
-- v1.5 foundational platform / integrations / credentials / policy / workflow / execution surfaces required by the v1.5 dependency graph;
-- unresolved v1.5 core Work Items that are prerequisites for external capabilities;
-- MKT-055..MKT-061: Social Account + OAuth and the five MVP social adapters;
-- adapter-specific conformance, provider runbooks and integration fixtures.
+Only Worker C owns the frontend composition root at a time.
 
-Rules:
+## 4. New UX implementation work orders from the simulation
 
-- provider SDK imports stay inside sanctioned adapters/composition roots;
-- no provider-specific assumptions enter domain/application modules;
-- each provider declares actual capability subsets, account constraints, authorization scopes, limits and observable restriction signals;
-- adapter completion requires objective provider evidence, not mocked success alone.
+### UX-001 — Outcome-first Home
 
-### Worker B — Intelligence + content + scientific optimization plane
+Replace the current operations-only first screen with:
 
-Primary ownership:
+- Grow an audience
+- Market a product
+- Find a product to sell
+- Generate leads
+- Generate revenue
+- Continue a mission
 
-- v1.5 operating/intelligence/app/human platform items that are ready under the v1.5 dependency graph;
-- MKT-062..MKT-067: research/content intelligence, rights, content assets/transformation, platform health and experiment analysis;
-- rights/provenance verification for all human-created assets;
-- MKT-076..MKT-078 as an **optional acceleration track**, after the baseline Human Agent + Job contracts are VERIFIED.
+Keep the existing Command Center as Today / Operations.
 
-Rules:
+### UX-002 — Reusable mission creation
 
-- research observations and model claims remain distinguishable;
-- causal language requires the applicable experimental evidence standard;
-- rights uncertainty fails closed for autonomous publication;
-- human-created content uses the same rights/provenance/lineage pipeline as automated content;
-- MKT-076..MKT-078 must never be made dependencies of core mission execution.
+Progressively collect:
 
-### Worker C — Mission + console + commerce + deployment plane
+1. outcome;
+2. target metric/value;
+3. product/source/store context;
+4. connected social accounts;
+5. fixed portfolio or Choose for me;
+6. content/source preferences;
+7. budget/quota;
+8. autonomy mode;
+9. optional human-treatment budget.
 
-Primary ownership:
+Do not expose module names as prerequisites.
 
-- v1.5 console source recovery, console completion and deployment reproducibility;
-- unresolved v1.5 product/UX/deployment work;
-- MKT-053..MKT-054: Growth Mission + Growth Operator;
-- MKT-068..MKT-075: notifications, product intelligence, product marketing, commerce, attribution, console and final v1.6 proof.
+### UX-003 — Mission workspace
 
-Rules:
+Expose:
 
-- Growth Operator orchestrates but does not become a Workflow/Execution engine;
-- console is presentation-only over server authorities;
-- commerce order/inventory remains external provider authority;
-- no UI work begins before the repository-owned console source gate is satisfied.
+Target / Progress / Now / Next / Why / Hypothesis / Experiment / Platforms / Health / Content / Rights / Transformation / Measurement / Decision / Learning / Blockers.
 
-## 5. Scheduling model
+### UX-004 — Unified scientific trace
 
-Use the frozen dependency graph as the scheduler. Do not require a whole version to finish before starting the next version where dependencies permit.
+Question -> Research -> Evidence -> Hypothesis -> Experiment -> Publication -> Measurement -> Analysis -> Decision -> Learning.
 
-### Wave 0 — repository truth
+Distinguish observed, inferred and causal states.
 
-All workers may participate in verification, but only one worker owns each changed surface.
+### UX-005 — Connections Center
 
-1. Tech Lead computes the VERIFIED/INCOMPLETE/BROKEN/BLOCKED map for MKT-001..MKT-052.
-2. Confirm current `main` head, open PRs and deployment state.
-3. Establish the three worker ownership locks.
-4. Recover the console source gate as P0 for UI work.
+Expose social, product/source, store and notification connections. Show capabilities, permissions, expiry/revocation and limitations.
 
-### Wave 1 — parallel v1.5 recovery/completion
+### UX-006 — Content & Rights surface
 
-Dispatch the ready items from the v1.5 dependency graph across Workers A/B/C.
+Expose source, evidence basis, rights, transformation lineage, destination capability and publication status.
 
-At the same time, C may work on console-source reconciliation and deployment tasks that are independent of backend modules.
+### UX-007 — Platform Health
 
-The Tech Lead must not create synthetic dependencies merely to serialize workers.
+Expose descriptive health state, evidence basis, confidence and compliant next action.
 
-### Wave 2 — v1.6 foundations
+### UX-008 — Human treatment
 
-As soon as their prerequisites are VERIFIED:
+Offer optional UGC/creator/review treatments inside a mission. Clearly show unavailable/unfunded as optional capacity, not failure.
 
-- Worker C: MKT-053 Growth Mission;
-- Worker A: MKT-055 Social Account/OAuth;
-- Worker C: MKT-068 Notifications;
-- Worker C/B: MKT-069 Product Intelligence;
-- Worker C/B: MKT-071 Commerce capabilities.
+### UX-009 — Commerce mission
 
-Then:
+Expose Market -> Candidate -> Test -> Viability -> Listing -> Traffic -> Order -> Margin -> Learning.
 
-- Worker A: MKT-056 adapter contract → MKT-057..061 platform adapters in waves;
-- Worker B: MKT-062..064 as their actual upstream capabilities become available;
-- Worker C: MKT-054 Growth Operator after MKT-053 and required v1.5 authorities are VERIFIED.
+### UX-010 — Progressive disclosure
 
-### Wave 3 — autonomous growth backbone
+Internal architecture objects remain accessible but contextual.
 
-Critical sequence:
+### UX-011 — ShareNet-inspired visual language
 
-`v1.5 authoritative foundations`
-→ `MKT-053`
-→ `MKT-055`
-→ `MKT-056`
-→ `MKT-057..061`
-→ `MKT-062..064`
-→ `MKT-065`
-→ `MKT-067`
-→ `MKT-054`
-→ `MKT-070 / MKT-072 / MKT-073`
-→ `MKT-074`
-→ `MKT-075`
+Use warm-light surfaces, graphite text, restrained teal/green healthy state, amber warning, red failure, whitespace, minimal chrome and progressive disclosure.
 
-This is the core autonomous path.
+Avoid dashboard density, gradients, glassmorphism and raw JSON.
 
-### Wave 4 — optional human amplification
+### UX-012 — Responsive journey proof
 
-`MKT-076 → MKT-077 → MKT-078` is a **side branch**, not a core critical-path dependency.
+Verify every new path at 390x844 and 1280x800 with zero page errors, zero overflow and explicit empty/error/blocked next actions.
 
-It may be implemented concurrently when its prerequisites are ready, but:
+## 5. Core implementation graph
 
-- MKT-075 does not wait for MKT-076..078;
-- creator/UGC offer availability does not gate Growth Mission activation;
-- accepted human offers do not gate automated publishing/distribution;
-- human budget may be zero;
-- zero eligible humans, no accepted offers, offer expiry, or insufficient human budget are normal evidence states, not architectural failures;
-- the Growth Operator must fall back to other valid treatments, reallocate to owned/automated channels, pause, notify, or terminate according to the mission's configured terminal conditions.
+v1.5 verified
+  |
+  +--> MKT-053 [done] --> MKT-054
+  |
+  +--> MKT-055 [done] --> MKT-056
+                              |
+                              +--> MKT-057
+                              +--> MKT-058
+                              +--> MKT-059
+                              +--> MKT-060
+                              +--> MKT-061
+                                     |
+                                     +--> MKT-062
+                                            |
+                                            +--> MKT-063
+                                            +--> MKT-064
+                                                   |
+                                                   +--> MKT-065
+                                                          |
+                                                          +--> MKT-067
+                                                                 |
+                                                                 +--> MKT-070
+                                                                 +--> MKT-072
+                                                                 +--> MKT-073
+                                                                        |
+                                                                        +--> UX-001..UX-012
+                                                                               |
+                                                                               +--> MKT-074
+                                                                                      |
+                                                                                      +--> MKT-075
 
-The only exception is a genuinely mandatory human approval required by a rights, policy or capability gate. That state is represented honestly as `blocked_pending_human_action`; it is not treated as successful autonomous execution.
+Independent verified:
+MKT-068 [done]
+MKT-069 [done]
+MKT-071 [done]
 
-## 6. Human amplification contract
+Optional:
+MKT-076 -> MKT-077 -> MKT-078
 
-Human growth is a measurable option, not the foundation of growth.
+## 6. Scheduling waves
 
-The Tech Lead must verify that every mission can be modeled without any human participation:
+### Wave 0
 
-`mission → research → hypothesis → strategy → experiment → rights/policy → content/action → publish/execute → measure → analyze → learn → replan`
+Worker A:
+- verify v1.5 provider/integration surfaces;
+- start MKT-056.
 
-Human amplification is an additional treatment:
+Worker B:
+- prepare MKT-062..064 contracts/fixtures;
+- start MKT-063/064 implementation where their dependencies allow.
 
-`... → candidate human treatment → offer → accepted Job → authentic UGC/creator distribution → rights/disclosure → publish → measure → analyze → learn`
+Worker C:
+- start UX-001/UX-002;
+- start MKT-054 preparation;
+- start DEP-006/DEP-007 provider verification.
 
-The operator must be able to compare:
+### Wave 1
 
-- owned-account / automated treatment;
-- platform-native distribution;
-- transformation/repurposing treatment;
-- paid media or other configured external treatments where supported;
-- human UGC/creator treatment when eligible and funded.
+Worker A:
+MKT-056 -> MKT-057..061 in independently verified provider waves.
 
-No mission may be designed so that human offer fill-rate, creator availability or creator budget is its only path to progress.
+Worker B:
+MKT-062 -> MKT-063/064.
 
-## 7. Product journeys the final system must support
+Worker C:
+MKT-054 + UX-003/004/005 + DEP-008/009.
 
-The final proof must include:
+### Wave 2
 
-1. creator growth on one platform;
-2. creator growth using a multi-platform portfolio;
-3. cross-platform redistribution with verified rights;
-4. product marketing from product URL;
-5. product marketing from product URL plus authorized source repository/workspace;
-6. commerce discovery from an unknown niche;
-7. platform restriction/anomaly → compliant reallocation or blocker handling;
-8. blocker requiring human action → notification → human resolution → resume;
-9. target achieved → autonomous mission stops cleanly;
-10. human-growth treatment unavailable or unfunded → automated strategy continues/replans without false dependency;
-11. human-growth treatment available → accepted offer joins the same experiment/evidence/learning loop.
+Worker A:
+adapter hardening and provider evidence.
 
-## 8. Console and deployment gates
+Worker B:
+MKT-066/067 + UX data contracts + optional MKT-076..078.
 
-The v1.5 console source-recovery gate remains mandatory before repository-owned UI implementation.
+Worker C:
+MKT-070/072/073 + UX-006..011 + DEP-010..012.
 
-The repository must contain:
+### Wave 3
 
-- console source;
-- deterministic install/build/test commands;
-- required environment/auth contracts;
-- repository-backed browser/E2E tests;
-- reproducible preview/staging/production deployment configuration.
+Worker C:
+MKT-074 + MKT-075 orchestration.
 
-No compiled Vercel bundle, screenshot or external workspace is source authority.
+All workers:
+full browser journeys and security regressions.
 
-## 9. Verification contract
+## 7. Mandatory acceptance journeys
 
-Every Work Item requires objective acceptance evidence:
+1. new user -> creator mission;
+2. connect one platform;
+3. connect multiple platforms;
+4. research -> evidence -> hypothesis;
+5. content candidate -> rights -> transformation -> publish;
+6. measure -> analysis -> decision -> learning;
+7. platform anomaly -> compliant adaptation;
+8. human-required blocker -> notification -> resume;
+9. zero human budget -> autonomous progress/replan;
+10. product marketing from URL;
+11. product marketing with authorized repository;
+12. commerce discovery from unknown niche;
+13. viable product -> listing -> traffic -> order -> margin;
+14. optional human treatment enters experiment loop;
+15. existing Client / Human Work / Apps / Admin journeys;
+16. mobile + desktop.
 
-- exact changed files;
-- exact test/lint/typecheck/architecture commands and exit status;
-- database migration evidence where applicable;
-- tenant-isolation and authorization negative tests;
-- idempotency/concurrency evidence where applicable;
-- provider capability evidence where applicable;
-- runtime/deployment evidence for externally dependent behavior;
-- disclosed limitations;
-- no completion claim based only on another agent's report.
+## 8. Deployment
 
-The Tech Lead performs the final acceptance; workers provide evidence.
+Use docs/handoff/DEPLOYMENT-PLAN-V1.6.md.
 
-## 10. Final program completion
+Do not document a provider as current until the Tech Lead verifies provider account, environment and billing state.
 
-The unified program is complete only when:
+## 9. Final completion
 
-1. every required v1.5 Work Item is VERIFIED or explicitly N/A by approved architecture decision;
-2. MKT-053..MKT-075 are VERIFIED or explicitly N/A by approved architecture decision;
-3. the autonomous mission path works without any human-agent offer or human-growth budget;
-4. all five MVP social adapters have objective capability evidence;
-5. rights/provenance and cross-platform lineage are proven;
-6. platform-health anomaly handling is proven without unsupported hidden-moderation claims;
-7. product-marketing and commerce-discovery golden paths pass;
-8. repository-owned console journeys pass;
-9. preview/staging/production deployment is reproducible from the repository;
-10. production health and rollback/recovery behavior are verified;
-11. human-growth Work Items 076..078, when implemented, pass their own evidence gates but do **not** become prerequisites for autonomous mission completion.
+The program is complete only when:
 
-Final handoff must record the exact accepted SHA, verification commands/results, deployment identifiers and remaining limitations.
+- all required v1.5 items remain VERIFIED;
+- MKT-054..MKT-075 are VERIFIED;
+- UX-001..UX-012 are VERIFIED;
+- autonomous operation works with zero human budget;
+- all five MVP social adapters have provider evidence;
+- rights/distribution/health/experimentation are proven;
+- product marketing and commerce discovery pass;
+- production deployment is repository-reproducible;
+- deployment and cost limits are monitored;
+- optional human-growth work, if implemented, remains non-blocking.
