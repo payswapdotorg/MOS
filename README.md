@@ -1,68 +1,57 @@
 # MarketingOS
 
-**Status:** Architecture package FROZEN; v1.5 backend/platform roadmap complete  
-**Current Architecture Version:** 1.5  
-**Previous Baseline:** 1.4
+Status: v1.6 architecture frozen; unified implementation in progress
+Current Architecture Version: 1.6
+Repository: payswapdotorg/MOS
 
-MarketingOS (MOS) is a provider-independent, evidence-driven, multi-tenant Marketing Operating System for agencies. It connects commercial intent, governed marketing work, deterministic execution, AI, human participants, extensions/apps, evidence, outcomes, economics and learning.
+MarketingOS (MOS) is a provider-independent, evidence-driven, multi-tenant Growth and Marketing Operating System. It connects commercial intent, governed marketing work, deterministic execution, AI, human participants, extensions/apps, evidence, outcomes, economics and learning.
 
-## Core operating model
+## Current implementation
 
-```text
-Prospect → Client → Goal → Strategy/Hypothesis → Playbook Version
-→ Deployment → Workflow → Task → Human / AI / App / Extension
-→ Execution → Evidence → Outcome → Revenue / Cost / Margin
-→ Decision → Learning → next action / deployment
-```
+v1.5 MKT-001..MKT-052 are merged on main.
 
-## v1.5 capabilities
+Verified v1.6 deliveries currently on main:
+- ✅ MKT-053 Growth Mission and Objective Model
+- ✅ MKT-055 Social Account and OAuth Connection Model
+- ✅ MKT-068 Notification Delivery Plane
+- ✅ MKT-069 Product Intelligence
+- ✅ MKT-071 Commerce Catalog and Order Capabilities
 
-- Agency Operating Graph as a derived coordination projection.
-- Append-oriented Decision Ledger.
-- Derived Profit Intelligence with source references and calculation assumptions.
-- Client Operating Memory.
-- AI Operator / Attention Queue.
-- Sales-to-Delivery Continuity.
-- Versioned App Ecosystem with first-party and community capabilities.
-- App marketplace, trust/certification, developer portal, install/upgrade/rollback and metering.
-- Deployment validation of required App/Extension capability versions.
-
-## Current implementation state
-
-MKT-001..MKT-052 are accepted/merged on `main`. See `docs/handoff/IMPLEMENTATION-STATE.md` for the current verification ledger.
-
-The user-facing MOS console is a separate Vercel `mos-product` deployment today. Its source is **not yet present in this repository**. The console source reconciliation is therefore a P0 handoff gate documented in `docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md`.
-
-The repository is not considered product-complete until the console source is committed here and the production deployment is reproducible from the repository.
+See docs/handoff/IMPLEMENTATION-STATE.md and docs/handoff/EXECUTION-PLAN.md for the complete roadmap.
 
 ## Product experience
 
-The console should organize the agency experience around:
+v1.6 becomes outcome-first:
 
-**Today → Clients → Work → Apps → Admin**
+Grow -> Market -> Find a Product -> Leads/Revenue -> Mission -> Learn -> Repeat
 
-Deeper architecture objects remain contextual:
+Existing v1.5 operations remain available as:
 
-- Client Decision Room.
-- Goals / Strategy / Playbooks.
-- Deployment Center.
-- Workflow / Execution timeline.
-- Evidence Explorer.
-- Experiment Lab.
-- Human Agent queue.
-- App Marketplace / Developer Portal.
-- Decision and learning trace.
+Today -> Clients -> Work -> Apps -> Admin
 
-The UX contract lives in `docs/product/PRODUCT-CONSOLE-V1.5.md`.
+The UX contract is docs/product/PRODUCT-CONSOLE-V1.6.md.
+
+## Deployment
+
+Current production:
+- Vercel project: mos-product
+- Production alias: https://mos-product.vercel.app
+- Inspected deployment: dpl_BwaJi8ho6QDaVq1RUjghezULAXn8
+- Inspected main commit: c2c67e31ae814ceba09137348fb8b92d205d638c
+
+The console source is repository-owned under console/ and production is Git-deployed.
+
+Free-tier-aware deployment planning:
+docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+
+Provider plans are not considered current deployment facts until the Tech Lead verifies the actual production account, environment and billing state.
 
 ## Architecture authority
 
-The `spec/` tree is authoritative. v1.5 supersedes v1.4 only where the v1.5 frozen documents explicitly add or alter behavior.
+The spec/ tree is authoritative.
 
-Read `AGENTS.md` before implementation work.
+Read AGENTS.md before implementation.
 
 ## Architectural rule
 
-> **AI is a replaceable reasoning layer. The system of record, evidence, policy, workflow state, experiments, deterministic computation, and deployment lifecycle remain authoritative outside the model.**
-
-Apps are presentation/composition capabilities, not alternate MOS authorities. PostgreSQL remains authoritative for durable MOS state.
+AI is a replaceable reasoning layer. The system of record, evidence, policy, workflow state, experiments, deterministic computation, and deployment lifecycle remain authoritative outside the model.
