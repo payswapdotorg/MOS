@@ -3,11 +3,11 @@
 Repository: payswapdotorg/MOS
 Architecture: v1.6 FROZEN
 Implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
-Current final main handoff head: bd089a752a309790d9cb148e700204ba302265ef
-Current production deployment: dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
-Current production commit: 039743a6e31f792c44d0fc646d3dcb53843730b1
-Final-main-to-production delta: 13 commits
-Implementation delta inside that gap: 5 commits; remaining commits are documentation/handoff only
+Current main handoff head: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+Current production deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
+Current production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
+Implementation delta from production to accepted baseline: 5 commits
+Additional main commits after the implementation baseline are documentation/handoff only.
 Maximum active implementation workers: 3
 
 ## Status
@@ -15,8 +15,6 @@ Maximum active implementation workers: 3
 The repository is ready for the unified Tech Lead handoff but is not feature-complete for v1.6.
 
 The previous console-source P0 is resolved.
-
-MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on the implementation baseline.
 
 ## Work-item status
 
@@ -52,14 +50,29 @@ MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on the implementation 
 
 Production is Git-deployed and READY.
 
-The accepted implementation baseline is five commits ahead of production. MKT-064 is on the implementation baseline and has a READY preview, but has not been promoted to production.
+Production currently runs c6a35db9709cf0b343221952f724bc52cd7ddd4f, which is five implementation commits behind the accepted implementation baseline 1ef58f86afa0220a7fd546ad03c84bfb82e4656b. The current main branch is further ahead only because subsequent commits are documentation/handoff updates.
 
-The final main handoff head is further ahead only because this audit added documentation/handoff commits.
+MKT-064 is included in the accepted implementation baseline and has a READY preview; it is not yet in the current production deployment.
 
 ## UX conclusion
 
-The live experience remains v1.5 operations-first. The v1.6 outcome-first mission model is not yet discoverable.
+The live/recorded experience remains v1.5 operations-first. The v1.6 outcome-first mission model is not yet discoverable.
+
+The canonical journey simulation and UX work orders are in docs/handoff/UX-DISCOVERY-V1.6.md and docs/handoff/EXECUTION-PLAN.md.
+
+## Deployment conclusion
+
+Confirmed production provider:
+- Vercel
+
+Not proven as current production dependencies:
+- exact Vercel billing tier;
+- production Postgres provider;
+- Cloudflare R2;
+- Upstash;
+- Apify;
+- Render.
 
 ## Completion condition
 
-Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted main implementation baseline, async worker restart/recovery is proven, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
+Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted implementation baseline, async worker restart/recovery is proven, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
