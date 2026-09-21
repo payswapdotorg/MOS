@@ -1,138 +1,152 @@
-# MOS — Final Tech Lead Handoff — 2026-09-21
+# MOS — Final Tech Lead Handoff — 2026-09-21 Re-audit
 
 ## Repository truth
 
-Implementation baseline:
-1ef58f86afa0220a7fd546ad03c84bfb82e4656b
+- Current main HEAD: 575f56df363d64eefddef32ea4e7fbd8d18add8d
+- Last source-audited implementation tree: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+- Accepted implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
+- Architecture: v1.6 FROZEN
+- Maximum active implementation workers: 3
+- Post-baseline main commits are documentation/handoff corrections only.
 
-Source-audit main head:
-34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
-
-The current main head contains documentation/handoff updates after the implementation baseline; do not treat those documentation-only commits as additional Work Item implementations.
-
-Verified v1.6 on the implementation baseline:
-- MKT-053
-- MKT-054
-- MKT-055
-- MKT-056
-- MKT-063
-- MKT-064
-- MKT-068
-- MKT-069
-- MKT-071
+Verified v1.6:
+- ✅ MKT-053 Growth Mission
+- ✅ MKT-054 Growth Operator
+- ✅ MKT-055 Social Account / OAuth
+- ✅ MKT-056 Social Adapter Contract
+- ✅ MKT-063 Content Rights / Provenance
+- ✅ MKT-064 Content Assets / Transformations
+- ✅ MKT-068 Notifications
+- ✅ MKT-069 Product Intelligence
+- ✅ MKT-071 Commerce Catalog / Orders
 
 Remaining core:
-- MKT-057..062
-- MKT-065..067
-- MKT-070
-- MKT-072..075
+- ☐ MKT-057..061 social adapters
+- ☐ MKT-062 research/content intelligence
+- ☐ MKT-065 distribution
+- ☐ MKT-066 platform health
+- ☐ MKT-067 experiment analysis
+- ☐ MKT-070 product marketing
+- ☐ MKT-072 commerce discovery
+- ☐ MKT-073 attribution
+- ☐ MKT-074 autopilot console
+- ☐ MKT-075 autonomy proof
 
 Optional:
-- MKT-076..078
+- ☐ MKT-076..078 human-growth branch
 
-## Deployment truth
+## Production truth
 
-Current production:
-dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
-c6a35db9709cf0b343221952f724bc52cd7ddd4f
-READY
-https://mos-product.vercel.app
+- Vercel project: mos-product
+- Deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
+- Commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
+- State: READY
+- Source: Git
+- URL: https://mos-product.vercel.app
+- Selected 24h Vercel runtime-error query: no runtime errors.
+- Direct ancestry comparison proves the accepted implementation baseline is already in production.
+- No open PRs at audit time.
 
-Production contains the accepted implementation baseline. Main is additionally ahead only because of documentation/handoff commits. MKT-064 is already present in current production.
+## Current product truth
 
-Confirmed provider: Vercel.
-Unproven: exact billing tier, production Postgres provider, R2, Upstash, Apify, Render.
+Authentication is live and discoverable.
 
-## Worker A
+Post-auth navigation is still:
+Command Center → Clients → Attention → Profit Intelligence → Human Work → Apps → Administration.
 
-Implement MKT-057 YouTube, MKT-058 Instagram, MKT-059 Facebook Pages, MKT-060 TikTok, MKT-061 X.
+This is a usable v1.5 operating shell, not the intended v1.6 outcome-first front door.
 
-Deliver provider-specific capability evidence, OAuth/account constraints, limits, policy/rate-limit behavior, provider runbooks and conformance/E2E suites.
+Primary authenticated actions to implement:
+1. Grow an audience
+2. Market a product
+3. Find a product to sell
+4. Generate leads
+5. Generate revenue
+6. Continue a mission
 
-## Worker B
+Every mission workspace must answer:
+target; progress; what MOS is doing now; next action; why; evidence; hypothesis; experiment; platform health; content/rights; transformation; measurement; decision; learning; blocker/action.
 
-Implement MKT-062 Research / Content Intelligence, MKT-065 Cross-Platform Distribution, MKT-066 Platform Health / Distribution Anomaly, MKT-067 Experiment Analysis / Adaptive Allocation.
+## Three-worker handoff
 
-Consume MKT-063 and MKT-064 as existing authorities.
+### Worker A — Social platform capability plane
+Own MKT-057..061 plus:
+- provider capability matrices and current limitations;
+- OAuth/scope/authorization evidence;
+- provider quota/rate-limit/publishing behavior;
+- conformance tests and provider doubles/sandboxes;
+- provider E2E evidence;
+- connection capability contract data for Worker C.
 
-Optional side branch:
-MKT-076 -> MKT-077 -> MKT-078.
+### Worker B — Intelligence / distribution / science
+Own MKT-062, MKT-065, MKT-066, MKT-067 plus mission scientific-trace contracts.
 
-## Worker C
+Start with:
+- MKT-067, because its frozen dependencies are already satisfied;
+- MKT-065 distribution core, because 054/056/063/064 are verified;
+- provider-independent MKT-062 research/provenance core.
 
-Implement MKT-070 Product Marketing, MKT-072 Commerce Discovery, MKT-073 Social-Commerce Attribution, MKT-074 Growth Autopilot Console and MKT-075 Final Autonomy Proof.
+Do not mark MKT-062 complete until concrete social adapters 057..061 are verified.
+MKT-066 is gated on concrete provider adapters.
+MKT-076..078 are optional and may never delay the core path.
 
-Also own UX-001..UX-012 and DEP-006..DEP-015.
+### Worker C — Mission / console / commerce / deployment
+Own MKT-070, MKT-072, MKT-073, MKT-074, MKT-075, UX-001..012 and DEP-006..015.
 
-Worker C owns the shared frontend composition root.
+Worker C alone owns the shared frontend composition root.
 
-## First UX change
+## Execution waves
 
-After authentication, stop presenting the system as an architecture dashboard.
+### Wave 0
+A: all five adapter lanes.
+B: 067 + 065 + research core + trace contract.
+C: outcome-first Home + Mission Creation + deployment contract + actual Postgres verification + object-storage design.
 
-Primary choices:
-Grow an audience
-Market a product
-Find a product to sell
-Generate leads
-Generate revenue
-Continue a mission
+### Wave 1
+A: adapter completion/conformance/E2E.
+B: 062 completion, 065 provider wiring, 066, 067 zero-human proof.
+C: mission workspace, scientific trace, Connections, MKT-070 when dependencies verify, worker/Redis deployment.
 
-Existing v1.5 operations become Today / Operations.
+### Wave 2
+A: provider regression after distribution.
+B: distribution/health/analysis hardening; optional human branch only if harmless.
+C: MKT-072/073, rights/health/content UX, research/budget/promotion/retention deployment work.
 
-## Mission screen
+### Wave 3
+C: MKT-074 + UX-012 browser battery.
+Tech Lead: MKT-075, cross-worker source/test/runtime audit, production parity and rollback acceptance.
 
-Every mission must answer:
-target; progress; what MOS is doing now; what happens next; why; evidence; current experiment; platform health; content/rights; transformation; decision; learning; blocker/action.
+## Mandatory journey battery
 
-## Simulation learning
+1. signup → outcome-first launcher
+2. creator growth → single platform
+3. creator growth → multiple platforms
+4. research → evidence → hypothesis
+5. rights → transformation → publish
+6. measure → analysis → decision → learning
+7. platform anomaly → compliant adaptation
+8. human-required blocker → notification → action
+9. zero human budget → autonomous continuation/replan
+10. product URL → product marketing
+11. authorized source → product marketing
+12. no known product → commerce discovery
+13. viable product → listing → traffic → order → margin
+14. optional human treatment → same experiment/evidence/learning loop
+15. existing Client / Human Work / Apps / Admin
+16. mobile 390×844 + desktop 1280×800
 
-The current production/recorded experience confirms that authentication and the v1.5 operations shell are usable, but the v1.6 autonomous-growth capabilities are not discoverable from the first authenticated screen.
+No journey is accepted without source, tests and the appropriate live/runtime/browser evidence.
 
-A fresh interactive browser run could not be executed in this environment because Chromium was unavailable and the browser binary could not be downloaded due network/DNS restrictions. The simulation therefore combines current repository source, recorded real E2E evidence, current deployment metadata, and live deployment state. No fresh click result is represented as live browser evidence.
+## Deployment handoff
 
-The missing discoverability surfaces are:
-- outcome-first mission launcher;
-- reusable mission creation;
-- mission workspace;
-- Connections;
-- content/rights/transformation;
-- platform health;
-- mission-level scientific trace;
-- optional human treatment inside missions;
-- commerce mission lifecycle.
+Confirmed current production provider: Vercel.
 
-The existing Client / Human Work / Apps / Administration surfaces should be preserved as secondary operational surfaces.
+Exact Vercel billing tier is NOT verified.
+Production Postgres, R2, Upstash, Apify and Render are NOT proven current dependencies.
 
-## Acceptance journeys
+Use docs/handoff/DEPLOYMENT-PLAN-V1.6.md for the provider verification and low-cost staging plan.
 
-1. signup -> mission launcher
-2. creator growth single platform
-3. creator growth multi-platform
-4. research -> evidence -> hypothesis
-5. rights -> transformation -> publish
-6. measure -> analyze -> decision -> learning
-7. platform anomaly -> compliant adaptation
-8. human-required blocker -> notification -> resume
-9. zero human budget -> autonomous continuation
-10. product URL -> product marketing mission
-11. authorized repository -> product marketing mission
-12. unknown niche -> commerce discovery
-13. viable product -> listing -> traffic -> order -> margin
-14. optional human treatment -> experiment/evidence/learning
-15. legacy Client / Human Work / Apps / Admin
-16. mobile + desktop
-
-## Deployment
-
-Use docs/handoff/DEPLOYMENT-PLAN-V1.6.md.
-
-Before promotion:
-CI -> preview -> migration check -> browser smoke -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
-
-Async worker must run outside synchronous Vercel request handling.
-
-Do not call a provider a current production dependency until account/environment/billing evidence exists.
+Do not use Vercel Hobby Cron as the Growth Operator scheduler. Run src/entrypoints/worker.ts outside synchronous Vercel request handling and prove restart/recovery.
 
 ## Non-negotiables
 
@@ -146,3 +160,17 @@ No unsupported hidden moderation claims.
 Rights uncertainty fails closed.
 Zero human budget remains a valid autonomous state.
 Repository remains source of truth.
+
+## Canonical files
+
+- docs/handoff/EXECUTION-PLAN.md
+- docs/handoff/IMPLEMENTATION-STATE.md
+- docs/handoff/UX-DISCOVERY-V1.6.md
+- docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+- docs/handoff/WORKER-CONTRACT.md
+- docs/product/PRODUCT-CONSOLE-V1.6.md
+- spec/architecture-v1.6.md
+- spec/architecture-lock-v1.6.md
+- spec/frozen-manifest-v1.6.json
+- spec/effective-backlog-v1.6.md
+- AGENTS.md
