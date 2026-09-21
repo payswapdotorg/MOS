@@ -19,11 +19,11 @@ Accepted implementation baseline:
 - commit: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 - production is 5 implementation commits behind this baseline
 
-Current main handoff head:
+Source-audit main head:
 - commit: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
-- commits after the implementation baseline are documentation/handoff only
+- current main is four documentation/handoff commits ahead of production
 
-A separate MKT-064 preview deployment is READY and is not production.
+MKT-064 is included in the accepted implementation baseline and therefore is already present in current production.
 
 ## 2. Provider facts
 
@@ -86,9 +86,9 @@ DEP-011 Research execution
 DEP-012 Cost/quota guard
 DEP-013 Production promotion pipeline
 DEP-014 Cost/retention hygiene
-DEP-015 Promote accepted main implementation baseline
+DEP-015 Promote newly accepted implementation changes
 
-DEP-015 must verify:
+DEP-015 must be used whenever a NEW implementation baseline is accepted:
 CI -> preview -> migration check -> browser smoke -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
 
 ## 6. Free-tier constraints
