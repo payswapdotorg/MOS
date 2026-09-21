@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 Architecture: v1.6 FROZEN
-Current main audit commit: c2c67e31ae814ceba09137348fb8b92d205d638c
+Production audit baseline commit: c2c67e31ae814ceba09137348fb8b92d205d638c
 Production deployment inspected: dpl_BwaJi8ho6QDaVq1RUjghezULAXn8
 Maximum active implementation workers: 3
 
