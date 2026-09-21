@@ -572,13 +572,15 @@ test('MKT-053 AC-9 static: the disclosed spec registration exists — §6 line +
     .sort();
   // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
   // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
-  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so
-  // 045/046 shift three positions earlier in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), and the
+  // MKT-056 social-adapter-contract delivery appends 050 after 049, so
+  // 045/046 shift four positions earlier in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '050_social_adapter_contract.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly growthMissions: GrowthMissionsModuleApi'), 'ApplicationModules.growthMissions');
   assert.ok(applicationTs.includes("from '../modules/growth-missions/public.ts'"), 'the module public entry import');
