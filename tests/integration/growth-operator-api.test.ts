@@ -284,6 +284,10 @@ before(async () => {
 });
 
 after(async () => {
+  // harvest fix: kill the spawned API child BEFORE the stack shutdown —
+  // the api process holds pg pool connections that otherwise hang
+  // instance.stop() (the MKT-063 content-rights-api teardown pattern).
+  api?.child.kill('SIGKILL');
   if (core !== null) {
     await core.services.db.close();
   }
