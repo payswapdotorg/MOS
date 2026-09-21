@@ -9,26 +9,26 @@ Vercel project: mos-product
 Project id: prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq
 
 Current production:
-- deployment: dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
+- deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
 - alias: https://mos-product.vercel.app
 - source: Git
 - state: READY
-- commit: 039743a6e31f792c44d0fc646d3dcb53843730b1
+- commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
 
-Implementation baseline:
+Accepted implementation baseline:
 - commit: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
-- production is 5 commits behind this implementation baseline
+- production is 5 implementation commits behind this baseline
 
-Final main handoff head:
-- commit: bd089a752a309790d9cb148e700204ba302265ef
-- the additional commits beyond the implementation baseline are documentation/handoff only
+Current main handoff head:
+- commit: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+- commits after the implementation baseline are documentation/handoff only
 
 A separate MKT-064 preview deployment is READY and is not production.
 
 ## 2. Provider facts
 
 Confirmed deployed provider:
-- Vercel.
+- Vercel
 
 Not proven from repository/deployment metadata:
 - exact Vercel billing tier;
@@ -46,6 +46,7 @@ Do not mark a provider as currently deployed until the Tech Lead verifies its pr
 
 For low-volume demo/staging:
 - Vercel Hobby for console/API;
+- Neon Free as a candidate managed Postgres target, only after production-account verification;
 - Cloudflare R2 for content objects;
 - Upstash Redis for bounded ephemeral coordination;
 - Render Free worker for demo/staging only;
@@ -87,11 +88,14 @@ DEP-013 Production promotion pipeline
 DEP-014 Cost/retention hygiene
 DEP-015 Promote accepted main implementation baseline
 
-DEP-015 must verify CI -> preview -> browser smoke -> migration check -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback target.
+DEP-015 must verify:
+CI -> preview -> migration check -> browser smoke -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
 
 ## 6. Free-tier constraints
 
-Vercel Hobby is $0, but Hobby Cron is limited to once per day; Growth Operator must not depend on Vercel Cron as its autonomous scheduler.
+Vercel Hobby is $0, but Hobby Cron is once-per-day, so Growth Operator must not depend on Vercel Cron as its autonomous scheduler.
+
+Neon Free currently provides a zero-cost Postgres option for early-stage/demo workloads, but exact current account limits must be verified when the provider is selected.
 
 Upstash Free currently provides 256 MB, 10 GB monthly bandwidth and 500K commands/month.
 
@@ -99,7 +103,7 @@ Cloudflare R2 Free currently provides 10 GB-month standard storage, 1M Class A r
 
 Apify Free currently includes $5 of platform/store spend with metered compute.
 
-Render Free can host background workers, but Render says free instances are for testing/hobby/preview rather than production.
+Render Free can host background-worker workloads, but Render documents Free instances as testing/hobby/preview rather than production.
 
 ## 7. Upgrade triggers
 
