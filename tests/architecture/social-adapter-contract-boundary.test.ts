@@ -463,11 +463,15 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '049_commerce_capabilities.sql');
+  // The MKT-067 /experiment-analysis sibling delivery appends 054 (the
+  // PRE-ASSIGNED number — the same additive precedent; every tail
+  // position shifts once more).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------
