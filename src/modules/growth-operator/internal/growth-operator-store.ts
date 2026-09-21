@@ -481,7 +481,8 @@ export class GrowthOperatorStore {
 
   /**
    * Fills the pursuit workflow reference (once — the fill-only fence; the
-   * DB trigger backstops the never-change rule).
+   * DB trigger backstops the never-change rule). A CAS mutation: the
+   * controller version advances by exactly one.
    */
   async fillPursuitWorkflow(
     tx: DbTransaction,
@@ -490,7 +491,7 @@ export class GrowthOperatorStore {
     const now = this.clock.nowIso();
     await tx.query(
       `UPDATE growth_operator_controllers
-       SET pursuit_workflow_id = $1, updated_at = $2
+       SET pursuit_workflow_id = $1, version = version + 1, updated_at = $2
        WHERE controller_id = $3 AND pursuit_workflow_id IS NULL`,
       [input.workflowId, now, input.controllerId],
     );
@@ -575,7 +576,10 @@ export class GrowthOperatorStore {
     return Number(result.rows[0]?.count ?? 0);
   }
 
-  /** The bounded delegation-reference fill (only ever null → value). */
+  /**
+   * The bounded delegation-reference fill (only ever null → value). A CAS
+   * mutation: the step version advances by exactly one per fill.
+   */
   async fillPlanStepDelegationRefs(
     tx: DbTransaction,
     input: {
@@ -597,6 +601,7 @@ export class GrowthOperatorStore {
            workflow_definition_id = COALESCE($4, workflow_definition_id),
            workflow_instance_id = COALESCE($5, workflow_instance_id),
            execution_id = COALESCE($6, execution_id),
+           version = version + 1,
            updated_at = $7
        WHERE step_id = $8`,
       [

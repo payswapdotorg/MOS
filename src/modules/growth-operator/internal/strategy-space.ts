@@ -120,17 +120,33 @@ export interface GrowthOperatorSnapshotInput {
 }
 
 /**
+ * The stable bounded hash of an id list (FNV-1a 32-bit over the
+ * comma-joined ids): deterministic, fixed-width. The FULL id lists stay
+ * in the decision records' evidenceRefs — the digest is an equality
+ * token, and the id lists would otherwise grow it past the storage fence.
+ */
+function stableIdListHash(ids: readonly string[]): string {
+  let hash = 0x811c9dc5;
+  const joined = ids.join(',');
+  for (let index = 0; index < joined.length; index++) {
+    hash ^= joined.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+/**
  * Computes the deterministic evidence-snapshot digest — a canonical,
- * order-stable string over the observable inputs. Same world → same
- * digest. (Deliberately NOT a hash: a stable readable canonical form is
- * the auditable anchor, and the bounded inputs make collisions
- * meaningless — the digest is an equality token, not a security
- * primitive.)
+ * order-stable, BOUNDED string over the observable inputs. Same world → same
+ * digest. (Deliberately readable rather than a full hash where the inputs
+ * are small; the long id lists are hashed to their fixed-width digest so
+ * the token never outgrows the storage fence — the full lists live in the
+ * decision records' evidenceRefs.)
  */
 export function computeEvidenceSnapshotDigest(input: GrowthOperatorSnapshotInput): string {
   const goalPart = input.goalStatuses.join(',');
-  const evidencePart = input.evidenceIds.join(',');
-  const learningPart = input.learningIds.join(',');
+  const evidencePart = `${input.evidenceIds.length}:${stableIdListHash(input.evidenceIds)}`;
+  const learningPart = `${input.learningIds.length}:${stableIdListHash(input.learningIds)}`;
   const familyCountsPart = Object.keys(input.familyDispatchCounts)
     .sort()
     .map((family) => `${family}:${input.familyDispatchCounts[family] ?? 0}`)
@@ -143,12 +159,12 @@ export function computeEvidenceSnapshotDigest(input: GrowthOperatorSnapshotInput
     `v=${GROWTH_OPERATOR_STRATEGY_VERSION}`,
     `m=${input.missionVersionSeq}`,
     `g=[${goalPart}]`,
-    `e=[${evidencePart}]`,
-    `l=[${learningPart}]`,
+    `e=${evidencePart}`,
+    `l=${learningPart}`,
     `d=${input.dispatchedStepCount}`,
     `f=[${familyCountsPart}]`,
     `o=[${familyOutcomePart}]`,
-    `b=${input.budget.maxInFlightSteps}/${input.budget.maxDelegatedSteps ?? '∞'}/` +
+    `b=${input.budget.maxInFlightSteps}/${input.budget.maxDelegatedSteps ?? 'unlimited'}/` +
       `${input.budget.humanAmplificationBudget}/${input.budget.humanAmplificationEligibleCapacity}`,
   ].join('|');
 }
@@ -290,9 +306,13 @@ export function selectNextTreatment(input: GrowthOperatorSelectionInput): Growth
   const humanPart = reallocatedFromHuman
     ? `The human-amplification arm topped the scoring for this objective family but is not delegable by the MKT-054 controller — reallocating to the best non-human treatment '${selected.family}' (${consideredHuman.reason}).`
     : `The human-amplification arm was considered and recorded (${consideredHuman.reason}).`;
+  // The declared objective is embedded BOUNDED (the plan-step rationale and
+  // the Decision-Ledger hypothesisSummary are both 2000-char fences — a
+  // 5000-char declared objective is quoted, never in full).
+  const objectiveExcerpt = input.missionObjective.slice(0, 500);
   const rationale =
     `Strategy ${GROWTH_OPERATOR_STRATEGY_VERSION} selected '${selected.family}' for the declared ` +
-    `objective family '${input.objectiveFamily}' (objective: "${input.missionObjective}"): ` +
+    `objective family '${input.objectiveFamily}' (objective: "${objectiveExcerpt}"): ` +
     `affinity-ranked with bounded exploration (${input.familyDispatchCounts[selected.family] ?? 0} prior ` +
     `dispatches of this family) and honest outcome memory; scored ${selected.score}. ${humanPart}`;
 

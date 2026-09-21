@@ -925,8 +925,14 @@ export { createGrowthOperatorModule } from './internal/growth-operator-module.ts
  */
 export {
   computeEvidenceSnapshotDigest,
+  computePlanStepIdempotencyKey,
   selectNextTreatment,
+  humanConsiderationOf,
+  scoreCandidate,
   GROWTH_OPERATOR_DEFAULT_BUDGET,
+  HUMAN_TREATMENT_FAMILY,
+  NON_HUMAN_TREATMENT_FAMILIES,
+  EXPLORATION_STEPS_PER_FAMILY,
 } from './internal/strategy-space.ts';
 export {
   assertValidGrowthOperatorProvenance,

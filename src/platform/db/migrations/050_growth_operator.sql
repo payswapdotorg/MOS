@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS growth_operator_plan_steps (
     -- same plan).
     evidence_snapshot_digest text   NOT NULL
                         CHECK (length(evidence_snapshot_digest) >= 1
-                               AND length(evidence_snapshot_digest) <= 128),
+                               AND length(evidence_snapshot_digest) <= 1000),
     -- The evidence ids the plan cites (bounded array of canonical ids).
     evidence_refs       jsonb       NOT NULL DEFAULT '[]'::jsonb
                         CHECK (jsonb_typeof(evidence_refs) = 'array'

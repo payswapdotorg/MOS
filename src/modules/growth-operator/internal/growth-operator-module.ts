@@ -205,7 +205,7 @@ export function createGrowthOperatorModule(deps: GrowthOperatorModuleDeps): Grow
           missionId: input.missionId,
           decisionKind: 'controller_initialized',
           treatmentFamily: null,
-          rationale: `Persistent pursuit controller initialized (strategy ${GROWTH_OPERATOR_STRATEGY_VERSION_REF}) in workspace ${workspace.workspaceId} of client ${workspace.clientId}`,
+          rationale: `Persistent pursuit controller initialized (strategy ${GROWTH_OPERATOR_STRATEGY_VERSION}) in workspace ${workspace.workspaceId} of client ${workspace.clientId}`,
           evidenceRefs: [],
           detail: {
             pursuitWorkspaceId: workspace.workspaceId,
@@ -310,11 +310,15 @@ export function createGrowthOperatorModule(deps: GrowthOperatorModuleDeps): Grow
       // reconcile drives them to completion convergently).
       let steps = await store.listPlanSteps(input.missionId);
       const reconciledSteps: { stepId: string; outcome: GrowthOperatorObservedOutcome | null; observationEvidenceId: string | null }[] = [];
+      // The crash-window re-drives surface in the tick outcome (the honest
+      // record that THIS tick completed a previously planned delegation).
+      const drivenSteps: GrowthOperatorPlanStepRecord[] = [];
 
       for (const step of steps.filter((candidate) => candidate.state === 'planned')) {
         // Re-drive the recorded plan's delegation (the gate already
         // allowed it when the step was planned — disclosed in the runbook).
         const driven = await driveDelegation(store, deps, controller, step, provenance);
+        drivenSteps.push(driven);
         steps = steps.map((candidate) => (candidate.stepId === driven.stepId ? driven : candidate));
       }
 
@@ -408,22 +412,12 @@ export function createGrowthOperatorModule(deps: GrowthOperatorModuleDeps): Grow
       const inFlight = steps.filter((step) => step.state === 'dispatched').length;
 
       // ---------------------------------------------------------------------
-      // 5. REPLAN (only when the bounded in-flight budget has room).
+      // 5. THE ACHIEVEMENT CHECK (before the in-flight gate — the goal is
+      //    reached regardless of in-flight work): ALL actively-mapped goals
+      //    achieved (and at least one) — the terminal decision is evaluated
+      //    against the Goal authority's own live statuses (the measurable
+      //    anchor).
       // ---------------------------------------------------------------------
-      if (inFlight >= controller.budget.maxInFlightSteps) {
-        return {
-          controller,
-          reconciledSteps,
-          dispatchedStep: null,
-          terminated: false,
-          decisions: appendedDecisions,
-          events: appendedEvents,
-        };
-      }
-
-      // The achievement check: ALL actively-mapped goals achieved (and at
-      // least one) — the terminal decision is evaluated against the Goal
-      // authority's own live statuses (the measurable anchor).
       const goalStatuses = activeMappings.map((mapping) => mapping.goalStatus ?? 'unresolvable');
       if (goalStatuses.length > 0 && goalStatuses.every((status) => status === 'achieved')) {
         const outcome = await terminateController(store, deps, controller, {
@@ -435,6 +429,21 @@ export function createGrowthOperatorModule(deps: GrowthOperatorModuleDeps): Grow
         appendedDecisions.push(...outcome.decisions);
         appendedEvents.push(...outcome.events);
         return { controller: outcome.controller, reconciledSteps, dispatchedStep: null, terminated: true, decisions: appendedDecisions, events: appendedEvents };
+      }
+
+      // ---------------------------------------------------------------------
+      // 6. THE IN-FLIGHT GATE (only when the bounded budget has room does
+      //    the replan run; a re-driven crash-window step surfaces here).
+      // ---------------------------------------------------------------------
+      if (inFlight >= controller.budget.maxInFlightSteps) {
+        return {
+          controller,
+          reconciledSteps,
+          dispatchedStep: drivenSteps[0] ?? null,
+          terminated: false,
+          decisions: appendedDecisions,
+          events: appendedEvents,
+        };
       }
 
       // The budget/quota exhaustion check: a truthful terminal input,
@@ -832,9 +841,6 @@ function isTerminal(status: GrowthOperatorControllerStatus): boolean {
   return status === 'achieved' || status === 'exhausted' || status === 'terminated_by_policy';
 }
 
-/** The strategy version reference for decision rationales. */
-const GROWTH_OPERATOR_STRATEGY_VERSION_REF: string = GROWTH_OPERATOR_STRATEGY_VERSION;
-
 async function detailFrom(
   controller: GrowthOperatorControllerRecord,
   store: GrowthOperatorStore,
@@ -897,16 +903,10 @@ async function transitionController(
         `controller of mission ${controller.missionId} moved (current ${current.status} v${current.version}; expected ${controller.status} v${controller.version}) — re-run the operation`,
       );
     }
-    const result = await store.updateControllerStatusRow(tx, {
-      controllerId: controller.controllerId,
-      status: input.to,
-      blockedReason: input.to === 'blocked_pending_human_action' ? input.reason : null,
-      blockedGateKind: input.blockedGateKind,
-      expectedVersion: controller.version,
-    });
-    if (result !== 'ok') {
-      throw new ConflictError(`controller of mission ${controller.missionId} state update lost the version race`);
-    }
+    // Append the audit event BEFORE the record mutation (the DB pair
+    // trigger re-verifies from_status against the controller's CURRENT
+    // state — the honest ordering under the row lock, the MKT-053
+    // precedent).
     const event = await store.appendEvent(tx, {
       controllerId: controller.controllerId,
       missionId: controller.missionId,
@@ -917,6 +917,16 @@ async function transitionController(
       reason: input.reason,
       provenance,
     });
+    const result = await store.updateControllerStatusRow(tx, {
+      controllerId: controller.controllerId,
+      status: input.to,
+      blockedReason: input.to === 'blocked_pending_human_action' ? input.reason : null,
+      blockedGateKind: input.blockedGateKind,
+      expectedVersion: controller.version,
+    });
+    if (result !== 'ok') {
+      throw new ConflictError(`controller of mission ${controller.missionId} state update lost the version race`);
+    }
     const decisions: GrowthOperatorDecisionRecord[] = [];
     if (decision !== undefined) {
       decisions.push(
@@ -992,12 +1002,21 @@ async function terminateController(
       );
     }
   }
+  // The honest controller terminal state of the cause: goal_achieved →
+  // 'achieved'; delegation_budget_exhausted → 'exhausted'; every other
+  // cause → 'terminated_by_policy' (the work-item terminal vocabulary).
+  const controllerTerminal: GrowthOperatorControllerStatus =
+    input.terminalCause === 'goal_achieved'
+      ? 'achieved'
+      : input.terminalCause === 'delegation_budget_exhausted'
+        ? 'exhausted'
+        : 'terminated_by_policy';
   return await transitionController(
     store,
     deps,
     controller,
     {
-      to: 'terminated_by_policy',
+      to: controllerTerminal,
       reason: `${input.reason} (terminal cause: ${input.terminalCause})`,
       blockedGateKind: null,
       terminalCause: input.terminalCause,
@@ -1006,10 +1025,11 @@ async function terminateController(
     {
       decisionKind: 'termination',
       treatmentFamily: null,
-      rationale: `Pursuit terminated by policy — cause '${input.terminalCause}': ${input.reason}`,
+      rationale: `Pursuit ended — cause '${input.terminalCause}' (${controllerTerminal}): ${input.reason}`,
       detail: {
         terminalCause: input.terminalCause,
         missionTerminalStatus: input.missionTerminalStatus,
+        controllerTerminal,
       },
     },
   );
