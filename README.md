@@ -39,14 +39,20 @@ Vercel / mos-product
 https://mos-product.vercel.app
 
 Production deployment:
-dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
+dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
 commit 039743a6e31f792c44d0fc646d3dcb53843730b1
 READY
 
-Current main:
+Accepted implementation baseline:
 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 
-Production is five commits behind main. MKT-064 has a READY preview but still requires production promotion.
+Current main handoff head:
+34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+
+Production:
+c6a35db9709cf0b343221952f724bc52cd7ddd4f (dpl_7wEndfiEdUsC38e2ttam2sjmMFdg)
+
+Production is five implementation commits behind the accepted implementation baseline; later main commits are documentation/handoff only. MKT-064 has a READY preview but still requires production promotion.
 
 Free-tier planning:
 docs/handoff/DEPLOYMENT-PLAN-V1.6.md
