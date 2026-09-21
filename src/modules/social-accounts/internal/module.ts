@@ -482,9 +482,12 @@ export function createSocialAccountsModule(
       kind: SOCIAL_ACCOUNT_TOKEN_CREDENTIAL_KIND,
       // The vault label: the platform prefix (bounded) + the unique grant
       // id — the credential-label grammar (letters/digits/spaces/dots/
-      // slashes/underscores ONLY: the grant id's dashes are stripped; the
-      // id itself carries the uniqueness).
-      label: `sa/${input.platformId.slice(0, 20)}/${input.grantId.replace(/-/g, '')}`.slice(0, 100),
+      // slashes/underscores ONLY: the platform id's and the grant id's
+      // dashes are slugified to underscores — the integration adapter-key
+      // grammar ALLOWS dashes, so a dash-carrying platform key (the
+      // MKT-056+ adapters' reality) must not fail the vault-label
+      // grammar; the ids themselves carry the uniqueness).
+      label: `sa/${input.platformId.replaceAll('-', '_').slice(0, 20)}/${input.grantId.replace(/-/g, '')}`.slice(0, 100),
       secretHandle: input.tokenSecretHandle,
       actorId: null,
     });
