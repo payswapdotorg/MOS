@@ -566,11 +566,14 @@ test('MKT-063: the disclosed spec registration exists (the §6 line + sentence, 
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length -2], '052_growth_operator.sql');
-  assert.equal(listEntries[listEntries.length -3], '051_content_rights.sql');
-  assert.equal(listEntries[listEntries.length -4], '050_social_adapter_contract.sql');
-  assert.equal(listEntries[listEntries.length -5], '049_commerce_capabilities.sql');
-  assert.equal(listEntries[listEntries.length -1], '053_content_assets.sql');
+  // The MKT-067 /experiment-analysis sibling delivery appends 054 after
+  // 053 (the same additive precedent — every tail position shifts once
+  // more; the merged-tree truth).
+  assert.equal(listEntries[listEntries.length -1], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length -2], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length -3], '052_growth_operator.sql');
+  assert.equal(listEntries[listEntries.length -4], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length -5], '050_social_adapter_contract.sql');
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '051_content_rights.sql')));
 });

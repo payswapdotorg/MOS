@@ -892,6 +892,29 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // fence, the refs frozen at request time); NO rights, policy,
     // evidence, tenant or execution table is created or mutated.
     '053_content_assets.sql',
+    // MKT-067 (Experiment Analysis and Adaptive Allocation) appends the
+    // experiment-analysis migration (054 — the number PRE-ASSIGNED to
+    // this Work Item by the Tech Lead; 053 is the tail on the base; the
+    // MKT-057 and UX-001 siblings were told to add none — the Tech Lead
+    // reconciles numbering at merge, the 063/064 precedent): the
+    // /experiment-analysis authority — the APPEND-ONLY analysis records
+    // (the full §12 computed set as data: treatment/comparison effects,
+    // uncertainty, sample sizes, observation window, sequential-analysis
+    // state, confounders, limitations, practical effect threshold,
+    // recommended next allocation — each carrying the FULL input snapshot
+    // + the canonical deterministic input digest; the CHECK-fenced
+    // ea-vocab-v1 outcome/allocation/method vocabularies; the
+    // same-Client experiment FK fence + the workspace scope-chain fence;
+    // the append-only UPDATE/DELETE rejection triggers — a negative or
+    // inconclusive result is preserved, never rewritten) and the
+    // APPEND-ONLY allocation recommendations (the bounded
+    // exploration/exploitation shares over declared strategy-variant arms
+    // with the EXPLORATION FLOOR AS RECORDED DATA (value + source), the
+    // zero-capacity arms recorded with their exclusion reason — the
+    // human-growth invariant — and the full deterministic input snapshot
+    // + digest); NO experiment, metric, evidence, learning, policy or
+    // tenant table is created or mutated.
+    '054_experiment_analysis.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
