@@ -506,6 +506,7 @@ export interface AppOptions {
    * test is fully real; NO live network in the test suite).
    */
   readonly productPageReader?: ProductPageReader | undefined;
+  /**
    * MKT-068: the EMAIL provider transport — the deterministic provider
    * seam of the /notification-delivery email channel (the
    * socialAccountFlows composition precedent). A real provider transport
@@ -825,7 +826,18 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       new GoogleAdsAdapter({ http: httpCalls }),
       new GenericAnalyticsAdapter({ http: httpCalls }),
       new CrmAdapter({ http: httpCalls }),
-      new CommerceCmsAdapter({ http: httpCalls }),
+      // MKT-071: the commerce/CMS connector is constructed with the
+      // deployment's provider-granted capability profile
+      // (MOS_COMMERCE_GRANTED_CAPABILITIES — the capability-subset
+      // declaration; a read-only grant yields a read-only commerce
+      // adapter, and an unknown key fails startup loudly inside the
+      // adapter's closed-vocabulary validation).
+      new CommerceCmsAdapter({
+        http: httpCalls,
+        ...(config.commerceGrantedCapabilities === null
+          ? {}
+          : { grantedCapabilityKeys: config.commerceGrantedCapabilities }),
+      }),
       new CreatorPlatformAdapter({ http: httpCalls }),
     ],
   });

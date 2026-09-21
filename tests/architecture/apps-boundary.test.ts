@@ -405,18 +405,20 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  // The MKT-068 /notification-delivery and MKT-069 /product-intelligence
-  // deliveries append 047 and 048 after 046 (both numbers PRE-ASSIGNED to
-  // those sibling Work Items), so every tail position shifts two earlier.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '038_app_installs.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '040_sales_continuity.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '042_app_marketplace.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '048_product_intelligence.sql');
+  // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
+  // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so every
+  // tail position shifts three earlier.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '038_app_installs.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '040_sales_continuity.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '042_app_marketplace.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The store/entrypoint exist (the module boundary is complete).
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'module.ts')));

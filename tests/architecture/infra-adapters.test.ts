@@ -771,6 +771,26 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // /integrations public contract is consumed READ-ONLY through the
     // module's structural port).
     '048_product_intelligence.sql',
+    // MKT-071 (Commerce Catalog and Order Capabilities) appends the
+    // commerce-capabilities migration (049 — the number PRE-ASSIGNED to
+    // this Work Item; 047/048 are reserved for sibling deliveries): the
+    // /integrations commerce EXTENSION (no new module — the boundary rule
+    // "store mutations flow through Integrations" stays sole) — the
+    // webhook dedup fence commerce_event_receipts (the (adapter_key,
+    // provider_event_id) partial-unique INGESTED fence, the honest
+    // 'duplicate' replay receipts with the raw-event hash + provenance,
+    // the CHECK-fenced delivery-outcome/event-kind/shape-version
+    // vocabularies, the append-only UPDATE/DELETE rejection triggers and
+    // the connection-consistency + duplicate-reference backstops) and the
+    // normalized event projection commerce_events (one immutable row per
+    // INGESTED provider event with the attribution/reference fields
+    // VERBATIM as passthrough data — no linking or causal computation, the
+    // ledger/evidence continuity references, the append-only triggers and
+    // the projection-consistency backstop); NO catalog/product/listing/
+    // order STATE table is created (the provider stays the commerce
+    // authority accessed through the adapter port — the migration-029
+    // store pattern extended, never a second commerce authority).
+    '049_commerce_capabilities.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

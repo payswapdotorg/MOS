@@ -68,11 +68,14 @@ import type { ApplicationModules } from './application.ts';
 import { requireClientAccess, resolveContext } from './authorize.ts';
 import { auditActor, recordMutationAudit } from './audit-emit.ts';
 import type {
+  CommerceEventRecord,
+  CommerceEventReceiptRecord,
   IntegrationConnectionRecord,
   IntegrationIngestedEventRecord,
   IntegrationMutationOutcome,
   IntegrationProvenance,
   IntegrationReadOutcome,
+  IntegrationWebhookIngestionOutcome,
   NormalizedProviderRecord,
   NormalizedRateLimit,
   RegisteredAdapterInfo,
@@ -80,6 +83,9 @@ import type {
 import { deliverReadObservations, type RecordDeliveryReceipt } from './integration-observations.ts';
 
 const ADAPTER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/** The UUID shape guard (the social-accounts/ai-operator house pattern). */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Fields always server-derived on registration — plus every
@@ -214,7 +220,10 @@ const CONNECTION_EXECUTE_AUTHORITY_FIELDS = [
  * the evidence reference and the whole provenance block — a caller can
  * never supply any of them (the verified event, its derived 'source_fact'
  * evidence observation and the provenance are computed and recorded
- * server-side, exactly as the implementation contract §3 demands).
+ * server-side, exactly as the implementation contract §3 demands). MKT-071
+ * adds the idempotency/dedup outcome fields (duplicate, the fence receipt,
+ * the normalized projection — all server-computed from the verified
+ * delivery's provider event identity).
  */
 const WEBHOOK_INGEST_AUTHORITY_FIELDS = [
   'eventId',
@@ -238,6 +247,23 @@ const WEBHOOK_INGEST_AUTHORITY_FIELDS = [
   'recordedVia',
   'correlationId',
   'causationId',
+  // MKT-071: the idempotency/dedup outcome is server-derived.
+  'duplicate',
+  'commerceReceipt',
+  'commerceEvent',
+  'receiptId',
+  'receipt',
+  'deliveryOutcome',
+  'firstReceiptId',
+  'rawEventHash',
+  'eventIdentity',
+  'providerEventId',
+  'eventKind',
+  'eventSubjectId',
+  'normalizedShapeVersion',
+  'normalizedEvent',
+  'normalizedPayload',
+  'projection',
   'secret',
   'secretMaterial',
   'material',
@@ -275,6 +301,8 @@ interface IntegrationSyncObservationsOutcome {
   readonly error: string | null;
   readonly rateLimit: NormalizedRateLimit | null;
   readonly policyDecisionId: string;
+  /** MKT-071: the next-page cursor of a paged read (null when none). */
+  readonly pageCursor: string | null;
   readonly retrievedAt: string | null;
   readonly receipts: readonly RecordDeliveryReceipt[];
   readonly connection: IntegrationConnectionRecord;
@@ -356,6 +384,74 @@ function serializeEvent(record: IntegrationIngestedEventRecord): Record<string, 
   };
 }
 
+/** The MKT-071 commerce fence/delivery-history receipt serialization. */
+function serializeCommerceReceipt(record: CommerceEventReceiptRecord): Record<string, unknown> {
+  return {
+    receiptId: record.receiptId,
+    adapterKey: record.adapterKey,
+    providerEventId: record.providerEventId,
+    connectionId: record.connectionId,
+    clientId: record.clientId,
+    deliveryOutcome: record.deliveryOutcome,
+    ...(record.firstReceiptId === null ? {} : { firstReceiptId: record.firstReceiptId }),
+    rawEventHash: record.rawEventHash,
+    normalizedShapeVersion: record.normalizedShapeVersion,
+    eventKind: record.eventKind,
+    provenance: {
+      actor: record.provenance.actor,
+      recordedVia: record.provenance.recordedVia,
+      correlationId: record.provenance.correlationId,
+      ...(record.provenance.causationId === null
+        ? {}
+        : { causationId: record.provenance.causationId }),
+      receivedAt: record.provenance.receivedAt,
+    },
+  };
+}
+
+/** The MKT-071 normalized commerce event projection serialization. */
+function serializeCommerceEvent(record: CommerceEventRecord): Record<string, unknown> {
+  return {
+    commerceEventId: record.commerceEventId,
+    receiptId: record.receiptId,
+    eventId: record.eventId,
+    connectionId: record.connectionId,
+    clientId: record.clientId,
+    adapterKey: record.adapterKey,
+    providerEventId: record.providerEventId,
+    eventKind: record.eventKind,
+    normalizedShapeVersion: record.normalizedShapeVersion,
+    providerSubjectId: record.providerSubjectId,
+    normalizedPayload: record.normalizedPayload,
+    attribution: record.attribution,
+    receivedAt: record.receivedAt,
+  };
+}
+
+/**
+ * The MKT-071 webhook ingestion outcome serialization: the ingested event
+ * record (the ORIGINAL ledger row on a replay) plus the honest idempotency
+ * facts — duplicate, THIS delivery's fence receipt and the normalized
+ * projection. The idempotency fields are omitted entirely on the legacy
+ * no-provider-event-identity path (duplicate: false with no fence rows).
+ */
+function serializeWebhookOutcome(outcome: IntegrationWebhookIngestionOutcome): Record<string, unknown> {
+  const base = serializeEvent(outcome);
+  if (outcome.commerceReceipt === null && outcome.commerceEvent === null && !outcome.duplicate) {
+    return base;
+  }
+  return {
+    ...base,
+    duplicate: outcome.duplicate,
+    ...(outcome.commerceReceipt === null
+      ? {}
+      : { commerceReceipt: serializeCommerceReceipt(outcome.commerceReceipt) }),
+    ...(outcome.commerceEvent === null
+      ? {}
+      : { commerceEvent: serializeCommerceEvent(outcome.commerceEvent) }),
+  };
+}
+
 function serializeReadOutcome(outcome: IntegrationReadOutcome): Record<string, unknown> {
   return {
     connectionId: outcome.connectionId,
@@ -371,6 +467,9 @@ function serializeReadOutcome(outcome: IntegrationReadOutcome): Record<string, u
     })),
     ...(outcome.error === null ? {} : { error: outcome.error }),
     ...(outcome.rateLimit === null ? {} : { rateLimit: outcome.rateLimit }),
+    ...(outcome.pageCursor === null || outcome.pageCursor === undefined
+      ? {}
+      : { pageCursor: outcome.pageCursor }),
     policyDecisionId: outcome.policyDecisionId,
     connection: serializeConnection(outcome.connection),
   };
@@ -406,6 +505,9 @@ function serializeSyncOutcome(outcome: IntegrationSyncObservationsOutcome): Reco
     })),
     ...(outcome.error === null ? {} : { error: outcome.error }),
     ...(outcome.rateLimit === null ? {} : { rateLimit: outcome.rateLimit }),
+    ...(outcome.pageCursor === null || outcome.pageCursor === undefined
+      ? {}
+      : { pageCursor: outcome.pageCursor }),
     ...(outcome.retrievedAt === null ? {} : { retrievedAt: outcome.retrievedAt }),
     policyDecisionId: outcome.policyDecisionId,
     receipts: outcome.receipts.map((receipt) => ({
@@ -430,6 +532,12 @@ export function registerIntegrationsRoutes(
 
   /** Canonical client owner scope; 404 BEFORE dependent traversal. */
   async function clientOwner(clientId: string): Promise<OwnerScope> {
+    // The uniform-404 fence includes MALFORMED identifiers (the
+    // social-accounts/ai-operator house pattern — a non-UUID never reaches
+    // the database; foreign, unknown and malformed are indistinguishable).
+    if (!UUID_PATTERN.test(clientId)) {
+      throw new NotFoundError('client', clientId);
+    }
     const ownership = await modules.clients.resolveClientOwnership(clientId);
     if (ownership === null) {
       throw new NotFoundError('client', clientId);
@@ -446,9 +554,16 @@ export function registerIntegrationsRoutes(
    * route: the module resolves the connection + its owning Client chain;
    * a connection that does not exist, whose Client chain does not resolve,
    * or that belongs to ANOTHER Client than the path's is the SAME uniform
-   * 404 (a foreign identifier is not a traversal oracle).
+   * 404 (a foreign identifier is not a traversal oracle). MKT-071: a
+   * MALFORMED identifier (non-UUID) is the SAME uniform 404 — it never
+   * reaches the database (the social-accounts house pattern — foreign,
+   * unknown and malformed are indistinguishable on every commerce
+   * surface too).
    */
   async function requireConnectionInClient(connectionId: string, clientId: string) {
+    if (!UUID_PATTERN.test(connectionId)) {
+      throw new NotFoundError('integration connection', connectionId);
+    }
     const ownership = await modules.integrations.resolveConnectionOwnership(connectionId);
     if (ownership === null || ownership.connection.clientId !== clientId) {
       throw new NotFoundError('integration connection', connectionId);
@@ -949,6 +1064,7 @@ export function registerIntegrationsRoutes(
             error: outcome.error,
             rateLimit: outcome.rateLimit,
             policyDecisionId: outcome.policyDecisionId,
+            pageCursor: outcome.pageCursor ?? null,
             retrievedAt: null,
             receipts: [],
             connection: outcome.connection,
@@ -977,6 +1093,7 @@ export function registerIntegrationsRoutes(
           error: null,
           rateLimit: outcome.rateLimit,
           policyDecisionId: outcome.policyDecisionId,
+          pageCursor: outcome.pageCursor ?? null,
           retrievedAt: delivery.retrievedAt,
           receipts: delivery.receipts,
           connection: outcome.connection,
@@ -1021,13 +1138,19 @@ export function registerIntegrationsRoutes(
   // rejected (422) with NOTHING recorded; a verified one is appended once
   // to the immutable ledger and a derived 'source_fact' observation is
   // appended to /evidence with pinned class/quality/provenance
-  // (server-computed — never request-suppliable).
+  // (server-computed — never request-suppliable). MKT-071: when the
+  // delivery carries the provider's own event identity, the ingestion is
+  // IDEMPOTENT (deduplicated by (adapterKey, provider event id) in the
+  // migration-049 fence): the FIRST delivery responds 201 with the fence
+  // receipt + the normalized commerce event projection; a REPLAY responds
+  // 200 with duplicate: true — an honest duplicate-received record, never
+  // a silent drop — and the ledger/evidence/projection stay single.
   router.add(
     'POST',
     '/api/clients/:clientId/connections/:connectionId/webhook',
     defineMutationRoute<
       { clientId: string; connectionId: string },
-      IntegrationIngestedEventRecord
+      IntegrationWebhookIngestionOutcome
     >({
       authenticator: services.auth,
       resolveOwner: async (_ctx, params) => clientOwner(params.clientId),
@@ -1073,21 +1196,23 @@ export function registerIntegrationsRoutes(
           adapter_key: ctx.result.adapterKey,
           event_type: ctx.result.eventType,
           evidence_ref: ctx.result.evidenceRef,
+          duplicate: ctx.result.duplicate,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
           action: 'integrations.event.ingested',
           targetType: 'integration_event',
           targetId: ctx.result.eventId,
-          idempotencyKey: `integrations.event.ingested:${ctx.result.eventId}`,
+          idempotencyKey: `integrations.event.ingested:${ctx.result.eventId}:${ctx.result.duplicate ? 'duplicate' : 'first'}`,
           details: {
             adapterKey: ctx.result.adapterKey,
             eventType: ctx.result.eventType,
             evidenceRef: ctx.result.evidenceRef,
+            duplicate: ctx.result.duplicate,
           },
         });
       },
-      respond: (ctx) => jsonResponse(201, serializeEvent(ctx.result)),
+      respond: (ctx) => jsonResponse(ctx.result.duplicate ? 200 : 201, serializeWebhookOutcome(ctx.result)),
     }),
   );
 
@@ -1140,6 +1265,65 @@ export function registerIntegrationsRoutes(
         return record;
       },
       respond: (ctx) => jsonResponse(200, serializeEvent(ctx.result)),
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // MKT-071: the commerce webhook fence + normalized event projection reads
+  // -------------------------------------------------------------------------
+
+  // GET /api/clients/:clientId/commerce-event-receipts — the Client's
+  // commerce event delivery history (the webhook dedup fence read-back:
+  // 'ingested' AND 'duplicate' rows alike, newest first — the honest event
+  // history AC-7 reads back). Members of the owning agency; a foreign
+  // Client is the uniform 404.
+  router.add(
+    'GET',
+    '/api/clients/:clientId/commerce-event-receipts',
+    defineQueryRoute<{ clientId: string }, readonly CommerceEventReceiptRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        // The uniform-404 fence includes MALFORMED client identifiers (the
+        // house UUID guard — they never reach the database).
+        if (!UUID_PATTERN.test(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
+        await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
+      },
+      execute: async (ctx) =>
+        modules.integrations.listCommerceEventReceiptsForClient(ctx.params.clientId),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          clientId: ctx.params.clientId,
+          receipts: ctx.result.map(serializeCommerceReceipt),
+        }),
+    }),
+  );
+
+  // GET /api/clients/:clientId/commerce-events — the Client's normalized
+  // commerce event projection (one row per INGESTED provider event with
+  // the attribution passthrough verbatim — duplicates never project;
+  // newest first). Members of the owning agency; a foreign Client is the
+  // uniform 404.
+  router.add(
+    'GET',
+    '/api/clients/:clientId/commerce-events',
+    defineQueryRoute<{ clientId: string }, readonly CommerceEventRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        // The uniform-404 fence includes MALFORMED client identifiers (the
+        // house UUID guard — they never reach the database).
+        if (!UUID_PATTERN.test(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
+        await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
+      },
+      execute: async (ctx) => modules.integrations.listCommerceEventsForClient(ctx.params.clientId),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          clientId: ctx.params.clientId,
+          events: ctx.result.map(serializeCommerceEvent),
+        }),
     }),
   );
 }

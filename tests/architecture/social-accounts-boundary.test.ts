@@ -481,17 +481,20 @@ test('MKT-055 static: the disclosed spec registration exists — §6 line + §6 
     'the matrix forbidden-directions bullet exists',
   );
   // 046_social_accounts.sql holds its numeric position (the
-  // PRE-ASSIGNED number — 045 is reserved for a sibling delivery).
+  // PRE-ASSIGNED number — 045 is reserved for a sibling delivery; the
+  // MKT-071 /integrations commerce extension appends 049 after 046 —
+  // 047/048 belong to sibling deliveries).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  // The MKT-068 /notification-delivery delivery appends 047 after 046 and
-  // the MKT-069 /product-intelligence delivery appends 048 (both numbers
-  // PRE-ASSIGNED to those sibling Work Items), so 046 is now third-to-last
-  // in the ordered tail with 047 and 048 following.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '048_product_intelligence.sql');
+  // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
+  // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so 046 is
+  // now fourth-to-last in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly socialAccounts: SocialAccountsModuleApi'), 'ApplicationModules.socialAccounts');
   assert.ok(applicationTs.includes("from '../modules/social-accounts/public.ts'"), 'the module public entry import');

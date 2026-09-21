@@ -104,6 +104,17 @@ export interface AppConfig {
    */
   readonly queueStaleClaimMs: number;
   /**
+   * MKT-071: the commerce capability keys the deployment's provider grant
+   * includes for the commerce/CMS adapter (MOS_COMMERCE_GRANTED_CAPABILITIES,
+   * comma-separated — the CAPABILITY-SUBSET declaration: a read-only grant
+   * yields a read-only commerce adapter). null = the full commerce surface
+   * (the documented default). Tokens are syntactically validated here; the
+   * closed commerce capability vocabulary is validated by the adapter at
+   * construction (an unknown key fails startup loudly — never a silently
+   * reduced or inflated adapter).
+   */
+  readonly commerceGrantedCapabilities: readonly string[] | null;
+  /**
    * AI Runtime provider-adapter wiring (MKT-033, DEPLOY-001). null when
    * MOS_AI_PROVIDER is 'none' (the documented default — no provider
    * adapter wired). 'openrouter' requires endpoint + API key together.
@@ -172,6 +183,25 @@ export function loadConfig(env: Env = process.env): AppConfig {
   const jobMaxAttempts = readInt(env, 'MOS_JOB_MAX_ATTEMPTS', 5, 1, 100, problems);
   const jobRetryBackoffBaseMs = readInt(env, 'MOS_JOB_RETRY_BACKOFF_BASE_MS', 1_000, 1, 3_600_000, problems);
   const queueStaleClaimMs = readInt(env, 'MOS_QUEUE_STALE_CLAIM_MS', 300_000, 0, 86_400_000, problems);
+  // MKT-071: the commerce capability-subset declaration (the deployment's
+  // provider grant for the commerce/CMS adapter). Syntactic validation
+  // here; the closed commerce vocabulary is validated by the adapter at
+  // construction (fail-closed startup).
+  const commerceCapabilitiesRaw = (env['MOS_COMMERCE_GRANTED_CAPABILITIES'] ?? '').trim();
+  let commerceGrantedCapabilities: readonly string[] | null = null;
+  if (commerceCapabilitiesRaw !== '') {
+    const tokens = commerceCapabilitiesRaw
+      .split(',')
+      .map((token) => token.trim())
+      .filter((token) => token !== '');
+    if (tokens.length === 0 || tokens.some((token) => !/^[a-z0-9][a-z0-9-]{0,63}$/.test(token))) {
+      problems.push(
+        'MOS_COMMERCE_GRANTED_CAPABILITIES must be a comma-separated list of commerce capability keys (lowercase alphanumerics/dashes)',
+      );
+    } else {
+      commerceGrantedCapabilities = tokens;
+    }
+  }
   const aiRuntime = parseAiRuntimeConfig(env, problems);
 
   if (problems.length > 0) {
@@ -201,6 +231,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
     jobMaxAttempts,
     jobRetryBackoffBaseMs,
     queueStaleClaimMs,
+    commerceGrantedCapabilities,
     aiRuntime,
   };
 }
@@ -340,6 +371,14 @@ export function describeConfig(config: AppConfig): Record<string, unknown> {
       id: config.workerId,
       pollIntervalMs: config.workerPollIntervalMs,
       batchSize: config.workerBatchSize,
+    },
+    integrations: {
+      // MKT-071: the auditable commerce capability profile of the
+      // deployment (the provider grant the commerce adapter declares).
+      commerceCapabilityProfile:
+        config.commerceGrantedCapabilities === null
+          ? 'full'
+          : [...config.commerceGrantedCapabilities],
     },
     queue: {
       authority: 'postgresql',

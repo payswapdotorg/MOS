@@ -180,10 +180,12 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
     '043_first_party_apps.sql was NOT taken (the required preference)',
   );
   // The migration list tail: the MKT-053 /growth-missions delivery appends
-  // 045 and the MKT-055 /social-accounts delivery appends 046 after the
-  // MKT-052 metering migration (the sibling-promotion precedent — this
-  // delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-5), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql'], 'the migration list tail carries the sibling promotions only');});
+  // 045, the MKT-055 /social-accounts delivery appends 046 after the
+  // MKT-052 metering migration, and the MKT-068 /notification-delivery,
+  // MKT-069 /product-intelligence and MKT-071 commerce-capability sibling
+  // deliveries append 047, 048 and 049 after 046 (the sibling-promotion
+  // precedent — this delivery still owns NO migration).
+  assert.deepEqual(migrations.slice(-6), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql'], 'the migration list tail carries the sibling promotions only');});
 
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));

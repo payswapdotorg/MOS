@@ -428,15 +428,16 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   // the MKT-055 delivery appends 046_social_accounts.sql after it (both
   // numbers PRE-ASSIGNED to their Work Items; 039/041/043 reserved-but-
   // unused by the no-migration deliveries).
-  // The MKT-068 /notification-delivery and MKT-069 /product-intelligence
-  // deliveries append 047 and 048 after 046 (both numbers PRE-ASSIGNED to
-  // those sibling Work Items), so this module's 044 shifts two positions
-  // earlier in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '048_product_intelligence.sql');
+  // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
+  // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so this
+  // module's 044 shifts three positions earlier in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');

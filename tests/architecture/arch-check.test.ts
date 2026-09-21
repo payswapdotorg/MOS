@@ -25,7 +25,7 @@ const specDir = path.join(repoRoot, 'spec');
 
 test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 39);
+  assert.equal(modules.length, 40);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -49,8 +49,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
       'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
-      'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
-      'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'profit-intelligence',
+      'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'reporting', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -317,7 +316,7 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // tools/arch-check/checker.ts); the fixture provides
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    40,
+    41,
     'no unexpected violation categories may be reported',
   );
 
