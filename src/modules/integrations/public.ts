@@ -242,11 +242,45 @@ export interface WebhookDeliveryInput {
   readonly headers: Readonly<Record<string, string>>;
 }
 
+/**
+ * The NORMALIZED PROVIDER EVENT a verified webhook delivery carries when
+ * the provider's delivery has its OWN event identity (MKT-071 webhook
+ * idempotency — the commerce order/product event surface). The adapter
+ * (the owner of every provider-specific detail) extracts the provider's
+ * event id, derives the commerce event kind and produces the normalized
+ * event fields — the provider's attribution/reference fields carried
+ * VERBATIM as passthrough data (architecture §16: attribution is
+ * passthrough here; NO linking, matching or causal computation exists in
+ * this module — MKT-073 owns attribution later).
+ */
+export interface NormalizedProviderEvent {
+  /** The provider's own identity for this event — the dedup fence key half. */
+  readonly providerEventId: string;
+  /** The commerce event kind (the frozen COMMERCE_EVENT_KINDS vocabulary). */
+  readonly eventKind: 'order' | 'product' | 'listing';
+  /** The provider's order/product/listing record id the event references (null when the event carries none). */
+  readonly providerRecordId: string | null;
+  /** The normalized event shape version stamp (e.g. COMMERCE_EVENT_SHAPE_VERSION). */
+  readonly shapeVersion: string;
+  /** The adapter-normalized event fields (attribution/reference passthrough verbatim, non-secret). */
+  readonly normalized: Readonly<Record<string, unknown>>;
+}
+
 /** The adapter's authenticity verdict for one inbound delivery. */
 export interface WebhookVerificationResult {
   readonly verified: boolean;
   readonly reason: string | null;
   readonly normalizedEventType: string | null;
+  /**
+   * The normalized provider event of a verified IDENTIFIED delivery
+   * (MKT-071): when present, the module deduplicates the delivery by
+   * (adapterKey, providerEventId) through the commerce webhook fence —
+   * a replay is an honest duplicate-received event-history record, never
+   * a second ingested event. Absent/null on deliveries whose provider
+   * carries no distinct event identity (the legacy append-only path —
+   * no fence, no projection).
+   */
+  readonly providerEvent?: NormalizedProviderEvent | null;
 }
 
 /**
@@ -389,6 +423,251 @@ export interface IntegrationIngestedEventRecord {
   readonly payload: Readonly<Record<string, unknown>>;
   readonly evidenceRef: string | null;
   readonly provenance: IntegrationRecordedProvenance;
+}
+
+// ---------------------------------------------------------------------------
+// Commerce capabilities (MKT-071 — architecture-v1.6.md §15: the existing
+// Integration boundary becomes capable of commerce operations: catalog
+// read, product read/write where authorized, product listing,
+// price/inventory read, order read, order webhook and attribution data)
+// ---------------------------------------------------------------------------
+
+/**
+ * The frozen commerce CAPABILITY-KEY vocabulary (MKT-071 AC-1). Adapters
+ * declare the SUBSET they actually support — capability-subset adapters
+ * are first-class (a read-only commerce adapter is valid). A capability
+ * key in the 'commerce-' namespace that is NOT in this closed list is
+ * rejected at adapter registration (the registration guard fences the
+ * namespace — a misspelled commerce capability can never silently
+ * register).
+ *
+ *   commerce-catalog-read     → read    (listCatalog — paged; the catalog pages ARE the product enumeration)
+ *   commerce-product-read     → read    (getProduct)
+ *   commerce-product-write    → mutation (createProduct, updateProduct) — ONLY where the provider authorizes it
+ *   commerce-listing-manage   → mutation (createListing, updateListing, endListing) — ONLY where the provider authorizes it
+ *   commerce-price-read       → read    (getPrice)
+ *   commerce-inventory-read   → read    (getInventory)
+ *   commerce-orders-read      → read    (listOrders [, listOrderRecords]) — the MKT-024 key, extended
+ *   commerce-order-webhook    → webhook (order/product event ingestion — extends the commerce-event-stream family)
+ *   commerce-event-stream     → webhook (the MKT-024 legacy key — unidentified commerce/CMS event deliveries; kept first-class for continuity)
+ */
+export const COMMERCE_CAPABILITY_KEYS = [
+  'commerce-catalog-read',
+  'commerce-product-read',
+  'commerce-product-write',
+  'commerce-listing-manage',
+  'commerce-price-read',
+  'commerce-inventory-read',
+  'commerce-orders-read',
+  'commerce-order-webhook',
+  'commerce-event-stream',
+] as const;
+export type CommerceCapabilityKey = (typeof COMMERCE_CAPABILITY_KEYS)[number];
+
+/**
+ * The MUTATING commerce capability keys — every operation under one of
+ * these passes the /integrations policy gate with ITS OWN capability key
+ * (AC-4) and lands in the append-only commerce mutation ledger. A policy
+ * not sanctioning the mutation fails closed (PolicyDeniedError — the
+ * honest 403-equivalent, recorded in the /policies decision ledger;
+ * never a silent skip).
+ */
+export const COMMERCE_MUTATION_CAPABILITY_KEYS = [
+  'commerce-product-write',
+  'commerce-listing-manage',
+] as const;
+export type CommerceMutationCapabilityKey = (typeof COMMERCE_MUTATION_CAPABILITY_KEYS)[number];
+
+/** True iff the capability key is one of the mutating commerce keys (pure). */
+export function isCommerceMutationCapability(capabilityKey: string): capabilityKey is CommerceMutationCapabilityKey {
+  return (COMMERCE_MUTATION_CAPABILITY_KEYS as readonly string[]).includes(capabilityKey);
+}
+
+/**
+ * The frozen commerce EVENT-KIND vocabulary (the normalized projection
+ * CHECK fence of migration 049 mirrors this exactly): every normalized
+ * provider event kinds itself as an order, product or listing event.
+ */
+export const COMMERCE_EVENT_KINDS = ['order', 'product', 'listing'] as const;
+export type CommerceEventKind = (typeof COMMERCE_EVENT_KINDS)[number];
+
+/**
+ * The frozen commerce event OUTCOME vocabulary: 'ingested' (the first
+ * delivery of a provider event) and 'duplicate-received' (a replay — the
+ * honest no-op record in the event history, never a silent drop).
+ */
+export const COMMERCE_EVENT_OUTCOMES = ['ingested', 'duplicate-received'] as const;
+export type CommerceEventOutcome = (typeof COMMERCE_EVENT_OUTCOMES)[number];
+
+/** The normalized commerce event shape version stamp (AC-3 provenance). */
+export const COMMERCE_EVENT_SHAPE_VERSION = 'commerce-event-v1';
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// The normalized commerce FIELD contracts (the shapes commerce read
+// operations return as source-record envelopes — recordType
+// 'commerce.catalog-page' | 'commerce.product' | 'commerce.price' |
+// 'commerce.inventory' | 'commerce.order'; the provider's identifiers are
+// carried INSIDE the boundary, never as MOS identities)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** One catalog category reference (the paged catalog read). */
+export interface CommerceCategoryRef {
+  readonly categoryId: string;
+  readonly title: string;
+}
+
+/** One catalog product summary (the paged catalog read). */
+export interface CommerceProductRef {
+  readonly productId: string;
+  readonly title: string;
+  readonly categoryId: string | null;
+  readonly status: string;
+}
+
+/** The normalized catalog page (AC-1: catalog read — paged, category/product shape). */
+export interface CommerceCatalogPageFields {
+  readonly categories: readonly CommerceCategoryRef[];
+  readonly products: readonly CommerceProductRef[];
+  readonly nextPageCursor: string | null;
+}
+
+/** The normalized product (AC-1: product read; attributes are provider passthrough). */
+export interface CommerceProductFields {
+  readonly productId: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly status: string;
+  readonly categoryId: string | null;
+  readonly attributes: Readonly<Record<string, unknown>>;
+}
+
+/** The normalized price observation (AC-1: price read). */
+export interface CommercePriceFields {
+  readonly productId: string;
+  readonly priceId: string | null;
+  readonly amount: number;
+  readonly currency: string;
+}
+
+/** The normalized inventory observation (AC-1: inventory read). */
+export interface CommerceInventoryFields {
+  readonly productId: string;
+  readonly available: number;
+  readonly total: number | null;
+  readonly updatedAt: string | null;
+}
+
+/** One order line item (AC-1: order read — line-item shape). */
+export interface CommerceOrderLineItem {
+  readonly lineItemId: string;
+  readonly productId: string | null;
+  readonly title: string;
+  readonly quantity: number;
+  readonly unitPrice: number;
+}
+
+/**
+ * The normalized order record (AC-1: order read — paged, line-item
+ * shape; AC-5: `attribution` carries the provider's attribution/
+ * reference fields VERBATIM as passthrough data — no linking, matching
+ * or causal computation here, MKT-073 owns that later).
+ */
+export interface CommerceOrderFields {
+  readonly orderId: string;
+  readonly orderNumber: string | null;
+  readonly status: string;
+  readonly currency: string;
+  readonly total: number;
+  readonly placedAt: string | null;
+  readonly lineItems: readonly CommerceOrderLineItem[];
+  readonly attribution: Readonly<Record<string, unknown>> | null;
+  readonly nextPageCursor: string | null;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// The commerce event history + mutation ledger records (migration 049)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/**
+ * One append-only commerce event history row (migration 049
+ * commerce_events — the normalized event projection). Provenance carries
+ * received-at, the provider (adapterKey), the raw-event hash and the
+ * normalized shape version (AC-3). An 'ingested' row references the
+ * raw-ledger integration event + derived evidence; a 'duplicate-received'
+ * row references the ingested row it duplicated and appends NOTHING to
+ * the raw ledger or evidence (the honest replay record).
+ */
+export interface CommerceEventRecord {
+  readonly commerceEventId: string;
+  readonly connectionId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly adapterKey: string;
+  readonly providerEventId: string;
+  readonly eventKind: CommerceEventKind;
+  readonly eventType: string;
+  readonly outcome: CommerceEventOutcome;
+  readonly providerRecordId: string | null;
+  readonly rawEventHash: string;
+  readonly shapeVersion: string;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly normalized: Readonly<Record<string, unknown>>;
+  readonly integrationEventRef: string | null;
+  readonly evidenceRef: string | null;
+  readonly duplicateOf: string | null;
+  readonly provenance: IntegrationRecordedProvenance;
+}
+
+/**
+ * One append-only commerce mutation ledger row (migration 049
+ * commerce_mutation_records): the audit surface proving store mutations
+ * flow THROUGH the /integrations boundary (matrix boundary rule 8) —
+ * the declaring capability key, the operation, the provider-visible
+ * outcome (honest failures included) and the policy decision that gated
+ * the attempt.
+ */
+export interface CommerceMutationRecord {
+  readonly commerceMutationId: string;
+  readonly connectionId: string;
+  readonly clientId: string;
+  readonly agencyId: string;
+  readonly adapterKey: string;
+  readonly capabilityKey: CommerceMutationCapabilityKey;
+  readonly operation: string;
+  readonly ok: boolean;
+  readonly providerRecordId: string | null;
+  readonly error: string | null;
+  readonly policyDecisionId: string;
+  readonly provenance: IntegrationRecordedProvenance;
+}
+
+/**
+ * The IDENTITY-AWARE webhook ingestion outcome (MKT-071 — the idempotent
+ * twin of ingestWebhookEvent): the dedup verdict plus the appended
+ * records. A first delivery appends the raw-ledger event + derived
+ * evidence + the 'ingested' projection row (outcome.deduplicated =
+ * false, outcome.event set); a replay appends ONLY the honest
+ * 'duplicate-received' history row (outcome.deduplicated = true,
+ * outcome.event null — the original raw-ledger row is untouched, no
+ * second evidence exists). Deliveries whose provider carries no event
+ * identity take the legacy append-only path (providerEventId null).
+ */
+export interface IntegrationIdentifiedWebhookOutcome {
+  readonly connectionId: string;
+  readonly adapterKey: string;
+  readonly eventType: string;
+  /** The provider's own event identity (null on the legacy unidentified path). */
+  readonly providerEventId: string | null;
+  /** TRUE when this delivery was a REPLAY deduplicated by the (adapterKey, providerEventId) fence. */
+  readonly deduplicated: boolean;
+  /** The appended raw-ledger row (first deliveries only; null on a replay). */
+  readonly event: IntegrationIngestedEventRecord | null;
+  /** The derived evidence reference (first deliveries only). */
+  readonly evidenceRef: string | null;
+  /** The commerce event history row this delivery produced (ingested OR duplicate-received; null on the legacy path). */
+  readonly commerceEvent: CommerceEventRecord | null;
+  /** On a replay: when the original delivery was received (the fence claim time). */
+  readonly firstReceivedAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -682,6 +961,50 @@ export interface IntegrationsModuleApi {
   getIngestedEvent(eventId: string): Promise<IntegrationIngestedEventRecord | null>;
   /** The Client's ingested events, newest first (bounded). Unknown Client → 404. */
   listIngestedEventsForClient(clientId: string): Promise<readonly IntegrationIngestedEventRecord[]>;
+  /**
+   * MKT-071: the IDEMPOTENT webhook ingestion (the ingestWebhookEvent
+   * twin for deliveries that may carry a provider event identity). The
+   * full existing gate (canonical ownership → live pipe → webhook
+   * capability → secrets-dimension policy → credential material →
+   * adapter verification); then:
+   *
+   *   - a VERIFIED delivery whose adapter returns a NormalizedProviderEvent
+   *     is deduplicated by (adapterKey, providerEventId) through the
+   *     commerce webhook fence: the FIRST delivery claims the fence and
+   *     appends the raw-ledger event + derived 'source_fact' evidence +
+   *     the 'ingested' commerce event history row IN ONE TRANSACTION; a
+   *     REPLAY is a NO-OP for state that surfaces honestly as a
+   *     'duplicate-received' history row (no second ledger event, no
+   *     second evidence — never a silent drop);
+   *   - a VERIFIED delivery with NO provider event identity takes the
+   *     legacy append-only path (identical to ingestWebhookEvent);
+   *   - an UNVERIFIED delivery is rejected with nothing recorded.
+   */
+  ingestIdentifiedWebhookEvent(
+    input: {
+      readonly connectionId: string;
+      readonly eventType: string;
+      readonly payload: Readonly<Record<string, unknown>>;
+      readonly headers: Readonly<Record<string, string>>;
+    },
+    provenance: IntegrationProvenance,
+  ): Promise<IntegrationIdentifiedWebhookOutcome>;
+  /**
+   * MKT-071: the Client's commerce event history (the normalized event
+   * projection of migration 049 — ingested + duplicate-received rows,
+   * newest first, bounded). Unknown Client → uniform 404.
+   */
+  listCommerceEventsForClient(clientId: string): Promise<readonly CommerceEventRecord[]>;
+  /** MKT-071: one commerce event history row by id (null = unknown). */
+  getCommerceEvent(commerceEventId: string): Promise<CommerceEventRecord | null>;
+  /**
+   * MKT-071: the Client's commerce mutation ledger (the append-only audit
+   * trail of store mutations that flowed through this boundary — product
+   * writes + listing management with their capability keys, provider
+   * outcomes and gating policy decisions), newest first, bounded.
+   * Unknown Client → uniform 404.
+   */
+  listCommerceMutationsForClient(clientId: string): Promise<readonly CommerceMutationRecord[]>;
 }
 
 export interface IntegrationsModuleDeps {
@@ -735,6 +1058,25 @@ export {
   assertValidConnectionRegistration,
   assertValidProvenance,
   assertValidWebhookIngestion,
+  assertValidNormalizedProviderEvent,
   buildAdapterRegistry,
   containsMaterialShapedKey,
+  hashWebhookPayload,
 } from './internal/store.ts';
+/**
+ * The MKT-071 pure commerce mapping helpers (the shared commerce provider
+ * JSON convention → normalized source-record envelopes), exported for unit
+ * tests and future server-side consumers so the normalized commerce
+ * contract semantics are part of the module contract. Pure functions; the
+ * provider endpoints/egress live exclusively in the adapter subtrees.
+ */
+export {
+  buildNormalizedCommerceEvent,
+  mapCommerceCatalogPageResponse,
+  mapCommerceInventoryResponse,
+  mapCommerceMutationResponse,
+  mapCommerceOrderRecordsResponse,
+  mapCommerceOrdersResponse,
+  mapCommercePriceResponse,
+  mapCommerceProductResponse,
+} from './internal/adapter-support.ts';

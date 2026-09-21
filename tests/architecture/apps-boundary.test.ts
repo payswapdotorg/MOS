@@ -397,13 +397,21 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrationsOnDisk.includes('037_apps.sql'));
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '038_app_installs.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '040_sales_continuity.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '042_app_marketplace.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '038_app_installs.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '040_sales_continuity.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '042_app_marketplace.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '045_growth_missions.sql');
+  // MKT-071 appends 049_commerce_capabilities.sql (the number is
+  // PRE-ASSIGNED to this Work Item; 047/048 are PRE-ASSIGNED to sibling
+  // deliveries — not in this tree): the commerce capability layer of the
+  // /integrations boundary — every earlier migration keeps its numeric
+  // position (shifted one slot later) and 049 holds the last position on
+  // this branch (the sibling deliveries insert 047/048 before it at
+  // merge).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
   // The store/entrypoint exist (the module boundary is complete).
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'module.ts')));

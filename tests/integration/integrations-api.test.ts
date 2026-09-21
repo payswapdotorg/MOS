@@ -496,20 +496,21 @@ async function connectAndAwait(connectionId: string): Promise<void> {
 // integrations-connectors.test.ts and creator-operations-provider-e2e.test.ts.)
 // ---------------------------------------------------------------------------
 
-test('INT-001 ROUTE: the adapter registry surface is honest data — the first-party set (MKT-024 five + the MKT-038 creator connector)', async () => {
+test('INT-001 ROUTE: the adapter registry surface is honest data — the first-party set (MKT-024 five + the MKT-038 creator connector + the MKT-071 commerce-store connector)', async () => {
   const response = await apiCall(port(), '/api/integrations/adapters', {
     token: aliceTokenValue,
   });
   assert.equal(response.status, 200);
   const adapters = response.body['adapters'] as Record<string, unknown>[];
-  // Exactly the six first-party connectors, no more (the registry is
+  // Exactly the seven first-party connectors, no more (the registry is
   // injected DATA; the MKT-023 stubs never reach the deployment registry).
-  // MKT-038 appends the creator-platform connector to the MKT-024 five —
-  // the additive composition-root DATA evolution the frozen boundary
-  // documents.
+  // MKT-038 appends the creator-platform connector to the MKT-024 five and
+  // MKT-071 appends the commerce-store connector (the full v1.6 commerce
+  // surface — the additive composition-root DATA evolution the frozen
+  // boundary documents).
   assert.deepEqual(
     adapters.map((adapter) => adapter['adapterKey']).sort(),
-    ['commerce-cms', 'creator-platform', 'crm', 'generic-analytics', 'google-ads', 'meta-ads'],
+    ['commerce-cms', 'commerce-store', 'creator-platform', 'crm', 'generic-analytics', 'google-ads', 'meta-ads'],
   );
   // Every entry is the provider-neutral honest shape: label + description
   // + capabilities (the discovery surface callers pick from).

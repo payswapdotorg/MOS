@@ -725,6 +725,29 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // mutated (migration 029/005 stay the sole authorities — consumed
     // READ-ONLY through the public contracts).
     '046_social_accounts.sql',
+    // MKT-071 (Commerce Catalog and Order Capabilities) appends the
+    // commerce-capabilities migration (049 — the number is PRE-ASSIGNED
+    // to this Work Item; 047/048 are PRE-ASSIGNED to sibling deliveries
+    // and are not in this tree): the commerce capability layer of the
+    // EXISTING /integrations boundary — the webhook dedup fence
+    // (commerce_webhook_event_fences: at most ONE ingested event per
+    // (adapter_key, provider_event_id), fully append-only), the
+    // append-only normalized commerce event projection / event history
+    // (commerce_events: the frozen order/product/listing event-kind and
+    // ingested/duplicate-received outcome vocabularies CHECK-fenced, the
+    // raw-event hash + normalized shape version provenance, the
+    // outcome-wiring constraint, UPDATE/DELETE rejected by triggers) and
+    // the append-only commerce mutation ledger (commerce_mutation_records:
+    // the frozen commerce-product-write/commerce-listing-manage capability
+    // vocabulary CHECK-fenced, the honest provider outcome + the gating
+    // policy decision on every store mutation that flowed through the
+    // boundary — the matrix boundary-rule-8 audit surface); NO catalog,
+    // product, listing, price, inventory or order table is created (the
+    // provider store stays the SOLE catalog/order authority — a disclosed
+    // projection choice) and NO integration/credential/tenant table is
+    // created or mutated (migration 029 stays the sole connection/ledger
+    // authority — consumed READ-ONLY through FK references).
+    '049_commerce_capabilities.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

@@ -164,6 +164,38 @@ export const SANDBOX_FIXTURES = {
       },
     ],
   },
+  // ----- MKT-071 commerce read fixtures (the read-only commerce/CMS
+  // provider's catalog/product/price/inventory surfaces — the shared
+  // commerce provider JSON convention) -------------------------------
+  commerceCatalog: {
+    categories: [{ id: 'cat_essentials', title: 'Essentials' }],
+    products: [
+      { id: 'prd_4410', title: 'Everyday Tote', categoryId: 'cat_essentials', status: 'active' },
+    ],
+    nextPageCursor: null,
+  },
+  commerceProduct: {
+    id: 'prd_4410',
+    title: 'Everyday Tote',
+    description: 'A sturdy everyday tote bag.',
+    status: 'active',
+    categoryId: 'cat_essentials',
+    attributes: { material: 'canvas' },
+    updatedAt: '2026-03-15T09:20:00.000Z',
+  },
+  commercePrice: {
+    productId: 'prd_4410',
+    priceId: 'price_4410',
+    amount: '49.00',
+    currency: 'USD',
+    updatedAt: '2026-03-15T09:20:00.000Z',
+  },
+  commerceInventory: {
+    productId: 'prd_4410',
+    available: 62,
+    total: 70,
+    updatedAt: '2026-03-16T12:00:00.000Z',
+  },
   cmsContent: {
     items: [
       {
@@ -357,6 +389,24 @@ export async function startSandboxProvider(auth: SandboxAuth): Promise<SandboxPr
     }
     if (path === '/commerce-cms/cms/v1/content') {
       json(res, 200, mode === 'malformed' ? { items: [{ nope: true }] } : SANDBOX_FIXTURES.cmsContent);
+      return;
+    }
+    // ----- MKT-071: the commerce/CMS platform's READ-ONLY commerce
+    // surface (the capability-subset commerce adapter's reads). -----
+    if (req.method === 'GET' && path === '/commerce-cms/commerce/v1/catalog') {
+      json(res, 200, mode === 'malformed' ? { categories: 'not-an-array' } : SANDBOX_FIXTURES.commerceCatalog);
+      return;
+    }
+    if (req.method === 'GET' && /^\/commerce-cms\/commerce\/v1\/products\/[^/]+$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { id: 'prd_4410', title: 'x', status: 'active', attributes: 'not-an-object' } : SANDBOX_FIXTURES.commerceProduct);
+      return;
+    }
+    if (req.method === 'GET' && /^\/commerce-cms\/commerce\/v1\/products\/[^/]+\/price$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { productId: 'prd_4410', amount: 'NaN', currency: 'USD' } : SANDBOX_FIXTURES.commercePrice);
+      return;
+    }
+    if (req.method === 'GET' && /^\/commerce-cms\/commerce\/v1\/products\/[^/]+\/inventory$/.test(path)) {
+      json(res, 200, mode === 'malformed' ? { productId: 'prd_4410', available: 'many' } : SANDBOX_FIXTURES.commerceInventory);
       return;
     }
 

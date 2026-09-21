@@ -43,21 +43,27 @@ import {
 } from '../../../platform/errors/errors.ts';
 import type {
   IntegrationAdapter,
+  IntegrationCapability,
   IntegrationsClientOwnershipSnapshot,
   IntegrationsModuleApi,
   IntegrationsModuleDeps,
   IntegrationConnectionRecord,
+  IntegrationIdentifiedWebhookOutcome,
   IntegrationProvenance,
   NormalizedMutationResult,
   NormalizedReadResult,
+  NormalizedProviderEvent,
 } from '../public.ts';
+import { isCommerceMutationCapability } from '../public.ts';
 import { composeIntegrationConnectionOwnerContext, enforcementOutcomePolicy } from './policy-gate.ts';
 import {
   assertValidConnectionRegistration,
+  assertValidNormalizedProviderEvent,
   assertValidProvenance,
   assertValidWebhookIngestion,
   buildAdapterRegistry,
   classifyIntegrationWriteConflict,
+  hashWebhookPayload,
   IntegrationsStore,
   MAX_SUSPEND_REASON_LENGTH,
   toRegisteredAdapterInfo,
@@ -133,21 +139,24 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
   /**
    * The capability-discovery gate: the requested operation must be declared
    * by a registered capability of the connection's adapter (data lookup —
-   * no provider branches).
+   * no provider branches). Returns the DECLARING capability (MKT-071: the
+   * policy gate carries its capability key — every mutating commerce
+   * operation passes the gate with its own capability key).
    */
   function requireDeclaredOperation(
     adapter: IntegrationAdapter,
     kind: 'read' | 'mutation',
     operation: string,
-  ): void {
-    const declared = adapter.capabilities.some(
+  ): IntegrationCapability {
+    const declaring = adapter.capabilities.find(
       (capability) => capability.kind === kind && (capability.operations as readonly string[]).includes(operation),
     );
-    if (!declared) {
+    if (declaring === undefined) {
       throw new InvalidRequestError('Unknown integration operation', [
         `operation: '${operation}' is not declared by any ${kind} capability of adapter '${adapter.descriptor.adapterKey}'`,
       ]);
     }
+    return declaring;
   }
 
   /** The §21 exfiltration guard on execution parameters (outbound data). */
@@ -216,6 +225,23 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
       providerConfig: connection.providerConfig,
       credentialMaterial: material,
     };
+  }
+
+  /**
+   * Canonical connection ownership resolution (the shared core of the
+   * module method and the MKT-071 ingestion core): null when the
+   * connection does not exist OR its Client chain does not resolve —
+   * callers surface a uniform 404 (foreign ≡ unknown ≡ orphaned).
+   */
+  async function resolveConnectionOwnershipCore(
+    connectionId: string,
+  ): Promise<{ readonly connection: IntegrationConnectionRecord } | null> {
+    const connection = await store.getConnection(connectionId);
+    if (connection === null) return null;
+    const ownership = await clientOwnership.resolveClientOwnership(connection.clientId);
+    if (ownership === null) return null;
+    if (ownership.client.agencyId !== connection.agencyId) return null;
+    return { connection };
   }
 
   return {
@@ -371,17 +397,18 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
       const connection = ownership.connection;
       requireConnected(connection);
       const adapter = requireConnectionAdapter(connection);
-      requireDeclaredOperation(adapter, 'read', input.operation);
+      const declaringCapability = requireDeclaredOperation(adapter, 'read', input.operation);
 
       // FAIL-CLOSED gates: network egress for the read, then credential
       // use for the call. Deny/unknown → PolicyDeniedError BEFORE any
-      // material resolution or provider traffic.
+      // material resolution or provider traffic. MKT-071: the action
+      // carries the DECLARING capability key (policies may scope by it).
       const networkDecisionId = await requirePolicyAllow(
         {
           dimension: 'network',
           operation: 'integration.read',
           resource: connection.adapterKey,
-          attributes: { provider: connection.adapterKey },
+          attributes: { provider: connection.adapterKey, capability: declaringCapability.capabilityKey },
         },
         { agencyId: connection.agencyId, clientId: connection.clientId },
         provenance,
@@ -444,14 +471,22 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
       const connection = ownership.connection;
       requireConnected(connection);
       const adapter = requireConnectionAdapter(connection);
-      requireDeclaredOperation(adapter, 'mutation', input.operation);
+      const declaringCapability = requireDeclaredOperation(adapter, 'mutation', input.operation);
 
+      // FAIL-CLOSED gates (AC-4): network egress for the mutation, then
+      // credential use — the action carries the DECLARING capability key
+      // ('commerce-product-write' / 'commerce-listing-manage' / ...) so a
+      // policy can sanction exactly the mutation classes it means to; a
+      // policy not sanctioning the mutation fails closed
+      // (PolicyDeniedError — the honest 403-equivalent recorded in the
+      // /policies decision ledger; never a silent skip) BEFORE any
+      // material resolution or provider traffic.
       const networkDecisionId = await requirePolicyAllow(
         {
           dimension: 'network',
           operation: 'integration.mutate',
           resource: connection.adapterKey,
-          attributes: { provider: connection.adapterKey },
+          attributes: { provider: connection.adapterKey, capability: declaringCapability.capabilityKey },
         },
         { agencyId: connection.agencyId, clientId: connection.clientId },
         provenance,
@@ -491,6 +526,30 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
         lastError: result.ok ? null : (result.error ?? 'provider call failed'),
       });
 
+      // MKT-071 (AC-4, matrix boundary rule 8): every STORE MUTATION that
+      // flowed through this boundary lands in the append-only commerce
+      // mutation ledger with its declaring capability key, the honest
+      // provider outcome (refusals included) and the gating policy
+      // decision — the audit surface proving mutations flow through
+      // Integrations (and only Integrations).
+      if (isCommerceMutationCapability(declaringCapability.capabilityKey)) {
+        await store.insertCommerceMutationRecord(
+          {
+            connectionId: connection.connectionId,
+            clientId: connection.clientId,
+            agencyId: connection.agencyId,
+            adapterKey: connection.adapterKey,
+            capabilityKey: declaringCapability.capabilityKey,
+            operation: input.operation,
+            ok: result.ok,
+            providerRecordId: result.providerRecordId,
+            error: result.error,
+            policyDecisionId: networkDecisionId,
+          },
+          provenance,
+        );
+      }
+
       return {
         connectionId: connection.connectionId,
         adapterKey: connection.adapterKey,
@@ -506,64 +565,159 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
     },
 
     async ingestWebhookEvent(input, provenance) {
+      // The RAW append-only surface (MKT-023 semantics): a verified
+      // delivery appends one ledger row + one derived evidence
+      // observation. MKT-071: a delivery carrying a provider event
+      // identity is fenced — the FIRST delivery ingests through the
+      // identified core (fence + ledger + projection), and a REPLAY is
+      // rejected fail-closed on this raw surface (a ConflictError naming
+      // the duplicate — the idempotent surface
+      // ingestIdentifiedWebhookEvent records the honest
+      // duplicate-received history row instead).
+      const outcome = await ingestWebhookCore(input, provenance);
+      if (outcome.deduplicated) {
+        throw new ConflictError(
+          `webhook delivery is a replay of provider event '${outcome.providerEventId}' of adapter '${outcome.adapterKey}' first received at ${outcome.firstReceivedAt} — use the idempotent ingestion surface (ingestIdentifiedWebhookEvent) to record duplicates`,
+        );
+      }
+      const event = outcome.event;
+      if (event === null) {
+        throw new Error('identified webhook ingestion produced no event record on the first-delivery path');
+      }
+      return event;
+    },
+
+    async ingestIdentifiedWebhookEvent(input, provenance) {
       assertValidProvenance(provenance);
       assertValidWebhookIngestion(input);
-      const ownership = await this.resolveConnectionOwnership(input.connectionId);
+      return ingestWebhookCore(input, provenance);
+    },
+
+    async listCommerceEventsForClient(clientId) {
+      const ownership = await clientOwnership.resolveClientOwnership(clientId);
       if (ownership === null) {
-        throw new NotFoundError('integration connection', input.connectionId);
+        throw new NotFoundError('client', clientId);
       }
-      const connection = ownership.connection;
-      requireConnected(connection);
-      const adapter = requireConnectionAdapter(connection);
-      if (!adapter.capabilities.some((capability) => capability.kind === 'webhook')) {
-        throw new InvalidRequestError('Adapter declares no webhook capability', [
-          `adapter '${connection.adapterKey}' declares no webhook capability — deliveries cannot be verified`,
-        ]);
+      return store.listCommerceEventsForClient(clientId);
+    },
+
+    async getCommerceEvent(commerceEventId) {
+      return store.getCommerceEvent(commerceEventId);
+    },
+
+    async listCommerceMutationsForClient(clientId) {
+      const ownership = await clientOwnership.resolveClientOwnership(clientId);
+      if (ownership === null) {
+        throw new NotFoundError('client', clientId);
       }
+      return store.listCommerceMutationsForClient(clientId);
+    },
 
-      // FAIL-CLOSED gate: webhook verification uses the credential
-      // (secrets dimension, operation 'integration.webhook').
-      await requirePolicyAllow(
-        {
-          dimension: 'secrets',
-          operation: 'integration.webhook',
-          resource: connection.credentialReferenceId,
-          attributes: { provider: connection.adapterKey },
-        },
-        { agencyId: connection.agencyId, clientId: connection.clientId },
-        provenance,
-      );
+    async getIngestedEvent(eventId) {
+      return store.getEvent(eventId);
+    },
 
-      const material = await resolveCallMaterial(connection);
-      let verification: Awaited<ReturnType<IntegrationAdapter['verifyWebhook']>>;
-      try {
-        verification = await adapter.verifyWebhook(callContext(connection, material), {
-          eventType: input.eventType,
-          payload: input.payload,
-          headers: input.headers,
-        });
-      } catch (error) {
-        verification = {
-          verified: false,
-          reason: `adapter verification threw: ${error instanceof Error ? error.message : String(error)}`,
-          normalizedEventType: null,
-        };
+    async listIngestedEventsForClient(clientId) {
+      const ownership = await clientOwnership.resolveClientOwnership(clientId);
+      if (ownership === null) {
+        throw new NotFoundError('client', clientId);
       }
-      if (!verification.verified) {
-        // Nothing is recorded and nothing becomes evidence (fail-closed:
-        // an unverified delivery is rejected outright).
-        throw new InvalidRequestError('Webhook delivery failed provider verification', [
-          `verification: ${verification.reason ?? 'the adapter rejected the delivery'}`,
-        ]);
-      }
+      return store.listEventsForClient(clientId);
+    },
+  };
 
-      const eventId = deps.ids.newId();
-      const eventType = verification.normalizedEventType ?? input.eventType;
+  /**
+   * MKT-071: THE WEBHOOK INGESTION CORE shared by the raw
+   * (ingestWebhookEvent) and idempotent (ingestIdentifiedWebhookEvent)
+   * surfaces. The full existing gate (canonical ownership → live pipe →
+   * webhook capability → secrets-dimension policy → credential material →
+   * adapter verification → unverified rejection with nothing recorded);
+   * then:
+   *
+   *   - a VERIFIED delivery whose adapter returns a NormalizedProviderEvent
+   *     (validated fail-closed against the commerce event contract) is
+   *     deduplicated by (adapterKey, providerEventId): the fence is
+   *     consulted first (replays record ONLY the honest
+   *     'duplicate-received' history row — no second ledger event, no
+   *     second evidence), and the first delivery appends the derived
+   *     'source_fact' evidence observation through the evidence sink and
+   *     then claims the fence + ledger row + 'ingested' projection row in
+   *     ONE store transaction (a concurrent duplicate race converges on
+   *     the winner — the loser records the duplicate-received row; the
+   *     possibly-orphaned evidence observation of the losing attempt is a
+   *     disclosed honest artifact of the race: it records a delivery that
+   *     really was observed);
+   *   - a VERIFIED delivery WITHOUT a provider event identity takes the
+   *     legacy append-only path (one ledger row + one evidence
+   *     observation, no fence, no projection).
+   */
+  async function ingestWebhookCore(
+    input: {
+      readonly connectionId: string;
+      readonly eventType: string;
+      readonly payload: Readonly<Record<string, unknown>>;
+      readonly headers: Readonly<Record<string, string>>;
+    },
+    provenance: IntegrationProvenance,
+  ): Promise<IntegrationIdentifiedWebhookOutcome> {
+    assertValidProvenance(provenance);
+    assertValidWebhookIngestion(input);
+    const ownership = await resolveConnectionOwnershipCore(input.connectionId);
+    if (ownership === null) {
+      throw new NotFoundError('integration connection', input.connectionId);
+    }
+    const connection = ownership.connection;
+    requireConnected(connection);
+    const adapter = requireConnectionAdapter(connection);
+    if (!adapter.capabilities.some((capability) => capability.kind === 'webhook')) {
+      throw new InvalidRequestError('Adapter declares no webhook capability', [
+        `adapter '${connection.adapterKey}' declares no webhook capability — deliveries cannot be verified`,
+      ]);
+    }
 
-      // The derived /evidence observation (through /evidence's own public
-      // contract — the structural sink port): class/quality/provenance are
-      // PINNED honest values, never caller-suppliable and never fabricated
-      // by this module. The event identity is the source reference.
+    // FAIL-CLOSED gate: webhook verification uses the credential
+    // (secrets dimension, operation 'integration.webhook').
+    await requirePolicyAllow(
+      {
+        dimension: 'secrets',
+        operation: 'integration.webhook',
+        resource: connection.credentialReferenceId,
+        attributes: { provider: connection.adapterKey },
+      },
+      { agencyId: connection.agencyId, clientId: connection.clientId },
+      provenance,
+    );
+
+    const material = await resolveCallMaterial(connection);
+    let verification: Awaited<ReturnType<IntegrationAdapter['verifyWebhook']>>;
+    try {
+      verification = await adapter.verifyWebhook(callContext(connection, material), {
+        eventType: input.eventType,
+        payload: input.payload,
+        headers: input.headers,
+      });
+    } catch (error) {
+      verification = {
+        verified: false,
+        reason: `adapter verification threw: ${error instanceof Error ? error.message : String(error)}`,
+        normalizedEventType: null,
+      };
+    }
+    if (!verification.verified) {
+      // Nothing is recorded and nothing becomes evidence (fail-closed:
+      // an unverified delivery is rejected outright).
+      throw new InvalidRequestError('Webhook delivery failed provider verification', [
+        `verification: ${verification.reason ?? 'the adapter rejected the delivery'}`,
+      ]);
+    }
+
+    const eventId = deps.ids.newId();
+    const eventType = verification.normalizedEventType ?? input.eventType;
+    const providerEvent: NormalizedProviderEvent | null = verification.providerEvent ?? null;
+
+    // The LEGACY unidentified path (no provider event identity): the
+    // MKT-023 append-only semantics, unchanged.
+    if (providerEvent === null) {
       const evidence = await evidenceSink.appendEvidence(
         {
           clientId: connection.clientId,
@@ -591,9 +745,7 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
           causationId: provenance.causationId,
         },
       );
-
-      // The append-only ingestion ledger row (evidenceRef already resolved).
-      return store.insertEvent(
+      const event = await store.insertEvent(
         {
           eventId,
           connectionId: connection.connectionId,
@@ -605,20 +757,176 @@ export function createIntegrationsModule(deps: IntegrationsModuleDeps): Integrat
         },
         provenance,
       );
-    },
+      return {
+        connectionId: connection.connectionId,
+        adapterKey: connection.adapterKey,
+        eventType,
+        providerEventId: null,
+        deduplicated: false,
+        event,
+        evidenceRef: evidence.evidenceId,
+        commerceEvent: null,
+        firstReceivedAt: null,
+      };
+    }
 
-    async getIngestedEvent(eventId) {
-      return store.getEvent(eventId);
-    },
+    // The IDENTIFIED path (MKT-071): validate the normalized provider
+    // event against the commerce contract (fail-closed by rejection) and
+    // dedup by (adapterKey, providerEventId) through the fence.
+    assertValidNormalizedProviderEvent(providerEvent);
+    const rawEventHash = hashWebhookPayload(input.payload);
 
-    async listIngestedEventsForClient(clientId) {
-      const ownership = await clientOwnership.resolveClientOwnership(clientId);
-      if (ownership === null) {
-        throw new NotFoundError('client', clientId);
+    const existingFence = await store.findCommerceWebhookFence(
+      connection.adapterKey,
+      providerEvent.providerEventId,
+    );
+    if (existingFence !== null) {
+      // A REPLAY: a no-op for state that surfaces honestly in the event
+      // history — the duplicate-received record referencing the ingested
+      // row it duplicated (never a silent drop).
+      const ingested = await store.findIngestedCommerceEventByProviderEvent(
+        connection.adapterKey,
+        providerEvent.providerEventId,
+      );
+      if (ingested === null) {
+        throw new Error(
+          `the fence of provider event '${providerEvent.providerEventId}' references ledger event ${existingFence.integrationEventId} but no ingested commerce event row resolves`,
+        );
       }
-      return store.listEventsForClient(clientId);
-    },
-  };
+      const duplicate = await store.insertDuplicateCommerceEvent(
+        {
+          commerceEventId: deps.ids.newId(),
+          connectionId: connection.connectionId,
+          clientId: connection.clientId,
+          agencyId: connection.agencyId,
+          adapterKey: connection.adapterKey,
+          providerEvent,
+          eventType,
+          payload: input.payload,
+          rawEventHash,
+          duplicateOf: ingested.commerceEventId,
+        },
+        provenance,
+      );
+      return {
+        connectionId: connection.connectionId,
+        adapterKey: connection.adapterKey,
+        eventType,
+        providerEventId: providerEvent.providerEventId,
+        deduplicated: true,
+        event: null,
+        evidenceRef: null,
+        commerceEvent: duplicate,
+        firstReceivedAt: existingFence.claimedAt,
+      };
+    }
+
+    // The FIRST delivery: the derived /evidence observation (through
+    // /evidence's own public contract — class/quality/provenance PINNED),
+    // then the fence claim + raw-ledger append + 'ingested' projection
+    // row in ONE transaction.
+    const evidence = await evidenceSink.appendEvidence(
+      {
+        clientId: connection.clientId,
+        workspaceId: null,
+        class: 'source_fact',
+        source: {
+          system: `integration:${connection.adapterKey}`,
+          ref: eventId,
+        },
+        observedAt: clock.nowIso(),
+        content: {
+          eventType,
+          provider: connection.adapterKey,
+          payload: input.payload,
+          providerEventId: providerEvent.providerEventId,
+          eventKind: providerEvent.eventKind,
+          rawEventHash,
+          shapeVersion: providerEvent.shapeVersion,
+        },
+        contentRef: null,
+        quality: 'C',
+        confidence: null,
+        supersedesEvidenceId: null,
+      },
+      {
+        actor: provenance.actor,
+        recordedVia: `integration:${connection.adapterKey}`,
+        correlationId: provenance.correlationId,
+        causationId: provenance.causationId,
+      },
+    );
+
+    const ingested = await store.ingestIdentifiedCommerceEvent(
+      {
+        fenceId: deps.ids.newId(),
+        commerceEventId: deps.ids.newId(),
+        eventId,
+        connectionId: connection.connectionId,
+        clientId: connection.clientId,
+        agencyId: connection.agencyId,
+        adapterKey: connection.adapterKey,
+        providerEvent,
+        eventType,
+        payload: input.payload,
+        rawEventHash,
+        evidenceRef: evidence.evidenceId,
+      },
+      provenance,
+    );
+    if (ingested.kind === 'duplicate') {
+      // The rare concurrent race: THIS attempt's evidence observation was
+      // appended for a delivery that really was observed, but the fence
+      // was claimed concurrently — the honest duplicate-received record
+      // references the winner (disclosed in the runbook).
+      const winner = await store.findIngestedCommerceEventByProviderEvent(
+        connection.adapterKey,
+        providerEvent.providerEventId,
+      );
+      if (winner === null) {
+        throw new Error(
+          `the fence of provider event '${providerEvent.providerEventId}' was claimed concurrently but no ingested commerce event row resolves`,
+        );
+      }
+      const duplicate = await store.insertDuplicateCommerceEvent(
+        {
+          commerceEventId: deps.ids.newId(),
+          connectionId: connection.connectionId,
+          clientId: connection.clientId,
+          agencyId: connection.agencyId,
+          adapterKey: connection.adapterKey,
+          providerEvent,
+          eventType,
+          payload: input.payload,
+          rawEventHash,
+          duplicateOf: winner.commerceEventId,
+        },
+        provenance,
+      );
+      return {
+        connectionId: connection.connectionId,
+        adapterKey: connection.adapterKey,
+        eventType,
+        providerEventId: providerEvent.providerEventId,
+        deduplicated: true,
+        event: null,
+        evidenceRef: null,
+        commerceEvent: duplicate,
+        firstReceivedAt: ingested.existing.claimedAt,
+      };
+    }
+    return {
+      connectionId: connection.connectionId,
+      adapterKey: connection.adapterKey,
+      eventType,
+      providerEventId: providerEvent.providerEventId,
+      deduplicated: false,
+      event: ingested.event,
+      evidenceRef: evidence.evidenceId,
+      commerceEvent: ingested.commerceEvent,
+      firstReceivedAt: null,
+    };
+  }
 
   /**
    * FAIL-CLOSED policy gate: delegates to the /policies public contract

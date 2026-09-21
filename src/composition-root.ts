@@ -325,6 +325,21 @@ import { GoogleAdsAdapter } from './modules/integrations/internal/adapters/googl
 import { GenericAnalyticsAdapter } from './modules/integrations/internal/adapters/analytics/analytics-adapter.ts';
 import { CrmAdapter } from './modules/integrations/internal/adapters/crm/crm-adapter.ts';
 import { CommerceCmsAdapter } from './modules/integrations/internal/adapters/commerce/commerce-adapter.ts';
+// MKT-071: the COMMERCE-STORE CONNECTOR — the full v1.6 commerce surface
+// (spec/architecture-v1.6.md §15): paged catalog reads, product reads and
+// AUTHORIZED product writes, listing lifecycle management, price and
+// inventory reads, order reads (revenue metrics + full line-item records
+// with attribution PASSTHROUGH — §16) and identified order/product webhook
+// ingestion with (provider id, event id) idempotency. The same first-party
+// pattern as the MKT-024 five: a concrete adapter under the sanctioned
+// internal/adapters/** home, imported HERE ONLY (CONCRETE_ADAPTER_ACCESS),
+// constructed on the platform HttpCallPort, injected as DATA below. Its
+// MUTATION capabilities (commerce-product-write, commerce-listing-manage)
+// are fail-closed policy-gated by the /integrations module on every call
+// with their own capability key; the read-only capability-subset commerce
+// surface stays on the commerce-cms connector (MKT-071 AC-1: a read-only
+// commerce adapter is first-class).
+import { CommerceStoreAdapter } from './modules/integrations/internal/adapters/commerce/commerce-store-adapter.ts';
 // MKT-038: the CREATOR-PLATFORM CONNECTOR — the Creator Operations provider
 // integration proof (CREATOR-AC-05 + E2E-AC-02). The same first-party pattern
 // as the MKT-024 five: a concrete adapter under the sanctioned
@@ -741,6 +756,10 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // The registry is validated at construction and contains no provider
   // branches; later Work Items add connectors by appending DATA here
   // (MKT-022 extension-registry integrations).
+  // MKT-071 appends the COMMERCE-STORE CONNECTOR (the full v1.6 commerce
+  // capability surface incl. the policy-gated product-write and
+  // listing-manage mutations and the identified order/product webhook
+  // ingestion with the migration-049 dedup fence).
   const integrations = createIntegrationsModule({
     db,
     clock,
@@ -755,6 +774,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       new GenericAnalyticsAdapter({ http: httpCalls }),
       new CrmAdapter({ http: httpCalls }),
       new CommerceCmsAdapter({ http: httpCalls }),
+      new CommerceStoreAdapter({ http: httpCalls }),
       new CreatorPlatformAdapter({ http: httpCalls }),
     ],
   });

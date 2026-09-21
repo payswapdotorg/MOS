@@ -181,9 +181,12 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   );
   // The migration list tail: the MKT-053 /growth-missions delivery appends
   // 045 and the MKT-055 /social-accounts delivery appends 046 after the
-  // MKT-052 metering migration (the sibling-promotion precedent — this
-  // delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-3), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql'], 'the migration list tail carries the sibling promotions only');});
+  // MKT-052 metering migration; the MKT-071 delivery appends
+  // 049_commerce_capabilities.sql (the PRE-ASSIGNED commerce-capabilities
+  // migration of the /integrations boundary — 047/048 are PRE-ASSIGNED to
+  // sibling deliveries and are not in this tree; the sibling-promotion
+  // precedent — this delivery still owns NO migration).
+  assert.deepEqual(migrations.slice(-3), ['045_growth_missions.sql', '046_social_accounts.sql', '049_commerce_capabilities.sql'], 'the migration list tail carries the sibling promotions only');});
 
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));

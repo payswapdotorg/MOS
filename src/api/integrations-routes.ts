@@ -48,6 +48,7 @@
 
 import { ForbiddenError, NotFoundError } from '../platform/errors/errors.ts';
 import type { Principal } from '../platform/http/auth/contract.ts';
+import { isUuid } from '../platform/ids/ids.ts';
 import {
   defineMutationRoute,
   defineQueryRoute,
@@ -68,7 +69,10 @@ import type { ApplicationModules } from './application.ts';
 import { requireClientAccess, resolveContext } from './authorize.ts';
 import { auditActor, recordMutationAudit } from './audit-emit.ts';
 import type {
+  CommerceEventRecord,
+  CommerceMutationRecord,
   IntegrationConnectionRecord,
+  IntegrationIdentifiedWebhookOutcome,
   IntegrationIngestedEventRecord,
   IntegrationMutationOutcome,
   IntegrationProvenance,
@@ -356,6 +360,64 @@ function serializeEvent(record: IntegrationIngestedEventRecord): Record<string, 
   };
 }
 
+/** The MKT-071 commerce event history row serialization (opaque, non-secret). */
+function serializeCommerceEvent(record: CommerceEventRecord): Record<string, unknown> {
+  return {
+    commerceEventId: record.commerceEventId,
+    connectionId: record.connectionId,
+    clientId: record.clientId,
+    agencyId: record.agencyId,
+    adapterKey: record.adapterKey,
+    providerEventId: record.providerEventId,
+    eventKind: record.eventKind,
+    eventType: record.eventType,
+    outcome: record.outcome,
+    ...(record.providerRecordId === null ? {} : { providerRecordId: record.providerRecordId }),
+    rawEventHash: record.rawEventHash,
+    shapeVersion: record.shapeVersion,
+    payload: record.payload,
+    normalized: record.normalized,
+    ...(record.integrationEventRef === null ? {} : { integrationEventRef: record.integrationEventRef }),
+    ...(record.evidenceRef === null ? {} : { evidenceRef: record.evidenceRef }),
+    ...(record.duplicateOf === null ? {} : { duplicateOf: record.duplicateOf }),
+    provenance: {
+      actor: record.provenance.actor,
+      recordedVia: record.provenance.recordedVia,
+      correlationId: record.provenance.correlationId,
+      ...(record.provenance.causationId === null
+        ? {}
+        : { causationId: record.provenance.causationId }),
+      receivedAt: record.provenance.receivedAt,
+    },
+  };
+}
+
+/** The MKT-071 commerce mutation ledger row serialization (opaque, non-secret). */
+function serializeCommerceMutation(record: CommerceMutationRecord): Record<string, unknown> {
+  return {
+    commerceMutationId: record.commerceMutationId,
+    connectionId: record.connectionId,
+    clientId: record.clientId,
+    agencyId: record.agencyId,
+    adapterKey: record.adapterKey,
+    capabilityKey: record.capabilityKey,
+    operation: record.operation,
+    ok: record.ok,
+    ...(record.providerRecordId === null ? {} : { providerRecordId: record.providerRecordId }),
+    ...(record.error === null ? {} : { error: record.error }),
+    policyDecisionId: record.policyDecisionId,
+    provenance: {
+      actor: record.provenance.actor,
+      recordedVia: record.provenance.recordedVia,
+      correlationId: record.provenance.correlationId,
+      ...(record.provenance.causationId === null
+        ? {}
+        : { causationId: record.provenance.causationId }),
+      receivedAt: record.provenance.receivedAt,
+    },
+  };
+}
+
 function serializeReadOutcome(outcome: IntegrationReadOutcome): Record<string, unknown> {
   return {
     connectionId: outcome.connectionId,
@@ -430,6 +492,13 @@ export function registerIntegrationsRoutes(
 
   /** Canonical client owner scope; 404 BEFORE dependent traversal. */
   async function clientOwner(clientId: string): Promise<OwnerScope> {
+    // MKT-071 (AC-8, the house fail-closed battery): a malformed Client
+    // identifier is the SAME uniform 404 as an unknown/foreign one (no
+    // existence or traversal oracle — the pg uuid-syntax error never
+    // reaches the caller).
+    if (!isUuid(clientId)) {
+      throw new NotFoundError('client', clientId);
+    }
     const ownership = await modules.clients.resolveClientOwnership(clientId);
     if (ownership === null) {
       throw new NotFoundError('client', clientId);
@@ -446,9 +515,13 @@ export function registerIntegrationsRoutes(
    * route: the module resolves the connection + its owning Client chain;
    * a connection that does not exist, whose Client chain does not resolve,
    * or that belongs to ANOTHER Client than the path's is the SAME uniform
-   * 404 (a foreign identifier is not a traversal oracle).
+   * 404 (a foreign identifier is not a traversal oracle). MKT-071 (AC-8):
+   * a malformed connection identifier joins the same uniform 404.
    */
   async function requireConnectionInClient(connectionId: string, clientId: string) {
+    if (!isUuid(connectionId)) {
+      throw new NotFoundError('integration connection', connectionId);
+    }
     const ownership = await modules.integrations.resolveConnectionOwnership(connectionId);
     if (ownership === null || ownership.connection.clientId !== clientId) {
       throw new NotFoundError('integration connection', connectionId);
@@ -563,6 +636,10 @@ export function registerIntegrationsRoutes(
     defineQueryRoute<{ clientId: string }, readonly IntegrationConnectionRecord[]>({
       authenticator: services.auth,
       authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
         await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
       },
       execute: async (ctx) => modules.integrations.listConnectionsForClient(ctx.params.clientId),
@@ -1022,12 +1099,23 @@ export function registerIntegrationsRoutes(
   // to the immutable ledger and a derived 'source_fact' observation is
   // appended to /evidence with pinned class/quality/provenance
   // (server-computed — never request-suppliable).
+  //
+  // MKT-071: the route serves the IDEMPOTENT ingestion surface. A
+  // delivery whose adapter returns the provider's OWN event identity is
+  // deduplicated by (provider id, event id) through the commerce webhook
+  // fence: the FIRST delivery responds 201 with the ingested event (+
+  // the commerceEventId of the 'ingested' history row); a REPLAY is a
+  // no-op for state that surfaces honestly as a 200 with
+  // deduplicated=true and the 'duplicate-received' commerce event row
+  // (no second ledger event, no second evidence — never a silent drop).
+  // Deliveries without a provider event identity keep the legacy
+  // append-only semantics (201 + the event shape).
   router.add(
     'POST',
     '/api/clients/:clientId/connections/:connectionId/webhook',
     defineMutationRoute<
       { clientId: string; connectionId: string },
-      IntegrationIngestedEventRecord
+      IntegrationIdentifiedWebhookOutcome
     >({
       authenticator: services.auth,
       resolveOwner: async (_ctx, params) => clientOwner(params.clientId),
@@ -1055,7 +1143,7 @@ export function registerIntegrationsRoutes(
         // (and its 422) must never become a cross-tenant existence
         // oracle.
         await requireConnectionInClient(ctx.params.connectionId, ctx.params.clientId);
-        return modules.integrations.ingestWebhookEvent(
+        return modules.integrations.ingestIdentifiedWebhookEvent(
           {
             connectionId: ctx.params.connectionId,
             eventType: body.eventType,
@@ -1067,27 +1155,69 @@ export function registerIntegrationsRoutes(
       },
       emit: async (ctx) => {
         logger.info('integrations.event.ingested', undefined, {
-          event_id: ctx.result.eventId,
           connection_id: ctx.result.connectionId,
           client_id: ctx.params.clientId,
           adapter_key: ctx.result.adapterKey,
           event_type: ctx.result.eventType,
+          provider_event_id: ctx.result.providerEventId,
+          deduplicated: ctx.result.deduplicated,
           evidence_ref: ctx.result.evidenceRef,
           correlation_id: currentCorrelation().correlationId,
         });
         await recordMutationAudit(modules, ctx.principal, ctx.owner, {
           action: 'integrations.event.ingested',
           targetType: 'integration_event',
-          targetId: ctx.result.eventId,
-          idempotencyKey: `integrations.event.ingested:${ctx.result.eventId}`,
+          targetId:
+            ctx.result.event === null
+              ? (ctx.result.commerceEvent?.commerceEventId ?? ctx.params.connectionId)
+              : ctx.result.event.eventId,
+          idempotencyKey: `integrations.event.ingested:${
+            ctx.result.event === null
+              ? `duplicate:${ctx.result.commerceEvent?.commerceEventId ?? 'legacy'}`
+              : ctx.result.event.eventId
+          }`,
           details: {
             adapterKey: ctx.result.adapterKey,
             eventType: ctx.result.eventType,
+            providerEventId: ctx.result.providerEventId,
+            deduplicated: ctx.result.deduplicated,
             evidenceRef: ctx.result.evidenceRef,
           },
         });
       },
-      respond: (ctx) => jsonResponse(201, serializeEvent(ctx.result)),
+      respond: (ctx) => {
+        const outcome = ctx.result;
+        if (outcome.deduplicated) {
+          // The honest REPLAY record: 200 (not 201 — nothing new was
+          // ingested) with the duplicate-received commerce event row.
+          return jsonResponse(200, {
+            deduplicated: true,
+            connectionId: outcome.connectionId,
+            adapterKey: outcome.adapterKey,
+            eventType: outcome.eventType,
+            providerEventId: outcome.providerEventId,
+            firstReceivedAt: outcome.firstReceivedAt,
+            commerceEvent:
+              outcome.commerceEvent === null ? null : serializeCommerceEvent(outcome.commerceEvent),
+          });
+        }
+        if (outcome.event === null) {
+          return jsonResponse(200, {
+            connectionId: outcome.connectionId,
+            adapterKey: outcome.adapterKey,
+            eventType: outcome.eventType,
+          });
+        }
+        const base = serializeEvent(outcome.event);
+        if (outcome.providerEventId !== null) {
+          return jsonResponse(201, {
+            ...base,
+            providerEventId: outcome.providerEventId,
+            commerceEventId: outcome.commerceEvent === null ? null : outcome.commerceEvent.commerceEventId,
+          });
+        }
+        return jsonResponse(201, base);
+      },
     }),
   );
 
@@ -1104,6 +1234,10 @@ export function registerIntegrationsRoutes(
     defineQueryRoute<{ clientId: string }, readonly IntegrationIngestedEventRecord[]>({
       authenticator: services.auth,
       authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
         await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
       },
       execute: async (ctx) => modules.integrations.listIngestedEventsForClient(ctx.params.clientId),
@@ -1125,6 +1259,10 @@ export function registerIntegrationsRoutes(
     defineQueryRoute<{ eventId: string }, IntegrationIngestedEventRecord>({
       authenticator: services.auth,
       authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.eventId)) {
+          throw new NotFoundError('integration event', ctx.params.eventId);
+        }
         const record = await modules.integrations.getIngestedEvent(ctx.params.eventId);
         if (record === null) {
           throw new NotFoundError('integration event', ctx.params.eventId);
@@ -1140,6 +1278,95 @@ export function registerIntegrationsRoutes(
         return record;
       },
       respond: (ctx) => jsonResponse(200, serializeEvent(ctx.result)),
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // MKT-071: the commerce event history + mutation ledger read-backs
+  // -------------------------------------------------------------------------
+
+  // GET /api/clients/:clientId/commerce-events — the Client's commerce
+  // event history (the migration-049 normalized event projection: ingested
+  // + duplicate-received rows, newest first; members of the owning agency;
+  // foreign Client → uniform 404).
+  router.add(
+    'GET',
+    '/api/clients/:clientId/commerce-events',
+    defineQueryRoute<{ clientId: string }, readonly CommerceEventRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
+        await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
+      },
+      execute: async (ctx) => modules.integrations.listCommerceEventsForClient(ctx.params.clientId),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          clientId: ctx.params.clientId,
+          events: ctx.result.map(serializeCommerceEvent),
+        }),
+    }),
+  );
+
+  // GET /api/commerce-events/:commerceEventId — read one commerce event
+  // history row. The row's Client chain resolves canonically inside
+  // execute; a member of the OWNING agency reads it, everyone else gets
+  // the SAME uniform 404 (a commerce event id is never an authorization
+  // credential).
+  router.add(
+    'GET',
+    '/api/commerce-events/:commerceEventId',
+    defineQueryRoute<{ commerceEventId: string }, CommerceEventRecord>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.commerceEventId)) {
+          throw new NotFoundError('commerce event', ctx.params.commerceEventId);
+        }
+        const record = await modules.integrations.getCommerceEvent(ctx.params.commerceEventId);
+        if (record === null) {
+          throw new NotFoundError('commerce event', ctx.params.commerceEventId);
+        }
+        if (ctx.principal.kind === 'service') return;
+        await requireClientAccess(modules, ctx.principal, record.clientId);
+      },
+      execute: async (ctx) => {
+        const record = await modules.integrations.getCommerceEvent(ctx.params.commerceEventId);
+        if (record === null) {
+          throw new NotFoundError('commerce event', ctx.params.commerceEventId);
+        }
+        return record;
+      },
+      respond: (ctx) => jsonResponse(200, serializeCommerceEvent(ctx.result)),
+    }),
+  );
+
+  // GET /api/clients/:clientId/commerce-mutations — the Client's commerce
+  // mutation ledger (the append-only audit trail of store mutations that
+  // flowed through this boundary: product writes + listing management
+  // with their capability keys, honest provider outcomes and gating
+  // policy decisions; members of the owning agency; foreign Client →
+  // uniform 404).
+  router.add(
+    'GET',
+    '/api/clients/:clientId/commerce-mutations',
+    defineQueryRoute<{ clientId: string }, readonly CommerceMutationRecord[]>({
+      authenticator: services.auth,
+      authorize: async (ctx) => {
+        // MKT-071 (AC-8): malformed ≡ unknown ≡ foreign — the uniform 404.
+        if (!isUuid(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
+        await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
+      },
+      execute: async (ctx) => modules.integrations.listCommerceMutationsForClient(ctx.params.clientId),
+      respond: (ctx) =>
+        jsonResponse(200, {
+          clientId: ctx.params.clientId,
+          mutations: ctx.result.map(serializeCommerceMutation),
+        }),
     }),
   );
 }

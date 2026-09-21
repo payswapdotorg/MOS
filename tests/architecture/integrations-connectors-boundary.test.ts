@@ -84,7 +84,7 @@ function stripComments(text: string): string {
 
 const ADAPTERS_DIR = src('modules', 'integrations', 'internal', 'adapters');
 const FIRST_PARTY_CONNECTORS = ['meta', 'google-ads', 'analytics', 'crm', 'commerce'] as const;
-const FIRST_PARTY_ADAPTER_KEYS = ['meta-ads', 'google-ads', 'generic-analytics', 'crm', 'commerce-cms'] as const;
+const FIRST_PARTY_ADAPTER_KEYS = ['meta-ads', 'google-ads', 'generic-analytics', 'crm', 'commerce-cms', 'commerce-store'] as const;
 
 const connectorFiles: string[] = [];
 for (const provider of FIRST_PARTY_CONNECTORS) {
@@ -240,14 +240,25 @@ test('INT-001 static: provider-specific code lives ONLY under internal/adapters/
 // 4. The composition root wires exactly the five first-party connectors
 // ---------------------------------------------------------------------------
 
-test('INT-001 static: the composition root registers EXACTLY the five first-party connectors as DATA', () => {
+test('INT-001 static: the composition root registers EXACTLY the first-party connectors as DATA (the MKT-024 five + MKT-071 commerce-store)', () => {
   const compositionRoot = read(src('composition-root.ts'));
   for (const provider of FIRST_PARTY_CONNECTORS) {
     assert.ok(
-      compositionRoot.includes(`internal/adapters/${provider}/${provider}-adapter.ts`),
+      compositionRoot.includes(`internal/adapters/${provider}/${provider}-adapter.ts`) ||
+        compositionRoot.includes(`internal/adapters/${provider}/commerce-store-adapter.ts`),
       `the composition root wires the ${provider} connector`,
     );
   }
+  // The MKT-071 commerce-store connector is wired additively next to the
+  // MKT-024 commerce-cms connector.
+  assert.ok(
+    compositionRoot.includes('internal/adapters/commerce/commerce-store-adapter.ts'),
+    'the composition root wires the commerce-store connector',
+  );
+  assert.ok(
+    compositionRoot.includes('new CommerceStoreAdapter({ http: httpCalls })'),
+    'the commerce-store connector is constructed on the platform HttpCallPort',
+  );
   assert.ok(
     compositionRoot.includes('adapters: [') && compositionRoot.includes('new MetaAdsAdapter({ http: httpCalls })'),
     'the connectors are constructed on the platform HttpCallPort and injected as the module adapter DATA',
