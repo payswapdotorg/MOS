@@ -311,6 +311,10 @@ import { createAgentsModule } from './modules/agents/public.ts';
 import { createPoliciesModule } from './modules/policies/public.ts';
 // MKT-023: /integrations module (the provider integration boundary).
 import { createIntegrationsModule } from './modules/integrations/public.ts';
+// MKT-056: the /integrations adapter PORT type — the AppOptions seam that
+// appends test/conformance integration adapters to the registry (the
+// socialAccountFlows composition precedent).
+import type { IntegrationAdapter } from './modules/integrations/public.ts';
 // MKT-024: the FIRST-PARTY CONNECTORS (Meta, Google Ads, generic
 // analytics, CRM, commerce/CMS) — concrete adapter implementations under
 // the sanctioned internal/adapters/** home, imported HERE ONLY (the
@@ -440,8 +444,18 @@ import { createGrowthMissionsModule } from './modules/growth-missions/public.ts'
 // integrations, the append-oriented OAuth authorization-grant lifecycle
 // with verbatim scope records + capability tags, the append-only history
 // tail and the fail-closed disconnect/revocation death semantics).
+// MKT-056 extends the module with the NORMALIZED SOCIAL PLATFORM ADAPTER
+// CONTRACT: the capability-matrix registry, the normalized
+// account/content/analytics/publish/restriction-signal operations and
+// the publish idempotency ledger (migration 050). The platform adapter
+// registry is EMPTY here — the concrete platform adapters arrive with
+// the MKT-057..061 deliveries as DATA through the disclosed composition
+// seam (AppOptions.socialPlatformAdapters; fail-closed until then).
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
-import type { SocialAccountFlowImplementation } from './modules/social-accounts/public.ts';
+import type {
+  SocialAccountFlowImplementation,
+  SocialPlatformAdapter,
+} from './modules/social-accounts/public.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -513,6 +527,30 @@ export interface AppOptions {
    * ONLY — the connection model under test is fully real).
    */
   readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
+  /**
+   * MKT-056: additional SOCIAL PLATFORM ADAPTER instances for the
+   * /social-accounts module's normalized capability plane (the
+   * socialAccountFlows composition precedent). EMPTY by default — the
+   * production composition registers NO platform adapter until the
+   * MKT-057..061 adapter deliveries wire real platforms (an operation
+   * against a platform with no registered adapter is refused
+   * fail-closed). The conformance suite supplies the DISCLOSED reference
+   * in-memory double through this seam (a test double at the provider
+   * boundary ONLY — the contract host under test is fully real).
+   */
+  readonly socialPlatformAdapters?: ReadonlyArray<SocialPlatformAdapter> | undefined;
+  /**
+   * MKT-056: additional INTEGRATION ADAPTER instances appended to the
+   * /integrations registry (the socialAccountFlows composition
+   * precedent). EMPTY by default — the production adapter set is the
+   * first-party list below. The social-adapter conformance suite
+   * supplies the disclosed stub integration adapter of the reference
+   * platform through this seam (the connection pipe of the platform
+   * under test); future platform deliveries reuse the seam for their
+   * platform's integration pipe during conformance runs before their
+   * production wiring lands.
+   */
+  readonly integrationAdapters?: ReadonlyArray<IntegrationAdapter> | undefined;
   /**
    * MKT-069: an override ProductPageReader for the /product-intelligence
    * module (the socialAccountFlows composition precedent). UNSET by
@@ -855,6 +893,11 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
           ? {}
           : { grantedCapabilityKeys: config.commerceGrantedCapabilities }),
       }),
+      // MKT-056: the disclosed composition seam — additional integration
+      // adapters arrive as DATA (the conformance-suite stub pipe of the
+      // platform under test; future platform deliveries during their
+      // conformance runs). EMPTY in the production default.
+      ...(options.integrationAdapters ?? []),
       new CreatorPlatformAdapter({ http: httpCalls }),
     ],
   });
@@ -1175,6 +1218,11 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     policies,
     workspaceOwnership: workspaces,
     flows: options.socialAccountFlows ?? [],
+    // MKT-056: the social platform adapter registry — EMPTY in the
+    // production composition until the MKT-057..061 platform deliveries
+    // (fail-closed until then; the disclosed composition seam is
+    // AppOptions.socialPlatformAdapters).
+    socialAdapters: options.socialPlatformAdapters ?? [],
   });
 
   // MKT-068: /notification-delivery — the Notification Delivery Plane

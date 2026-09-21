@@ -489,14 +489,19 @@ test('MKT-055 static: the disclosed spec registration exists — §6 line + §6 
     .sort();
   // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
   // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
-  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so 046 is
-  // now fourth-to-last in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
-  // The MKT-063 /content-rights sibling delivery appends 051 after 049
-  // (the same additive precedent — this module's positions shift once more).
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), and the
+  // MKT-056 social-adapter-contract delivery appends ITS OWN 050 after
+  // 049 (this module's capability-plane extension — the number kept per
+  // the dispatch disclosure), and the MKT-063 /content-rights delivery
+  // appends 051, so 046 is now sixth-to-last in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '049_commerce_capabilities.sql');
+  // The MKT-056 social-adapter-contract delivery appends ITS OWN 050 and
+  // the MKT-063 /content-rights sibling delivery appends 051 (the same
+  // additive precedent — this module's positions shift once more).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '050_social_adapter_contract.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '051_content_rights.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly socialAccounts: SocialAccountsModuleApi'), 'ApplicationModules.socialAccounts');
