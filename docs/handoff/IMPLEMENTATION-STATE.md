@@ -2,12 +2,13 @@
 
 Repository: payswapdotorg/MOS
 Architecture: v1.6 FROZEN
-Implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
-Current main handoff head: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+Current main HEAD: 575f56df363d64eefddef32ea4e7fbd8d18add8d
+Last source-audited implementation tree: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
+Accepted implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 Current production deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
 Current production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
-Production contains the accepted implementation baseline. Current main is four documentation/handoff commits ahead of production.
-Additional main commits after the implementation baseline are documentation/handoff only.
+Production contains the accepted implementation baseline by verified ancestry.
+Post-baseline commits on main are documentation/handoff only.
 Maximum active implementation workers: 3
 
 ## Status
@@ -46,33 +47,65 @@ The previous console-source P0 is resolved.
 - ☐ MKT-077 — UGC and Creator Offer Model (optional)
 - ☐ MKT-078 — Human Amplification Optimization (optional)
 
-## Current production truth
+## Deployment truth
 
-Production is Git-deployed and READY.
+- Vercel project: mos-product
+- Production alias: https://mos-product.vercel.app
+- Production source: Git
+- Production state: READY
+- Production deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
+- Production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
+- Vercel runtime-error query for the selected 24h window: no runtime errors found.
+- Accepted implementation baseline is already present in production.
+- No open PRs at audit time.
 
-Production currently runs c6a35db9709cf0b343221952f724bc52cd7ddd4f, which is five implementation commits behind the accepted implementation baseline 1ef58f86afa0220a7fd546ad03c84bfb82e4656b. The current main branch is further ahead only because subsequent commits are documentation/handoff updates.
+## Provider truth
 
-MKT-064 is included in the accepted implementation baseline and has a READY preview; it is not yet in the current production deployment.
-
-## UX conclusion
-
-The live/recorded experience remains v1.5 operations-first. The v1.6 outcome-first mission model is not yet discoverable.
-
-The canonical journey simulation and UX work orders are in docs/handoff/UX-DISCOVERY-V1.6.md and docs/handoff/EXECUTION-PLAN.md.
-
-## Deployment conclusion
-
-Confirmed production provider:
+Confirmed current production provider:
 - Vercel
 
-Not proven as current production dependencies:
+Not proven from repository/deployment metadata:
 - exact Vercel billing tier;
 - production Postgres provider;
-- Cloudflare R2;
-- Upstash;
-- Apify;
-- Render.
+- production object storage provider;
+- production Redis provider;
+- production research provider.
 
-## Completion condition
+Therefore do not mark Neon, R2, Upstash, Apify or Render as current production dependencies until account/environment evidence exists.
 
-Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted implementation baseline, async worker restart/recovery is proven, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
+## UX truth
+
+Current production authentication is discoverable.
+
+Current authenticated information architecture remains:
+Command Center → Clients → Attention → Profit Intelligence → Human Work → Apps → Administration.
+
+Recorded v1.5 E2E evidence remains:
+- signup 14/14 PASS
+- owner/operator 28/28 PASS
+- client 13/13 PASS after the Evidence rendering fix
+- human-agent 11/11 PASS
+- app-lifecycle 13/13 PASS
+- tenant-isolation 23/23 PASS
+- responsive 15/15 PASS after the mobile fixes
+
+These are existing evidence records, not fresh click-by-click browser evidence from this audit.
+
+The v1.6 outcome-first surface is not yet discoverable. See:
+- docs/handoff/UX-DISCOVERY-V1.6.md
+- docs/handoff/EXECUTION-PLAN.md
+
+## Handoff rule
+
+Workers MUST read:
+1. AGENTS.md
+2. spec/architecture-v1.6.md
+3. spec/architecture-lock-v1.6.md
+4. spec/frozen-manifest-v1.6.json
+5. spec/effective-backlog-v1.6.md
+6. docs/handoff/EXECUTION-PLAN.md
+7. docs/handoff/UX-DISCOVERY-V1.6.md
+8. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+9. docs/handoff/WORKER-CONTRACT.md
+
+No Work Item is complete until source + migration + architecture tests + unit/integration tests + appropriate runtime/browser/deployment evidence agree.
