@@ -1,80 +1,78 @@
 # MOS Unified Worker Contract — v1.5 + v1.6
 
-Workers operate under the Tech Lead. Workers do not own architecture, dependency scheduling or final acceptance.
+Workers operate under the Tech Lead.
 
 ## Non-negotiable
 
-- v1.6 architecture is frozen; v1.5 remains frozen except for explicit v1.6 supersessions.
-- The repository is the implementation source of truth.
-- Reported completion is not evidence; verify source, tests, migrations, Git history and runtime behavior.
-- PostgreSQL/MOS APIs remain authoritative.
-- No frontend, App, Extension, human agent, model, worker or provider becomes an alternate MOS authority.
-- Server-side authorization remains authoritative.
-- No provider SDK leakage into core domain/application modules.
+- v1.6 architecture is frozen.
+- Repository is source of truth.
+- MKT status is not accepted without objective evidence.
+- UI is presentation over MOS authorities.
+- No provider SDK leakage into core modules.
 - No second Workflow/Execution engine.
 - No second human marketplace or payment authority.
 - Human amplification is optional and non-blocking.
 
-## Before coding
+## UX rules
 
-1. Inspect the current branch/main, open PRs and exact changed-file surface.
-2. Read the unified `docs/handoff/EXECUTION-PLAN.md`.
-3. Read the unified `docs/handoff/IMPLEMENTATION-STATE.md`.
-4. Read this contract.
-5. Read the exact frozen architecture/backlog/dependency documents for the Work Item.
-6. Verify all upstream dependencies are VERIFIED, not merely documented as complete.
-7. Confirm ownership with the other two active workers.
+MOS must be outcome-first.
 
-## Worker selection rule
+Primary concepts:
+- Grow an audience
+- Market a product
+- Find a product to sell
+- Generate leads
+- Generate revenue
+- Continue a mission
 
-The Tech Lead dispatches the highest-value READY work item whose dependencies are VERIFIED and whose changed-file surface does not conflict with active workers.
+Internal objects appear as contextual drill-downs.
 
-Do not wait for an entire version to complete when an independent item is ready.
+Every empty state explains:
+1. what is missing;
+2. why it matters;
+3. what to do next.
 
-## v1.6 human-growth rules
+Every blocked state exposes:
+- blocker;
+- evidence basis;
+- required action;
+- resume path.
+
+## Visual direction
+
+Use a calm warm-light surface, soft graphite text, restrained teal/green healthy state, amber warning, red failure, generous whitespace, minimal chrome and progressive disclosure, inspired by the interaction language of ShareNet.
+
+Avoid dense dashboard-first presentation, gradients, glassmorphism, raw JSON and jargon-heavy first-run screens.
+
+## Browser verification
+
+Every new major journey must use real API calls and verify:
+
+- owner/operator permissions;
+- empty and first-run states;
+- 390x844;
+- 1280x800;
+- zero horizontal overflow;
+- zero browser/page errors;
+- no raw JSON;
+- explicit next action for empty/error/blocked states.
+
+## Human-growth rules
 
 Human UGC/creator work can improve distribution but is not a required execution path.
 
-A worker must not:
+When unavailable, the system must continue, replan, pause, notify or terminate truthfully.
 
-- make Growth Mission activation depend on a human agent;
-- make creator-offer acceptance a prerequisite for automated distribution;
-- assume human budget exists;
-- treat lack of offers/agents as a system failure;
-- introduce fake engagement, fabricated testimonials, impersonation or anti-abuse bypass;
-- turn compensation terms into payment settlement authority.
+A worker may treat human work as a hard blocker only when a specific rights/policy/capability gate genuinely requires approval.
 
-When human work is unavailable, the system must remain capable of selecting non-human treatments, reallocation, pause, notification or a truthful terminal state.
+## PR rules
 
-Human work becomes a hard blocker only when the mission explicitly reaches a policy/rights/capability gate that genuinely requires a human approval. Represent that state explicitly.
-
-## Frontend-specific
-
-- Use authoritative API contracts; do not invent mock-only authority endpoints.
-- Never recompute derived Profit Intelligence figures in the browser.
-- Never infer authorization from client state.
-- Preserve exact App Version and execution identities in history.
-- Keep UNKNOWN execution outcomes unresolved.
-- Show source/rationale/action-contract context for AI/Growth Operator recommendations.
-- UI is presentation only.
-
-## Verification
-
-Report exact commands, exit status, screenshots/browser observations where appropriate, API responses where required, database migration evidence and environment limitations.
-
-A green unit/UI test without production-backed authority behavior is not sufficient evidence of completion.
-
-## Pull request
-
-Every implementation PR must:
-
-- target current `main`;
-- name the Work Item(s);
+Every PR must:
+- target current main;
+- state Work Item(s);
 - list changed files;
 - map acceptance criteria to evidence;
-- show exact verification commands/results;
-- disclose external/provider/environment limits;
-- avoid unrelated refactors;
-- state whether the work affects the core autonomous path or the optional human-amplification branch.
-
-The Tech Lead and Architect independently decide acceptance.
+- show exact verification;
+- disclose provider/environment limits;
+- identify core-autonomous vs optional-human work;
+- include browser journey evidence for presentation changes.
