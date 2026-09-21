@@ -11,26 +11,29 @@ This repository is the architecture and implementation source of truth for MOS. 
 5. spec/change-request-006.md
 6. spec/effective-backlog-v1.6.md
 7. spec/module-dependency-matrix-v1.6.md
-8. the applicable v1.5 frozen documents and explicit supersessions
+8. applicable v1.5 frozen documents and explicit supersessions
 9. spec/effective-backlog-v1.5.md
 10. applicable v1.5 dependency / traceability / security / module matrices
 11. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
 12. docs/product/PRODUCT-CONSOLE-V1.6.md
-13. docs/handoff/IMPLEMENTATION-STATE.md
-14. docs/handoff/EXECUTION-PLAN.md
-15. docs/handoff/WORKER-CONTRACT.md
-16. docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md
-17. the exact Work Item / task
+13. docs/handoff/UX-DISCOVERY-V1.6.md
+14. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+15. docs/handoff/IMPLEMENTATION-STATE.md
+16. docs/handoff/EXECUTION-PLAN.md
+17. docs/handoff/WORKER-CONTRACT.md
+18. docs/handoff/CONSOLE-SOURCE-RECONCILIATION.md
+19. the exact Work Item / task
 
 Actual Git history, source, tests, migrations and provider verification outrank stale coordination documents.
 
 ## Unified implementation rules
 
-- v1.5 MKT-001..MKT-052 are dependencies only after objective verification; do not trust "accepted" labels alone.
-- v1.5 and v1.6 must be implemented as one program under docs/handoff/EXECUTION-PLAN.md, not as two independent prompts.
+- v1.5 MKT-001..MKT-052 are dependencies only after objective verification; do not trust accepted labels alone.
+- v1.5 and v1.6 are one implementation program under docs/handoff/EXECUTION-PLAN.md, not two independent prompts.
 - Growth Mission and Growth Operator may orchestrate, but never become a second workflow or execution engine.
 - Social, product, commerce and transformation providers remain behind explicit capability boundaries.
 - Optional human growth never becomes a required dependency for mission activation, core distribution, product marketing, commerce discovery or final autonomy proof.
+- The old console-source P0 is resolved. Do not recreate that recovery work unless current Git/Vercel evidence contradicts this state.
 
 ## Authority rules
 
@@ -46,6 +49,16 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Domain Packs use core authorities and may not create parallel engines.
 - Apps use server capabilities and may own only explicitly bounded app-domain state.
 - Growth Mission and Growth Operator may orchestrate, but never become a second workflow or execution engine.
+
+## UX rules
+
+- User-facing implementation is outcome-first: Grow, Market, Find a Product, Leads, Revenue, Continue Mission.
+- Internal MOS objects appear through contextual progressive disclosure.
+- Every empty/error/blocked state must expose an actionable next step.
+- Mission UX must expose Now, Next, Why, evidence basis and learning.
+- Human growth must appear as an optional treatment inside missions, not as a platform requirement.
+- Presentation changes require real browser journey evidence at 390x844 and 1280x800.
+- Never expose raw JSON as the default user-facing rendering.
 
 ## v1.6 growth-autonomy rules
 
@@ -83,6 +96,7 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - AI/Growth Operator recommendations must expose source/rationale/action-contract context.
 - UNKNOWN execution outcomes remain unresolved and visible as reconciliation states.
 - Integrations are discovered contextually through existing Integration/App contracts.
+- The visual direction is calm, warm-light, whitespace-forward and progressively disclosed, inspired by the interaction language of ShareNet without copying its implementation.
 
 ## Evidence rule
 
