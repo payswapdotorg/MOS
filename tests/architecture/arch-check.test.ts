@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (41 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 40);
+  assert.equal(modules.length, 41);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -48,7 +48,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
     [
       'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
-      'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
+      'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'reporting', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
@@ -151,6 +151,17 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // /policies per-channel gates and the /credentials vault — the frozen
   // v1.6 row):
   assert.deepEqual(matrix['notification-delivery'], ['notifications', 'policies', 'credentials']);
+  // The MKT-054 additive matrix line (the /growth-operator persistent
+  // goal-pursuit controller over the mission/goal/delegation/record
+  // authorities — the DISCLOSED currently-satisfiable subset of the
+  // frozen v1.6 row; /platform-health joins at MKT-066 time, and
+  // /playbooks + /deployments are listed allowances the MVP loop does
+  // not yet exercise):
+  assert.deepEqual(matrix['growth-operator'], [
+    'growth-missions', 'goals', 'playbooks', 'deployments', 'workflows',
+    'executions', 'evidence', 'experiments', 'learnings', 'decisions',
+    'policies',
+  ]);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -261,6 +272,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // notification-delivery boundary a MISSING_MODULE violation (the
     // same additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/notification-delivery',
+    // The MKT-054 /growth-operator §6 registration (the v1.6 Growth
+    // Operator) makes the fixture's missing growth-operator boundary a
+    // MISSING_MODULE violation (the same additive count each sibling
+    // promotion adds).
+    'MISSING_MODULE|src/modules/growth-operator',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -313,10 +329,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // /notification-delivery registered by the MKT-068 delivery, all per the
   // disclosed promotion precedent — PLUS the
   // disclosed MKT-047 v1.5 composition provision 'apps' in
-  // tools/arch-check/checker.ts); the fixture provides
+  // tools/arch-check/checker.ts, and /growth-operator registered by the
+  // MKT-054 delivery — the same additive count each sibling promotion
+  // adds); the fixture provides
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    41,
+    42,
     'no unexpected violation categories may be reported',
   );
 

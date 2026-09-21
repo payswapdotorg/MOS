@@ -791,6 +791,32 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // authority accessed through the adapter port — the migration-029
     // store pattern extended, never a second commerce authority).
     '049_commerce_capabilities.sql',
+    // MKT-054 (Growth Operator) appends the growth-operator migration (050
+    // — the number is PRE-ASSIGNED to this Work Item; 051 is reserved for
+    // a sibling delivery): the /growth-operator persistent controller
+    // layer — the per-mission controller records (UNIQUE mission fence;
+    // the frozen state vocabulary CHECK-fenced; the budget/quota policy
+    // with the ZERO-default human-amplification inputs; the blocked-shape
+    // fence — blocked ⇒ reason + a genuine rights/policy/capability gate
+    // kind; the CAS + identity-immutability + fill-only pursuit-workflow
+    // triggers; no-DELETE), the bounded plan steps (the DETERMINISTIC
+    // idempotency key UNIQUE per mission — the no-double-dispatch fence;
+    // the identity-immutability + fill-only delegation-reference +
+    // frozen-lifecycle-edges + observation-exactly-once triggers;
+    // no-DELETE), the append-only operator decision tail (the gapless
+    // per-mission sequence; UPDATE/DELETE rejected) and the append-only
+    // state-transition audit trail (the frozen transition-pair +
+    // current-state-match + init-first + gate-kind-shape +
+    // terminal-cause-shape triggers; UPDATE/DELETE rejected); NO
+    // task/job/dispatch/queue/sandbox-lease/execution-lifecycle table of
+    // its own is created (architecture-lock-v1.6.md rule 17 — every
+    // delegated object lives in the EXISTING authorities' tables, created
+    // through their public commands; the FK anchors to
+    // experiments/decisions/workflows/executions/evidence are
+    // REFERENCES ONLY), NO human-marketplace table is created or
+    // referenced (rules 43/44 — the human-amplification inputs are
+    // budget/evidence columns on the controller row, zero by default).
+    '050_growth_operator.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

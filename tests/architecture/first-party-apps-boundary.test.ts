@@ -185,7 +185,7 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   // MKT-069 /product-intelligence and MKT-071 commerce-capability sibling
   // deliveries append 047, 048 and 049 after 046 (the sibling-promotion
   // precedent — this delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-6), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql'], 'the migration list tail carries the sibling promotions only');});
+  assert.deepEqual(migrations.slice(-7), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_growth_operator.sql'], 'the migration list tail carries the sibling promotions only (the MKT-054 /growth-operator delivery appends 050 after 049)');});
 
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
@@ -330,4 +330,4 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   // MKT-055 /social-accounts, MKT-068 /notification-delivery and
   // MKT-069 /product-intelligence deliveries append their registrations
   // after this module — the sibling promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence },'));});
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator },'));});

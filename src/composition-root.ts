@@ -435,6 +435,15 @@ import { createFirstPartyAppsModule } from './modules/first-party-apps/public.ts
 // Growth Operator is MKT-054, a later Work Item that composes these
 // module commands server-side).
 import { createGrowthMissionsModule } from './modules/growth-missions/public.ts';
+// MKT-054: /growth-operator — the Growth Operator authority (the
+// persistent goal-pursuit controller over the MKT-053 mission model:
+// restart-safe, idempotent replanning, blocked/paused/resume semantics,
+// bounded next-experiment/action selection through the existing
+// Workflow/Execution authorities, zero-human robustness — never a second
+// workflow or execution engine; see the wiring point below for the
+// structural-port posture).
+import { createGrowthOperatorModule } from './modules/growth-operator/public.ts';
+import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator/public.ts';
 // MKT-055: /social-accounts — the Social Account and OAuth Connection
 // Model authority (the account identity bindings over EXISTING authorized
 // integrations, the append-oriented OAuth authorization-grant lifecycle
@@ -533,6 +542,17 @@ export interface AppOptions {
     readonly credentialReferenceId: string;
     readonly fromAddress: string;
   } | undefined;
+  /**
+   * MKT-054: an override delegation gate for the /growth-operator module
+   * (the productPageReader composition precedent). UNSET by default — the
+   * production composition wires the /policies-composed gate (dimension
+   * 'tools', operation 'growth-operator.delegate'). Integration tests
+   * supply the DISCLOSED rights-gate double through this seam (a test
+   * double at the gate boundary ONLY — the controller under test is fully
+   * real; the real /content-rights authority composes this same port when
+   * MKT-063 lands).
+   */
+  readonly growthOperatorGate?: GrowthOperatorDelegationGatePort | undefined;
 }
 
 /**
@@ -1365,6 +1385,58 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     aiRuntime,
   });
 
+  // MKT-054: /growth-operator — the Growth Operator authority (see the
+  // import block above). The persistent per-mission goal-pursuit
+  // CONTROLLER over the MKT-053 mission model: every consumed public
+  // contract arrives through the module's declared narrow STRUCTURAL
+  // PORTS (the /growth-missions precedent — zero cross-module imports
+  // exist inside src/modules/growth-operator, proven by tools/arch-check
+  // and the boundary tests; the real module instances satisfy the port
+  // types structurally at this wiring point). The /workspaces structural
+  // port is the DISCLOSED off-matrix wiring (the /notification-delivery
+  // MKT-068 precedent — the canonical pursuit-scope resolution, READ-ONLY);
+  // the /executions port deliberately exposes NO transition method so the
+  // operator structurally cannot own execution lifecycle (the runtime
+  // plane drives executions); the delegation gate defaults to the
+  // /policies-composed implementation (integration tests supply the
+  // disclosed rights-gate double through AppOptions.growthOperatorGate).
+  // The controller advances mission state ONLY through the mission
+  // authority's own public command; all physical work flows through the
+  // EXISTING /workflows + /executions authorities (never a second
+  // execution engine — architecture-lock-v1.6.md rule 17).
+  const growthOperatorPursuitScope = {
+    // The off-matrix structural port (the MKT-068 recipient-resolution
+    // precedent): a READ-ONLY wrapper over the canonical /workspaces
+    // ownership resolution — the pursuit-scope chain (workspace → client →
+    // agency) the controller validates against the mission's agency.
+    resolveWorkspace: async (workspaceId: string) => {
+      const ownership = await workspaces.resolveWorkspaceOwnership(workspaceId);
+      if (ownership === null) return null;
+      return {
+        workspaceId: ownership.scope.workspaceId,
+        clientId: ownership.scope.clientId,
+        agencyId: ownership.scope.agencyId,
+        status: ownership.workspace.status,
+      };
+    },
+  };
+  const growthOperator = createGrowthOperatorModule({
+    db,
+    clock,
+    ids,
+    missions: growthMissions,
+    goals,
+    workspaces: growthOperatorPursuitScope,
+    workflows,
+    executions,
+    experiments,
+    evidence,
+    decisions,
+    learnings,
+    policies,
+    delegationGate: options.growthOperatorGate,
+  });
+
   // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
   // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
   // (resolveDecisionOwnership + getDecision); the playbook and
@@ -1439,7 +1511,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator },
     runtime: { aiProvider },
   };
 }

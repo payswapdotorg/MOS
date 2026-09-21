@@ -217,6 +217,13 @@ import type { FirstPartyAppsModuleApi } from '../modules/first-party-apps/public
 // a replacement authority, and NO controller/scheduler/replanner: the
 // Growth Operator is MKT-054 and composes these commands server-side).
 import type { GrowthMissionsModuleApi } from '../modules/growth-missions/public.ts';
+// MKT-054: /growth-operator module contract (Growth Operator — the
+// persistent goal-pursuit controller over the MKT-053 mission model:
+// restart-safe, idempotent replanning, blocked/paused/resume semantics,
+// bounded next-experiment/action selection through the existing
+// Workflow/Execution authorities, zero-human robustness; never a second
+// execution engine).
+import type { GrowthOperatorModuleApi } from '../modules/growth-operator/public.ts';
 // MKT-055: /social-accounts module contract (the Social Account and OAuth
 // Connection Model — the account identity bindings over EXISTING
 // authorized integrations, the append-oriented OAuth authorization-grant
@@ -476,4 +483,16 @@ export interface ApplicationModules {
   // contract — in-app + email MVP; delivery facts only, never
   // task/action state: boundary rule 9).
   readonly notificationDelivery: NotificationDeliveryModuleApi;
+  // MKT-054: the Growth Operator authority (the persistent per-mission
+  // goal-pursuit CONTROLLER — the frozen controller state machine with
+  // resume semantics and the append-only transition audit trail, the
+  // deterministic idempotent replanning over a bounded versioned strategy
+  // space, the budget/quota-aware bounded delegation that DELEGATES ALL
+  // PHYSICAL WORK to the existing /workflows + /executions authorities,
+  // and the zero-human robustness: fully functional at zero
+  // human-amplification budget/capacity, the optional human arm
+  // considered-and-recorded, never a dependency; never a second workflow
+  // or execution engine — no task pickup, no execution lifecycle, no
+  // sandbox leasing, no dispatch/queue submit live on this contract).
+  readonly growthOperator: GrowthOperatorModuleApi;
 }
