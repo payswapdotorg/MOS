@@ -538,8 +538,8 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
     'the composition root constructs the module',
   );
   assert.ok(
-    compositionRoot.includes('growthOperator },'),
-    'the composition root registers the module in the modules map',
+    compositionRoot.includes('growthOperator, contentRights },'),
+    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge)',
   );
   assert.ok(
     compositionRoot.includes('options.growthOperatorGate'),

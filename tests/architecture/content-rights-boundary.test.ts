@@ -564,9 +564,10 @@ test('MKT-063: the disclosed spec registration exists (the §6 line + sentence, 
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 1], '051_content_rights.sql');
-  assert.equal(listEntries[listEntries.length - 2], '050_social_adapter_contract.sql');
-  assert.equal(listEntries[listEntries.length - 3], '049_commerce_capabilities.sql');
+  assert.equal(listEntries[listEntries.length - 1], '052_growth_operator.sql');
+  assert.equal(listEntries[listEntries.length - 2], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length - 3], '050_social_adapter_contract.sql');
+  assert.equal(listEntries[listEntries.length - 4], '049_commerce_capabilities.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '051_content_rights.sql')));
