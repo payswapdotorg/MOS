@@ -456,13 +456,15 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
     matrixSpec.includes('/social-accounts ──→ /integrations, /credentials, /policies, /workspaces'),
     'the /social-accounts matrix row is the unchanged MKT-055 registration',
   );
-  // 050 holds the numeric tail position (the disclosed number — sibling
-  // workers were told the tail may collide; the Tech Lead reconciles).
+  // 050 holds its numeric position SECOND-TO-LAST (the disclosed number
+  // — the MKT-063 sibling appended 051 after it at merge; the Tech Lead
+  // reconciled the sibling tails).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------

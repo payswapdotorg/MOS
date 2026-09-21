@@ -652,7 +652,7 @@ export interface ContentRightsModuleDeps {
 /**
  * The destination-platform policy key of a publication-gate evaluation:
  * the operation label the /policies gate evaluates (e.g.
- * 'content.rights.publication.youtube'). A destination not sanctioned by
+ * 'content.rights.publication.<platform-key>'). A destination not sanctioned by
  * policy FAILS CLOSED into a blocked gate result (never a silent pass —
  * the destinationPolicyGateRequired hard rule).
  */
