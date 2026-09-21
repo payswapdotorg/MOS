@@ -576,16 +576,21 @@ test('MKT-053 AC-9 static: the disclosed spec registration exists — §6 line +
   // MKT-056 social-adapter-contract delivery appends 050 after 049 and
   // the MKT-063 /content-rights delivery appends 051, so 045/046 shift
   // five positions earlier in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '049_commerce_capabilities.sql');
   // The MKT-056 social-adapter-contract delivery appends 050 and the
   // MKT-063 /content-rights sibling delivery appends 051 (the same
   // additive precedent — this module's positions shift once more).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '051_content_rights.sql');
+  // The MKT-064 /content-assets sibling delivery appends 053 after 051
+  // (052 is deliberately left for the sibling MKT-054's renumber-at-
+  // merge — the additive precedent; this module's positions shift once
+  // more).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '053_content_assets.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly growthMissions: GrowthMissionsModuleApi'), 'ApplicationModules.growthMissions');
   assert.ok(applicationTs.includes("from '../modules/growth-missions/public.ts'"), 'the module public entry import');

@@ -188,7 +188,7 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   // capability-plane extension) and the MKT-063 /content-rights
   // delivery appends 051 (the sibling-promotion precedent — this
   // delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-8), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql'], 'the migration list tail carries the sibling promotions only');});
+  assert.deepEqual(migrations.slice(-8), ['045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '053_content_assets.sql'], 'the migration list tail carries the sibling promotions only (the MKT-064 delivery appends 053 after 051 — 052 is left for the sibling MKT-054 renumber-at-merge)');});
 
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
@@ -332,6 +332,8 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   // The modules map carries the contract (the MKT-053 /growth-missions,
   // MKT-055 /social-accounts, MKT-068 /notification-delivery and
   // MKT-069 /product-intelligence deliveries append their registrations
-  // after this module, and the MKT-063 /content-rights delivery appends
-  // its registration after those — the sibling promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, contentRights },'));});
+  // after this module, the MKT-063 /content-rights delivery appends its
+  // registration after those and the MKT-064 /content-assets delivery
+  // appends its registration after that — the sibling promotion
+  // precedent).
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, contentRights, contentAssets },'));});

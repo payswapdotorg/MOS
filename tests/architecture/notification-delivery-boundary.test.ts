@@ -424,15 +424,20 @@ test('MKT-068: the disclosed spec registration exists (the §6 line + sentence, 
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 6], '046_social_accounts.sql');
-  assert.equal(listEntries[listEntries.length - 5], '047_notification_delivery.sql');
-  assert.equal(listEntries[listEntries.length - 4], '048_product_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 3], '049_commerce_capabilities.sql');
+  assert.equal(listEntries[listEntries.length - 7], '046_social_accounts.sql');
+  assert.equal(listEntries[listEntries.length - 6], '047_notification_delivery.sql');
+  assert.equal(listEntries[listEntries.length - 5], '048_product_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 4], '049_commerce_capabilities.sql');
   // The MKT-056 social-adapter-contract delivery appends 050 and the
   // MKT-063 /content-rights sibling delivery appends 051 (the same
   // additive precedent — this module's positions shift once more).
-  assert.equal(listEntries[listEntries.length - 2], '050_social_adapter_contract.sql');
-  assert.equal(listEntries[listEntries.length - 1], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length - 3], '050_social_adapter_contract.sql');
+  assert.equal(listEntries[listEntries.length - 2], '051_content_rights.sql');
+  // The MKT-064 /content-assets sibling delivery appends 053 after 051
+  // (052 is deliberately left for the sibling MKT-054's renumber-at-
+  // merge — the additive precedent; this module's positions shift once
+  // more).
+  assert.equal(listEntries[listEntries.length - 1], '053_content_assets.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '047_notification_delivery.sql')));

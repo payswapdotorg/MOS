@@ -25,7 +25,7 @@ const specDir = path.join(repoRoot, 'spec');
 
 test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 41);
+  assert.equal(modules.length, 42);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -45,10 +45,13 @@ test('frozen module set is parsed from spec/architecture.md §6 (39 modules)', (
   // Plane registration).
   // The MKT-063 delivery appends /content-rights — the v1.6 Content
   // Rights and Provenance registration.
+  // The MKT-064 delivery appends /content-assets — the v1.6 Content
+  // Asset and Transformation Authority registration (the mutual seam
+  // completion of the 063 registration).
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-rights', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-rights', 'credentials',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
@@ -155,10 +158,17 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   assert.deepEqual(matrix['notification-delivery'], ['notifications', 'policies', 'credentials']);
   // The MKT-063 additive matrix line (the /content-rights Content
   // Rights and Provenance authority over the /evidence canonical
-  // resolution and the /policies destination gate — the DISCLOSED
-  // currently-satisfiable subset of the frozen v1.6 row;
-  // /content-assets joins at MKT-064 time):
-  assert.deepEqual(matrix['content-rights'], ['evidence', 'policies']);
+  // resolution, the /policies destination gate and the /content-assets
+  // derivation seam — the disclosed subset was COMPLETED at MKT-064
+  // time by the mutual registration):
+  assert.deepEqual(matrix['content-rights'], ['evidence', 'policies', 'content-assets']);
+  // The MKT-064 additive matrix line (the /content-assets Content Asset
+  // and Transformation Authority over the /executions transformation
+  // flow and the /content-rights derivation seam — the DISCLOSED
+  // module-importable subset of the frozen v1.6 row: /object-storage is
+  // the platform ObjectStore port direction and carries no matrix
+  // weight):
+  assert.deepEqual(matrix['content-assets'], ['executions', 'content-rights']);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -274,6 +284,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // content-rights boundary a MISSING_MODULE violation (the same
     // additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/content-rights',
+    // The MKT-064 /content-assets §6 registration (the v1.6 Content
+    // Asset and Transformation authority) makes the fixture's missing
+    // content-assets boundary a MISSING_MODULE violation (the same
+    // additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/content-assets',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -329,10 +344,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // tools/arch-check/checker.ts); the fixture provides
   // /content-rights registered by the MKT-063 delivery (the v1.6
   // Content Rights and Provenance registration — the same additive
-  // count each sibling promotion adds).
+  // count each sibling promotion adds), PLUS /content-assets
+  // registered by the MKT-064 delivery (the v1.6 Content Asset and
+  // Transformation Authority registration).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    42,
+    43,
     'no unexpected violation categories may be reported',
   );
 
