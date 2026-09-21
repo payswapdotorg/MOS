@@ -37,6 +37,7 @@ export type ClientWorkspaceTab =
 export type AppsTab = "installed" | "marketplace" | "first-party" | "developer";
 
 export type MosView =
+  | { kind: "home" }
   | { kind: "command-center" }
   | { kind: "clients" }
   | { kind: "client"; clientId: string; tab: ClientWorkspaceTab }
@@ -104,7 +105,7 @@ export const useMosSession = create<MosSessionState>((set, get) => ({
   authContext: null,
   agencyId: null,
   knownAgencyIds: [],
-  view: { kind: "command-center" },
+  view: { kind: "home" },
   booted: false,
 
   hydrate: () => {
@@ -135,7 +136,7 @@ export const useMosSession = create<MosSessionState>((set, get) => ({
     } catch {
       /* session persistence is best-effort */
     }
-    set({ token: response.token, authContext: null, view: { kind: "command-center" } });
+    set({ token: response.token, authContext: null, view: { kind: "home" } });
   },
 
   logout: async (revoke = true) => {
@@ -165,7 +166,7 @@ export const useMosSession = create<MosSessionState>((set, get) => ({
     } catch {
       /* ignore */
     }
-    set({ token: null, authContext: null, agencyId: null, knownAgencyIds: [], view: { kind: "command-center" } });
+    set({ token: null, authContext: null, agencyId: null, knownAgencyIds: [], view: { kind: "home" } });
   },
 
   setAuthContext: (context) => {
@@ -192,7 +193,7 @@ export const useMosSession = create<MosSessionState>((set, get) => ({
       ? state.knownAgencyIds
       : [agencyId, ...state.knownAgencyIds].slice(0, 12);
     persistAgency(agencyId, known);
-    set({ agencyId, knownAgencyIds: known, view: { kind: "command-center" } });
+    set({ agencyId, knownAgencyIds: known, view: { kind: "home" } });
   },
 
   navigate: (view) => set({ view }),
