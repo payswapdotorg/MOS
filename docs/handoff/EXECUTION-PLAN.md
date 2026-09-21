@@ -4,269 +4,189 @@ Architecture: v1.6 FROZEN
 Maximum concurrent implementation workers: 3
 Canonical handoff: this file
 
-## 1. Current baseline
+## 1. Current verified baseline
 
-MKT-001..MKT-052 remain the v1.5 baseline.
+v1.5:
+- ✅ MKT-001..MKT-052
 
-Verified v1.6 deliveries on current main:
+v1.6 on current main:
+- ✅ MKT-053 Growth Mission
+- ✅ MKT-054 Growth Operator
+- ✅ MKT-055 Social Account / OAuth
+- ✅ MKT-056 Social Adapter Contract
+- ✅ MKT-063 Content Rights
+- ✅ MKT-064 Content Assets / Transformations
+- ✅ MKT-068 Notifications
+- ✅ MKT-069 Product Intelligence
+- ✅ MKT-071 Commerce Catalog / Orders
 
-- MKT-053 Growth Mission and Objective Model
-- MKT-055 Social Account and OAuth Connection Model
-- MKT-068 Notification Delivery Plane
-- MKT-069 Product Intelligence
-- MKT-071 Commerce Catalog and Order Capabilities
+Not yet implemented:
+MKT-057..062, MKT-065..067, MKT-070, MKT-072..075
 
-Remaining v1.6 implementation is not complete.
-
-The previous console-source P0 is resolved. Do not recreate it.
+Optional:
+MKT-076..078
 
 ## 2. Truth-first rule
 
-Before any implementation:
-
+Before any new Work Item:
 1. inspect current main;
-2. inspect source, migrations, tests, implementation report and merged PR;
-3. classify VERIFIED / INCOMPLETE / BROKEN / BLOCKED / N/A;
-4. only VERIFIED satisfies dependency edges;
-5. never trust a completion message without objective evidence.
+2. inspect actual source, migrations and tests;
+3. inspect merged delivery evidence;
+4. classify VERIFIED / INCOMPLETE / BROKEN / BLOCKED / N/A;
+5. only VERIFIED satisfies dependencies.
+
+Do not rebuild MKT-054, MKT-056, MKT-063 or MKT-064.
 
 ## 3. Worker ownership
 
-### Worker A — platform capability plane
+### Worker A — Social platform capability plane
+Own MKT-057..MKT-061, provider runbooks, conformance, account/capability evidence, connection UX contracts and provider E2E.
 
-Own:
+### Worker B — Intelligence / optimization plane
+Own MKT-062 and MKT-065..MKT-067, mission-trace data contracts, and optional MKT-076..MKT-078.
 
-- unresolved v1.5 provider/platform gaps;
-- MKT-056..MKT-061;
-- social account UX contracts and provider runbooks;
-- provider integration fixtures and conformance tests.
+### Worker C — Mission / console / commerce / deployment
+Own MKT-070, MKT-072..MKT-075, UX-001..UX-012 and DEP-006..DEP-015.
 
-### Worker B — intelligence/content/science plane
+Only Worker C owns the shared frontend composition root.
 
-Own:
-
-- MKT-062..MKT-067;
-- research;
-- rights/provenance;
-- transformations;
-- platform health;
-- experiment analysis;
-- optional MKT-076..MKT-078;
-- mission-trace data contracts.
-
-### Worker C — mission/console/commerce/deployment plane
-
-Own:
-
-- MKT-054;
-- MKT-070, MKT-072, MKT-073, MKT-074, MKT-075;
-- UX-001..UX-012;
-- DEP-006..DEP-014;
-- final E2E orchestration.
-
-Only Worker C owns the frontend composition root at a time.
-
-## 4. New UX implementation work orders from the simulation
+## 4. UX work orders from the simulation
 
 ### UX-001 — Outcome-first Home
+Authenticated entry choices:
+Grow an audience
+Market a product
+Find a product to sell
+Generate leads
+Generate revenue
+Continue a mission
 
-Replace the current operations-only first screen with:
+Existing Command Center becomes Today / Operations.
 
-- Grow an audience
-- Market a product
-- Find a product to sell
-- Generate leads
-- Generate revenue
-- Continue a mission
+### UX-002 — Reusable Mission Creation
+Progressive flow:
+outcome -> target -> product/source/store context -> social accounts -> platform strategy -> budget -> autonomy -> optional human treatment.
 
-Keep the existing Command Center as Today / Operations.
+### UX-003 — Mission Workspace
+One primary screen for:
+Target, Progress, Now, Next, Why, Hypothesis, Experiment, Platforms, Health, Content, Rights, Transformation, Measurement, Decision, Learning, Blockers.
 
-### UX-002 — Reusable mission creation
-
-Progressively collect:
-
-1. outcome;
-2. target metric/value;
-3. product/source/store context;
-4. connected social accounts;
-5. fixed portfolio or Choose for me;
-6. content/source preferences;
-7. budget/quota;
-8. autonomy mode;
-9. optional human-treatment budget.
-
-Do not expose module names as prerequisites.
-
-### UX-003 — Mission workspace
-
-Expose:
-
-Target / Progress / Now / Next / Why / Hypothesis / Experiment / Platforms / Health / Content / Rights / Transformation / Measurement / Decision / Learning / Blockers.
-
-### UX-004 — Unified scientific trace
-
+### UX-004 — Scientific Trace
 Question -> Research -> Evidence -> Hypothesis -> Experiment -> Publication -> Measurement -> Analysis -> Decision -> Learning.
 
-Distinguish observed, inferred and causal states.
-
 ### UX-005 — Connections Center
+Social, product/source, store and notification connections with capabilities, permissions, expiry/revocation and limitations.
 
-Expose social, product/source, store and notification connections. Show capabilities, permissions, expiry/revocation and limitations.
-
-### UX-006 — Content & Rights surface
-
-Expose source, evidence basis, rights, transformation lineage, destination capability and publication status.
+### UX-006 — Content + Rights
+Source, evidence, rights, transformation lineage, destination capability and publication state before publish.
 
 ### UX-007 — Platform Health
+Descriptive observable states plus evidence basis and compliant next action. No invented hidden moderation state.
 
-Expose descriptive health state, evidence basis, confidence and compliant next action.
+### UX-008 — Human Treatment
+UGC/creator/review work appears as an optional experiment arm. Human absence never silently becomes failure.
 
-### UX-008 — Human treatment
+### UX-009 — Commerce Mission
+Market -> Candidate -> Test -> Viability -> Listing -> Traffic -> Order -> Margin -> Learning.
 
-Offer optional UGC/creator/review treatments inside a mission. Clearly show unavailable/unfunded as optional capacity, not failure.
+### UX-010 — Progressive Disclosure
+Goals, Playbooks, Deployments, Workflows, Evidence, Experiments, Decisions, Learning, Jobs and Apps remain drill-downs.
 
-### UX-009 — Commerce mission
+### UX-011 — ShareNet-inspired design
+Warm neutral/light surfaces, graphite type, restrained teal/green healthy state, amber warning, red failure, whitespace, minimal chrome, progressive disclosure.
 
-Expose Market -> Candidate -> Test -> Viability -> Listing -> Traffic -> Order -> Margin -> Learning.
+### UX-012 — Browser proof
+Every new journey uses real APIs, real authorization, 390x844 and 1280x800 checks, 0px overflow, zero page errors, no raw JSON and explicit empty/error/blocked next actions.
 
-### UX-010 — Progressive disclosure
+## 5. Dependency graph
 
-Internal architecture objects remain accessible but contextual.
-
-### UX-011 — ShareNet-inspired visual language
-
-Use warm-light surfaces, graphite text, restrained teal/green healthy state, amber warning, red failure, whitespace, minimal chrome and progressive disclosure.
-
-Avoid dashboard density, gradients, glassmorphism and raw JSON.
-
-### UX-012 — Responsive journey proof
-
-Verify every new path at 390x844 and 1280x800 with zero page errors, zero overflow and explicit empty/error/blocked next actions.
-
-## 5. Core implementation graph
-
-v1.5 verified
-  |
-  +--> MKT-053 [done] --> MKT-054
-  |
-  +--> MKT-055 [done] --> MKT-056
-                              |
-                              +--> MKT-057
-                              +--> MKT-058
-                              +--> MKT-059
-                              +--> MKT-060
-                              +--> MKT-061
-                                     |
-                                     +--> MKT-062
-                                            |
-                                            +--> MKT-063
-                                            +--> MKT-064
-                                                   |
-                                                   +--> MKT-065
+v1.5 ✅
+ |
+ +--> MKT-053 ✅ --> MKT-054 ✅
+ |
+ +--> MKT-055 ✅ --> MKT-056 ✅
+                         |
+                         +--> MKT-057 ☐
+                         +--> MKT-058 ☐
+                         +--> MKT-059 ☐
+                         +--> MKT-060 ☐
+                         +--> MKT-061 ☐
+                               |
+                               +--> MKT-062 ☐
+                                      |
+                                      +--> MKT-065 ☐
+                                             |
+                                             +--> MKT-066 ☐
+                                             +--> MKT-067 ☐
+                                                    |
+                                                    +--> MKT-070 ☐
+                                                    +--> MKT-072 ☐
+                                                    +--> MKT-073 ☐
                                                           |
-                                                          +--> MKT-067
+                                                          +--> UX-001..UX-012 ☐
                                                                  |
-                                                                 +--> MKT-070
-                                                                 +--> MKT-072
-                                                                 +--> MKT-073
+                                                                 +--> MKT-074 ☐
                                                                         |
-                                                                        +--> UX-001..UX-012
-                                                                               |
-                                                                               +--> MKT-074
-                                                                                      |
-                                                                                      +--> MKT-075
+                                                                        +--> MKT-075 ☐
 
-Independent verified:
-MKT-068 [done]
-MKT-069 [done]
-MKT-071 [done]
+Parallel satisfied foundations:
+MKT-063 ✅
+MKT-064 ✅
+MKT-068 ✅
+MKT-069 ✅
+MKT-071 ✅
 
 Optional:
-MKT-076 -> MKT-077 -> MKT-078
+MKT-076 ☐ -> MKT-077 ☐ -> MKT-078 ☐
 
-## 6. Scheduling waves
+## 6. Parallel schedule
 
 ### Wave 0
-
-Worker A:
-- verify v1.5 provider/integration surfaces;
-- start MKT-056.
-
-Worker B:
-- prepare MKT-062..064 contracts/fixtures;
-- start MKT-063/064 implementation where their dependencies allow.
-
-Worker C:
-- start UX-001/UX-002;
-- start MKT-054 preparation;
-- start DEP-006/DEP-007 provider verification.
+Worker A: verify MKT-056 and start MKT-057/MKT-058.
+Worker B: start MKT-062; consume MKT-063/MKT-064.
+Worker C: start UX-001/UX-002 over real MKT-053/MKT-055 APIs; start MKT-070 preparation; start DEP-015.
 
 ### Wave 1
-
-Worker A:
-MKT-056 -> MKT-057..061 in independently verified provider waves.
-
-Worker B:
-MKT-062 -> MKT-063/064.
-
-Worker C:
-MKT-054 + UX-003/004/005 + DEP-008/009.
+Worker A: MKT-057..061.
+Worker B: MKT-062 and then MKT-065.
+Worker C: MKT-070; UX-003/004/005; DEP-006..010.
 
 ### Wave 2
-
-Worker A:
-adapter hardening and provider evidence.
-
-Worker B:
-MKT-066/067 + UX data contracts + optional MKT-076..078.
-
-Worker C:
-MKT-070/072/073 + UX-006..011 + DEP-010..012.
+Worker A: provider hardening/evidence.
+Worker B: MKT-066/067; optional human branch; mission-trace contracts.
+Worker C: MKT-072/073; UX-006..011; DEP-011..014.
 
 ### Wave 3
+Worker C: MKT-074.
+All workers: complete browser journey battery and security regression.
+Tech Lead: MKT-075 and DEP-015 final acceptance.
 
-Worker C:
-MKT-074 + MKT-075 orchestration.
+## 7. Mandatory journeys
 
-All workers:
-full browser journeys and security regressions.
+1. signup -> mission launcher
+2. creator growth -> single platform
+3. creator growth -> multiple platforms
+4. research -> evidence -> hypothesis
+5. content -> rights -> transformation -> publish
+6. measure -> analysis -> decision -> learning
+7. platform anomaly -> compliant adaptation
+8. human-required blocker -> notification -> resume
+9. zero human budget -> autonomous continuation/replan
+10. product marketing from URL
+11. product marketing with authorized source
+12. commerce discovery without a known product
+13. viability -> listing -> traffic -> order -> margin
+14. optional human treatment -> same experiment/evidence/learning loop
+15. existing Client / Human Work / Apps / Admin
+16. mobile + desktop
 
-## 7. Mandatory acceptance journeys
+## 8. Deployment gate
 
-1. new user -> creator mission;
-2. connect one platform;
-3. connect multiple platforms;
-4. research -> evidence -> hypothesis;
-5. content candidate -> rights -> transformation -> publish;
-6. measure -> analysis -> decision -> learning;
-7. platform anomaly -> compliant adaptation;
-8. human-required blocker -> notification -> resume;
-9. zero human budget -> autonomous progress/replan;
-10. product marketing from URL;
-11. product marketing with authorized repository;
-12. commerce discovery from unknown niche;
-13. viable product -> listing -> traffic -> order -> margin;
-14. optional human treatment enters experiment loop;
-15. existing Client / Human Work / Apps / Admin journeys;
-16. mobile + desktop.
+Current production is READY but 5 commits behind main.
 
-## 8. Deployment
-
-Use docs/handoff/DEPLOYMENT-PLAN-V1.6.md.
-
-Do not document a provider as current until the Tech Lead verifies provider account, environment and billing state.
+DEP-015 must promote only an accepted main SHA after:
+CI -> preview -> browser smoke -> migration check -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
 
 ## 9. Final completion
 
-The program is complete only when:
-
-- all required v1.5 items remain VERIFIED;
-- MKT-054..MKT-075 are VERIFIED;
-- UX-001..UX-012 are VERIFIED;
-- autonomous operation works with zero human budget;
-- all five MVP social adapters have provider evidence;
-- rights/distribution/health/experimentation are proven;
-- product marketing and commerce discovery pass;
-- production deployment is repository-reproducible;
-- deployment and cost limits are monitored;
-- optional human-growth work, if implemented, remains non-blocking.
+All required v1.5 verified; MKT-057..075 verified; UX-001..012 verified; zero-human-budget autonomy proven; five adapters evidenced; rights/distribution/health/analysis proven; product marketing and commerce discovery proven; async worker restart/recovery proven; production runs the accepted main SHA; provider/account/billing state recorded; MKT-076..078 remain optional.
