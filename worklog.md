@@ -152,3 +152,16 @@ Work Log:
 
 Stage Summary:
 - MKT-054 delivered at bf35bb6: controller core + delegation ports + migration 050 + spec registration (ef1e2bf), the three test suites (05375c3), the runbook (bf35bb6). Gates: tsc 0 / lint 0 / arch:check 0 (512 files, 42 enforced modules) / unit 1068/1068 / architecture 603/603 / integration full-coverage serial chunks (1010 executions; 1 environmental load-flake in the pre-existing notification-delivery suite, passes isolated + on re-run, different module). Disclosed: the 066/070/072/075 seams, the human-arm non-delegability (MKT-076..078), the satisfiable-subset matrix row, no HTTP surface (MKT-074 lane), no scheduler/notification wiring.
+---
+Task ID: MKT-064-harvest
+Agent: Z.ai Code (main agent, Tech Lead — unified v1.6 handoff)
+Task: Harvest Worker B's MKT-064 delivery (branch mkt/064-worker-delivery @ 4608056) over main 039743a
+
+Work Log:
+- Base verified: the worker forked 06b2417 (post-063-merge); main had since merged 054 (growth-operator, migration renumbered 052) — the runbook's disclosed sibling-collision materialised exactly as predicted (14 conflicts).
+- Reconciled to merged-tree truth: spec matrix rows (growth-operator + content-rights COMPLETED direction set + content-assets), composition-root registers growthOperator + contentRights + contentAssets, arch-check 43 modules / 44 fixture violations, infra-adapters tail 050..053, nine sibling boundary-tail batteries re-pinned (050=-4 .. 053=-1), 064/054 own registration tests re-pinned to the merged tail (051=-3, 052=-2), growth-operator composition-root adjacency extended with contentAssets, first-party-apps deepEqual slice(-10) + ordering string.
+- Gate battery on the merged tree: tsc 0 errors / eslint clean / arch:check 44 enforced modules, 540 files, 0 violations / unit 1111/1111 / architecture 635/635 / integration serialized 1038/1047 — the 9 failures are ALL the s3-object-store MinIO-provisioning environmental class (110MB binary download starved at ~110KB/s egress; the no-false-green provisioning error, not a code failure; identical class documented at the MKT-051 harvest; the 064 delta touches nothing in that suite; all 13 content-assets integration tests + the 063-seam interplay pass).
+- Security/delta review: no eval/Function/child_process/fetch/env access in the content-assets module; parameterized SQL only ($1 constants); no secrets in the delta (the BOOTSTRAP_PASSWORD hit is a pre-existing social-accounts test fixture on main).
+
+Stage Summary:
+- MKT-064 MERGED to main as c9427a5 (Worker B lane: content-assets authority with transformation execution through the /executions engine — the 063 seam completed). v1.6 merged-to-date: 053, 055, 054, 056, 063, 064, 068, 069, 071.
