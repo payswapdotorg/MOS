@@ -1,90 +1,67 @@
 # MOS Unified Implementation State — v1.5 + v1.6
 
-**Repository:** `payswapdotorg/MOS`  
-**Architecture:** v1.6 FROZEN  
-**Program:** v1.5 completion/verification + v1.6 Growth Autonomy  
-**Maximum active implementation workers:** 3  
-**Current state:** ARCHITECTURE / HANDOFF READY — IMPLEMENTATION EXECUTION NOT YET STARTED FROM THIS UNIFIED PROGRAM
+Repository: payswapdotorg/MOS
+Architecture: v1.6 FROZEN
+Current main audit commit: c2c67e31ae814ceba09137348fb8b92d205d638c
+Production deployment inspected: dpl_BwaJi8ho6QDaVq1RUjghezULAXn8
+Maximum active implementation workers: 3
 
-This file is the canonical implementation-state ledger for the combined delivery program. It is a coordination document, not an architectural authority.
+## Status
 
-## Current truth rule
+The repository is ready for the unified Tech Lead handoff but is not feature-complete for v1.6.
 
-The v1.5 documents report MKT-001..MKT-052 as accepted/merged. The implementation program must still verify those claims against actual source, migrations, tests, Git history and runtime evidence before treating them as satisfied dependencies.
+## Work-item status
 
-Classify each item as VERIFIED, INCOMPLETE, BROKEN, BLOCKED or N/A with evidence. Only VERIFIED satisfies downstream dependencies.
+- ✅ MKT-001..MKT-052 — v1.5 baseline on main
+- ✅ MKT-053 — Growth Mission and Objective Model
+- ☐ MKT-054 — Growth Operator
+- ✅ MKT-055 — Social Account and OAuth Connection Model
+- ☐ MKT-056 — Social Platform Adapter Contract
+- ☐ MKT-057 — YouTube Adapter
+- ☐ MKT-058 — Instagram Adapter
+- ☐ MKT-059 — Facebook Pages Adapter
+- ☐ MKT-060 — TikTok Adapter
+- ☐ MKT-061 — X Adapter
+- ☐ MKT-062 — Web Research and Content Intelligence
+- ☐ MKT-063 — Content Rights and Provenance
+- ☐ MKT-064 — Content Asset and Transformation Authority
+- ☐ MKT-065 — Cross-Platform Distribution
+- ☐ MKT-066 — Platform Health and Distribution Anomaly Detection
+- ☐ MKT-067 — Experiment Analysis and Adaptive Allocation
+- ✅ MKT-068 — Notification Delivery Plane
+- ✅ MKT-069 — Product Intelligence
+- ☐ MKT-070 — Product Marketing Mission Planner
+- ✅ MKT-071 — Commerce Catalog and Order Capabilities
+- ☐ MKT-072 — Commerce Discovery Mission
+- ☐ MKT-073 — Social-to-Commerce Attribution
+- ☐ MKT-074 — Growth Autopilot Console
+- ☐ MKT-075 — v1.6 End-to-End Autonomy Proof
+- ☐ MKT-076 — Human Growth Work Extensions (optional)
+- ☐ MKT-077 — UGC and Creator Offer Model (optional)
+- ☐ MKT-078 — Human Amplification Optimization (optional)
 
-## v1.5 baseline
+## UX audit conclusion
 
-The v1.5 architecture remains the required platform foundation, including:
+Existing v1.5 navigation and journeys are usable. The major missing capability is discoverability of the v1.6 mission model.
 
-- core Client/Workspace isolation and authorities;
-- Goal / Strategy / Playbook / Deployment / Workflow / Task / Execution lifecycle;
-- Evidence / Metrics / Experiment / Learning;
-- Integrations / Credentials / Policies;
-- Human Agent / Job surfaces;
-- Agency Operating Graph;
-- Decision Ledger;
-- Profit Intelligence;
-- Client Operating Memory;
-- AI Operator / Attention Queue;
-- Sales-to-Delivery Continuity;
-- App manifest/install/upgrade/rollback/SDK/marketplace;
-- incumbent capability Apps and metering;
-- repository-owned console and reproducible deployment.
+Required outcome-first UX work is tracked in the unified execution plan as UX-001..UX-012.
 
-Do not rebuild these as second authorities while implementing v1.6.
+## Deployment audit conclusion
 
-## v1.6 outcome
+Confirmed:
+- current production is Vercel;
+- current production is Git-deployed;
+- current deployment is READY;
+- current 24-hour 5xx query returned no logs;
+- console source is in the repository.
 
-The combined product must support:
+Not yet proven:
+- exact managed Postgres provider;
+- exact Vercel billing tier;
+- current use of R2, Upstash, Apify or Render.
 
-A. **Creator growth:** a user declares a target, connects one or more social accounts, and MOS performs evidence-driven experiments until the target is achieved or an explicit terminal condition occurs.
+These are explicit deployment work items, not assumptions.
 
-B. **Product marketing:** a user supplies a product URL and optionally an authorized source repository/workspace; MOS builds a product/market model, chooses an evidence-backed platform/metric strategy and optimizes toward a declared business outcome.
+## Completion condition
 
-C. **Commerce discovery:** a user can start without a niche/product; MOS researches markets, tests content/product combinations, identifies viable candidates, supports listing, drives social distribution and learns from real orders.
-
-D. **Human amplification as an optional treatment:** UGC, creator posting, creator-ad/authorization and human review can be used when eligible, accepted and funded, but the product must not require them for autonomous growth.
-
-## Human-growth non-dependency rule
-
-A mission must remain valid when all of the following are true simultaneously:
-
-- human-growth budget = 0;
-- no eligible creator/field agent is available;
-- no human offer is accepted;
-- offers expire or are declined;
-- a human treatment is too expensive for the configured budget.
-
-The Growth Operator must continue with other valid strategies, reallocate, pause, notify or terminate according to mission policy. It must not invent a successful human result.
-
-A genuinely mandatory human approval required by rights/policy/capability is a truthful `blocked_pending_human_action` state, not an implicit dependency on the optional human marketplace.
-
-## Current v1.6 implementation state
-
-- MKT-053..MKT-075: architecture defined; implementation must be scheduled through the unified plan.
-- MKT-076..MKT-078: optional human-amplification branch; implementation does not gate core autonomous mission completion.
-- v1.5 console source recovery remains a P0 gate for repository-owned UI work.
-- provider facts for YouTube, Instagram, Facebook Pages, TikTok and X must be revalidated in adapter-specific runbooks before acceptance.
-
-## Canonical completion gates
-
-The combined program is complete only when:
-
-1. required v1.5 items are objectively VERIFIED or explicitly N/A;
-2. MKT-053..MKT-075 are VERIFIED or explicitly N/A;
-3. the core autonomous loop works with zero human budget and no human offers;
-4. the five MVP social adapters have objective capability evidence;
-5. rights/provenance and cross-platform lineage are proven;
-6. product-marketing and commerce-discovery golden paths pass;
-7. platform-health anomaly handling is observable and compliant;
-8. repository-owned console journeys and security tests pass;
-9. preview/staging/production are reproducible from the repository;
-10. production health and recovery are verified.
-
-MKT-076..MKT-078, when implemented, require their own acceptance evidence but are not completion prerequisites for autonomous mission execution.
-
-## Evidence standard
-
-Never mark a Work Item complete because an agent says it is complete. Record exact commands, results, changed files, relevant deployment/runtime evidence and limitations.
+Complete only when MKT-054..MKT-075, UX-001..UX-012 and the production deployment/recovery proofs are verified, with MKT-076..MKT-078 remaining optional acceleration.
