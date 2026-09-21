@@ -6,7 +6,7 @@ Implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 Current main handoff head: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
 Current production deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
 Current production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
-Implementation delta from production to accepted baseline: 5 commits
+Production contains the accepted implementation baseline. Current main is four documentation/handoff commits ahead of production.
 Additional main commits after the implementation baseline are documentation/handoff only.
 Maximum active implementation workers: 3
 
