@@ -5,7 +5,7 @@
 Implementation baseline:
 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 
-Current main handoff head:
+Source-audit main head:
 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
 
 The current main head contains documentation/handoff updates after the implementation baseline; do not treat those documentation-only commits as additional Work Item implementations.
@@ -38,7 +38,7 @@ c6a35db9709cf0b343221952f724bc52cd7ddd4f
 READY
 https://mos-product.vercel.app
 
-Production is five implementation commits behind the accepted implementation baseline. Main is additionally ahead only because of documentation/handoff commits. MKT-064 is on the accepted implementation baseline and has READY preview evidence, but is not in current production.
+Production contains the accepted implementation baseline. Main is additionally ahead only because of documentation/handoff commits. MKT-064 is already present in current production.
 
 Confirmed provider: Vercel.
 Unproven: exact billing tier, production Postgres provider, R2, Upstash, Apify, Render.
