@@ -2,10 +2,12 @@
 
 Repository: payswapdotorg/MOS
 Architecture: v1.6 FROZEN
-Current main audit commit: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
+Implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
+Current final main handoff head: bd089a752a309790d9cb148e700204ba302265ef
 Current production deployment: dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
 Current production commit: 039743a6e31f792c44d0fc646d3dcb53843730b1
-Main-to-production delta: 5 commits
+Final-main-to-production delta: 13 commits
+Implementation delta inside that gap: 5 commits; remaining commits are documentation/handoff only
 Maximum active implementation workers: 3
 
 ## Status
@@ -14,7 +16,7 @@ The repository is ready for the unified Tech Lead handoff but is not feature-com
 
 The previous console-source P0 is resolved.
 
-MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on main.
+MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on the implementation baseline.
 
 ## Work-item status
 
@@ -48,16 +50,16 @@ MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on main.
 
 ## Current production truth
 
-Production is Git-deployed and READY, but not at current main.
+Production is Git-deployed and READY.
 
-The current production tree is 5 commits behind main. Those commits are the MKT-064 content-assets delivery plus its reconciliation/runbook/worklog changes.
+The accepted implementation baseline is five commits ahead of production. MKT-064 is on the implementation baseline and has a READY preview, but has not been promoted to production.
 
-MKT-064 is on main and has a READY preview deployment, but has not been promoted to production.
+The final main handoff head is further ahead only because this audit added documentation/handoff commits.
 
 ## UX conclusion
 
-The current live experience is still the v1.5 operations-first console. The v1.6 outcome-first mission model is not yet discoverable.
+The live experience remains v1.5 operations-first. The v1.6 outcome-first mission model is not yet discoverable.
 
 ## Completion condition
 
-Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted main SHA, the async worker is restart/recovery verified, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
+Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted main implementation baseline, async worker restart/recovery is proven, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
