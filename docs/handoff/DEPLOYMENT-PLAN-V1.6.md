@@ -3,108 +3,116 @@
 Status: IMPLEMENTATION PLAN
 Audit date: 2026-09-21
 
-## 1. Current deployment truth
+## 1. Verified current deployment
 
-Vercel project: mos-product
-Project id: prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq
+- Vercel project: mos-product
+- Project id: prj_0OE49bIy6w1MAU1FWOHr6XeQ6xYq
+- Team: ekonplacidegmailcoms-projects
+- Production deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
+- Production URL: https://mos-product.vercel.app
+- Source: Git
+- State: READY
+- Production commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
+- Selected 24h Vercel runtime-error query: no runtime errors.
 
-Current production:
-- deployment: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg
-- alias: https://mos-product.vercel.app
-- source: Git
-- state: READY
-- commit: c6a35db9709cf0b343221952f724bc52cd7ddd4f
+The accepted implementation baseline 1ef58f86afa0220a7fd546ad03c84bfb82e4656b is an ancestor of current production. Production therefore already contains the accepted v1.6 implementation baseline.
 
-Accepted implementation baseline:
-- commit: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
-- production is 5 implementation commits behind this baseline
+## 2. Provider/account truth
 
-Source-audit main head:
-- commit: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
-- current main is four documentation/handoff commits ahead of production
-
-MKT-064 is included in the accepted implementation baseline and therefore is already present in current production.
-
-## 2. Provider facts
-
-Confirmed deployed provider:
+Confirmed current production provider:
 - Vercel
 
-Not proven from repository/deployment metadata:
-- exact Vercel billing tier;
-- production Postgres provider;
-- Upstash;
-- Cloudflare R2;
-- Apify;
-- Render.
+Not established from available account/repository metadata:
+- exact Vercel billing plan;
+- production Postgres provider/account;
+- production object-storage provider;
+- production Redis provider;
+- production research provider.
 
-The repository .env.example still describes generic PostgreSQL and local filesystem object storage.
+The repository .env.example still describes generic PostgreSQL plus filesystem object storage. Never infer a managed provider from variable names.
 
-Do not mark a provider as currently deployed until the Tech Lead verifies its production account, environment and billing state.
+## 3. Free-tier answer
 
-## 3. Free-tier target mode
+YES: the confirmed production provider, Vercel, offers a free $0 Hobby plan.
 
-For low-volume demo/staging:
-- Vercel Hobby for console/API;
-- Neon Free as a candidate managed Postgres target, only after production-account verification;
-- Cloudflare R2 for content objects;
-- Upstash Redis for bounded ephemeral coordination;
-- Render Free worker for demo/staging only;
-- Apify Free for tightly budgeted research;
-- GitHub Actions for CI.
+NOT VERIFIED: MOS's actual Vercel billing tier. Project/deployment metadata available here does not expose that account billing state.
 
-These are targets, not current production dependencies.
+Also, Vercel describes Hobby as intended for personal/non-commercial use. The Tech Lead must verify that eligibility before treating Hobby as a production/commercial target.
 
-## 4. Deployment topology
+Neon Free, Cloudflare R2, Upstash Free, Apify Free and Render Free are NOT current MOS production dependencies based on repository/deployment evidence. They are candidates for an explicitly labeled demo/staging topology.
+
+## 4. Recommended demo/staging topology
 
 Browser
   |
   v
-Vercel / mos-product
+Vercel Hobby (console + short-lived API bridge, only if eligible)
   |
-  +-- Next.js console
-  +-- short-lived API request handling
+  +--> Neon Free Postgres
+  +--> Cloudflare R2 Free object storage
+  +--> Upstash Free Redis
+  +--> Render Free worker
+  +--> Apify Free research capacity
+  +--> social / commerce / notification providers
   |
-  +-- Managed PostgreSQL
-  +-- Object storage
-  +-- Optional Redis
-  +-- social / commerce / research / notification providers
+  +--> GitHub Actions CI
 
-Async execution:
-src/entrypoints/worker.ts must run outside synchronous Vercel request handling.
+Rules:
+- PostgreSQL is the MOS system of record.
+- R2 stores immutable/content-addressed media artifacts only.
+- Redis is ephemeral coordination/rate limiting/locks only.
+- Apify is a research execution provider, never a domain authority.
+- src/entrypoints/worker.ts runs outside Vercel request handling.
+- Every provider operation remains tenant-scoped, policy-gated, budgeted and idempotent where required.
+- Render Free is demo/staging only; do not depend on it for business-critical production.
 
-PostgreSQL remains MOS system of record. Redis/object storage remain infrastructure, never domain authorities.
+## 5. Current free-tier reference points
 
-## 5. Work orders
+Verify again in the actual accounts before deployment because provider limits can change:
 
-DEP-006 Repository deployment contract
-DEP-007 Production PostgreSQL verification
-DEP-008 Object storage adapter
-DEP-009 Worker deployment
-DEP-010 Redis capability
-DEP-011 Research execution
-DEP-012 Cost/quota guard
-DEP-013 Production promotion pipeline
-DEP-014 Cost/retention hygiene
-DEP-015 Promote newly accepted implementation changes
+- Vercel Hobby: $0/month; Hobby has a once-per-day Cron limitation and is intended for personal/non-commercial use.
+- Neon Free: current free plan exists; use the account's live quota view as the authority.
+- Cloudflare R2 Free: 10 GB-month standard storage, 1M Class A requests/month, 10M Class B requests/month, free egress.
+- Upstash Redis Free: 256 MB data, 10 GB monthly bandwidth, 500K commands/month.
+- Apify Free: $5 monthly platform/store spend; compute is metered.
+- Render Free: suitable for testing/hobby/preview, not production.
 
-DEP-015 must be used whenever a NEW implementation baseline is accepted:
-CI -> preview -> migration check -> browser smoke -> Tech Lead acceptance -> production -> health -> browser smoke -> rollback readiness.
+## 6. Work orders
 
-## 6. Free-tier constraints
+### DEP-006 — Deployment contract
+Document console/API/worker processes, Node 24, env contract, health/readiness, migration command, startup ordering and rollback.
 
-Vercel Hobby is $0, but Hobby Cron is once-per-day, so Growth Operator must not depend on Vercel Cron as its autonomous scheduler.
+### DEP-007 — Actual production Postgres
+Verify the real account/provider first; record plan/region, direct migration vs pooled app connectivity, backups/restore and staging isolation.
 
-Neon Free currently provides a zero-cost Postgres option for early-stage/demo workloads, but exact current account limits must be verified when the provider is selected.
+### DEP-008 — Object storage
+Implement content-addressed immutable objects, signed/private access, lifecycle/retention and deterministic metadata. Candidate: Cloudflare R2.
 
-Upstash Free currently provides 256 MB, 10 GB monthly bandwidth and 500K commands/month.
+### DEP-009 — Async worker
+Run src/entrypoints/worker.ts on a persistent/restartable worker service. Prove startup ordering, durable pickup, lease/claim behavior, bounded retries, restart convergence and graceful shutdown.
 
-Cloudflare R2 Free currently provides 10 GB-month standard storage, 1M Class A requests, 10M Class B requests and free egress.
+### DEP-010 — Redis
+Candidate Upstash for transient locks, rate limits and ephemeral coordination only. Never move canonical mission/execution/evidence/experiment/commerce state into Redis.
 
-Apify Free currently includes $5 of platform/store spend with metered compute.
+### DEP-011 — Research execution
+Provider-neutral research port; candidate Apify. Every material source fact must preserve provenance, policy/budget status, retry/idempotency and partial/blocked state.
 
-Render Free can host background-worker workloads, but Render documents Free instances as testing/hobby/preview rather than production.
+### DEP-012 — Budget/quota
+Guard social API quotas, research spend, AI/compute, storage/bandwidth, paid media, commerce tests and human-review capacity. Fail closed with truthful capacity/budget state.
 
-## 7. Upgrade triggers
+### DEP-013 — Promotion
+CI → preview → migration verification → browser smoke → Tech Lead acceptance → production → health query → browser smoke → rollback-ready.
 
-Upgrade when worker capacity is unreliable, database/object/Redis limits are approached, research spend exceeds mission policy, autonomous scheduling requires more than Hobby Cron allows, or uptime/recovery becomes business-critical.
+### DEP-014 — Retention/cost
+Set retention for deployments, evidence/events, objects, research artifacts and transient queues. Alert before free-tier limits become outages.
+
+### DEP-015 — Every new implementation baseline
+Verify ancestry, CI, preview, migrations, browser journeys, production SHA, provider state and rollback candidate before promotion.
+
+## 7. Scheduling constraint
+
+Do not use Vercel Hobby Cron as the Growth Operator scheduler. Its cadence is too sparse for the persistent mission controller. Use the external worker/runtime path.
+
+## 8. Upgrade triggers
+
+Move off demo/free tiers when worker uptime/recovery is business-critical, database/object/Redis limits are approached, research credits are routinely consumed, social API tiers become paid requirements, or commercial use makes Hobby ineligible.
