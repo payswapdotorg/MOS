@@ -6,7 +6,7 @@ Canonical execution authority: this file
 
 ## 1. Repository truth
 
-- Current main HEAD: 575f56df363d64eefddef32ea4e7fbd8d18add8d
+- Current main HEAD: 5d9ebca14c99eae5887262ab857eeccff29302a0
 - Last source-audited implementation tree: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
 - Accepted implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
 - The post-baseline commits on main are documentation/handoff corrections only.
