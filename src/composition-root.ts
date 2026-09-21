@@ -534,6 +534,14 @@ import { createContentRightsModule } from './modules/content-rights/public.ts';
 // (boundary rule 5).
 import { createContentAssetsModule } from './modules/content-assets/public.ts';
 import type { TransformationEngine } from './modules/content-assets/public.ts';
+// MKT-067: /experiment-analysis — the Experiment Analysis and Adaptive
+// Allocation authority (the v1.6 §12 analysis layer over the existing
+// /experiments authority — never a second experiment engine; the
+// deterministic two-sample statistics core + the bounded adaptive
+// allocator, all recorded as append-only DATA with full input snapshots
+// and canonical digests; allocation results are recommendations toward
+// the mission/operator layer, never exposure mutations).
+import { createExperimentAnalysisModule } from './modules/experiment-analysis/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1378,6 +1386,32 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     engines: options.contentTransformationEngines ?? [],
   });
 
+  // MKT-067: /experiment-analysis — the Experiment Analysis and Adaptive
+  // Allocation authority. The frozen-matrix row is consumed exactly, all
+  // four READ-ONLY through their public contracts: /experiments for the
+  // experiment identity/design anchor (resolveExperimentOwnership — the
+  // sole experiment authority stays sole), /metrics for the observation
+  // ledger the window consumes (listMetricObservationsForClient — the
+  // bounded house read), /evidence for the canonical same-Client
+  // resolution of cited evidence links, /learnings for the confounder/
+  // outcome context of learnings citing the analyzed experiment. The
+  // canonical /clients + /workspaces ownership resolutions ride the
+  // structural ports declared in the module's public contract (the
+  // metrics/experiments posture — no forbidden module import exists).
+  // The statistics core is fully deterministic (the row lists NO
+  // /ai-runtime dependency and none is used).
+  const experimentAnalysis = createExperimentAnalysisModule({
+    db,
+    clock,
+    ids,
+    experiments,
+    metrics: metricsModule,
+    evidence,
+    learnings,
+    clients,
+    workspaces,
+  });
+
   // MKT-042: /decisions — the Decision Ledger authority (the
   // append-oriented ledger for material recommendations and commercial
   // decisions, architecture-v1.5 §4 / operating-graph-v1.5 "Decision
@@ -1658,7 +1692,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis },
     runtime: { aiProvider },
   };
 }

@@ -331,6 +331,21 @@ import { registerContentRightsRoutes } from './content-rights-routes.ts';
 // rights — the /content-rights surfaces own the rights records and the
 // publication gate).)
 import { registerContentAssetsRoutes } from './content-assets-routes.ts';
+// MKT-067: the /experiment-analysis routes (the Experiment Analysis and
+// Adaptive Allocation surface: the deterministic two-sample analysis
+// POST over the /metrics observation window + the reads + the sequential
+// per-experiment tail, and the adaptive-allocation POST + the reads —
+// each record carrying its FULL input snapshot + the canonical digest.
+// Literal-segment routes (by-experiment) register BEFORE the
+// :analysisId / :recommendationId patterns (first-match-wins). NO
+// update route (analyses and recommendations are immutable — the
+// migration 054 triggers reject it), NO delete route (both tails are
+// append-only — a negative or inconclusive result is preserved, never
+// erased) and NO route of any kind that mutates experiment exposure,
+// platform state or workflow inputs (allocation results are
+// recommendations recorded as DATA toward the mission/operator layer;
+// the /experiments authority stays sole for experiment lifecycle).)
+import { registerExperimentAnalysisRoutes } from './experiment-analysis-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -593,5 +608,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // + the observations + the transformation family (see the import
   // block above).
   registerContentAssetsRoutes(router, services, modules);
+  // MKT-067: the /experiment-analysis surfaces — the analyses + the
+  // allocation recommendations (see the import block above).
+  registerExperimentAnalysisRoutes(router, services, modules);
   return router;
 }

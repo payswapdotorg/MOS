@@ -284,6 +284,15 @@ import type { ContentRightsModuleApi } from '../modules/content-rights/public.ts
 // production by default) — boundary rule 5: it stores/derives artifact
 // lineage and can never become a rights authority).
 import type { ContentAssetsModuleApi } from '../modules/content-assets/public.ts';
+// MKT-067: /experiment-analysis module contract (the v1.6 §12 Experiment
+// Analysis and Adaptive Allocation authority — the analysis layer over
+// the existing /experiments authority, which stays sole for experiment
+// identity/design/lifecycle: this module records analyses and allocation
+// RECOMMENDATIONS as append-only data with full input snapshots and
+// canonical digests, fully deterministic (no /ai-runtime), and holds NO
+// method that mutates experiment exposure, platform state or workflow
+// inputs — no second experiment engine, no second execution engine).
+import type { ExperimentAnalysisModuleApi } from '../modules/experiment-analysis/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -540,4 +549,11 @@ export interface ApplicationModules {
   // through /executions and the derivation seam into /content-rights
   // lineage — NO rights authority of its own: boundary rule 5).
   readonly contentAssets: ContentAssetsModuleApi;
+  // MKT-067: /experiment-analysis — the Experiment Analysis and Adaptive
+  // Allocation authority (the §12 analysis layer: append-only analysis
+  // records with full input provenance + deterministic statistics; the
+  // bounded adaptive allocator with the recorded exploration floor,
+  // zero-capacity arm validity and reproducible decisions — allocation
+  // results are recommendations as DATA, never exposure mutations).
+  readonly experimentAnalysis: ExperimentAnalysisModuleApi;
 }
