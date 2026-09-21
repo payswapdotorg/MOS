@@ -18,6 +18,7 @@ import {
   Settings2,
   Sparkles,
   TrendingUp,
+  Target,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,8 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { key: "command-center", label: "Command Center", icon: LayoutDashboard, view: { kind: "command-center" } },
+  { key: "home", label: "Home", icon: Target, view: { kind: "home" } },
+  { key: "command-center", label: "Today / Operations", icon: LayoutDashboard, view: { kind: "command-center" } },
   { key: "clients", label: "Clients", icon: Users, view: { kind: "clients" } },
   { key: "attention", label: "Attention", icon: Sparkles, view: { kind: "attention" } },
   { key: "profit", label: "Profit Intelligence", icon: TrendingUp, view: { kind: "profit" } },

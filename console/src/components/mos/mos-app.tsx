@@ -10,6 +10,7 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { AgencyGate, AppShell } from "./app-shell";
+import HomeScreen from "./home/HomeScreen";
 import { AdminScreen } from "./admin-screen";
 import { AppsScreen } from "./apps-screen";
 import { AttentionScreen } from "./attention-screen";
@@ -67,6 +68,7 @@ function MosAppInner() {
 
   return (
     <AppShell>
+      {view.kind === "home" ? <HomeScreen /> : null}
       {view.kind === "command-center" ? (
         agencyId === null ? (
           <AgencyGate />
