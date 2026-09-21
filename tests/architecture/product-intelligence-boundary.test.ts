@@ -738,8 +738,12 @@ test('MKT-069 AC-12 static: the disclosed spec registration exists — §6 line 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
+  // The MKT-056 social-adapter-contract delivery appends 050 (the
+  // /social-accounts capability-plane extension — the sibling-promotion
+  // precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '050_social_adapter_contract.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly productIntelligence: ProductIntelligenceModuleApi'), 'ApplicationModules.productIntelligence');
   assert.ok(applicationTs.includes("from '../modules/product-intelligence/public.ts'"), 'the module public entry import');

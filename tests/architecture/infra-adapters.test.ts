@@ -791,6 +791,23 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // authority accessed through the adapter port — the migration-029
     // store pattern extended, never a second commerce authority).
     '049_commerce_capabilities.sql',
+    // MKT-056 (Social Platform Adapter Contract) appends the
+    // social-adapter-contract migration (050 — the number PRE-ASSIGNED to
+    // this Work Item; sibling workers were told the tail number may
+    // collide, keep the numbering and disclose): the /social-accounts
+    // capability-plane EXTENSION (no new module — the dispatch "Extend,
+    // do not duplicate"): the publish idempotency fence + claim-then-fill
+    // attempt ledger social_publish_attempts (the (social_account_id,
+    // idempotency_key) unique at-most-once fence, the born 'submitted'
+    // UNKNOWN claim state, the single completion fill
+    // submitted→accepted|published|failed|restricted with the immutable
+    // identity/provenance columns, the CHECK-fenced publish-state +
+    // failure-taxonomy vocabularies and the account-consistency backstop)
+    // and the append-only provider status-poll history
+    // social_publish_status_observations; NO capability-registration table
+    // (the capability matrix is adapter-declared registry data validated
+    // at construction — the migration-029 discipline).
+    '050_social_adapter_contract.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
