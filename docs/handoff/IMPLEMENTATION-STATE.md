@@ -2,29 +2,35 @@
 
 Repository: payswapdotorg/MOS
 Architecture: v1.6 FROZEN
-Production audit baseline commit: c2c67e31ae814ceba09137348fb8b92d205d638c
-Production deployment inspected: dpl_BwaJi8ho6QDaVq1RUjghezULAXn8
+Current main audit commit: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
+Current production deployment: dpl_8vG4jZrXaRNnMyAhdLc8J4JQJLaB
+Current production commit: 039743a6e31f792c44d0fc646d3dcb53843730b1
+Main-to-production delta: 5 commits
 Maximum active implementation workers: 3
 
 ## Status
 
 The repository is ready for the unified Tech Lead handoff but is not feature-complete for v1.6.
 
+The previous console-source P0 is resolved.
+
+MKT-054, MKT-056, MKT-063 and MKT-064 are now implemented on main.
+
 ## Work-item status
 
-- ✅ MKT-001..MKT-052 — v1.5 baseline on main
+- ✅ MKT-001..MKT-052 — v1.5 baseline
 - ✅ MKT-053 — Growth Mission and Objective Model
-- ☐ MKT-054 — Growth Operator
+- ✅ MKT-054 — Growth Operator
 - ✅ MKT-055 — Social Account and OAuth Connection Model
-- ☐ MKT-056 — Social Platform Adapter Contract
+- ✅ MKT-056 — Social Platform Adapter Contract
 - ☐ MKT-057 — YouTube Adapter
 - ☐ MKT-058 — Instagram Adapter
 - ☐ MKT-059 — Facebook Pages Adapter
 - ☐ MKT-060 — TikTok Adapter
 - ☐ MKT-061 — X Adapter
 - ☐ MKT-062 — Web Research and Content Intelligence
-- ☐ MKT-063 — Content Rights and Provenance
-- ☐ MKT-064 — Content Asset and Transformation Authority
+- ✅ MKT-063 — Content Rights and Provenance
+- ✅ MKT-064 — Content Asset and Transformation Authority
 - ☐ MKT-065 — Cross-Platform Distribution
 - ☐ MKT-066 — Platform Health and Distribution Anomaly Detection
 - ☐ MKT-067 — Experiment Analysis and Adaptive Allocation
@@ -40,28 +46,18 @@ The repository is ready for the unified Tech Lead handoff but is not feature-com
 - ☐ MKT-077 — UGC and Creator Offer Model (optional)
 - ☐ MKT-078 — Human Amplification Optimization (optional)
 
-## UX audit conclusion
+## Current production truth
 
-Existing v1.5 navigation and journeys are usable. The major missing capability is discoverability of the v1.6 mission model.
+Production is Git-deployed and READY, but not at current main.
 
-Required outcome-first UX work is tracked in the unified execution plan as UX-001..UX-012.
+The current production tree is 5 commits behind main. Those commits are the MKT-064 content-assets delivery plus its reconciliation/runbook/worklog changes.
 
-## Deployment audit conclusion
+MKT-064 is on main and has a READY preview deployment, but has not been promoted to production.
 
-Confirmed:
-- current production is Vercel;
-- current production is Git-deployed;
-- current deployment is READY;
-- current 24-hour 5xx query returned no logs;
-- console source is in the repository.
+## UX conclusion
 
-Not yet proven:
-- exact managed Postgres provider;
-- exact Vercel billing tier;
-- current use of R2, Upstash, Apify or Render.
-
-These are explicit deployment work items, not assumptions.
+The current live experience is still the v1.5 operations-first console. The v1.6 outcome-first mission model is not yet discoverable.
 
 ## Completion condition
 
-Complete only when MKT-054..MKT-075, UX-001..UX-012 and the production deployment/recovery proofs are verified, with MKT-076..MKT-078 remaining optional acceleration.
+Complete only when MKT-057..MKT-075 are verified, UX-001..UX-012 pass browser proof, production runs the accepted main SHA, the async worker is restart/recovery verified, zero-human-budget autonomy is proven, and optional MKT-076..078 remain non-blocking.
