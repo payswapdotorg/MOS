@@ -299,6 +299,21 @@ import { registerProductIntelligenceRoutes } from './product-intelligence-routes
 // dispatch/retry route (a dispatch/retry worker plane is future Work Item
 // territory; the receipt model already admits append-only retries).)
 import { registerNotificationDeliveryRoutes } from './notification-delivery-routes.ts';
+// MKT-063: the /content-rights routes (the Content Rights and Provenance
+// surface: the rights-record registration POST + the reads, THE
+// PUBLICATION-GATE evaluation POST — allow / review_required / blocked
+// with reasons, never a publication — the state-transition POST whose
+// human_clearance kind is the ONLY review → cleared path, the
+// destination-platform permission-scope POST and the immutable
+// ingredient-lineage family. Literal-segment routes (by-asset/gate/
+// lineage) register BEFORE the :rightsRecordId patterns
+// (first-match-wins, the jobs-queue precedent). NO update route
+// (recorded facts are immutable — corrections are recorded transition
+// events), NO delete route (rights history is append-only —
+// DB-trigger-fenced) and NO publish/dispatch route of any kind
+// (boundary rule 4: the gate blocks or refers to review; publishing is
+// MKT-065's execution surface).)
+import { registerContentRightsRoutes } from './content-rights-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -554,5 +569,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // the in-app read surface + the notification/receipt reads (see the
   // import block above).
   registerNotificationDeliveryRoutes(router, services, modules);
+  // MKT-063: the /content-rights surfaces — the rights records + the
+  // publication gate (see the import block above).
+  registerContentRightsRoutes(router, services, modules);
   return router;
 }

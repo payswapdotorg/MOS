@@ -311,6 +311,10 @@ import { createAgentsModule } from './modules/agents/public.ts';
 import { createPoliciesModule } from './modules/policies/public.ts';
 // MKT-023: /integrations module (the provider integration boundary).
 import { createIntegrationsModule } from './modules/integrations/public.ts';
+// MKT-056: the /integrations adapter PORT type — the AppOptions seam that
+// appends test/conformance integration adapters to the registry (the
+// socialAccountFlows composition precedent).
+import type { IntegrationAdapter } from './modules/integrations/public.ts';
 // MKT-024: the FIRST-PARTY CONNECTORS (Meta, Google Ads, generic
 // analytics, CRM, commerce/CMS) — concrete adapter implementations under
 // the sanctioned internal/adapters/** home, imported HERE ONLY (the
@@ -449,8 +453,18 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // integrations, the append-oriented OAuth authorization-grant lifecycle
 // with verbatim scope records + capability tags, the append-only history
 // tail and the fail-closed disconnect/revocation death semantics).
+// MKT-056 extends the module with the NORMALIZED SOCIAL PLATFORM ADAPTER
+// CONTRACT: the capability-matrix registry, the normalized
+// account/content/analytics/publish/restriction-signal operations and
+// the publish idempotency ledger (migration 050). The platform adapter
+// registry is EMPTY here — the concrete platform adapters arrive with
+// the MKT-057..061 deliveries as DATA through the disclosed composition
+// seam (AppOptions.socialPlatformAdapters; fail-closed until then).
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
-import type { SocialAccountFlowImplementation } from './modules/social-accounts/public.ts';
+import type {
+  SocialAccountFlowImplementation,
+  SocialPlatformAdapter,
+} from './modules/social-accounts/public.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -486,6 +500,23 @@ import type {
   NotificationRecipientCandidate,
 } from './modules/notification-delivery/public.ts';
 import { createEmailNotificationAdapter } from './modules/notification-delivery/internal/adapters/email-adapter.ts';
+// MKT-063: /content-rights — the Content Rights and Provenance authority
+// (the asset-level rights records over the OPAQUE content-asset
+// reference seam — the MKT-064 id-based integration, NOT an import of a
+// nonexistent module; the frozen rights state model with transitions as
+// append-only recorded events; the human clearance records as the ONLY
+// review → cleared path; the immutable ingredient lineage links resolving
+// composites as the CONJUNCTION of their ingredients; the
+// destination-platform permission scope; THE fail-closed publication gate
+// — absent evaluation blocked, unknown/review never auto-approve, the
+// destination policy gate through /policies). Composition is the
+// currently-satisfiable subset of the frozen v1.6 matrix row
+// (the /product-intelligence MKT-069 disclosed-registration precedent):
+// /evidence (canonical resolution of every evidence link) + /policies
+// (the destination gate of every publication-gate evaluation);
+// /content-assets joins the row at MKT-064 time. NO publication verb
+// exists anywhere in the module (boundary rule 4).
+import { createContentRightsModule } from './modules/content-rights/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -505,6 +536,30 @@ export interface AppOptions {
    * ONLY — the connection model under test is fully real).
    */
   readonly socialAccountFlows?: ReadonlyArray<SocialAccountFlowImplementation> | undefined;
+  /**
+   * MKT-056: additional SOCIAL PLATFORM ADAPTER instances for the
+   * /social-accounts module's normalized capability plane (the
+   * socialAccountFlows composition precedent). EMPTY by default — the
+   * production composition registers NO platform adapter until the
+   * MKT-057..061 adapter deliveries wire real platforms (an operation
+   * against a platform with no registered adapter is refused
+   * fail-closed). The conformance suite supplies the DISCLOSED reference
+   * in-memory double through this seam (a test double at the provider
+   * boundary ONLY — the contract host under test is fully real).
+   */
+  readonly socialPlatformAdapters?: ReadonlyArray<SocialPlatformAdapter> | undefined;
+  /**
+   * MKT-056: additional INTEGRATION ADAPTER instances appended to the
+   * /integrations registry (the socialAccountFlows composition
+   * precedent). EMPTY by default — the production adapter set is the
+   * first-party list below. The social-adapter conformance suite
+   * supplies the disclosed stub integration adapter of the reference
+   * platform through this seam (the connection pipe of the platform
+   * under test); future platform deliveries reuse the seam for their
+   * platform's integration pipe during conformance runs before their
+   * production wiring lands.
+   */
+  readonly integrationAdapters?: ReadonlyArray<IntegrationAdapter> | undefined;
   /**
    * MKT-069: an override ProductPageReader for the /product-intelligence
    * module (the socialAccountFlows composition precedent). UNSET by
@@ -858,6 +913,11 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
           ? {}
           : { grantedCapabilityKeys: config.commerceGrantedCapabilities }),
       }),
+      // MKT-056: the disclosed composition seam — additional integration
+      // adapters arrive as DATA (the conformance-suite stub pipe of the
+      // platform under test; future platform deliveries during their
+      // conformance runs). EMPTY in the production default.
+      ...(options.integrationAdapters ?? []),
       new CreatorPlatformAdapter({ http: httpCalls }),
     ],
   });
@@ -1178,6 +1238,11 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     policies,
     workspaceOwnership: workspaces,
     flows: options.socialAccountFlows ?? [],
+    // MKT-056: the social platform adapter registry — EMPTY in the
+    // production composition until the MKT-057..061 platform deliveries
+    // (fail-closed until then; the disclosed composition seam is
+    // AppOptions.socialPlatformAdapters).
+    socialAdapters: options.socialPlatformAdapters ?? [],
   });
 
   // MKT-068: /notification-delivery — the Notification Delivery Plane
@@ -1229,6 +1294,32 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     ids,
     policies,
     adapters: notificationEmailAdapter === null ? [] : [notificationEmailAdapter],
+  });
+
+  // MKT-063: /content-rights — the Content Rights and Provenance
+  // authority. Composition is the frozen-matrix row's
+  // currently-satisfiable subset registered by this Work Item (the
+  // MKT-069 disclosed-registration pattern): the /evidence public
+  // contract is consumed READ-ONLY for the canonical resolution of
+  // every source-provenance/licence/permission/clearance evidence link
+  // (uniform 404 on unknown/foreign; the migration-051 same-Client
+  // triggers are the backstop), and the /policies public contract is
+  // consumed for the fail-closed destination gate of EVERY
+  // publication-gate evaluation (the policy key
+  // content.rights.publication.<platform> — every decision recorded in
+  // the policy engine's own append-only ledger; a non-allow BLOCKS).
+  // /content-assets (the frozen v1.6 row's third direction) arrives
+  // with MKT-064 — the content-asset relationship is the opaque
+  // id-based reference seam the module already speaks, never an
+  // import here. The module holds NO publication authority (boundary
+  // rule 4): MKT-065 will call evaluatePublicationGate before
+  // publishing.
+  const contentRights = createContentRightsModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    policies,
   });
 
   // MKT-042: /decisions — the Decision Ledger authority (the
@@ -1511,7 +1602,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights },
     runtime: { aiProvider },
   };
 }

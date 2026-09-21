@@ -791,9 +791,59 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // authority accessed through the adapter port — the migration-029
     // store pattern extended, never a second commerce authority).
     '049_commerce_capabilities.sql',
-    // MKT-054 (Growth Operator) appends the growth-operator migration (050
-    // — the number is PRE-ASSIGNED to this Work Item; 051 is reserved for
-    // a sibling delivery): the /growth-operator persistent controller
+    // MKT-056 (Social Platform Adapter Contract) appends the
+    // social-adapter-contract migration (050 — the number PRE-ASSIGNED to
+    // this Work Item; sibling workers were told the tail number may
+    // collide, keep the numbering and disclose): the /social-accounts
+    // capability-plane EXTENSION (no new module — the dispatch "Extend,
+    // do not duplicate"): the publish idempotency fence + claim-then-fill
+    // attempt ledger social_publish_attempts (the (social_account_id,
+    // idempotency_key) unique at-most-once fence, the born 'submitted'
+    // UNKNOWN claim state, the single completion fill
+    // submitted→accepted|published|failed|restricted with the immutable
+    // identity/provenance columns, the CHECK-fenced publish-state +
+    // failure-taxonomy vocabularies and the account-consistency backstop)
+    // and the append-only provider status-poll history
+    // social_publish_status_observations; NO capability-registration table
+    // (the capability matrix is adapter-declared registry data validated
+    // at construction — the migration-029 discipline).
+    '050_social_adapter_contract.sql',
+    // MKT-063 (Content Rights and Provenance) appends the
+    // content-rights migration (051 — the number PRE-ASSIGNED to this
+    // Work Item; 050 is reserved for a sibling delivery and the
+    // sibling workers are told 050/051 may collide — kept 051,
+    // disclosed; the Tech Lead reconciles at merge): the
+    // /content-rights authority — the asset-level rights records
+    // (the CHECK-fenced cr-vocab-v1 state vocabulary
+    // owned/license/platform_permitted/cleared/review/blocked/unknown,
+    // the REQUIRED /evidence-anchored source provenance + licence
+    // evidence with the licence-basis payload-shape CHECK, the
+    // valid_until expiry horizon evaluated fail-closed at gate time,
+    // the one-record-per-(client, asset ref) fence, the tenant
+    // scope-chain + same-Client evidence triggers, the disciplined
+    // state-move-only UPDATE along the frozen transition-table pairs
+    // and no-DELETE), the fully append-only state-transition event
+    // tail (the CHECK-fenced frozen (from, to, kind) transition table
+    // with clearance_id REQUIRED exactly for human_clearance rows —
+    // `cleared` reachable ONLY from `review` via the recorded human
+    // clearance; history is never mutated in place), the append-only
+    // human clearance records (actor identity + REQUIRED rationale +
+    // the optional /evidence review-evidence reference — fair-use
+    // reasoning rides HERE, never an auto-clear), the append-only
+    // destination-platform permission-scope rows (the newest row per
+    // platform is effective; each carrying its REQUIRED /evidence
+    // reference) and the fully append-only immutable ingredient
+    // lineage links (the unique (client, composite, ingredient) fence,
+    // no self-links — composites resolve as the CONJUNCTION of their
+    // ingredients); NO evidence, policy, credential, tenant or
+    // content-asset table is created or mutated (the /evidence and
+    // /policies authorities stay sole, consumed READ-ONLY through
+    // their public contracts; /content-assets is the FUTURE consumer
+    // of this gate — the id-based reference seam, never an import).
+    '051_content_rights.sql',
+    // MKT-054 (Growth Operator) appends the growth-operator migration (052
+    // — PRE-ASSIGNED 050 collided with the merged MKT-056 050; the Tech
+    // Lead renumbered 050→052 at merge, disclosed): the /growth-operator persistent controller
     // layer — the per-mission controller records (UNIQUE mission fence;
     // the frozen state vocabulary CHECK-fenced; the budget/quota policy
     // with the ZERO-default human-amplification inputs; the blocked-shape
@@ -816,7 +866,7 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // REFERENCES ONLY), NO human-marketplace table is created or
     // referenced (rules 43/44 — the human-amplification inputs are
     // budget/evidence columns on the controller row, zero by default).
-    '050_growth_operator.sql',
+    '052_growth_operator.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

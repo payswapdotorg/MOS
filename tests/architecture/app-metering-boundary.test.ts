@@ -430,15 +430,23 @@ test('MKT-052 AC-9 static: the disclosed spec registration exists — §6 line +
   // unused by the no-migration deliveries).
   // The MKT-068 /notification-delivery, MKT-069 /product-intelligence and
   // MKT-071 commerce-capability deliveries append 047, 048 and 049 after
-  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), so this
-  // module's 044 shifts three positions earlier in the ordered tail.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '049_commerce_capabilities.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '050_growth_operator.sql');
+  // 046 (all numbers PRE-ASSIGNED to those sibling Work Items), and the
+  // MKT-056 delivery appends 050, the MKT-063 delivery appends 051 and
+  // the MKT-054 delivery (renumbered 050→052) appends 052, so this
+  // module's 044 shifts six positions earlier in the ordered tail.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '049_commerce_capabilities.sql');
+  // The MKT-056 social-adapter-contract delivery appends 050, the
+  // MKT-063 /content-rights sibling delivery appends 051, and the
+  // MKT-054 growth-operator delivery (renumbered 050→052 at merge)
+  // appends 052 (the same additive precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '052_growth_operator.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly appMetering: AppMeteringModuleApi'), 'ApplicationModules.appMetering');
   assert.ok(applicationTs.includes("from '../modules/app-metering/public.ts'"), 'the module public entry import');

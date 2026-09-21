@@ -71,9 +71,20 @@
  *     'social_account_oauth' — never shared with product/source/store
  *     credentials; lock rule 28): this module confers NO product, source
  *     or store access — it has no such surface at all;
- *   - NO capability discovery, publishing, analytics or distribution
- *     surface: the capability tags are recorded facts, and their
- *     interpretation belongs to the future adapter contract (MKT-056).
+ *   - MKT-056 EXTENDED this module with the NORMALIZED SOCIAL PLATFORM
+ *     ADAPTER CONTRACT (the capability matrix, the normalized
+ *     account/content/analytics/publish/restriction-signal operations,
+ *     the SocialPlatformAdapter port, the publish idempotency ledger of
+ *     migration 050 and the platform adapter registry — see the MKT-056
+ *     exports below): the capability tags are recorded facts AND the
+ *     adapter plane interprets them through the DECLARED capability
+ *     matrix; NO concrete platform adapter ships in this Work Item (the
+ *     MKT-057..061 deliveries arrive as DATA through the module deps,
+ *     living exclusively under internal/adapters/&lt;platform&gt;/);
+ *     content normalization into evidence/candidates is MKT-062,
+ *     platform-health interpretation is MKT-066 and distribution
+ *     planning is MKT-065 — this contract records and reports, it never
+ *     interprets.
  *
  * DEPENDENCY POSTURE (frozen matrix: /social-accounts ──→ /integrations,
  * /credentials, /policies, /workspaces): this public entry imports the
@@ -103,6 +114,34 @@ import type {
   IntegrationsConnectionOwnerContext,
 } from '../integrations/public.ts';
 import type { PoliciesModuleApi } from '../policies/public.ts';
+// MKT-056: the normalized social platform adapter contract (type-only —
+// the vocabulary + pure guards are re-exported at the bottom of this
+// file so the normalized semantics are part of the TESTED module
+// contract; the concrete platform adapters import them through the
+// internal/adapters/adapter-contract.ts re-export shim).
+import type {
+  RegisteredSocialAdapterInfo,
+  SocialAccountIdentityResult,
+  SocialAccountProfileResult,
+  SocialAnalyticsResult,
+  SocialAnalyticsWindow,
+  SocialCapability,
+  SocialCapabilityScopeSatisfaction,
+  SocialContentAnalyticsInput,
+  SocialContentDiscoveryQuery,
+  SocialContentListQuery,
+  SocialContentPageResult,
+  SocialContentReadInput,
+  SocialContentResult,
+  SocialPlatformAdapter,
+  SocialPublishSubmission,
+  SocialPublishSubmitInput,
+  SocialRestrictionSignalsResult,
+} from './internal/adapter-contract.ts';
+import type {
+  SocialPublishAttemptRecord,
+  SocialPublishStatusObservationRecord,
+} from './internal/adapter-store.ts';
 
 // ---------------------------------------------------------------------------
 // The frozen lifecycle vocabularies (MKT-055 AC-2/AC-5 — CHECK-fenced in
@@ -562,6 +601,30 @@ export interface UsableSocialAuthorization {
 }
 
 // ---------------------------------------------------------------------------
+// MKT-056: the account capability-matrix view (the capability-discovery
+// read of the normalized social platform adapter contract)
+// ---------------------------------------------------------------------------
+
+/**
+ * The capability-matrix view of one social account: the bound platform's
+ * DECLARED capability subset (registry data — never assumed parity, lock
+ * rule 19), whether a social adapter is registered for the platform,
+ * whether the account's authorization is currently usable, and the
+ * per-capability scope satisfaction composed against the CURRENT
+ * authorized grant's VERBATIM granted-scope list.
+ */
+export interface SocialAccountCapabilityView {
+  readonly account: SocialAccountRecord;
+  readonly platformId: string;
+  /** False when no social platform adapter is registered for the platform (fail-closed operations). */
+  readonly registered: boolean;
+  /** False when no usable authorization exists (the reauthorization signal). */
+  readonly authorizationUsable: boolean;
+  readonly capabilities: readonly SocialCapability[];
+  readonly scopeSatisfaction: readonly SocialCapabilityScopeSatisfaction[];
+}
+
+// ---------------------------------------------------------------------------
 // Module API
 // ---------------------------------------------------------------------------
 
@@ -765,6 +828,163 @@ export interface SocialAccountsModuleApi {
    * getAuthorizationGrant.
    */
   getAuthorizationGrantScopeFacts(grantId: string): Promise<SocialGrantScopeFacts>;
+
+  // -------------------------------------------------------------------------
+  // MKT-056: the normalized social platform adapter surface (the platform
+  // capability plane — every provider-touching operation is policy-gated
+  // fail-closed, capability-matrix-gated and scope-prechecked; outcomes
+  // are DATA). Module-level ONLY in this Work Item (no HTTP routes — the
+  // server-side consumers arrive with the adapter deliveries and the
+  // distribution planner).
+  // -------------------------------------------------------------------------
+
+  /**
+   * The social adapter registry AS DATA: every registered platform
+   * adapter's descriptor + declared capability matrix (the
+   * capability-discovery surface). Registry contents come exclusively
+   * from the injected adapter instances — EMPTY in the production
+   * composition until the MKT-057..061 platform deliveries.
+   */
+  listRegisteredSocialAdapters(): readonly RegisteredSocialAdapterInfo[];
+
+  /**
+   * The capability-matrix view of one account: the bound platform's
+   * declared capability subset, whether a social adapter is registered
+   * for the platform, whether the account's authorization is currently
+   * usable, and the per-capability scope satisfaction against the
+   * CURRENT authorized grant's VERBATIM scope list. Null when the
+   * account is unknown (callers surface the uniform 404).
+   */
+  resolveAccountCapabilityMatrix(
+    socialAccountId: string,
+  ): Promise<SocialAccountCapabilityView | null>;
+
+  /**
+   * ACCOUNT IDENTITY BINDING (the 'account' family): the provider's
+   * CURRENT identity facts over the bound grant. Fail-closed gates:
+   * capability matrix, usable authorization, scope pre-check, the
+   * network + secrets policy dimensions; the outcome is DATA (the
+   * 'auth-expired' failure is the drift/reauthorization signal).
+   */
+  verifyAccountIdentity(
+    socialAccountId: string,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialAccountIdentityResult>;
+
+  /** The account profile read (the 'account' family): identity + the observable audience facts. */
+  readAccountProfile(
+    socialAccountId: string,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialAccountProfileResult>;
+
+  /** Public content discovery WHERE PERMITTED (the 'content-read' family; paged). */
+  discoverPublicContent(
+    socialAccountId: string,
+    input: SocialContentDiscoveryQuery,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialContentPageResult>;
+
+  /** The bound account's own content listing (the 'content-read' family; paged). */
+  listOwnContent(
+    socialAccountId: string,
+    input: SocialContentListQuery,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialContentPageResult>;
+
+  /** The single-content read (the 'content-read' family; record null = the provider reports no such content). */
+  getContent(
+    socialAccountId: string,
+    input: SocialContentReadInput,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialContentResult>;
+
+  /** The account-level analytics read (the 'analytics-read' family; observed metric points only). */
+  readAccountAnalytics(
+    socialAccountId: string,
+    input: SocialAnalyticsWindow,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialAnalyticsResult>;
+
+  /** The per-content analytics read (the 'analytics-read' family; a bounded provider content-id list + window). */
+  readContentAnalytics(
+    socialAccountId: string,
+    input: SocialContentAnalyticsInput,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialAnalyticsResult>;
+
+  /**
+   * The observable restriction/eligibility signals (the
+   * 'restriction-signals' family): ONLY what the provider exposes —
+   * platform-confirmed restrictions; hidden moderation state is never
+   * invented (architecture-v1.6.md §11; interpretation is MKT-066).
+   */
+  readRestrictionSignals(
+    socialAccountId: string,
+    provenance: SocialAccountProvenance,
+  ): Promise<SocialRestrictionSignalsResult>;
+
+  /**
+   * THE PUBLISH SUBMIT (the 'publish' family; MKT-056 idempotency): the
+   * (socialAccountId, idempotencyKey) pair is the at-most-once identity —
+   * the migration-050 fence answers a REPLAY from the recorded attempt
+   * (duplicate: true) with ZERO provider calls; the first delivery claims
+   * the born 'submitted' row, calls the adapter AFTER the fail-closed
+   * capability/scope/policy gates and fills the single completion
+   * (accepted/published/failed/restricted with the provider refs). An
+   * interrupted call stays 'submitted' — UNKNOWN, never blindly replayed
+   * (the replay surfaces the ConflictError until reconciled). Pre-flight
+   * refusals (unsupported-capability / insufficient-scope / auth-expired
+   * / policy-denied) are RECORDED honestly on the fence as failed
+   * attempts with the taxonomy code (zero provider traffic).
+   */
+  submitPublish(
+    socialAccountId: string,
+    input: SocialPublishSubmitInput,
+    provenance: SocialAccountProvenance,
+  ): Promise<{
+    readonly duplicate: boolean;
+    readonly attempt: SocialPublishAttemptRecord;
+    readonly submission: SocialPublishSubmission;
+  }>;
+
+  /**
+   * THE PUBLISH STATUS POLL (the 'publish' family): reads the provider's
+   * current publish status through the adapter and APPENDS one immutable
+   * status observation (the provider-state history; the attempt row keeps
+   * the submit-time fact). Requires the attempt to carry a provider
+   * publish reference (a 'submitted'/unreferenced attempt is unresolvable
+   * — ConflictError, the honest UNKNOWN).
+   */
+  refreshPublishStatus(
+    socialAccountId: string,
+    attemptId: string,
+    provenance: SocialAccountProvenance,
+  ): Promise<{
+    readonly attempt: SocialPublishAttemptRecord;
+    readonly observation: SocialPublishStatusObservationRecord;
+  }>;
+
+  /** One publish attempt by id, scoped to the owning account (a foreign attempt is the uniform 404). */
+  getPublishAttempt(
+    socialAccountId: string,
+    attemptId: string,
+  ): Promise<SocialPublishAttemptRecord>;
+
+  /** The account's publish attempts (bounded, newest first). Unknown account → 404. */
+  listPublishAttemptsForAccount(
+    socialAccountId: string,
+  ): Promise<readonly SocialPublishAttemptRecord[]>;
+
+  /** The Client's publish attempts (bounded, newest first). */
+  listPublishAttemptsForClient(
+    clientId: string,
+  ): Promise<readonly SocialPublishAttemptRecord[]>;
+
+  /** The append-only status-observation history of one attempt (the owning account scopes the read). */
+  listPublishStatusObservations(
+    socialAccountId: string,
+    attemptId: string,
+  ): Promise<readonly SocialPublishStatusObservationRecord[]>;
 }
 
 export interface SocialAccountsModuleDeps {
@@ -812,9 +1032,111 @@ export interface SocialAccountsModuleDeps {
    * disclosed LOCAL provider double here.
    */
   readonly flows: readonly SocialAccountFlowImplementation[];
+  /**
+   * MKT-056: THE SOCIAL PLATFORM ADAPTER REGISTRATION SURFACE: platform
+   * adapter instances as DATA (the flows precedent). Validated at
+   * construction (unique adapterKey, closed capability/operation
+   * vocabularies, every declared operation implemented, bounded
+   * descriptors/scopes/descriptions). EMPTY in the production
+   * composition until the MKT-057..061 platform deliveries wire real
+   * adapters — an operation against a platform with no registered
+   * adapter is refused fail-closed. The conformance suite supplies the
+   * disclosed reference in-memory double here.
+   */
+  readonly socialAdapters: readonly SocialPlatformAdapter[];
 }
 
 export { createSocialAccountsModule } from './internal/module.ts';
+/**
+ * MKT-056 — the NORMALIZED SOCIAL PLATFORM ADAPTER CONTRACT (the social
+ * capability plane of /social-accounts): the frozen capability families
+ * + closed per-family operation vocabularies, the error taxonomy, the
+ * normalized operation shapes (account identity binding, content
+ * discovery/reads, analytics reads, the publish lifecycle, the
+ * restriction signals), the rate-limit observation surface, the scope
+ * convention (the strict verbatim pre-check), the SocialPlatformAdapter
+ * port and the pure registration/scope/input guards. Exported through
+ * the public entry so the normalized semantics are part of the TESTED
+ * module contract and so the MKT-057..061 platform adapters consume
+ * them through their single sanctioned import (the public entry or the
+ * internal/adapters/adapter-contract.ts shim).
+ */
+export {
+  SOCIAL_ACCOUNT_OPERATIONS,
+  SOCIAL_ADAPTER_FAILURE_CODES,
+  SOCIAL_ANALYTICS_READ_OPERATIONS,
+  SOCIAL_CAPABILITY_FAMILIES,
+  SOCIAL_CONTENT_READ_OPERATIONS,
+  SOCIAL_FAMILY_OPERATIONS,
+  SOCIAL_OPERATION_KEYS,
+  SOCIAL_PUBLISH_FILL_TRANSITIONS,
+  SOCIAL_PUBLISH_OPERATIONS,
+  SOCIAL_PUBLISH_STATES,
+  SOCIAL_RESTRICTION_SIGNAL_OPERATIONS,
+  adapterCapabilityForOperation,
+  assertValidSocialAnalyticsWindow,
+  assertValidSocialContentAnalyticsInput,
+  assertValidSocialContentDiscoveryQuery,
+  assertValidSocialContentListQuery,
+  assertValidSocialContentReadInput,
+  assertValidSocialIdempotencyKey,
+  assertValidSocialPublishRequest,
+  assertValidSocialPublishStatusInput,
+  assertValidSocialRateLimitObservation,
+  buildSocialAdapterRegistry,
+  isKnownSocialFailureCode,
+  isLegalSocialPublishFill,
+  isRetryableSocialFailure,
+  socialAdapterRegistrationProblems,
+  socialCapabilityOf,
+  socialCapabilityScopeSatisfaction,
+  socialOperationFamilyOf,
+  socialScopeProblem,
+} from './internal/adapter-contract.ts';
+export type {
+  RegisteredSocialAdapterInfo,
+  SocialAccountIdentityResult,
+  SocialAccountProfile,
+  SocialAccountProfileResult,
+  SocialAdapterCallContext,
+  SocialAdapterDescriptor,
+  SocialAdapterFailureCode,
+  SocialAnalyticsObservation,
+  SocialAnalyticsResult,
+  SocialAnalyticsWindow,
+  SocialCapability,
+  SocialCapabilityFamily,
+  SocialCapabilityScopeSatisfaction,
+  SocialContentAnalyticsInput,
+  SocialContentDiscoveryQuery,
+  SocialContentListQuery,
+  SocialContentPage,
+  SocialContentPageResult,
+  SocialContentReadInput,
+  SocialContentRecord,
+  SocialContentResult,
+  SocialEngagementObservation,
+  SocialOperationFailure,
+  SocialOperationKey,
+  SocialPlatformAdapter,
+  SocialProviderIdentity,
+  SocialPublishMediaAsset,
+  SocialPublishRequest,
+  SocialPublishState,
+  SocialPublishStatus,
+  SocialPublishStatusInput,
+  SocialPublishStatusResult,
+  SocialPublishSubmission,
+  SocialPublishSubmitInput,
+  SocialPublishSubmitResult,
+  SocialRateLimitObservation,
+  SocialRestrictionSignal,
+  SocialRestrictionSignalsResult,
+} from './internal/adapter-contract.ts';
+export type {
+  SocialPublishAttemptRecord,
+  SocialPublishStatusObservationRecord,
+} from './internal/adapter-store.ts';
 /**
  * The input guards (flow-descriptor validation, requested-scope and
  * provenance validation with the §21 material-key backstop), the pure

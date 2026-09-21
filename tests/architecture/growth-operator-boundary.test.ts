@@ -47,7 +47,7 @@
  *      is NOT in the registered matrix row (it joins at MKT-066 time);
  *   8. the spec registration exists: /growth-operator in
  *      spec/architecture.md §6 + the matrix row + the authority-notes
- *      bullet; 050_growth_operator.sql holds its numeric position;
+ *      bullet; 052_growth_operator.sql holds its numeric position;
  *   9. the version discipline: the frozen vocabulary version (go-vocab-v1)
  *      + the strategy version (go-strategy-v1) ship on the public
  *      contract.
@@ -69,7 +69,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const src = (...parts: string[]) => join(repoRoot, 'src', ...parts);
 const read = (path: string): string => readFileSync(path, 'utf8');
 
-const migration050 = read(join(repoRoot, 'src', 'platform', 'db', 'migrations', '050_growth_operator.sql'));
+const migration050 = read(join(repoRoot, 'src', 'platform', 'db', 'migrations', '052_growth_operator.sql'));
 const operatorPublic = read(src('modules', 'growth-operator', 'public.ts'));
 const operatorModule = read(src('modules', 'growth-operator', 'internal', 'growth-operator-module.ts'));
 const operatorStore = read(src('modules', 'growth-operator', 'internal', 'growth-operator-store.ts'));
@@ -549,7 +549,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 1], '050_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 1], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------
