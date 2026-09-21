@@ -84,6 +84,9 @@ import { deliverReadObservations, type RecordDeliveryReceipt } from './integrati
 
 const ADAPTER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
+/** The UUID shape guard (the social-accounts/ai-operator house pattern). */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Fields always server-derived on registration — plus every
  * material-shaped key is rejected so nothing secret can even be smuggled
@@ -529,6 +532,12 @@ export function registerIntegrationsRoutes(
 
   /** Canonical client owner scope; 404 BEFORE dependent traversal. */
   async function clientOwner(clientId: string): Promise<OwnerScope> {
+    // The uniform-404 fence includes MALFORMED identifiers (the
+    // social-accounts/ai-operator house pattern — a non-UUID never reaches
+    // the database; foreign, unknown and malformed are indistinguishable).
+    if (!UUID_PATTERN.test(clientId)) {
+      throw new NotFoundError('client', clientId);
+    }
     const ownership = await modules.clients.resolveClientOwnership(clientId);
     if (ownership === null) {
       throw new NotFoundError('client', clientId);
@@ -545,9 +554,16 @@ export function registerIntegrationsRoutes(
    * route: the module resolves the connection + its owning Client chain;
    * a connection that does not exist, whose Client chain does not resolve,
    * or that belongs to ANOTHER Client than the path's is the SAME uniform
-   * 404 (a foreign identifier is not a traversal oracle).
+   * 404 (a foreign identifier is not a traversal oracle). MKT-071: a
+   * MALFORMED identifier (non-UUID) is the SAME uniform 404 — it never
+   * reaches the database (the social-accounts house pattern — foreign,
+   * unknown and malformed are indistinguishable on every commerce
+   * surface too).
    */
   async function requireConnectionInClient(connectionId: string, clientId: string) {
+    if (!UUID_PATTERN.test(connectionId)) {
+      throw new NotFoundError('integration connection', connectionId);
+    }
     const ownership = await modules.integrations.resolveConnectionOwnership(connectionId);
     if (ownership === null || ownership.connection.clientId !== clientId) {
       throw new NotFoundError('integration connection', connectionId);
@@ -1267,6 +1283,11 @@ export function registerIntegrationsRoutes(
     defineQueryRoute<{ clientId: string }, readonly CommerceEventReceiptRecord[]>({
       authenticator: services.auth,
       authorize: async (ctx) => {
+        // The uniform-404 fence includes MALFORMED client identifiers (the
+        // house UUID guard — they never reach the database).
+        if (!UUID_PATTERN.test(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
         await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
       },
       execute: async (ctx) =>
@@ -1290,6 +1311,11 @@ export function registerIntegrationsRoutes(
     defineQueryRoute<{ clientId: string }, readonly CommerceEventRecord[]>({
       authenticator: services.auth,
       authorize: async (ctx) => {
+        // The uniform-404 fence includes MALFORMED client identifiers (the
+        // house UUID guard — they never reach the database).
+        if (!UUID_PATTERN.test(ctx.params.clientId)) {
+          throw new NotFoundError('client', ctx.params.clientId);
+        }
         await requireClientAccess(modules, ctx.principal, ctx.params.clientId);
       },
       execute: async (ctx) => modules.integrations.listCommerceEventsForClient(ctx.params.clientId),

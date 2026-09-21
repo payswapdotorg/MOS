@@ -435,8 +435,18 @@ export function mapCommerceCatalogResponse(
   etag: string | null,
 ): CommercePageMappingResult {
   const records: NormalizedProviderRecord[] = [];
-  const categories = asArray(payload['categories']) ?? [];
-  const products = asArray(payload['products']) ?? [];
+  // A PRESENT key must be an array (an absent key is an empty page — a
+  // malformed present key fails closed, never a silently-empty catalog).
+  const categoriesRaw = payload['categories'];
+  const categories = categoriesRaw === undefined ? [] : asArray(categoriesRaw);
+  if (categories === null) {
+    return { ok: false, error: "malformed catalog payload: 'categories' is not an array" };
+  }
+  const productsRaw = payload['products'];
+  const products = productsRaw === undefined ? [] : asArray(productsRaw);
+  if (products === null) {
+    return { ok: false, error: "malformed catalog payload: 'products' is not an array" };
+  }
   if (categories.length + products.length > MAX_ROW_COUNT) {
     return { ok: false, error: `catalog page carries more than ${MAX_ROW_COUNT} rows` };
   }
