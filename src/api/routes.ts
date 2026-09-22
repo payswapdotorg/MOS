@@ -346,6 +346,17 @@ import { registerContentAssetsRoutes } from './content-assets-routes.ts';
 // recommendations recorded as DATA toward the mission/operator layer;
 // the /experiments authority stays sole for experiment lifecycle).)
 import { registerExperimentAnalysisRoutes } from './experiment-analysis-routes.ts';
+// MKT-065: the /cross-platform-distribution surfaces — the distribution
+// plans + THE fan-out dispatch (the fail-closed per-destination
+// execution: the 063 rights gate composed before every attempt, the
+// per-platform capability validation through the 056 adapter contract +
+// the /integrations registry, the dispatch policy gate through
+// /policies and the physical publish EXCLUSIVELY through the 056
+// submitPublish idempotency ledger) + the §5 measurement tail. NO
+// gate-skipping verb of any kind exists (fail-closed by construction);
+// no route mutates a mission, re-evaluates rights or touches the 056
+// ledger directly.
+import { registerCrossPlatformDistributionRoutes } from './cross-platform-distribution-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -611,5 +622,9 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-067: the /experiment-analysis surfaces — the analyses + the
   // allocation recommendations (see the import block above).
   registerExperimentAnalysisRoutes(router, services, modules);
+  // MKT-065: the /cross-platform-distribution surfaces — the
+  // distribution plans + the fan-out dispatch + the measurement tail
+  // (see the import block above).
+  registerCrossPlatformDistributionRoutes(router, services, modules);
   return router;
 }

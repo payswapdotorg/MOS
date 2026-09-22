@@ -293,6 +293,21 @@ import type { ContentAssetsModuleApi } from '../modules/content-assets/public.ts
 // method that mutates experiment exposure, platform state or workflow
 // inputs — no second experiment engine, no second execution engine).
 import type { ExperimentAnalysisModuleApi } from '../modules/experiment-analysis/public.ts';
+// MKT-065: /cross-platform-distribution module contract (the v1.6 §5
+// Cross-Platform Distribution authority — the Distribution Plan records
+// of the Source Asset → Rights/Provenance → Transformation Plan →
+// Target Platform → Target Account → Target Format → Publication →
+// Measurement chain: the per-destination fan-out COMPOSES the 063
+// publication gate fail-closed (only allow publishes; review_required
+// and blocked NEVER publish), validates the destination account's REAL
+// capabilities through the 056 normalized adapter contract + the
+// /integrations adapter registry (capability parity never assumed),
+// evaluates the dispatch policy gate through /policies and executes the
+// physical publish EXCLUSIVELY through the 056 submitPublish
+// idempotency ledger — NO second engine, NO rights authority, NO policy
+// authority, NO mission mutation; the historical lineage tail is fully
+// append-only).
+import type { CrossPlatformDistributionModuleApi } from '../modules/cross-platform-distribution/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -556,4 +571,17 @@ export interface ApplicationModules {
   // zero-capacity arm validity and reproducible decisions — allocation
   // results are recommendations as DATA, never exposure mutations).
   readonly experimentAnalysis: ExperimentAnalysisModuleApi;
+  // MKT-065: /cross-platform-distribution — the Cross-Platform Distribution
+  // authority (the Distribution Plan records of the §5 chain — Source
+  // Asset → Rights/Provenance → Transformation Plan → Target Platform →
+  // Target Account → Target Format → Publication → Measurement — with the
+  // per-destination fan-out that COMPOSES the 063 publication gate
+  // fail-closed (only allow publishes), validates the destination
+  // account's REAL capabilities through the 056 adapter contract + the
+  // /integrations registry (never assumed parity), evaluates the dispatch
+  // policy gate through /policies and executes the physical publish
+  // EXCLUSIVELY through the 056 submitPublish idempotency ledger — NO
+  // second engine, NO rights authority, NO policy authority, NO mission
+  // mutation; the lineage tail is fully append-only).
+  readonly crossPlatformDistribution: CrossPlatformDistributionModuleApi;
 }

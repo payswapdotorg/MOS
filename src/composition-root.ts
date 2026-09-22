@@ -558,6 +558,11 @@ import type { TransformationEngine } from './modules/content-assets/public.ts';
 // and canonical digests; allocation results are recommendations toward
 // the mission/operator layer, never exposure mutations).
 import { createExperimentAnalysisModule } from './modules/experiment-analysis/public.ts';
+// MKT-065: /cross-platform-distribution — the Cross-Platform Distribution
+// authority (the frozen v1.6 §5 module; consumed through its public
+// contract ONLY: growth-missions, social-accounts, content-assets,
+// content-rights, integrations, policies).
+import { createCrossPlatformDistributionModule } from './modules/cross-platform-distribution/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1580,6 +1585,38 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     goals,
   });
 
+  // MKT-065: /cross-platform-distribution — the Cross-Platform
+  // Distribution authority (the frozen v1.6 §5 row, all six directions
+  // consumed READ-ONLY except the 056 publish submit):
+  // /growth-missions for the optional mission anchor (ownership
+  // resolution — the mission authority stays sole, never mutated);
+  // /social-accounts for the destination account resolution, the REAL
+  // capability matrix (resolveAccountCapabilityMatrix — capability
+  // parity never assumed) and THE 056 PUBLISH SUBMIT (submitPublish —
+  // the idempotency ledger; the ONLY physical publish path, no parallel
+  // engine); /content-assets for the explicit versioned records behind
+  // every opaque 'ca:' ref (never floating pointers); /content-rights
+  // for THE publication gate (evaluatePublicationGate — composed
+  // fail-closed before every attempt, only allow publishes, the verdicts
+  // recorded never re-evaluated); /integrations for the adapter registry
+  // (listRegisteredAdapters — the 056 normalized adapter contract's
+  // platform pipe must be registered); /policies for the dispatch gate
+  // (evaluateAction — the network-dimension action
+  // 'content.distribution.dispatch'; decisions ride the policy engine's
+  // own append-only ledger). The module is fully deterministic (the row
+  // lists NO /ai-runtime dependency and none is used).
+  const crossPlatformDistribution = createCrossPlatformDistributionModule({
+    db,
+    clock,
+    ids,
+    growthMissions,
+    socialAccounts,
+    contentAssets,
+    contentRights,
+    integrations,
+    policies,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -1726,7 +1763,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },
     runtime: { aiProvider },
   };
 }
