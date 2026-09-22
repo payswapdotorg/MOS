@@ -7,6 +7,10 @@
 // 1, first history event; activation is a deliberate later step that always
 // requires a reason (never done by this flow); the mission now appears
 // under "Continue a mission" on Home.
+//
+// UX-003 — "what happens next" now links into the REAL mission workspace
+// (the screen that answers what the mission is doing, composed from the
+// module authorities). The link is live SPA navigation, not a promise.
 
 import { FAMILY_PRESENTATION, isObjectiveFamily } from "./families";
 import { useNavigate } from "@/components/mos/home/outcomes";
@@ -130,8 +134,9 @@ export function MissionCreatedScreen({ missionId }: { missionId: string }) {
                   : "Every change to the mission is recorded with actor and reason."}
               </li>
               <li>
-                Working with a mission step by step — reviewing its progress, mapping goals,
-                activating or pausing it — arrives with the mission workspace, a planned update.
+                The mission workspace is open now — one screen that shows what this mission is
+                doing: its target, progress, history, what comes next, and the deliberate path to
+                activating it.
               </li>
             </ul>
           </section>
@@ -141,8 +146,15 @@ export function MissionCreatedScreen({ missionId }: { missionId: string }) {
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={() => navigate({ kind: "home" })}
+          onClick={() => navigate({ kind: "mission", missionId })}
           className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-lg bg-teal-800 px-5 text-sm font-medium text-white transition-colors hover:bg-teal-900 focus-visible:ring-2 focus-visible:ring-teal-700 sm:flex-none sm:px-8"
+        >
+          Open the mission workspace
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate({ kind: "home" })}
+          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-lg border border-teal-800/25 bg-white px-5 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700 sm:flex-none"
         >
           Back to Home
         </button>

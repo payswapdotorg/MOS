@@ -15,17 +15,23 @@ import {
   mosPost,
   type AgencyAttentionView,
   type AgencyRecord,
+  type AllocationRecommendationView,
   type AppInstallRecord,
   type AuthContext,
   type ClientMemoryView,
   type ClientRecord,
   type CommandCenterView,
+  type ContentAssetVersionView,
+  type ContentRightsRecordView,
+  type ContentTransformationView,
   type DecisionEventRecord,
   type DecisionRecord,
   type DeploymentRecord,
   type DeveloperCatalogApp,
   type DevPortalDocs,
   type EvidenceRecord,
+  type ExperimentAnalysisView,
+  type ExperimentView,
   type FirstPartyPack,
   type GoalRecord,
   type GrowthMissionDetailView,
@@ -36,12 +42,15 @@ import {
   type MarketplaceAppDetail,
   type MarketplaceAppEntry,
   type MembershipRecord,
+  type MetricObservationView,
   type OfferClaimResponse,
   type PackSurfaceComposition,
   type PlaybookRecord,
   type PolicyVersionRecord,
   type ProfitAgencyView,
   type ProfitClientView,
+  type SocialAccountEventView,
+  type SocialAccountView,
   type UserRecord,
   type WorkflowRecord,
   type WorkspaceRecord,
@@ -159,6 +168,176 @@ export function useCreateGrowthMission(agencyId: string) {
       navigate({ kind: "mission-created", missionId: detail.mission.missionId });
     },
     onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+// --- UX-003 Mission Workspace composition hooks ----------------------------------
+//
+// The COMPOSITION DISCIPLINE: every hook below is a THIN useMosQuery wrapper
+// over ONE existing read surface (or ONE existing mutation route). No second
+// analytics layer, no client-side derivation — each datum's authority stays
+// the backend module that owns it. Queries are DISABLED (path === null) until
+// their real input resolves, so young missions with no client context make
+// ZERO client-scoped calls.
+
+/** The mission's own truth — GET /api/growth-missions/:missionId
+ *  (the composed honest read-back: record, current version, goal mappings
+ *  with LIVE goal status, append-only history, terminal decision basis). */
+export function useGrowthMissionDetail(missionId: string | null) {
+  return useMosQuery<GrowthMissionDetailView>(
+    ["growth-mission", missionId],
+    missionId === null ? null : `/api/growth-missions/${missionId}`,
+  );
+}
+
+/** The client's experiments (the hypothesis + experiment authority):
+ *  GET /api/clients/:clientId/experiments. */
+export function useExperimentsForClient(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; experiments: ExperimentView[] }>(
+    ["experiments", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/experiments`,
+  );
+  return { ...query, data: query.data?.experiments };
+}
+
+/** The client's metric observations (the measurement authority):
+ *  GET /api/clients/:clientId/metrics. */
+export function useMetricObservations(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; observations: MetricObservationView[] }>(
+    ["metric-observations", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/metrics`,
+  );
+  return { ...query, data: query.data?.observations };
+}
+
+/** The client's social account bindings (the platforms authority — the
+ *  frozen 056 connection states): GET /api/clients/:clientId/social-accounts. */
+export function useSocialAccounts(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; socialAccounts: SocialAccountView[] }>(
+    ["social-accounts", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/social-accounts`,
+  );
+  return { ...query, data: query.data?.socialAccounts };
+}
+
+/** One account's append-only event tail — the observable-now surface the
+ *  health section composes while Platform Health (MKT-066) is not built:
+ *  GET /api/clients/:clientId/social-accounts/:accountId/events. */
+export function useSocialAccountEvents(clientId: string | null, accountId: string | null) {
+  const query = useMosQuery<{ socialAccountId: string; events: SocialAccountEventView[] }>(
+    ["social-account-events", clientId, accountId],
+    clientId === null || accountId === null
+      ? null
+      : `/api/clients/${clientId}/social-accounts/${accountId}/events`,
+  );
+  return { ...query, data: query.data?.events };
+}
+
+/** The client's content asset versions (the 064 versioned-asset model):
+ *  GET /api/clients/:clientId/content-assets. */
+export function useContentAssets(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; versions: ContentAssetVersionView[] }>(
+    ["content-assets", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/content-assets`,
+  );
+  return { ...query, data: query.data?.versions };
+}
+
+/** The client's content transformations (the transformation surface):
+ *  GET /api/clients/:clientId/content-assets/transformations. */
+export function useContentTransformations(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; transformations: ContentTransformationView[] }>(
+    ["content-transformations", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/content-assets/transformations`,
+  );
+  return { ...query, data: query.data?.transformations };
+}
+
+/** The client's content rights records: GET /api/clients/:clientId/content-rights. */
+export function useContentRights(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; records: ContentRightsRecordView[] }>(
+    ["content-rights", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/content-rights`,
+  );
+  return { ...query, data: query.data?.records };
+}
+
+/** The experiment's sequential analysis tail (the NEW MKT-067 surface):
+ *  GET /api/clients/:clientId/experiment-analysis/analyses/by-experiment/:experimentId.
+ *  Mounted per-expanded-experiment (the expand→fetch house pattern) — never
+ *  a bulk prefetch. */
+export function useExperimentAnalyses(clientId: string | null, experimentId: string | null) {
+  const query = useMosQuery<{ analyses: ExperimentAnalysisView[] }>(
+    ["experiment-analyses", clientId, experimentId],
+    clientId === null || experimentId === null
+      ? null
+      : `/api/clients/${clientId}/experiment-analysis/analyses/by-experiment/${experimentId}`,
+  );
+  return { ...query, data: query.data?.analyses };
+}
+
+/** The experiment's allocation recommendation tail (MKT-067):
+ *  GET /api/clients/:clientId/experiment-analysis/allocations/by-experiment/:experimentId. */
+export function useExperimentAllocations(clientId: string | null, experimentId: string | null) {
+  const query = useMosQuery<{ recommendations: AllocationRecommendationView[] }>(
+    ["experiment-allocations", clientId, experimentId],
+    clientId === null || experimentId === null
+      ? null
+      : `/api/clients/${clientId}/experiment-analysis/allocations/by-experiment/${experimentId}`,
+  );
+  return { ...query, data: query.data?.recommendations };
+}
+
+/**
+ * The mission lifecycle transition through the REAL contract:
+ * POST /api/growth-missions/:missionId/status (owner|admin; REQUIRED reason;
+ * CAS on the mission's LIVE version — read fresh from the detail query and
+ * sent as-is, never cached). The server validates the frozen transition
+ * table and the ≥1-mapped-goal activation rule; a 409/403/422 surfaces the
+ * server's own words verbatim in the calling screen (never a faked
+ * transition). NEVER auto-invoked — the workspace calls this only from the
+ * explicit, deliberate lifecycle action.
+ */
+export function useSetGrowthMissionStatus(missionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { status: string; reason: string; version: number }) =>
+      mosPost<GrowthMissionDetailView>(`/api/growth-missions/${missionId}/status`, {
+        status: input.status,
+        reason: input.reason,
+        version: input.version,
+      }),
+    onSuccess: (detail) => {
+      toast.success(`Mission is now ${detail.mission.status.replace(/_/g, " ")}`);
+      queryClient.invalidateQueries({ queryKey: ["growth-mission", missionId] });
+      // The home mission list + any agency mission lists follow live.
+      queryClient.invalidateQueries({ queryKey: ["growth-missions"] });
+    },
+    // Errors are DELIBERATELY not toasted: the lifecycle action renders the
+    // server's 409/403/422 verbatim inline (the UX-002 precedent) so the
+    // operator sees the platform's own words in context.
+  });
+}
+
+/**
+ * Map an EXISTING goal to the mission through the REAL contract:
+ * POST /api/growth-missions/:missionId/goal-mappings {goalId} (owner|admin).
+ * The /goals authority stays the measurable anchor — this only records the
+ * mapping; the live goal status comes back through the detail read.
+ */
+export function useMapGoalToMission(missionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { goalId: string }) =>
+      mosPost<GrowthMissionDetailView>(`/api/growth-missions/${missionId}/goal-mappings`, {
+        goalId: input.goalId,
+      }),
+    onSuccess: () => {
+      toast.success("Goal mapped — its live status now shows in progress");
+      queryClient.invalidateQueries({ queryKey: ["growth-mission", missionId] });
+    },
+    // Same deliberate posture as the lifecycle mutation: the calling screen
+    // renders the server's own 404/409/403 words inline.
   });
 }
 

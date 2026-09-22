@@ -13,6 +13,7 @@ import { AgencyGate, AppShell } from "./app-shell";
 import HomeScreen from "./home/HomeScreen";
 import { MissionCreateScreen } from "./create/MissionCreateScreen";
 import { MissionCreatedScreen } from "./create/MissionCreatedScreen";
+import { MissionWorkspaceScreen } from "./mission/MissionWorkspaceScreen";
 import { AdminScreen } from "./admin-screen";
 import { AppsScreen } from "./apps-screen";
 import { AttentionScreen } from "./attention-screen";
@@ -77,6 +78,7 @@ function MosAppInner() {
       {view.kind === "mission-created" ? (
         <MissionCreatedScreen missionId={view.missionId} />
       ) : null}
+      {view.kind === "mission" ? <MissionWorkspaceScreen missionId={view.missionId} /> : null}
       {view.kind === "command-center" ? (
         agencyId === null ? (
           <AgencyGate />
