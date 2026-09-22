@@ -186,10 +186,13 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   // deliveries append 047, 048 and 049 after 046, the MKT-056
   // social-adapter-contract delivery appends 050 (the /social-accounts
   // capability-plane extension), the MKT-063 /content-rights delivery
-  // appends 051 and the MKT-054 /growth-operator delivery appends 052
-  // (renumbered 050→052 at merge — the sibling-promotion precedent;
-  // this delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-11), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth)');});
+  // appends 051, the MKT-054 /growth-operator delivery appends 052
+  // (renumbered 050→052 at merge — the sibling-promotion precedent), the
+  // MKT-064 /content-assets delivery appends 053, the MKT-067
+  // /experiment-analysis delivery appends 054 and the MKT-065
+  // /cross-platform-distribution delivery appends 055 (the
+  // sibling-promotion precedent; this delivery still owns NO migration).
+  assert.deepEqual(migrations.slice(-12), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql', '055_cross_platform_distribution.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth)');});
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
 }
@@ -333,6 +336,8 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   // MKT-055 /social-accounts, MKT-068 /notification-delivery and
   // MKT-069 /product-intelligence deliveries append their registrations
   // after this module, and the MKT-063 /content-rights and MKT-054
-  // /growth-operator deliveries append their registrations after those
+  // /growth-operator deliveries append their registrations after those,
+  // and the MKT-067 /experiment-analysis and MKT-065
+  // /cross-platform-distribution deliveries append theirs after those
   // — the sibling promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis },'));});
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },'));});

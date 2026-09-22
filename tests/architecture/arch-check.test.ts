@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (44 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (45 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 44);
+  assert.equal(modules.length, 45);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -51,10 +51,15 @@ test('frozen module set is parsed from spec/architecture.md §6 (44 modules)', (
   // The MKT-067 delivery appends /experiment-analysis — the v1.6
   // Experiment Analysis and Adaptive Allocation registration (the §12
   // analysis layer over the existing /experiments authority).
+  // The MKT-065 delivery appends /cross-platform-distribution — the v1.6
+  // Cross-Platform Distribution registration (the §5 distribution-plan
+  // authority over the composed rights gate, capability validation,
+  // dispatch policy gate and the 056 submitPublish contract).
   assert.deepEqual(
     [...modules].sort(),
     [
       'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-rights', 'credentials',
+      'cross-platform-distribution',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
@@ -189,6 +194,16 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // /evidence canonical link resolution and the /learnings context —
   // the frozen v1.6 row verbatim, all four READ-ONLY):
   assert.deepEqual(matrix['experiment-analysis'], ['experiments', 'metrics', 'evidence', 'learnings']);
+  // The MKT-065 additive matrix line (the /cross-platform-distribution
+  // Cross-Platform Distribution authority over the /growth-missions
+  // mission anchor, the /social-accounts capability + publish authority,
+  // the /content-assets versioned records, the /content-rights publication
+  // gate, the /integrations adapter registry and the /policies dispatch
+  // gate — the frozen v1.6 row verbatim):
+  assert.deepEqual(matrix['cross-platform-distribution'], [
+    'growth-missions', 'social-accounts', 'content-assets', 'content-rights',
+    'integrations', 'policies',
+  ]);
 });
 
 test('PLAT-AC-01: real codebase enforces frozen boundaries — zero violations', () => {
@@ -319,6 +334,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // fixture's missing experiment-analysis boundary a MISSING_MODULE
     // violation (the same additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/experiment-analysis',
+    // The MKT-065 /cross-platform-distribution §6 registration (the v1.6
+    // Cross-Platform Distribution authority) makes the fixture's missing
+    // cross-platform-distribution boundary a MISSING_MODULE violation
+    // (the same additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/cross-platform-distribution',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -377,9 +397,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // the MKT-064 delivery and /experiment-analysis registered by the
   // MKT-067 delivery (the same additive count each sibling promotion
   // adds — the merged-tree truth after the sibling reconciliations).
+  // The MKT-065 delivery appends /cross-platform-distribution — the v1.6
+  // Cross-Platform Distribution registration (the same additive count
+  // each sibling promotion adds).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    45,
+    46,
     'no unexpected violation categories may be reported',
   );
 

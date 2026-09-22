@@ -538,18 +538,20 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
     'the composition root constructs the module',
   );
   assert.ok(
-    compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis },'),
-    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that)',
+    compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },'),
+    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, and the MKT-065 sibling after that)',
   );
   assert.ok(
     compositionRoot.includes('options.growthOperatorGate'),
     'the AppOptions.growthOperatorGate seam exists (the disclosed test/rights-gate double)',
   );
-  // The migration tail position (the shared infra-adapters list).
+  // The migration tail position (the shared infra-adapters list; the
+  // MKT-065 /cross-platform-distribution sibling delivery appends 055
+  // after the MKT-067 054 — every tail position shifts once more).
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 3], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 4], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------

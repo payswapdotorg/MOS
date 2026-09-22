@@ -915,6 +915,33 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // + digest); NO experiment, metric, evidence, learning, policy or
     // tenant table is created or mutated.
     '054_experiment_analysis.sql',
+    // MKT-065 (Cross-Platform Distribution) appends the
+    // cross-platform-distribution migration (055 — the number PRE-ASSIGNED
+    // to this Work Item by the Tech Lead; 054 is the tail on the base; the
+    // MKT-057 and UX-002 siblings were told to add none — the Tech Lead
+    // reconciles numbering at merge, the 063/064/067 precedent): the
+    // /cross-platform-distribution authority — the DISTRIBUTION PLAN
+    // records (the §5 chain: the 064-anchored source asset + the declared
+    // transformation plan over versioned outputs + the optional read-only
+    // /growth-missions anchor + the deterministic input digest; the plan
+    // lifecycle planned → dispatching → dispatched with the idempotent
+    // re-dispatch convergence; identity immutable, no DELETE), the
+    // DESTINATION VARIANT rows (the /social-accounts read-only FK anchors
+    // with the same-Client trigger, the platform id frozen at planning,
+    // the frozen destination-specific 056 publish request, the derived
+    // deterministic idempotency key cpd:<plan>:<destination> with the
+    // global key fence, the (plan, account, target format) variant fence
+    // and the frozen outcome vocabulary with the never-back-to-planned
+    // discipline), the per-destination PUBLICATION link records (the 056
+    // social_publish_attempts read-only FK anchor with the same-Client
+    // trigger, the submit-time state mirror, the provider refs, the
+    // duplicate flag — ONE append-only row per destination; the live
+    // publish truth stays the 056 ledger) and the fully APPEND-ONLY
+    // historical lineage tail (the gapless per-plan sequence; the frozen
+    // event-kind vocabulary; UPDATE/DELETE rejected); NO mission,
+    // account, asset, rights, policy, integration or tenant table is
+    // created or mutated.
+    '055_cross_platform_distribution.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

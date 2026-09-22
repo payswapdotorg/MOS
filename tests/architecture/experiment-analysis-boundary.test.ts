@@ -347,19 +347,24 @@ test('MKT-067 boundary 8: the disclosed spec registration exists — §6 line + 
     matrixSpec.includes('- `/experiment-analysis` is the v1.6 Experiment Analysis and Adaptive Allocation authority'),
   );
 
-  // The migration tail: 054 is the last entry of the ordered expected list.
+  // The migration tail: 054 is the second-to-last entry of the ordered
+  // expected list (the MKT-065 /cross-platform-distribution sibling
+  // delivery appends 055 after it — the same additive precedent; every
+  // tail position shifts once more).
   const infraAdapters = read(join(repoRoot, 'tests', 'architecture', 'infra-adapters.test.ts'));
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 1], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 2], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 1], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 2], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 3], '053_content_assets.sql');
   assert.ok(existsSync(src('platform', 'db', 'migrations', '054_experiment_analysis.sql')));
-  // 054 is the last migration on disk.
+  // 055 is the last migration on disk (the MKT-065 sibling tail).
   const onDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(onDisk[onDisk.length - 1], '054_experiment_analysis.sql');
+  assert.equal(onDisk[onDisk.length - 1], '055_cross_platform_distribution.sql');
+  assert.equal(onDisk[onDisk.length - 2], '054_experiment_analysis.sql');
 });
 
 // ---------------------------------------------------------------------------
@@ -381,8 +386,10 @@ test('MKT-067 boundary 9: the composition root constructs and registers the modu
   for (const dep of ['experiments,', 'metrics:', 'evidence,', 'learnings,', 'clients,', 'workspaces,']) {
     assert.ok(wiring.includes(dep), `the wiring passes ${dep}`);
   }
-  // The modules map registers it (the tail position).
-  assert.ok(compositionRoot.includes('contentAssets, experimentAnalysis },'));
+  // The modules map registers it (the tail position; the MKT-065
+  // /cross-platform-distribution sibling delivery appends its own
+  // registration after it — the same additive precedent).
+  assert.ok(compositionRoot.includes('contentAssets, experimentAnalysis, crossPlatformDistribution },'));
   // No ai-runtime dependency anywhere in the module wiring (determinism).
   assert.ok(!wiring.includes('aiRuntime'));
   // The vocabulary version is exported from the public contract.
