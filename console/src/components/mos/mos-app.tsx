@@ -11,6 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { AgencyGate, AppShell } from "./app-shell";
 import HomeScreen from "./home/HomeScreen";
+import { MissionCreateScreen } from "./create/MissionCreateScreen";
+import { MissionCreatedScreen } from "./create/MissionCreatedScreen";
 import { AdminScreen } from "./admin-screen";
 import { AppsScreen } from "./apps-screen";
 import { AttentionScreen } from "./attention-screen";
@@ -69,6 +71,12 @@ function MosAppInner() {
   return (
     <AppShell>
       {view.kind === "home" ? <HomeScreen /> : null}
+      {view.kind === "create-mission" ? (
+        <MissionCreateScreen seedFamily={view.family ?? null} />
+      ) : null}
+      {view.kind === "mission-created" ? (
+        <MissionCreatedScreen missionId={view.missionId} />
+      ) : null}
       {view.kind === "command-center" ? (
         agencyId === null ? (
           <AgencyGate />

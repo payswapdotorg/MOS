@@ -10,6 +10,7 @@
  */
 
 import { create } from "zustand";
+import type { ObjectiveFamily } from "@/components/mos/create/families";
 import {
   getMosToken,
   MosApiError,
@@ -46,7 +47,12 @@ export type MosView =
   | { kind: "profit" }
   | { kind: "human-work" }
   | { kind: "apps"; tab: AppsTab }
-  | { kind: "admin" };
+  | { kind: "admin" }
+  // UX-002 — the reusable mission-creation flow (one flow, optionally
+  // pre-seeded with a frozen §3 family by a home outcome card; reachable
+  // with no seed too) and its honest mission-created read-back view.
+  | { kind: "create-mission"; family?: ObjectiveFamily }
+  | { kind: "mission-created"; missionId: string };
 
 type MosSessionState = {
   /** The MOS Bearer token (null → login screen). */

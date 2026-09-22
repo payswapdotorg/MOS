@@ -131,10 +131,12 @@ function MissionsList({ agencyId }: { agencyId: string }) {
           the work moving while you&apos;re away and always shows what happens next.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-stone-600">
-          Starting missions straight from an outcome arrives next. Meanwhile, Today /
-          Operations shows the work already underway.
+          Starting one takes a minute: pick the outcome you want above, or start one here without
+          picking first — you&apos;ll say what you want and what success looks like either way.
+          It appears right here, and you can pick it up again any time.
         </p>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StartMissionButton />
           <OpenTodayOperationsButton />
         </div>
       </div>
@@ -162,6 +164,21 @@ function OpenTodayOperationsButton() {
       className="inline-flex min-h-[44px] items-center rounded-lg border border-teal-800/25 bg-white px-4 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700"
     >
       {TODAY_OPERATIONS.label}
+    </button>
+  );
+}
+
+// UX-002 — the unseeded entry into the ONE reusable mission-creation flow
+// (no family pre-selected; the outcome step asks for both words and kind).
+function StartMissionButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => navigate({ kind: "create-mission" })}
+      className="inline-flex min-h-[44px] items-center rounded-lg border border-teal-800/25 bg-white px-4 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700"
+    >
+      Start a mission
     </button>
   );
 }
