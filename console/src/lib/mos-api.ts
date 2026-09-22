@@ -957,4 +957,80 @@ export type PlatformHealth = {
   time: string;
 };
 
+// --- Growth missions (MKT-053 — UX-002 mission creation) ----------------------
+
+/** One declared target metric (the frozen create/read vocabulary). */
+export type GrowthMissionTargetMetricView = {
+  metric: string;
+  comparator: string;
+  targetValue: number;
+  unit?: string | null;
+  description?: string | null;
+  intermediate: boolean;
+};
+
+/** The agency-scoped mission record (serializeMission). */
+export type GrowthMissionView = {
+  missionId: string;
+  agencyId: string;
+  status: string;
+  currentVersionSeq: number;
+  version: number;
+  createdActor: unknown;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One append-only declared version (serializeVersion) — the objective is
+ *  verbatim; corrections are NEW version records, never rewrites. */
+export type GrowthMissionVersionView = {
+  missionVersionId: string;
+  missionId: string;
+  versionSeq: number;
+  objective: string;
+  objectiveFamily: string;
+  productContext?: {
+    name?: string | null;
+    url?: string | null;
+    summary?: string | null;
+  } | null;
+  marketContext?: {
+    audience?: string | null;
+    geography?: string | null;
+    summary?: string | null;
+  } | null;
+  targetMetrics: GrowthMissionTargetMetricView[];
+  provenance: Record<string, unknown>;
+};
+
+/** One append-only lifecycle history event (serializeEvent). */
+export type GrowthMissionEventView = {
+  eventId: string;
+  missionId: string;
+  eventSeq: number;
+  eventKind: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  reason: string | null;
+  recordedAt?: string;
+  provenance?: Record<string, unknown>;
+};
+
+/** The composed honest read-back (serializeDetail) — what POST create
+ *  returns on 201 and GET /api/growth-missions/:missionId serves. */
+export type GrowthMissionDetailView = {
+  mission: GrowthMissionView;
+  currentVersion: GrowthMissionVersionView;
+  goalMappings: Array<Record<string, unknown>>;
+  history: GrowthMissionEventView[];
+  terminalDecisionBasis?: unknown;
+  vocabularyVersion?: string;
+};
+
+/** The agency list response (GET /api/agencies/:agencyId/growth-missions). */
+export type GrowthMissionsListResponse = {
+  agencyId: string;
+  missions: GrowthMissionView[];
+};
+
 

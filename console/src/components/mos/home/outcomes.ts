@@ -22,68 +22,40 @@ export type Outcome = {
   destination: OutcomeDestination;
 };
 
-// The five start outcomes. All are "soon" until their destination surfaces
-// exist (mission creation arrives with UX-002). Flipping one to a real view
-// is a one-line change here — the registry stays the single source of truth.
+// The five start outcomes — FLIPPED to the real UX-002 mission-creation
+// flow (one view destination per outcome, pre-seeding the frozen §3 family).
+// The label vocabulary is unchanged and binding. The sixth entry
+// ("Continue a mission", below) stays as-is: live data, no flip needed.
 export const START_OUTCOMES: Outcome[] = [
   {
     id: "grow-audience",
     label: "Grow an audience",
     blurb: "Connect your channels and reach more of the right people.",
-    destination: {
-      kind: "soon",
-      title: "Channel connections are on the way",
-      whatIsComing:
-        "You'll connect your social channels here, then start a guided mission to grow your audience step by step.",
-      whatYouCanDoNow: "Until then, Today / Operations shows what's already running.",
-    },
+    destination: { kind: "view", view: { kind: "create-mission", family: "audience_growth" } },
   },
   {
     id: "market-product",
     label: "Market a product",
     blurb: "Plan and run promotion for something you sell.",
-    destination: {
-      kind: "soon",
-      title: "Guided marketing is on the way",
-      whatIsComing:
-        "You'll start a step-by-step mission that plans your promotion, runs it, and reports back plainly.",
-      whatYouCanDoNow: "Meanwhile, Today / Operations shows what's underway.",
-    },
+    destination: { kind: "view", view: { kind: "create-mission", family: "product_marketing" } },
   },
   {
     id: "find-product",
     label: "Find a product to sell",
     blurb: "Discover products worth offering to your audience.",
-    destination: {
-      kind: "soon",
-      title: "Product discovery is on the way",
-      whatIsComing:
-        "You'll start a guided mission that helps you find and evaluate products to sell.",
-      whatYouCanDoNow: "For now, Today / Operations is the best place to see everything at a glance.",
-    },
+    destination: { kind: "view", view: { kind: "create-mission", family: "commerce_discovery" } },
   },
   {
     id: "generate-leads",
     label: "Generate leads",
     blurb: "Turn attention into people genuinely interested in what you offer.",
-    destination: {
-      kind: "soon",
-      title: "Lead missions are on the way",
-      whatIsComing:
-        "You'll start a step-by-step mission that finds interested people and follows up with them.",
-      whatYouCanDoNow: "Meanwhile, Today / Operations shows what's running right now.",
-    },
+    destination: { kind: "view", view: { kind: "create-mission", family: "lead_generation" } },
   },
   {
     id: "generate-revenue",
     label: "Generate revenue",
     blurb: "Move from interest to income, with clear next steps.",
-    destination: {
-      kind: "soon",
-      title: "Revenue missions are on the way",
-      whatIsComing: "You'll start a guided mission focused on turning interest into income.",
-      whatYouCanDoNow: "For now, Today / Operations follows the progress already underway.",
-    },
+    destination: { kind: "view", view: { kind: "create-mission", family: "revenue" } },
   },
 ];
 
