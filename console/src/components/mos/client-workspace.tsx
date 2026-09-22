@@ -2,17 +2,19 @@
 
 /**
  * Journey B — the Client Workspace: Overview, Goals, Strategy/Playbooks,
- * Deployments, Workflows, Evidence, Decisions, Learning, Operating Memory.
+ * Deployments, Workflows, Evidence, Decisions, Learning, Operating Memory,
+ * and Connections (UX-005 — the Connections Center).
  * Each tab renders the corresponding live MOS domain listing (or the
  * decision-room composed view for Overview).
  */
 
 import * as React from "react";
-import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, LayoutDashboard, Map, Microscope, ScrollText, Workflow } from "lucide-react";
+import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, LayoutDashboard, Map, Microscope, Plug, ScrollText, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConnectionsTab } from "@/components/mos/connections/ConnectionsTab";
 import { ScientificTraceTab } from "@/components/mos/trace/ScientificTraceTab";
 import {
   useClient,
@@ -45,6 +47,7 @@ import {
 const TABS: Array<{ value: ClientWorkspaceTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "trace", label: "Scientific trace", icon: Microscope },
+  { value: "connections", label: "Connections", icon: Plug },
   { value: "goals", label: "Goals", icon: Goal },
   { value: "playbooks", label: "Strategy", icon: Map },
   { value: "deployments", label: "Deployments", icon: Boxes },
@@ -103,6 +106,9 @@ export function ClientWorkspaceScreen({ clientId, tab }: { clientId: string; tab
         </TabsContent>
         <TabsContent value="trace" className="mt-4">
           <ScientificTraceTab clientId={clientId} />
+        </TabsContent>
+        <TabsContent value="connections" className="mt-4">
+          <ConnectionsTab clientId={clientId} />
         </TabsContent>
         <TabsContent value="goals" className="mt-4">
           <GoalsTab clientId={clientId} />

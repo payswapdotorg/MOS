@@ -137,12 +137,16 @@ export function WorkspaceActionButton({
   tone = "teal",
   type = "button",
   disabled = false,
+  ariaLabel,
 }: {
   onClick?: () => void;
   children: React.ReactNode;
   tone?: "teal" | "amber" | "plain";
   type?: "button" | "submit";
   disabled?: boolean;
+  /** The accessible name (disambiguates repeated visible labels like
+   *  per-card Connect/Disconnect actions). */
+  ariaLabel?: string;
 }) {
   const toneClass =
     tone === "amber"
@@ -155,6 +159,7 @@ export function WorkspaceActionButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`inline-flex min-h-[44px] items-center rounded-lg border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`}
     >
       {children}

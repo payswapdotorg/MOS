@@ -24,6 +24,7 @@ import {
   type ContentAssetVersionView,
   type ContentRightsRecordView,
   type ContentTransformationView,
+  type CredentialReferenceView,
   type DecisionEventRecord,
   type DecisionRecord,
   type DeploymentRecord,
@@ -38,6 +39,7 @@ import {
   type GoalRecord,
   type GrowthMissionDetailView,
   type GrowthMissionsListResponse,
+  type IntegrationConnectionView,
   type JobDescriptor,
   type JobsDiscoveryView,
   type JobsQueueView,
@@ -47,14 +49,21 @@ import {
   type MarketplaceAppEntry,
   type MembershipRecord,
   type MetricObservationView,
+  type NotificationDetailView,
+  type NotificationInboxItemView,
   type OfferClaimResponse,
   type PackSurfaceComposition,
   type PlaybookRecord,
   type PolicyVersionRecord,
   type ProfitAgencyView,
   type ProfitClientView,
+  type RegisteredAdapterView,
   type SocialAccountEventView,
   type SocialAccountView,
+  type SocialAuthorizeStartResponse,
+  type SocialAuthorizationCompletionResponse,
+  type SocialGrantScopeFactsView,
+  type SocialGrantView,
   type UserRecord,
   type WorkflowRecord,
   type WorkspaceRecord,
@@ -235,6 +244,253 @@ export function useSocialAccountEvents(clientId: string | null, accountId: strin
       : `/api/clients/${clientId}/social-accounts/${accountId}/events`,
   );
   return { ...query, data: query.data?.events };
+}
+
+// --- UX-005 Connections Center composition hooks ----------------------------------
+//
+// The same COMPOSITION DISCIPLINE as UX-003/004: every hook is a THIN wrapper
+// over ONE existing read or mutation surface of the three connection
+// authorities (MKT-055 social accounts, MKT-023 integrations, MKT-068
+// notification delivery). Zero new authorities, zero client-side derivation
+// beyond presentation formatting — each card field names the route it composes.
+
+/** One account's append-only grant history tail (the authorization health
+ *  basis): GET /api/clients/:clientId/social-accounts/:accountId/grants —
+ *  REFUSES 409 on a disconnected/revoked connection (the honest refusal is
+ *  rendered by the card, never worked around). */
+export function useSocialAccountGrants(clientId: string | null, accountId: string | null) {
+  const query = useMosQuery<{ socialAccountId: string; grants: SocialGrantView[] }>(
+    ["social-account-grants", clientId, accountId],
+    clientId === null || accountId === null
+      ? null
+      : `/api/clients/${clientId}/social-accounts/${accountId}/grants`,
+  );
+  return { ...query, data: query.data?.grants };
+}
+
+/** One grant's VERBATIM scope facts (the provider's own answer — grantedScopes
+ *  + capabilityTags): GET /api/clients/:clientId/social-accounts/:accountId/grants/:grantId. */
+export function useSocialGrantScopeFacts(
+  clientId: string | null,
+  accountId: string | null,
+  grantId: string | null,
+) {
+  const query = useMosQuery<SocialGrantScopeFactsView>(
+    ["social-grant-scope-facts", clientId, accountId, grantId],
+    clientId === null || accountId === null || grantId === null
+      ? null
+      : `/api/clients/${clientId}/social-accounts/${accountId}/grants/${grantId}`,
+  );
+  return query;
+}
+
+/** The adapter registry as data — the REAL capability descriptors (no tenant
+ *  data): GET /api/integrations/adapters. Every card's capability section and
+ *  the platform list compose THIS registry, so sibling adapters (TikTok etc.)
+ *  appear naturally when they register. */
+export function useAdapterRegistry() {
+  const query = useMosQuery<{ adapters: RegisteredAdapterView[] }>(
+    ["integrations-adapters"],
+    "/api/integrations/adapters",
+  );
+  return { ...query, data: query.data?.adapters };
+}
+
+/** The client's integration connections (the product/source/store family):
+ *  GET /api/clients/:clientId/connections. */
+export function useIntegrationConnections(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; connections: IntegrationConnectionView[] }>(
+    ["integration-connections", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/connections`,
+  );
+  return { ...query, data: query.data?.connections };
+}
+
+/** The agency's live credential references (opaque, non-secret — the pick
+ *  list for registering a new integration connection):
+ *  GET /api/agencies/:agencyId/credentials. */
+export function useAgencyCredentials(agencyId: string | null) {
+  const query = useMosQuery<{ credentials: CredentialReferenceView[] }>(
+    ["agency-credentials", agencyId],
+    agencyId === null ? null : `/api/agencies/${agencyId}/credentials`,
+  );
+  return { ...query, data: query.data?.credentials };
+}
+
+/** The client's in-app notification inbox (the notification family's live
+ *  basis): GET /api/clients/:clientId/notifications → { clientId, inbox, vocabularyVersion }. */
+export function useClientNotifications(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; inbox: NotificationInboxItemView[] }>(
+    ["client-notifications", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/notifications`,
+  );
+  return { ...query, data: query.data?.inbox };
+}
+
+/** One notification with its full append-only receipt tail (the channel
+ *  receipts — the notification-channel health basis, fetched on expand):
+ *  GET /api/clients/:clientId/notifications/:notificationId. */
+export function useNotificationDetail(clientId: string | null, notificationId: string | null) {
+  const query = useMosQuery<NotificationDetailView>(
+    ["notification-detail", clientId, notificationId],
+    clientId === null || notificationId === null
+      ? null
+      : `/api/clients/${clientId}/notifications/${notificationId}`,
+  );
+  return query;
+}
+
+// --- UX-005 connection mutations (every one wired to the REAL route) ---------------
+
+/** The connect action — the REAL authorize-start round:
+ *  POST /api/clients/:clientId/social-accounts/authorize-start {connectionId}.
+ *  201 = the round IS recorded (a PENDING grant) with the authorizeUrl; the
+ *  complete step needs the provider's callback — NEVER a fake success. */
+export function useSocialAuthorizeStart(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { connectionId: string; requestedScopes?: string[] }) =>
+      mosPost<SocialAuthorizeStartResponse>(
+        `/api/clients/${clientId}/social-accounts/authorize-start`,
+        {
+          connectionId: input.connectionId,
+          ...(input.requestedScopes === undefined ? {} : { requestedScopes: input.requestedScopes }),
+        },
+      ),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["social-accounts", clientId] });
+      client.invalidateQueries({ queryKey: ["social-account-grants", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The reconnect action — the REAL reauthorize round (a fresh PENDING grant
+ *  pre-bound to the account; the recovery path of an expired/aging grant):
+ *  POST /api/clients/:clientId/social-accounts/:accountId/reauthorize. */
+export function useSocialReauthorize(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { accountId: string }) =>
+      mosPost<SocialAuthorizeStartResponse>(
+        `/api/clients/${clientId}/social-accounts/${input.accountId}/reauthorize`,
+        {},
+      ),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["social-accounts", clientId] });
+      client.invalidateQueries({ queryKey: ["social-account-grants", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The refresh action — the REAL token-refresh round (appends the successor
+ *  grant; the old grant becomes 'refreshed' with the successor link — the
+ *  visibly-historical record): POST …/social-accounts/:accountId/refresh. */
+export function useSocialRefresh(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { accountId: string }) =>
+      mosPost<SocialAuthorizationCompletionResponse>(
+        `/api/clients/${clientId}/social-accounts/${input.accountId}/refresh`,
+        {},
+      ),
+    onSuccess: (outcome) => {
+      toast.success(`Authorization refreshed — grant ${outcome.grant.grantState}`);
+      client.invalidateQueries({ queryKey: ["social-accounts", clientId] });
+      client.invalidateQueries({ queryKey: ["social-account-grants", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The disconnect action — the REAL terminal fail-closed death (confirm-gated
+ *  in the UI; every authorization-bearing read refuses from here on):
+ *  POST …/social-accounts/:accountId/disconnect {reason?, revokeAtProvider?}. */
+export function useSocialDisconnect(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { accountId: string; reason?: string; revokeAtProvider?: boolean }) =>
+      mosPost<SocialAccountView>(
+        `/api/clients/${clientId}/social-accounts/${input.accountId}/disconnect`,
+        {
+          ...(input.reason === undefined || input.reason === "" ? {} : { reason: input.reason }),
+          revokeAtProvider: input.revokeAtProvider ?? false,
+        },
+      ),
+    onSuccess: (account) => {
+      toast.success(`Disconnected — ${account.displayIdentity ?? account.externalAccountId}`);
+      client.invalidateQueries({ queryKey: ["social-accounts", clientId] });
+      client.invalidateQueries({ queryKey: ["social-account-grants", clientId] });
+      client.invalidateQueries({ queryKey: ["social-account-events", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Register a product/source/store connection (the born state 'registered'):
+ *  POST /api/clients/:clientId/connections {adapterKey, credentialReferenceId, providerConfig}. */
+export function useRegisterIntegrationConnection(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      adapterKey: string;
+      credentialReferenceId: string;
+      providerConfig: Record<string, unknown>;
+    }) =>
+      mosPost<IntegrationConnectionView>(`/api/clients/${clientId}/connections`, {
+        adapterKey: input.adapterKey,
+        credentialReferenceId: input.credentialReferenceId,
+        providerConfig: input.providerConfig,
+      }),
+    onSuccess: (connection) => {
+      toast.success(`Connection registered — ${connection.providerLabel}`);
+      client.invalidateQueries({ queryKey: ["integration-connections", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The connect probe — the REAL policy-gated CAS transition (a healthy probe
+ *  transitions to connected/healthy; an unreachable one to error/unreachable —
+ *  the outcome is server-computed, never supplied):
+ *  POST /api/clients/:clientId/connections/:connectionId/connect {expectedVersion}. */
+export function useConnectIntegrationConnection(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { connectionId: string; expectedVersion: number }) =>
+      mosPost<IntegrationConnectionView>(
+        `/api/clients/${clientId}/connections/${input.connectionId}/connect`,
+        { expectedVersion: input.expectedVersion },
+      ),
+    onSuccess: (connection) => {
+      toast.success(`${connection.providerLabel}: ${connection.status} / ${connection.health}`);
+      client.invalidateQueries({ queryKey: ["integration-connections", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The administrative pause — the REAL CAS transition (pure bookkeeping, no
+ *  provider call; confirm-gated in the UI):
+ *  POST /api/clients/:clientId/connections/:connectionId/suspend {expectedVersion, reason?}. */
+export function useSuspendIntegrationConnection(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { connectionId: string; expectedVersion: number; reason?: string }) =>
+      mosPost<IntegrationConnectionView>(
+        `/api/clients/${clientId}/connections/${input.connectionId}/suspend`,
+        {
+          expectedVersion: input.expectedVersion,
+          ...(input.reason === undefined || input.reason === "" ? {} : { reason: input.reason }),
+        },
+      ),
+    onSuccess: (connection) => {
+      toast.success(`${connection.providerLabel} suspended`);
+      client.invalidateQueries({ queryKey: ["integration-connections", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
 }
 
 /** The client's content asset versions (the 064 versioned-asset model):

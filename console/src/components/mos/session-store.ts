@@ -34,7 +34,9 @@ export type ClientWorkspaceTab =
   | "evidence"
   | "decisions"
   | "learning"
-  | "memory";
+  | "memory"
+  // UX-005 — the Connections Center tab (the full center).
+  | "connections";
 
 export type AppsTab = "installed" | "marketplace" | "first-party" | "developer";
 
