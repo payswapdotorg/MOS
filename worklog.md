@@ -216,3 +216,18 @@ Work Log:
 
 Stage Summary:
 - MKT-062 MERGED to main as 4b0ad68 (PR #60): /research + /content-intelligence authorities (migrations 056/057, 16 tables, 18 routes), the provider-independent source/provenance core with /evidence as the sole evidence authority and model output kept a claim. Worker's honest disclosures carried (adapter-awaiting read labels, the /product-intelligence direction-not-import row, the 656-vs-657 baseline counting artifact — station independently confirms 656+23=679 on the merged tree). Fleet after this harvest: mkt-059 (branch 921fff0 pushed 05:04, harvest pending) + ux-004 (branch 6f24044 pushed 05:42, harvest pending).
+
+---
+Task ID: MKT-059-harvest
+Agent: Z.ai Code (Tech Lead — A lane)
+Task: Harvest Worker A's MKT-059 delivery (branch mkt/059-worker-delivery @ 921fff0, base 0cc7d51) over main dc15010.
+
+Work Log:
+- Worker landed 05:04 (branch pushed); completion report extracted 07:18 via fresh-tab reopen at the same /c/ URL (MOS-COMPLETION-REPORT MKT-059 END, 11935 chars — scripts/worker-reports/mkt-059-2-freshresponse-20260922-071839.txt); registry tab-reopen entry appended (the original tab had wedged — the known long-open-tab class).
+- Merge: harvest/mkt-059 = --no-ff merge of 921fff0 over dc15010, clean auto-merge over the two both-sides files (composition-root.ts + social-adapter-contract-boundary.test.ts — the MKT-062 registrations/migration-tail re-pins and the MKT-059 additive re-pins in disjoint regions; both sides' truths verified present post-merge).
+- Station battery on the merged tree (mos-verify, foreground serialized): tsc 0 / lint 0 / arch:check 0 violations (48 enforced modules unchanged, 594 files) / unit 1204/1204 (baseline 1192 + 12 new) / architecture 679/679 / delivery suite 14/14 / sibling regressions (056+057+058+055) 59/59 / FULL serialized integration 99 files 1116/1116 (1102 baseline + 14 new) — five load-flakes each isolated-verified green on re-run: deployment-topology (SIGTERM shutdown race, 13/13 isolated), notification-delivery (duplicate-skip channel ordering — the mkt-054/mkt-062 disclosed class, 10/10 isolated), social-adapter-{facebook-pages,instagram,youtube} (embedded PG administrator-command termination under battery load + replay-browser memory pressure; 14/14, 13/13, 14/14 isolated after closing ~7 stale browser tabs; the mkt-062 youtube-flake disclosure class). Zero true failures.
+- Security/delta review: 8 files +5073/−5; no eval/new Function/child_process; no fetch (the adapter rides the platform HttpCallPort); no process.env/argv in the adapter; no raw SQL in the adapter (module-store house pattern); no secrets; zero console/spec/migration changes (the 056 discipline held).
+- PR #61 opened from harvest/mkt-059 (mos-verify/logs/pr61-body.md) and rebase-merged → main 73a6516.
+
+Stage Summary:
+- MKT-059 MERGED to main as 73a6516 (PR #61): the third concrete 056 adapter — Facebook Pages (PAGES-only documented surface, honest 4-of-5 capability matrix with restriction-signals UNDECLARED, real v26.0 scope names with the two live-docs deviations disclosed, synchronous-publish honesty, page-role task model as passthrough DATA). Worker's honest disclosures carried. Fleet after this harvest: ux-004 (branch 6f24044, completion report extracted, harvest pending next).
