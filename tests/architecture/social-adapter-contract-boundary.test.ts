@@ -363,32 +363,44 @@ test('MKT-056: NO social-SDK import exists anywhere in src/ (the EXTERNAL_PACKAG
 // 5. The adapter subtree contract
 // ---------------------------------------------------------------------------
 
-test('MKT-056: the sanctioned adapter subtree exists with the re-export shim as its ONLY current resident', () => {
+test('MKT-056: the sanctioned adapter subtree exists; MKT-057 adds the FIRST concrete platform adapter (youtube) beside the re-export shim', () => {
   const adaptersDir = src('modules', 'social-accounts', 'internal', 'adapters');
   assert.ok(existsSync(adaptersDir), 'internal/adapters/ exists (the MKT-057..061 home)');
   const residents = readdirSync(adaptersDir);
-  assert.deepEqual(residents, ['adapter-contract.ts'], 'the subtree currently holds only the re-export shim — the platform implementations arrive with their own Work Items');
+  // MKT-057 re-pin: the subtree now holds the re-export shim + the
+  // FIRST concrete platform adapter directory (youtube — one
+  // subdirectory per platform, the frozen contract).
+  assert.deepEqual(residents, ['adapter-contract.ts', 'youtube'], 'the subtree holds the re-export shim + the MKT-057 youtube platform adapter directory');
+  // The youtube subtree is a SINGLE adapter file (the arch-check adapter
+  // classification: every file under an adapters path segment is a
+  // concrete adapter — a second subtree file would be ADAPTER_COUPLING).
+  const youtubeResidents = readdirSync(src('modules', 'social-accounts', 'internal', 'adapters', 'youtube'));
+  assert.deepEqual(youtubeResidents, ['adapter.ts'], 'the youtube adapter is a single self-contained file (the honest matrix + the documented API mapping)');
   // The shim re-exports the contract from the module's internal contract
   // (NOT from another adapter — ADAPTER_COUPLING is impossible by shape).
   assert.ok(adaptersShim.includes("from '../adapter-contract.ts'"));
   assert.ok(adaptersShim.includes('export type {'));
-  // NOTHING in src/ imports the shim yet (comment-stripped: prose
-  // mentions do not count; the composition root will wire the concrete
-  // adapters as DATA when the platform deliveries land).
+  // NOTHING in src/ imports the shim (comment-stripped: prose mentions
+  // do not count). The concrete youtube adapter imports the
+  // module-internal contract DIRECTLY ('../../adapter-contract.ts') —
+  // the shim itself sits under an adapters path segment, so importing
+  // it from the youtube adapter subtree would be the ADAPTER_COUPLING
+  // violation (the disclosed arch-check-legal form; the composition
+  // root imports the concrete adapter file as DATA).
   const importers: string[] = [];
   for (const file of walk(join(repoRoot, 'src'))) {
     if (!file.endsWith('.ts')) continue;
     const text = stripComments(readFileSync(file, 'utf8'));
     if (text.includes('internal/adapters/adapter-contract.ts')) importers.push(relative(repoRoot, file));
   }
-  assert.deepEqual(importers, [], 'no src/ file imports the adapter-subtree shim yet (the MKT-057..061 adapters import it from their own subtrees)');
+  assert.deepEqual(importers, [], 'no src/ file imports the adapter-subtree shim (the concrete adapters import the module-internal contract directly; the composition root imports the concrete adapters as DATA)');
 });
 
 // ---------------------------------------------------------------------------
 // 6. The composition seams
 // ---------------------------------------------------------------------------
 
-test('MKT-056: the disclosed composition seams exist; the production registries stay EMPTY by default (fail-closed)', () => {
+test('MKT-056: the disclosed composition seams exist; MKT-057 registers the FIRST first-party platform adapter (the seam keeps overriding for tests)', () => {
   // AppOptions seams (the socialAccountFlows precedent).
   assert.ok(
     compositionRoot.includes('readonly socialPlatformAdapters?: ReadonlyArray<SocialPlatformAdapter> | undefined'),
@@ -398,11 +410,26 @@ test('MKT-056: the disclosed composition seams exist; the production registries 
     compositionRoot.includes('readonly integrationAdapters?: ReadonlyArray<IntegrationAdapter> | undefined'),
     'AppOptions.integrationAdapters exists (the conformance-suite stub pipe seam)',
   );
-  // The wiring: the module receives the adapter data; the production
-  // default is the EMPTY registry.
+  // MKT-057 re-pin: the production composition registers the FIRST-PARTY
+  // YouTube adapter as DATA (the MetaAdsAdapter precedent — constructed
+  // on the platform HttpCallPort, INERT without an authorized YouTube
+  // integration connection; the registration alone performs ZERO
+  // provider traffic — proven by the integration battery). A
+  // seam-supplied adapter of the SAME adapter key OVERRIDES the
+  // first-party instance (the disclosed test-seam override — the
+  // conformance-suite platform doubles register under their platform
+  // key against their own provider doubles).
   assert.ok(
-    compositionRoot.includes('socialAdapters: options.socialPlatformAdapters ?? []'),
-    'the module socialAdapters dep defaults to EMPTY (fail-closed until MKT-057..061)',
+    compositionRoot.includes('createYouTubeSocialAdapter({ http: httpCalls })'),
+    'the first-party YouTube platform adapter is registered as production DATA on the platform HttpCallPort (MKT-057)',
+  );
+  assert.ok(
+    compositionRoot.includes('seamSocialAdapterKeys.has(YOUTUBE_SOCIAL_ADAPTER_KEY)'),
+    'a seam-supplied adapter of an already-registered first-party key OVERRIDES the first-party instance (the disclosed MKT-057 test-seam override)',
+  );
+  assert.ok(
+    compositionRoot.includes('...seamSocialAdapters'),
+    'the seam adapters still ride the module socialAdapters dep',
   );
   assert.ok(
     compositionRoot.includes('...(options.integrationAdapters ?? [])'),
