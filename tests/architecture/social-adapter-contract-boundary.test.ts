@@ -363,19 +363,26 @@ test('MKT-056: NO social-SDK import exists anywhere in src/ (the EXTERNAL_PACKAG
 // 5. The adapter subtree contract
 // ---------------------------------------------------------------------------
 
-test('MKT-056: the sanctioned adapter subtree exists; MKT-057 adds the FIRST concrete platform adapter (youtube) beside the re-export shim', () => {
+test('MKT-056: the sanctioned adapter subtree exists; MKT-057/MKT-058 add the concrete platform adapters (youtube, instagram) beside the re-export shim', () => {
   const adaptersDir = src('modules', 'social-accounts', 'internal', 'adapters');
   assert.ok(existsSync(adaptersDir), 'internal/adapters/ exists (the MKT-057..061 home)');
   const residents = readdirSync(adaptersDir);
   // MKT-057 re-pin: the subtree now holds the re-export shim + the
-  // FIRST concrete platform adapter directory (youtube — one
-  // subdirectory per platform, the frozen contract).
-  assert.deepEqual(residents, ['adapter-contract.ts', 'youtube'], 'the subtree holds the re-export shim + the MKT-057 youtube platform adapter directory');
+  // concrete platform adapter directories (one subdirectory per
+  // platform, the frozen contract).
+  // MKT-058 re-pin: the SECOND concrete platform adapter (instagram)
+  // joins the subtree beside youtube.
+  assert.deepEqual(residents, ['adapter-contract.ts', 'instagram', 'youtube'], 'the subtree holds the re-export shim + the MKT-057 youtube + MKT-058 instagram platform adapter directories');
   // The youtube subtree is a SINGLE adapter file (the arch-check adapter
   // classification: every file under an adapters path segment is a
   // concrete adapter — a second subtree file would be ADAPTER_COUPLING).
   const youtubeResidents = readdirSync(src('modules', 'social-accounts', 'internal', 'adapters', 'youtube'));
   assert.deepEqual(youtubeResidents, ['adapter.ts'], 'the youtube adapter is a single self-contained file (the honest matrix + the documented API mapping)');
+  // The MKT-058 re-pin: the instagram subtree is a single adapter file
+  // (the same one-file subtree discipline — the empirically discovered
+  // ADAPTER_COUPLING rule the MKT-057 delivery hit).
+  const instagramResidents = readdirSync(src('modules', 'social-accounts', 'internal', 'adapters', 'instagram'));
+  assert.deepEqual(instagramResidents, ['adapter.ts'], 'the instagram adapter is a single self-contained file (the honest 4-of-5 matrix + the documented API mapping)');
   // The shim re-exports the contract from the module's internal contract
   // (NOT from another adapter — ADAPTER_COUPLING is impossible by shape).
   assert.ok(adaptersShim.includes("from '../adapter-contract.ts'"));
@@ -423,9 +430,19 @@ test('MKT-056: the disclosed composition seams exist; MKT-057 registers the FIRS
     compositionRoot.includes('createYouTubeSocialAdapter({ http: httpCalls })'),
     'the first-party YouTube platform adapter is registered as production DATA on the platform HttpCallPort (MKT-057)',
   );
+  // MKT-058 re-pin: the SECOND first-party platform adapter (Instagram)
+  // registers as production DATA through the same pattern.
+  assert.ok(
+    compositionRoot.includes('createInstagramSocialAdapter({ http: httpCalls })'),
+    'the first-party Instagram platform adapter is registered as production DATA on the platform HttpCallPort (MKT-058)',
+  );
   assert.ok(
     compositionRoot.includes('seamSocialAdapterKeys.has(YOUTUBE_SOCIAL_ADAPTER_KEY)'),
     'a seam-supplied adapter of an already-registered first-party key OVERRIDES the first-party instance (the disclosed MKT-057 test-seam override)',
+  );
+  assert.ok(
+    compositionRoot.includes('seamSocialAdapterKeys.has(INSTAGRAM_SOCIAL_ADAPTER_KEY)'),
+    'the same seam-override semantics hold for the Instagram registration (the disclosed MKT-058 test-seam override)',
   );
   assert.ok(
     compositionRoot.includes('...seamSocialAdapters'),
