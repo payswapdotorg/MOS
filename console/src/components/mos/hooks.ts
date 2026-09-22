@@ -9,6 +9,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { GrowthMissionCreateBody } from "@/components/mos/create/flow";
 import {
   mosGet,
   mosPost,
@@ -27,6 +28,7 @@ import {
   type EvidenceRecord,
   type FirstPartyPack,
   type GoalRecord,
+  type GrowthMissionDetailView,
   type JobDescriptor,
   type JobsDiscoveryView,
   type JobsQueueView,
@@ -124,6 +126,37 @@ export function useCreateClient(agencyId: string) {
       toast.success(`Client "${record.name}" created`);
       client.invalidateQueries({ queryKey: ["clients", agencyId] });
       navigate({ kind: "client", clientId: record.clientId, tab: "overview" });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+// --- Growth missions (UX-002 — reusable mission creation) ----------------------
+
+/**
+ * Create a Growth Mission through the REAL agency-scoped contract:
+ * POST /api/agencies/:agencyId/growth-missions (owner|admin; 201 returns the
+ * composed detail — born `draft`, version 1, first history event). The body
+ * carries ONLY caller-declarable fields (objective verbatim, the frozen §3
+ * family, optional product/market context, optional targetMetrics); every
+ * authority field (missionId/status/version/provenance/…) is server-derived
+ * and never sent. On success the agency mission list is invalidated (so the
+ * home screen's "Continue a mission" refetches live) and the SPA navigates
+ * to the honest mission-created read-back.
+ */
+export function useCreateGrowthMission(agencyId: string) {
+  const client = useQueryClient();
+  const navigate = useMosSession((state) => state.navigate);
+  return useMutation({
+    mutationFn: (declaration: GrowthMissionCreateBody) =>
+      mosPost<GrowthMissionDetailView>(
+        `/api/agencies/${agencyId}/growth-missions`,
+        declaration,
+      ),
+    onSuccess: (detail) => {
+      toast.success("Mission created — it starts as a draft");
+      client.invalidateQueries({ queryKey: ["growth-missions", agencyId] });
+      navigate({ kind: "mission-created", missionId: detail.mission.missionId });
     },
     onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
   });
