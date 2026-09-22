@@ -9,8 +9,9 @@
 //   • Rows show status + short id + last-updated (the API has no name field);
 //     expanding a row mounts a per-mission detail fetch (objective verbatim) —
 //     no N+1 on first render, cached per mission by React Query (staleTime 15s).
-//   • No per-mission console view exists yet (UX-003); the expanded panel says
-//     so plainly instead of pretending.
+//   • UX-003: the expanded panel carries a REAL OPEN action into the mission
+//     workspace (SPA navigation, kind "mission") — the honest "arriving next"
+//     note is retired here and lives on inside the workspace itself.
 
 import { useState } from "react";
 // SEAM S3 (one line) — hooks.ts location. If the tree has it elsewhere
@@ -230,6 +231,7 @@ function MissionDetail({
     ["growth-mission", missionId],
     `/api/growth-missions/${missionId}`,
   );
+  const navigate = useNavigate();
 
   if (query.isLoading) {
     return (
@@ -273,9 +275,13 @@ function MissionDetail({
           {historyCount} recorded update{historyCount === 1 ? "" : "s"} so far.
         </p>
       ) : null}
-      <p className="text-xs text-stone-500">
-        Working with a mission step by step — open, pause, follow along — is arriving next.
-      </p>
+      <button
+        type="button"
+        onClick={() => navigate({ kind: "mission", missionId })}
+        className="mt-1 inline-flex min-h-[44px] items-center rounded-lg border border-teal-800/25 bg-white px-4 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700"
+      >
+        Open the mission workspace →
+      </button>
     </div>
   );
 }

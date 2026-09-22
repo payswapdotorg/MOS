@@ -1011,9 +1011,29 @@ export type GrowthMissionEventView = {
   eventKind: string;
   fromStatus: string | null;
   toStatus: string | null;
+  /** Cited on terminal transitions: the declared §3 objective family the
+   *  terminal decision was evaluated against (the frozen basis). */
+  terminalDecisionFamily?: string | null;
   reason: string | null;
+  detail?: unknown;
   recordedAt?: string;
   provenance?: Record<string, unknown>;
+};
+
+/** One mission→goal mapping with the goal's LIVE status through the /goals
+ *  public contract (serializeGoalMapping — the /goals authority remains the
+ *  measurable anchor; the mapping view only CARRIES the live status). */
+export type GrowthMissionGoalMappingView = {
+  mappingId: string;
+  missionId: string;
+  goalId: string;
+  goalStatus: string | null;
+  goalClientId: string | null;
+  addedAt: string;
+  addedBy: string;
+  removedAt: string | null;
+  removedBy: string | null;
+  removalReason: string | null;
 };
 
 /** The composed honest read-back (serializeDetail) — what POST create
@@ -1021,7 +1041,7 @@ export type GrowthMissionEventView = {
 export type GrowthMissionDetailView = {
   mission: GrowthMissionView;
   currentVersion: GrowthMissionVersionView;
-  goalMappings: Array<Record<string, unknown>>;
+  goalMappings: GrowthMissionGoalMappingView[];
   history: GrowthMissionEventView[];
   terminalDecisionBasis?: unknown;
   vocabularyVersion?: string;
@@ -1031,6 +1051,223 @@ export type GrowthMissionDetailView = {
 export type GrowthMissionsListResponse = {
   agencyId: string;
   missions: GrowthMissionView[];
+};
+
+// --- UX-003 Mission Workspace composition types ---------------------------------
+//
+// Contract MIRRORS ONLY (same discipline as every type above): each shape
+// mirrors the named module's own serializer verbatim. The workspace renders
+// these surfaces COMPOSED — it never recomputes, re-derives or caches any
+// authority state.
+
+/** A metric identity (name + dimensions) — never a provider metric id. */
+export type MetricIdentityView = {
+  name: string;
+  dimensions: Record<string, string | number | boolean>;
+};
+
+/** One experiment (serializeExperiment — GET /api/clients/:clientId/experiments). */
+export type ExperimentView = {
+  experimentId: string;
+  clientId: string;
+  workspaceId?: string;
+  hypothesis: string;
+  decisionTarget: string;
+  populationUnit: string;
+  treatment: string;
+  comparison: string;
+  assignmentMethod: string;
+  designType: string;
+  primaryMetric: MetricIdentityView;
+  guardrails: MetricIdentityView[];
+  analysisMethod: string;
+  analysisMethodVersion?: string;
+  expectedDirection?: string;
+  startCriteria?: Record<string, unknown>;
+  stopCriteria: Record<string, unknown>;
+  minimumEvidenceRequirement: Record<string, unknown>;
+  uncertaintyRepresentation: string;
+  status: string;
+  resultState: string | null;
+  resultingDecision?: string;
+  concludedAt?: string;
+  provenance: Record<string, unknown>;
+};
+
+/** One metric observation (serializeObservation — GET /api/clients/:clientId/metrics). */
+export type MetricObservationView = {
+  observationId: string;
+  clientId: string;
+  workspaceId?: string;
+  metricName: string;
+  dimensions: Record<string, string | number | boolean>;
+  value: number;
+  unit: string;
+  source: { system: string; ref?: string };
+  observedAt: string;
+  retrievedAt: string;
+  evidenceRef?: string;
+  quality: string;
+  aggregationMethod?: string;
+  provenance: Record<string, unknown>;
+};
+
+/** One social account binding (serializeAccount — GET /api/clients/:clientId/social-accounts;
+ *  the frozen 056 statuses: connected | disconnected | revoked). */
+export type SocialAccountView = {
+  socialAccountId: string;
+  integrationConnectionId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  platformId: string;
+  externalAccountId: string;
+  displayIdentity: string | null;
+  verifiedAt?: string;
+  status: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One social account event (serializeEvent — the observable-now surface
+ *  behind GET /api/clients/:clientId/social-accounts/:accountId/events). */
+export type SocialAccountEventView = {
+  eventId: string;
+  socialAccountId?: string;
+  grantId?: string;
+  eventType: string;
+  initiatedBy: string;
+  reason?: string;
+  providerRevokeOutcome?: string;
+  recordedActor: string;
+  recordedVia: string;
+  recordedAt: string;
+};
+
+/** One content asset version (serializeVersion — GET /api/clients/:clientId/content-assets;
+ *  the 064 versioned-asset model). */
+export type ContentAssetVersionView = {
+  versionId: string;
+  assetId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  version: number;
+  assetRef: string;
+  mediaKind: string;
+  displayName: string | null;
+  contentType: string;
+  lifecycleState: string;
+  objectKey?: string;
+  objectDigest?: string;
+  objectSize?: number;
+  sourceEvidenceRef: string | null;
+  provenance: Record<string, unknown>;
+  versionCas: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One content transformation (serializeTransformation — GET
+ *  /api/clients/:clientId/content-assets/transformations). */
+export type ContentTransformationView = {
+  transformationId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId: string;
+  transformationKind: string;
+  engineId: string | null;
+  status: string;
+  executionRef: Record<string, unknown>;
+  parameters: Record<string, unknown>;
+  outputSpec: Record<string, unknown>;
+  outputVersionId?: string;
+  completedAt?: string;
+  failureReason?: string;
+  provenance: Record<string, unknown>;
+  versionCas: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One content rights record (serializeRecord — GET /api/clients/:clientId/content-rights). */
+export type ContentRightsRecordView = {
+  rightsRecordId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  contentAssetRef: string;
+  assetKind: string;
+  state: string;
+  sourceEvidenceRef: string | null;
+  licenceLabel?: string;
+  licenceEvidenceRef?: string;
+  validUntil?: string;
+  provenance: Record<string, unknown>;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One experiment analysis (serializeAnalysis — MKT-067
+ *  GET /api/clients/:clientId/experiment-analysis/analyses/by-experiment/:experimentId). */
+export type ExperimentAnalysisView = {
+  analysisId: string;
+  clientId: string;
+  workspaceId?: string;
+  experimentId: string;
+  analysisMethod: string;
+  analysisMethodVersion: string;
+  vocabularyVersion: string;
+  observationWindowStart: string;
+  observationWindowEnd: string;
+  sampleSizes: Record<string, number>;
+  treatmentMean?: number;
+  comparisonMean?: number;
+  effectEstimate?: number;
+  standardError?: number;
+  uncertainty: Record<string, unknown>;
+  sequentialState: Record<string, unknown>;
+  confounders: string[];
+  limitations: string[];
+  practicalThreshold?: { value: number; source: string; description?: string | null };
+  /** The frozen outcome vocabulary: effect_positive | effect_negative |
+   *  effect_negligible | inconclusive | insufficient_observations. */
+  outcome: string;
+  /** The frozen direction vocabulary (e.g. shift_to_treatment | hold_balanced). */
+  recommendedNextAllocation: string | null;
+  inputSnapshot: Record<string, unknown>;
+  inputDigest: string;
+  evidenceRefs: string[];
+  metricObservationRefs: string[];
+  learningRefs: string[];
+  provenance: Record<string, unknown>;
+};
+
+/** One allocation recommendation (serializeRecommendation — MKT-067
+ *  GET /api/clients/:clientId/experiment-analysis/allocations/by-experiment/:experimentId). */
+export type AllocationRecommendationView = {
+  recommendationId: string;
+  clientId: string;
+  workspaceId?: string;
+  experimentId: string;
+  analysisId?: string;
+  vocabularyVersion: string;
+  arms: Array<Record<string, unknown>>;
+  allocation: {
+    eligibleArms: string[];
+    zeroCapacityArms: Array<{ armKey: string; kind: string; reason: string }>;
+    shares: Record<string, number>;
+    humanTreatmentConsideration: Record<string, unknown>;
+    explorationShare: number;
+  };
+  explorationFloor: number;
+  explorationFloorSource: string;
+  inputSnapshot: Record<string, unknown>;
+  inputDigest: string;
+  rationale: string | null;
+  provenance: Record<string, unknown>;
 };
 
 

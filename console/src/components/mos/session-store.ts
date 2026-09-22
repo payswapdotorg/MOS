@@ -52,7 +52,11 @@ export type MosView =
   // pre-seeded with a frozen §3 family by a home outcome card; reachable
   // with no seed too) and its honest mission-created read-back view.
   | { kind: "create-mission"; family?: ObjectiveFamily }
-  | { kind: "mission-created"; missionId: string };
+  | { kind: "mission-created"; missionId: string }
+  // UX-003 — the mission workspace: one screen that answers what a mission
+  // is doing by COMPOSING the existing module authorities (mission detail,
+  // goal mappings, client-scoped surfaces). Presentation view state only.
+  | { kind: "mission"; missionId: string };
 
 type MosSessionState = {
   /** The MOS Bearer token (null → login screen). */
