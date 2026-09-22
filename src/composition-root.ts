@@ -579,6 +579,44 @@ import { createExperimentAnalysisModule } from './modules/experiment-analysis/pu
 // contract ONLY: growth-missions, social-accounts, content-assets,
 // content-rights, integrations, policies).
 import { createCrossPlatformDistributionModule } from './modules/cross-platform-distribution/public.ts';
+// MKT-062: /research — the Web Research authority (the frozen v1.6 §7
+// module: the agency-scoped research sessions with their IMMUTABLE
+// versioned declared sources, the deterministic GET-only fetch/extract
+// research pipeline behind the replaceable page-reader port, the retained
+// source facts with FULL provenance in the module's OWN migration-056
+// tables, and the append-only research insight claims with the /ai-runtime
+// model-identity disclosure + the server-computed verification state).
+// Composition is the frozen v1.6 matrix row registered by this Work Item
+// (/research ──→ /integrations, /evidence, /ai-runtime — verbatim): the
+// /integrations public contract arrives through the module's declared
+// narrow READ-ONLY STRUCTURAL PORT (getConnection + executeRead ONLY —
+// executeMutation is structurally absent, so NO mutation can be expressed
+// toward any research source), the /ai-runtime registry through the
+// model-identity port (AI-assistance disclosure validation) and the ONE
+// /evidence import (the shared §21 material-key guard) lives inside the
+// module's store. The REAL page reader (the bounded GET-only public-page
+// read over the platform HttpCallPort — fetch-based, zero SDKs) is the
+// module-internal adapter imported HERE ONLY (the CONCRETE_ADAPTER_ACCESS
+// allowance); the test suites supply the disclosed in-repo test double
+// through the same port instead (NO live network in the test suite).
+import { createResearchModule } from './modules/research/public.ts';
+import { ResearchHttpPageReader } from './modules/research/internal/adapters/http-page-reader.ts';
+import type { ResearchPageReader } from './modules/research/public.ts';
+// MKT-062: /content-intelligence — the Content Intelligence authority
+// (the frozen v1.6 §6 module: platform observations normalized into
+// canonical /evidence records through the /evidence public contract +
+// CLIENT-SCOPED append-only CANDIDATE records with the §6 observed-feature
+// set as data + append-only HYPOTHESES with the honest non-causality
+// framing + the deterministic niche clustering and candidate ranking as
+// reproducible pure functions). Composition is the frozen v1.6 matrix row
+// registered by this Work Item (/content-intelligence ──→ /evidence,
+// /metrics, /experiments, /integrations, /research — verbatim, all five
+// consumed through their public contracts: /evidence as the SOLE evidence
+// authority, /metrics + /experiments + /research READ-ONLY for the
+// observed-performance anchor / the hypothesis experiment-reference / the
+// same-agency research-insight citations, and /integrations through the
+// declared narrow READ-ONLY STRUCTURAL PORT).
+import { createContentIntelligenceModule } from './modules/content-intelligence/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -649,6 +687,16 @@ export interface AppOptions {
    * test is fully real; NO live network in the test suite).
    */
   readonly productPageReader?: ProductPageReader | undefined;
+  /**
+   * MKT-062: an override ResearchPageReader for the /research module
+   * (the productPageReader composition precedent). UNSET by default — the
+   * production composition wires the REAL bounded GET-only
+   * ResearchHttpPageReader over the platform HttpCallPort. Integration
+   * tests supply the DISCLOSED in-repo test double through this seam (a
+   * test double at the fetch boundary ONLY — the research pipeline under
+   * test is fully real; NO live network in the test suite).
+   */
+  readonly researchPageReader?: ResearchPageReader | undefined;
   /**
    * MKT-068: the EMAIL provider transport — the deterministic provider
    * seam of the /notification-delivery email channel (the
@@ -1644,6 +1692,52 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     policies,
   });
 
+  // MKT-062: /research — the Web Research authority (see the import block
+  // above). The REAL ResearchHttpPageReader (GET-only, over the platform
+  // HttpCallPort) and the REAL /integrations + /ai-runtime
+  // public-contract instances satisfy the module's structural ports at
+  // this wiring point — zero cross-module imports exist inside
+  // src/modules/research beyond the ONE /evidence §21-guard import in its
+  // store (proven by tools/arch-check and the boundary tests). The agency
+  // row is NOT resolvable from the module (/agencies is not a frozen
+  // allowance of its dependency row — the /app-metering precedent):
+  // agency-scope authorization is resolved at the route layer and the
+  // migration-056 FK anchor is the backstop.
+  const research = createResearchModule({
+    db,
+    clock,
+    ids,
+    pageReader: options.researchPageReader ?? new ResearchHttpPageReader(httpCalls),
+    integrations,
+    aiRuntime,
+  });
+
+  // MKT-062: /content-intelligence — the Content Intelligence authority
+  // (see the import block above). The REAL /evidence, /metrics,
+  // /experiments and /research public-contract instances satisfy the
+  // module's declared dependencies structurally at this wiring point —
+  // zero cross-module imports exist inside
+  // src/modules/content-intelligence beyond its public-contract imports
+  // + the ONE /evidence §21-guard import in its store (proven by
+  // tools/arch-check and the boundary tests). The /integrations direction
+  // arrives through the declared narrow READ-ONLY STRUCTURAL PORT
+  // (getConnection + executeRead ONLY — the read-only guarantee is a
+  // compile-time property of the wiring). The client row is NOT
+  // resolvable from the module (/clients is not an allowance of its
+  // dependency row): client-scope authorization is resolved at the route
+  // layer (requireClientAccess) and the migration-057 FK anchor is the
+  // backstop.
+  const contentIntelligence = createContentIntelligenceModule({
+    db,
+    clock,
+    ids,
+    evidence,
+    metrics: metricsModule,
+    experiments,
+    integrations,
+    research,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -1790,7 +1884,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence },
     runtime: { aiProvider },
   };
 }

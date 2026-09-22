@@ -720,42 +720,50 @@ test('MKT-069 AC-12 static: the disclosed spec registration exists — §6 line 
     'the §6 registration sentence exists',
   );
   // The matrix dependency row + the authority-notes bullet + the honest
-  // /research timing disclosure (the additive-registration pattern).
+  // /research timing disclosure (the additive-registration pattern —
+  // COMPLETED at MKT-062 time: the row now carries the FULL frozen
+  // direction set, and the note discloses the closure exactly as the
+  // MKT-069 delivery said it would happen).
   assert.ok(
-    matrixSpec.includes('/product-intelligence ──→ /evidence, /integrations, /ai-runtime'),
-    'the matrix dependency row exists (the currently-satisfiable subset)',
+    matrixSpec.includes('/product-intelligence ──→ /research, /evidence, /integrations, /ai-runtime'),
+    'the matrix dependency row exists (the FULL frozen direction set — /research joined at MKT-062 time)',
   );
   assert.ok(
     matrixSpec.includes('- `/product-intelligence` is the v1.6 Product Intelligence authority'),
     'the matrix authority-notes bullet exists',
   );
   assert.ok(
-    matrixSpec.includes('`/research` joins the row at MKT-062 time'),
-    'the /research dependency timing is disclosed in the matrix note',
+    matrixSpec.includes('the row above now registers the FULL frozen direction set (research, evidence, integrations, ai-runtime)'),
+    'the /research row-completion disclosure is stated in the matrix note (the MKT-062 closure of the MKT-069 additive registration)',
   );
   // 048_product_intelligence.sql holds its numeric position (the
   // PRE-ASSIGNED number — 047/049 belong to sibling deliveries).
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -10], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '049_commerce_capabilities.sql');
   // The MKT-056 social-adapter-contract delivery appends 050, the
   // MKT-063 /content-rights sibling delivery appends 051, and the
   // MKT-054 growth-operator delivery (renumbered 050→052 at merge)
   // appends 052 (the same additive
   // precedent — plus the MKT-064 /content-assets delivery appends 053; the
   // merged-tree truth).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '053_content_assets.sql');
   // The MKT-067 /experiment-analysis sibling delivery appends 054 and
   // the MKT-065 /cross-platform-distribution sibling delivery appends
   // 055 (the PRE-ASSIGNED numbers — the same additive precedent; every
   // tail position shifts once more).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '055_cross_platform_distribution.sql');  // The shared files register the module additively.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '054_experiment_analysis.sql');
+  // The MKT-062 sibling delivery appends 056_research.sql and
+  // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
+  // position shifts once more; the same additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '055_cross_platform_distribution.sql');  // The shared files register the module additively.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '057_content_intelligence.sql');
   assert.ok(applicationTs.includes('readonly productIntelligence: ProductIntelligenceModuleApi'), 'ApplicationModules.productIntelligence');
   assert.ok(applicationTs.includes("from '../modules/product-intelligence/public.ts'"), 'the module public entry import');
   assert.ok(routesTs.includes('registerProductIntelligenceRoutes(router, services, modules)'), 'routes.ts registers the product-intelligence routes');
@@ -790,7 +798,7 @@ test('MKT-069 AC-8/AC-10 static: the real codebase enforces the frozen boundarie
     join(repoRoot, 'spec', 'module-dependency-v1.3.md'),
     [...specModules, 'apps'],
   );
-  assert.deepEqual(matrix['product-intelligence'], ['evidence', 'integrations', 'ai-runtime']);
+  assert.deepEqual(matrix['product-intelligence'], ['research', 'evidence', 'integrations', 'ai-runtime']);
 });
 
 test('MKT-069 AC-3 static: the version discipline ships — the frozen vocabulary version + the claim tier + the pure helpers', () => {

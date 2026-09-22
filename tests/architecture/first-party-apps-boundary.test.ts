@@ -192,7 +192,10 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   // /experiment-analysis delivery appends 054 and the MKT-065
   // /cross-platform-distribution delivery appends 055 (the
   // sibling-promotion precedent; this delivery still owns NO migration).
-  assert.deepEqual(migrations.slice(-12), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql', '055_cross_platform_distribution.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth)');});
+  // The MKT-062 sibling delivery appends 056_research.sql and
+  // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — the same
+  // additive re-pin precedent; the merged-tree truth).
+  assert.deepEqual(migrations.slice(-14), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql', '055_cross_platform_distribution.sql', '056_research.sql', '057_content_intelligence.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth)');});
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
 }
@@ -340,4 +343,4 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   // and the MKT-067 /experiment-analysis and MKT-065
   // /cross-platform-distribution deliveries append theirs after those
   // — the sibling promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },'));});
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence },'));});
