@@ -29,16 +29,20 @@ import {
   type DeploymentRecord,
   type DeveloperCatalogApp,
   type DevPortalDocs,
+  type DistributionPlanDetailView,
+  type DistributionPlansListResponse,
   type EvidenceRecord,
   type ExperimentAnalysisView,
   type ExperimentView,
   type FirstPartyPack,
   type GoalRecord,
   type GrowthMissionDetailView,
+  type GrowthMissionsListResponse,
   type JobDescriptor,
   type JobsDiscoveryView,
   type JobsQueueView,
   type LearningRecord,
+  type LearningRelationshipView,
   type MarketplaceAppDetail,
   type MarketplaceAppEntry,
   type MembershipRecord,
@@ -286,6 +290,61 @@ export function useExperimentAllocations(clientId: string | null, experimentId: 
       : `/api/clients/${clientId}/experiment-analysis/allocations/by-experiment/${experimentId}`,
   );
   return { ...query, data: query.data?.recommendations };
+}
+
+// --- UX-004 Scientific Trace composition hooks -------------------------------------
+//
+// Same COMPOSITION DISCIPLINE as the UX-003 hooks above: THIN useMosQuery
+// wrappers over existing read surfaces only. The trace composes authorities;
+// it never becomes one.
+
+/** The agency's growth missions, ALL lifecycle states (the mission list the
+ *  trace's Question link composes — the closest live "question" surface while
+ *  the research module MKT-062 is in flight):
+ *  GET /api/agencies/:agencyId/growth-missions. */
+export function useAgencyGrowthMissions(agencyId: string | null) {
+  const query = useMosQuery<GrowthMissionsListResponse>(
+    ["growth-missions", agencyId],
+    agencyId === null ? null : `/api/agencies/${agencyId}/growth-missions`,
+  );
+  return { ...query, data: query.data?.missions };
+}
+
+/** The client's cross-platform distribution plans (MKT-065 — the Publication
+ *  link authority): GET /api/clients/:clientId/cross-platform-distribution/plans. */
+export function useDistributionPlans(clientId: string | null) {
+  const query = useMosQuery<DistributionPlansListResponse>(
+    ["distribution-plans", clientId],
+    clientId === null
+      ? null
+      : `/api/clients/${clientId}/cross-platform-distribution/plans`,
+  );
+  return { ...query, data: query.data?.plans };
+}
+
+/** One distribution plan's composed read-back — destinations, publications and
+ *  the full append-only lineage incl. the §5 measurement references (MKT-065).
+ *  Mounted per-expanded-plan (the expand→fetch house pattern — never a bulk
+ *  prefetch; React Query shares the cache with every other mount):
+ *  GET /api/clients/:clientId/cross-platform-distribution/plans/:planId. */
+export function useDistributionPlanDetail(clientId: string | null, planId: string | null) {
+  return useMosQuery<DistributionPlanDetailView>(
+    ["distribution-plan-detail", clientId, planId],
+    clientId === null || planId === null
+      ? null
+      : `/api/clients/${clientId}/cross-platform-distribution/plans/${planId}`,
+  );
+}
+
+/** One learning's append-only relationship chain — the contradictions,
+ *  supersessions and retirements recorded around it (the Learning link's
+ *  relatives): GET /api/learnings/:learningId/relationships. */
+export function useLearningRelationships(learningId: string | null) {
+  const query = useMosQuery<{ learningId: string; relationships: LearningRelationshipView[] }>(
+    ["learning-relationships", learningId],
+    learningId === null ? null : `/api/learnings/${learningId}/relationships`,
+  );
+  return { ...query, data: query.data?.relationships };
 }
 
 /**
