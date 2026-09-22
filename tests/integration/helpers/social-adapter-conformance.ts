@@ -33,7 +33,12 @@
  *     'analytics:read','content:write'] (the read-only fixture grant
  *     ['account:read','content:read'] drives the insufficient-scope
  *     battery — the suite derives which families refuse from the
- *     adapter's own declarations);
+ *     adapter's own declarations). A platform delivery whose REAL
+ *     provider scopes fall outside the fixture vocabulary (MKT-057
+ *     YouTube: the real Google OAuth scope URIs) supplies its OWN
+ *     fixture grants through the fullScopes/readOnlyScopes inputs —
+ *     the MKT-056 runbook §8 disclosure: extending the fixture
+ *     vocabulary is a test-only change;
  *   - the adapter's operations follow the port contract (failures as
  *     data, never thrown; contexts recorded are the host's — the suite
  *     hands the CALL-COUNTING surface in via the adapterHandle).
@@ -78,9 +83,9 @@ const BOOTSTRAP_PASSWORD = 'bootstrap-root-pass';
 const CRM_SECRET_HANDLE = 'social-conformance-pipe-key';
 
 /** The full-scope fixture grant (satisfies every default reference capability). */
-const FULL_SCOPES = ['account:read', 'content:read', 'analytics:read', 'content:write'] as const;
+const DEFAULT_FULL_SCOPES = ['account:read', 'content:read', 'analytics:read', 'content:write'] as const;
 /** The read-only fixture grant (drives the insufficient-scope battery). */
-const READ_ONLY_SCOPES = ['account:read', 'content:read'] as const;
+const DEFAULT_READ_ONLY_SCOPES = ['account:read', 'content:read'] as const;
 
 export interface SocialAdapterConformanceInput {
   /** The adapter under test (registered under its own descriptor key). */
@@ -96,6 +101,25 @@ export interface SocialAdapterConformanceInput {
   readonly provider: LocalOAuthProvider;
   /** Unique label for the embedded database (parallel suite runs must not collide). */
   readonly label: string;
+  /**
+   * MKT-057 (the documented suite precondition, test-only): overrides the
+   * FULL-scope fixture grant for platform deliveries whose REAL provider
+   * scopes fall outside the default fixture vocabulary (the MKT-056
+   * runbook §8 disclosure: "a future platform whose required scopes fall
+   * outside them supplies its own fixture grants — extending the fixture
+   * vocabulary is a test-only change"). The override must satisfy EVERY
+   * declared capability's requiredScopes (scenario 1 asserts it).
+   * Defaults to the reference vocabulary.
+   */
+  readonly fullScopes?: readonly string[] | undefined;
+  /**
+   * MKT-057 (the documented suite precondition, test-only): overrides the
+   * READ-ONLY fixture grant driving the insufficient-scope battery. The
+   * override must OMIT at least one required scope of every family the
+   * battery should refuse (the suite derives which families refuse from
+   * the adapter's own declarations). Defaults to the reference vocabulary.
+   */
+  readonly readOnlyScopes?: readonly string[] | undefined;
 }
 
 export interface SocialAdapterConformanceReport {
@@ -167,6 +191,10 @@ export async function runSocialAdapterConformanceSuite(
   input: SocialAdapterConformanceInput,
 ): Promise<SocialAdapterConformanceReport> {
   const platformKey = input.adapter.descriptor.adapterKey;
+  // MKT-057: the platform-delivery fixture-scope overrides (documented
+  // suite precondition — see SocialAdapterConformanceInput).
+  const FULL_SCOPES: readonly string[] = input.fullScopes ?? DEFAULT_FULL_SCOPES;
+  const READ_ONLY_SCOPES: readonly string[] = input.readOnlyScopes ?? DEFAULT_READ_ONLY_SCOPES;
   const scenarios: { name: string; ok: true }[] = [];
   const passed = (name: string): void => {
     scenarios.push({ name, ok: true });

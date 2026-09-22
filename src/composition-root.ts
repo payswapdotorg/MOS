@@ -456,15 +456,31 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // MKT-056 extends the module with the NORMALIZED SOCIAL PLATFORM ADAPTER
 // CONTRACT: the capability-matrix registry, the normalized
 // account/content/analytics/publish/restriction-signal operations and
-// the publish idempotency ledger (migration 050). The platform adapter
-// registry is EMPTY here — the concrete platform adapters arrive with
-// the MKT-057..061 deliveries as DATA through the disclosed composition
-// seam (AppOptions.socialPlatformAdapters; fail-closed until then).
+// the publish idempotency ledger (migration 050).
+// MKT-057 registers the FIRST CONCRETE PLATFORM ADAPTER (YouTube) as
+// production DATA below (the CONCRETE_ADAPTER_ACCESS allowance — the
+// MetaAdsAdapter precedent: constructed on the platform HttpCallPort,
+// fetch-based, zero provider SDKs; the remaining MVP platforms arrive
+// with MKT-058..061 through the same first-party pattern or the
+// disclosed AppOptions.socialPlatformAdapters seam).
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type {
   SocialAccountFlowImplementation,
   SocialPlatformAdapter,
 } from './modules/social-accounts/public.ts';
+// MKT-057: the concrete YouTube platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS: concrete adapters are importable only by the
+// composition root, where they become module DATA; no adapter imports
+// another adapter). The wiring is INERT without an authorized YouTube
+// integration connection + OAuth grant: the fail-closed host chain
+// (account lookup → adapter registry → capability matrix → usable
+// authorization → scope pre-check → /policies gates → §21 material
+// resolution) precedes every provider call, so the registered adapter
+// alone performs ZERO provider traffic.
+import {
+  createYouTubeSocialAdapter,
+  YOUTUBE_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/youtube/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -577,13 +593,16 @@ export interface AppOptions {
   /**
    * MKT-056: additional SOCIAL PLATFORM ADAPTER instances for the
    * /social-accounts module's normalized capability plane (the
-   * socialAccountFlows composition precedent). EMPTY by default — the
-   * production composition registers NO platform adapter until the
-   * MKT-057..061 adapter deliveries wire real platforms (an operation
-   * against a platform with no registered adapter is refused
-   * fail-closed). The conformance suite supplies the DISCLOSED reference
-   * in-memory double through this seam (a test double at the provider
-   * boundary ONLY — the contract host under test is fully real).
+   * socialAccountFlows composition precedent). The production
+   * composition registers the FIRST-PARTY platform adapters as DATA
+   * (MKT-057 wires YouTube; MKT-058..061 follow) — an operation against
+   * a platform with NO registered adapter is still refused fail-closed.
+   * A seam-supplied adapter of an already-registered first-party
+   * adapter key OVERRIDES the first-party instance (the disclosed
+   * MKT-057 test-seam override — the conformance-suite platform
+   * doubles register under their platform key against their own
+   * provider doubles; a test double at the provider boundary ONLY —
+   * the contract host under test is fully real).
    */
   readonly socialPlatformAdapters?: ReadonlyArray<SocialPlatformAdapter> | undefined;
   /**
@@ -1267,6 +1286,20 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // The provider-neutral flow registry is EMPTY here — real platform
   // flows arrive with the MKT-056+ adapter deliveries (fail-closed until
   // then; the disclosed composition seam is AppOptions.socialAccountFlows).
+  // MKT-057: the FIRST-PARTY YouTube platform adapter registers as
+  // production DATA (the MetaAdsAdapter precedent — constructed on the
+  // platform HttpCallPort, fetch-based, zero provider SDKs). The
+  // registration is INERT without an authorized YouTube integration
+  // connection + OAuth grant (the fail-closed chain precedes every
+  // provider call). A seam-supplied adapter of the SAME adapter key
+  // (the conformance-suite platform doubles) OVERRIDES the first-party
+  // instance — the disclosed test-seam override of AppOptions
+  // .socialPlatformAdapters; the remaining MVP platforms arrive with
+  // MKT-058..061.
+  const seamSocialAdapters = options.socialPlatformAdapters ?? [];
+  const seamSocialAdapterKeys = new Set(
+    seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
+  );
   const socialAccounts = createSocialAccountsModule({
     db,
     clock,
@@ -1276,11 +1309,12 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     policies,
     workspaceOwnership: workspaces,
     flows: options.socialAccountFlows ?? [],
-    // MKT-056: the social platform adapter registry — EMPTY in the
-    // production composition until the MKT-057..061 platform deliveries
-    // (fail-closed until then; the disclosed composition seam is
-    // AppOptions.socialPlatformAdapters).
-    socialAdapters: options.socialPlatformAdapters ?? [],
+    socialAdapters: [
+      ...(seamSocialAdapterKeys.has(YOUTUBE_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createYouTubeSocialAdapter({ http: httpCalls })]),
+      ...seamSocialAdapters,
+    ],
   });
 
   // MKT-068: /notification-delivery — the Notification Delivery Plane
