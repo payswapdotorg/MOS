@@ -341,6 +341,24 @@ import type { ResearchModuleApi } from '../modules/research/public.ts';
 // ranking as reproducible pure functions — recommendations as data, never
 // mutations, never outcome claims).
 import type { ContentIntelligenceModuleApi } from '../modules/content-intelligence/public.ts';
+// MKT-066: /platform-health module contract (Platform Health and
+// Distribution Anomaly Detection — architecture-v1.6.md §11: the
+// DESCRIPTIVE health evaluation layer composed from OBSERVABLE records
+// only — the 055 account/grant/authorization facts, the /integrations
+// connection state, the account's 056 publish-attempt invocation records
+// with their provider-exposed restriction signals and rate-limit
+// observations, the account's own /metrics series history (the baseline)
+// with the cross-platform control comparison, and the client's active
+// /experiments as confounders; the frozen NINE descriptive states with
+// closed reason codes, coarse confidence tiers, honest uncertainty
+// statements and the compliant §11 maneuver recommendations as data;
+// hidden moderation state is never invented — observable-only anomaly
+// evidence is suspected_distribution_anomaly, never a shadow-ban claim
+// (lock rules 25/26); the evaluation input has NO signal/state/claim
+// channel, so a provider notice with no observable record cannot produce
+// a verdict; durable state is the append-only evaluation records of
+// migration 058 with the FK-anchored same-Client citation links).
+import type { PlatformHealthModuleApi } from '../modules/platform-health/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -633,4 +651,11 @@ export interface ApplicationModules {
   // niche clustering + candidate ranking as reproducible pure functions —
   // recommendations as data toward planners, never mutations).
   readonly contentIntelligence: ContentIntelligenceModuleApi;
+  // MKT-066: the Platform Health authority (the §11 descriptive health
+  // evaluation layer: observable-signal composition, baseline-relative
+  // anomaly detection, the frozen nine states with reason codes +
+  // confidence/uncertainty + the compliant §11 maneuver recommendations —
+  // never hidden-moderation invention; append-only evaluation records
+  // with the FK-anchored evidence basis behind every verdict).
+  readonly platformHealth: PlatformHealthModuleApi;
 }

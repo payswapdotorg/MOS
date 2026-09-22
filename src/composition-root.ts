@@ -636,6 +636,29 @@ import type { ResearchPageReader } from './modules/research/public.ts';
 // same-agency research-insight citations, and /integrations through the
 // declared narrow READ-ONLY STRUCTURAL PORT).
 import { createContentIntelligenceModule } from './modules/content-intelligence/public.ts';
+// MKT-066: /platform-health — the Platform Health authority (the frozen
+// v1.6 §11 module: the DESCRIPTIVE health evaluation layer composed from
+// OBSERVABLE records only — the account/grant/authorization facts, the
+// connection state, the 056 publish-attempt invocation records with
+// their provider-exposed restriction signals and rate-limit observations,
+// the account's own /metrics series history as the anomaly baseline with
+// the cross-platform control comparison, and the active /experiments as
+// confounders; the frozen NINE descriptive states, baseline-relative
+// anomaly detection with the honest insufficient-baseline cold start,
+// closed reason codes + coarse confidence tiers + honest uncertainty,
+// and the compliant §11 maneuver recommendations as data — hidden
+// moderation state is never invented, observable-only anomaly evidence is
+// suspected_distribution_anomaly and there is no shadow-ban state
+// anywhere). Composition is the frozen v1.6 matrix row registered by this
+// Work Item (/platform-health ──→ /social-accounts, /integrations,
+// /metrics, /evidence, /experiments — verbatim, all five consumed
+// READ-ONLY through their public contracts; the 065 distribution
+// publications arrive as the per-account 056 publish-attempt records —
+// the 056 ledger is the only physical publish path, so the observable
+// publication-outcome surface is complete without a
+// /cross-platform-distribution dependency, which is not an allowance of
+// this row).
+import { createPlatformHealthModule } from './modules/platform-health/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1768,6 +1791,30 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     research,
   });
 
+  // MKT-066: /platform-health — the Platform Health authority (see the
+  // import block above). The REAL /social-accounts, /integrations,
+  // /metrics, /evidence and /experiments public-contract instances
+  // satisfy the module's declared dependencies structurally at this
+  // wiring point — zero cross-module imports exist inside
+  // src/modules/platform-health beyond its public-contract imports
+  // (proven by tools/arch-check and the boundary tests), and every
+  // consumed contract is READ-ONLY (no account, attempt, metric,
+  // evidence or experiment row is ever mutated from there). The client
+  // row is NOT resolvable from the module (/clients is not an allowance
+  // of its dependency row): client-scope authorization is resolved at
+  // the route layer (requireClientAccess) and the migration-058 FK
+  // anchor is the backstop.
+  const platformHealth = createPlatformHealthModule({
+    db,
+    clock,
+    ids,
+    socialAccounts,
+    integrations,
+    metrics: metricsModule,
+    evidence,
+    experiments,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -1914,7 +1961,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth },
     runtime: { aiProvider },
   };
 }

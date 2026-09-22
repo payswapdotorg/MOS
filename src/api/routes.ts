@@ -377,6 +377,18 @@ import { registerResearchRoutes } from './research-routes.ts';
 // append-only (a new observation is a NEW candidate) and hypothesis
 // corrections are NEW superseding records.
 import { registerContentIntelligenceRoutes } from './content-intelligence-routes.ts';
+// MKT-066: the /platform-health surfaces — the §11 descriptive health
+// evaluation family: the evaluation command (POST — compose the verdict
+// from OBSERVABLE records only; the body is empty and every
+// authority-shaped field is rejected — there is no route, field or
+// parameter through which a claimed-but-unrecorded provider notice or
+// moderation guess could enter an evaluation), the per-account evaluation
+// tail, the client's evaluations and the single-evaluation read with the
+// FK-anchored evidence basis behind the verdict. GET/POST ONLY — no
+// PUT/PATCH/DELETE exists anywhere in this family (evaluations are
+// append-only), and NO enforcement verb of any kind exists (the module
+// describes; the consumers decide).
+import { registerPlatformHealthRoutes } from './platform-health-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -654,5 +666,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // ingestion + the candidate/hypothesis families (see the import block
   // above).
   registerContentIntelligenceRoutes(router, services, modules);
+  // MKT-066: the /platform-health surfaces — the §11 descriptive health
+  // evaluation family (see the import block above).
+  registerPlatformHealthRoutes(router, services, modules);
   return router;
 }
