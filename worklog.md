@@ -231,3 +231,19 @@ Work Log:
 
 Stage Summary:
 - MKT-059 MERGED to main as 73a6516 (PR #61): the third concrete 056 adapter — Facebook Pages (PAGES-only documented surface, honest 4-of-5 capability matrix with restriction-signals UNDECLARED, real v26.0 scope names with the two live-docs deviations disclosed, synchronous-publish honesty, page-role task model as passthrough DATA). Worker's honest disclosures carried. Fleet after this harvest: ux-004 (branch 6f24044, completion report extracted, harvest pending next).
+
+---
+Task ID: UX-004-harvest
+Agent: Z.ai Code (Tech Lead — C lane)
+Task: Harvest Worker C's UX-004 delivery (branch ux/004-worker-delivery @ 6f24044, base d6e1aa0) over main d5f3124.
+
+Work Log:
+- Worker landed 05:42 (branch pushed); completion report extracted 07:18 via fresh-tab reopen (MOS-COMPLETION-REPORT UX-004 END, 18778 chars — scripts/worker-reports/ux-004-freshresponse-20260922-071839.txt); registry tab-reopen entries appended for both workers (the resident_poll REPORT-READY marker was a false positive on the prompt's echoed format instructions — the fresh-tab reopen was the reliable extraction channel).
+- Merge: harvest/ux-004 = --no-ff merge of 6f24044 over d5f3124, ZERO conflicts (both-sides file intersection EMPTY — console-only vs backend-only).
+- Console gates on the merged tree: bun install (442, no changes) / tsc 0 / lint 0 / next build OK. Root gates: tsc 0 / lint 0 / arch:check 48 modules 594 files 0 violations / unit 1204/1204 / architecture 679/679 (backend identical to the just-verified main).
+- Station browser re-verification on the REAL stack (embedded PG 18 + 51 migrations, API :3010, console dev :3011, agent-browser): fresh sign-up → client via the real console surface → fixtures through the platform's own routes (evidence+supersede, 80 observations, experiment→concluded causal_supported, MKT-067 analysis effect_positive 2.049±0.0147 40/40 + allocation, decision accept+outcome, learnings+supersedes, asset+rights owned, 065 plan + 2 measurement references) + social account + dispatch through the repo's own integration-test seams (the worker's disclosed pattern; both destinations published with provider refs). Every one of the ten links verified live; both cross-links clicked (hypothesis→experiment, experiment→analysis); mobile 390x844 zero overflow at all 7 scroll positions; zero page errors; one dev-mode date-locale hydration ATTRIBUTE warning disclosed. Evidence: console/evidence/UX-004-station/ (18 screenshots + JOURNEY-RECORD.md), commit b1d0e24.
+- Station fixture disclosure: the first learning-supersedes relationship was direction-inverted by the station fixture (API semantics: POST to A {supersedes, to: B} = A superseded BY B); corrected relationship appended; the append-only terminal history keeps the inverted pair historical with a fresh successor learning active (3 learnings: 1 active + 2 historical) — the trace rendered every state truthfully; the error was in the fixture, never the surface.
+- PR #62 opened from harvest/ux-004 (mos-verify/logs/pr62-body.md) and rebase-merged → main c607b78.
+
+Stage Summary:
+- UX-004 MERGED to main as c607b78 (PR #62): the Scientific Trace — the ten-link epistemic chain with the three visually distinct registers, composing existing authorities only, truthful coming states for the not-yet-shipped surfaces. The worker's backend finding (the 065 dispatch route's 422 audit-array defect — plan dispatched despite 422) is carried as a disclosed one-line backend follow-up. THE WAVE IS COMPLETE: mkt-059 (PR #61, main 73a6516) + ux-004 (PR #62, main c607b78) both harvested over the mkt-062 baseline (PR #60, main 4b0ad68).
