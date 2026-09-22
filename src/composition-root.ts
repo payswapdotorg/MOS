@@ -471,6 +471,11 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // through /me/accounts with per-Page tokens, first-party Page content
 // discovery, Page/post insights and feed/photos/videos publishing incl.
 // scheduled/unpublished posts) through the SAME first-party pattern.
+// MKT-060 registers the FOURTH CONCRETE PLATFORM ADAPTER (TikTok — the
+// documented TikTok for Developers surface: Login Kit user info + the
+// Display API video reads + the Content Posting API direct-post
+// lifecycle + the Query Creator Info eligibility surface) through the
+// SAME first-party pattern.
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type {
   SocialAccountFlowImplementation,
@@ -516,6 +521,20 @@ import {
   createFacebookPagesSocialAdapter,
   FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY,
 } from './modules/social-accounts/internal/adapters/facebook-pages/adapter.ts';
+// MKT-060: the concrete TikTok platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS, the MKT-057/058/059 precedent: concrete
+// adapters are importable only by the composition root, where they
+// become module DATA; no adapter imports another adapter). The wiring
+// is INERT without an authorized tiktok integration connection +
+// OAuth grant: the fail-closed host chain (account lookup → adapter
+// registry → capability matrix → usable authorization → scope
+// pre-check → /policies gates → §21 material resolution) precedes every
+// provider call, so the registered adapter alone performs ZERO provider
+// traffic.
+import {
+  createTikTokSocialAdapter,
+  TIKTOK_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/tiktok/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -1400,6 +1419,14 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // platform refuses fail-closed with zero provider traffic). Same
   // inertness and same seam-override semantics as the YouTube and
   // Instagram registrations.
+  // MKT-060: the FOURTH-PARTY TikTok platform adapter registers as
+  // production DATA through the same first-party pattern (the documented
+  // TikTok for Developers surface — the honest 5-of-5 capability matrix
+  // with the REAL Login Kit scope names; the documented audit/private-
+  // mode eligibility restrictions surface through the documented 403
+  // error semantics as honest restricted data, never a fabricated
+  // success). Same inertness and same seam-override semantics as the
+  // YouTube, Instagram and Facebook Pages registrations.
   const seamSocialAdapters = options.socialPlatformAdapters ?? [];
   const seamSocialAdapterKeys = new Set(
     seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
@@ -1423,6 +1450,9 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       ...(seamSocialAdapterKeys.has(FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY)
         ? []
         : [createFacebookPagesSocialAdapter({ http: httpCalls })]),
+      ...(seamSocialAdapterKeys.has(TIKTOK_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createTikTokSocialAdapter({ http: httpCalls })]),
       ...seamSocialAdapters,
     ],
   });
