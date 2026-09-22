@@ -1270,4 +1270,129 @@ export type AllocationRecommendationView = {
   provenance: Record<string, unknown>;
 };
 
+// --- UX-004 Scientific Trace composition types -----------------------------------
+//
+// Same discipline as every mirror above: each shape mirrors the named
+// module's own serializer verbatim (src/api/cross-platform-distribution-routes.ts
+// and src/api/learnings-routes.ts). The trace renders these records — it never
+// re-derives, re-computes or re-interprets them.
+
+/** The recorded provenance block of the MKT-065 distribution records
+ *  (serializeProvenance — causationId/recordedAt omitted when absent). */
+export type DistributionProvenanceView = {
+  actor: string;
+  recordedVia: string;
+  correlationId: string;
+  causationId?: string;
+  recordedAt?: string;
+};
+
+/** One distribution plan (serializePlan — MKT-065
+ *  GET /api/clients/:clientId/cross-platform-distribution/plans). */
+export type DistributionPlanView = {
+  planId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  missionId?: string;
+  sourceAssetRef: string;
+  sourceVersionId: string;
+  transformationPlan: {
+    description: string;
+    outputs: Array<{ assetRef: string; variantLabel: string }>;
+  };
+  planState: string;
+  inputDigest: string;
+  provenance: DistributionProvenanceView;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One destination variant of a plan (serializeDestination — the fan-out row;
+ *  destinationStatus is the frozen cpd-vocab-v1 outcome vocabulary). */
+export type DistributionDestinationView = {
+  destinationId: string;
+  planId: string;
+  clientId: string;
+  position: number;
+  socialAccountId: string;
+  platformId: string;
+  assetRef: string;
+  assetVersionId: string;
+  targetFormat: string;
+  publishRequest: Record<string, unknown>;
+  idempotencyKey: string;
+  destinationStatus: string;
+  provenance: DistributionProvenanceView;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One publication link (serializePublication — the per-destination submit-time
+ *  mirror of the 056 ledger row; publishState is the provider's own outcome). */
+export type DistributionPublicationView = {
+  publicationId: string;
+  planId: string;
+  destinationId: string;
+  clientId: string;
+  socialAccountId: string;
+  publishAttemptId: string;
+  idempotencyKey: string;
+  publishState: string;
+  failureCode?: string;
+  providerPublishId?: string;
+  providerContentId?: string;
+  publishedAt?: string;
+  duplicate: boolean;
+  provenance: DistributionProvenanceView;
+};
+
+/** One immutable lineage event (serializeEvent — eventKind is the frozen
+ *  cpd-vocab-v1 tail vocabulary incl. 'measurement_reference'). */
+export type DistributionEventView = {
+  eventId: string;
+  planId: string;
+  destinationId?: string;
+  clientId: string;
+  eventSeq: number;
+  eventKind: string;
+  payload: Record<string, unknown>;
+  provenance: DistributionProvenanceView;
+};
+
+/** The composed plan read model (serializeDetail — GET
+ *  /api/clients/:clientId/cross-platform-distribution/plans/:planId). */
+export type DistributionPlanDetailView = {
+  plan: DistributionPlanView;
+  destinations: DistributionDestinationView[];
+  publications: DistributionPublicationView[];
+  events: DistributionEventView[];
+  vocabularyVersion: string;
+};
+
+/** The plan-list response (GET …/cross-platform-distribution/plans). */
+export type DistributionPlansListResponse = {
+  clientId: string;
+  plans: DistributionPlanView[];
+  vocabularyVersion: string;
+};
+
+/** One learning relationship row (serializeRelationship — GET
+ *  /api/learnings/:learningId/relationships; kind: contradicts | supersedes | retires). */
+export type LearningRelationshipView = {
+  relationshipId: string;
+  fromLearningId: string;
+  toLearningId?: string;
+  kind: string;
+  provenance: {
+    actor: string;
+    recordedVia: string;
+    correlationId: string;
+    causationId?: string;
+    recordedAt: string;
+  };
+};
+
 

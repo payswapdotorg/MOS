@@ -26,6 +26,7 @@ const AGENCY_STORAGE_KEY = "mos.presentation.agency.v1";
 
 export type ClientWorkspaceTab =
   | "overview"
+  | "trace"
   | "goals"
   | "playbooks"
   | "deployments"
