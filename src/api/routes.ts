@@ -357,6 +357,26 @@ import { registerExperimentAnalysisRoutes } from './experiment-analysis-routes.t
 // no route mutates a mission, re-evaluates rights or touches the 056
 // ledger directly.
 import { registerCrossPlatformDistributionRoutes } from './cross-platform-distribution-routes.ts';
+// MKT-062: the /research-sessions surfaces — the agency-scoped research
+// sessions (create/list under the agency), the composed honest read-back
+// (+versions/facts/insights/runs tails), the version-correction POST, the
+// deterministic research-pass POST and the insight-recording POST.
+// GET/POST ONLY — no PUT/PATCH/DELETE exists anywhere in this family
+// (asserted by the boundary tests); NO mutation toward any research
+// source exists (§7 — the page-reader contract has no method field and
+// the integrations port exposes executeRead ONLY).
+import { registerResearchRoutes } from './research-routes.ts';
+// MKT-062: the /content-intelligence surfaces — the observation-ingestion
+// family (the READ-ONLY platform reads through /integrations, every
+// normalized observation becoming ONE canonical /evidence record), the
+// CLIENT-SCOPED candidate family (the §6 observed-feature set as data,
+// evidence-linked, append-only) and the hypothesis family (the honest
+// §6 non-causality framing; inputs to /experiments, never conclusions;
+// the optional experiment reference validated READ-ONLY). GET/POST ONLY —
+// no PUT/PATCH/DELETE exists anywhere in this family; candidates are
+// append-only (a new observation is a NEW candidate) and hypothesis
+// corrections are NEW superseding records.
+import { registerContentIntelligenceRoutes } from './content-intelligence-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -626,5 +646,13 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // distribution plans + the fan-out dispatch + the measurement tail
   // (see the import block above).
   registerCrossPlatformDistributionRoutes(router, services, modules);
+  // MKT-062: the /research-sessions surfaces — the research sessions +
+  // the deterministic research pass + the insight recording (see the
+  // import block above).
+  registerResearchRoutes(router, services, modules);
+  // MKT-062: the /content-intelligence surfaces — the observation
+  // ingestion + the candidate/hypothesis families (see the import block
+  // above).
+  registerContentIntelligenceRoutes(router, services, modules);
   return router;
 }

@@ -942,6 +942,59 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // account, asset, rights, policy, integration or tenant table is
     // created or mutated.
     '055_cross_platform_distribution.sql',
+    // MKT-062 (Web Research and Content Intelligence) appends the research
+    // migration (056 — the number PRE-ASSIGNED to this Work Item by the
+    // Tech Lead; 055 is the current tail; the MKT-059 and UX-003 siblings
+    // were told to add none — the Tech Lead reconciles numbering at merge,
+    // the 063/064/065 precedent): the /research authority — the
+    // AGENCY-SCOPED research-session records (the session-record mutation
+    // guard: identity/scope immutable, exact CAS advance, the version
+    // pointer only ever advances; no DELETE), the APPEND-ONLY version tail
+    // (the IMMUTABLE declared sources — corrections are NEW version
+    // records; UPDATE/DELETE rejected), the per-version DECLARED SOURCE
+    // rows (the CHECK-frozen kind vocabulary: web_page, documentation,
+    // research_paper, news, market_source, public_social_content,
+    // connected_repository, connected_workspace; the kind-compatible
+    // authorization shape fence; the cross-agency integration-connection
+    // scope trigger — integration_connections read CHECK-ONLY), the honest
+    // research-run records + per-source outcome rows (the outcome
+    // vocabulary — fetch/transport/read failures fail closed into honest
+    // records), the append-only retained source facts (FULL provenance:
+    // source ref, fetched-at, extractor identity, content hash,
+    // extraction notes; the frozen fact-kind vocabulary), and the
+    // append-only research INSIGHT records (the six derivation kinds, the
+    // server-computed verification state with the DEFERRABLE
+    // evidence-presence invariant, the single-supersession fence, the
+    // all-or-none AI-assistance disclosure shape) with their FK-anchored
+    // evidence links (the same-session scope triggers); NO evidence,
+    // integration, credential, tenant or content-intelligence table is
+    // created or mutated (the /evidence direction is the shared §21
+    // material-key guard import only).
+    '056_research.sql',
+    // MKT-062 (Web Research and Content Intelligence) appends the
+    // content-intelligence migration (057 — the number PRE-ASSIGNED to
+    // this Work Item by the Tech Lead): the /content-intelligence
+    // authority — the CLIENT-SCOPED append-only CANDIDATE records (the §6
+    // observed-feature set as DATA: topic/entity, niche/sub-niche, the
+    // CHECK-frozen content-format/length-unit/narrative/audience-fit/
+    // freshness/novelty/reuse vocabularies, the bounded hook-features
+    // array, the observed performance/velocity/engagement objects; a new
+    // observation is a NEW candidate — UPDATE/DELETE rejected), the
+    // FK-anchored same-Client /evidence observation links (the evidence
+    // table read CHECK-ONLY — /evidence stays the SOLE evidence
+    // authority), the FK-anchored same-Client /metric observation anchors
+    // (metric_observations read CHECK-ONLY), the append-only HYPOTHESIS
+    // records (the eight hypothesis kinds; the single-supersession fence +
+    // the deferred same-client/same-kind consistency trigger; the optional
+    // same-Client experiment reference — experiments read CHECK-ONLY, no
+    // experiment created or transitioned here) with their evidence/
+    // candidate/research link tables (the same-Client and same-AGENCY
+    // scope triggers — the research citations FK-anchor the migration-056
+    // research_insights table), and the honest observation-ingestion run
+    // records (the status vocabulary; the appended-evidence count/id-array
+    // consistency CHECK); NO evidence, metric, experiment, research,
+    // integration, credential or tenant table is created or mutated.
+    '057_content_intelligence.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

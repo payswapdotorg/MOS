@@ -355,16 +355,26 @@ test('MKT-067 boundary 8: the disclosed spec registration exists — §6 line + 
   const expectedListMatch = infraAdapters.match(/assert\.deepEqual\(migrations, \[([\s\S]*?)\]\);/);
   assert.ok(expectedListMatch !== null, 'the expected-migration list must exist');
   const listEntries = [...expectedListMatch[1]!.matchAll(/'(\d{3}_[a-z_]+\.sql)'/g)].map((m) => m[1]!);
-  assert.equal(listEntries[listEntries.length - 1], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 2], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 3], '053_content_assets.sql');
+  // The MKT-062 sibling delivery appends 056_research.sql and
+  // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
+  // position shifts once more; the same additive re-pin precedent).
+  assert.equal(listEntries[listEntries.length -1], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length -2], '056_research.sql');
+  assert.equal(listEntries[listEntries.length -3], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length -4], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length -5], '053_content_assets.sql');
   assert.ok(existsSync(src('platform', 'db', 'migrations', '054_experiment_analysis.sql')));
   // 055 is the last migration on disk (the MKT-065 sibling tail).
   const onDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(onDisk[onDisk.length - 1], '055_cross_platform_distribution.sql');
-  assert.equal(onDisk[onDisk.length - 2], '054_experiment_analysis.sql');
+  // The MKT-062 sibling delivery appends 056_research.sql and
+  // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
+  // position shifts once more; the same additive re-pin precedent).
+  assert.equal(onDisk[onDisk.length -1], '057_content_intelligence.sql');
+  assert.equal(onDisk[onDisk.length -2], '056_research.sql');
+  assert.equal(onDisk[onDisk.length -3], '055_cross_platform_distribution.sql');
+  assert.equal(onDisk[onDisk.length -4], '054_experiment_analysis.sql');
 });
 
 // ---------------------------------------------------------------------------
@@ -389,7 +399,11 @@ test('MKT-067 boundary 9: the composition root constructs and registers the modu
   // The modules map registers it (the tail position; the MKT-065
   // /cross-platform-distribution sibling delivery appends its own
   // registration after it — the same additive precedent).
-  assert.ok(compositionRoot.includes('contentAssets, experimentAnalysis, crossPlatformDistribution },'));
+  assert.ok(compositionRoot.includes('contentAssets, experimentAnalysis, crossPlatformDistribution, research'));
+  // The MKT-062 sibling registration appends research + contentIntelligence
+  // after crossPlatformDistribution (the additive composition-root
+  // adjacency — the same sibling re-pin precedent).
+  assert.ok(compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence },'));
   // No ai-runtime dependency anywhere in the module wiring (determinism).
   assert.ok(!wiring.includes('aiRuntime'));
   // The vocabulary version is exported from the public contract.

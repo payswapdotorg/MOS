@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (45 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (47 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 45);
+  assert.equal(modules.length, 47);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -55,15 +55,20 @@ test('frozen module set is parsed from spec/architecture.md §6 (45 modules)', (
   // Cross-Platform Distribution registration (the §5 distribution-plan
   // authority over the composed rights gate, capability validation,
   // dispatch policy gate and the 056 submitPublish contract).
+  // The MKT-062 delivery appends /research — the v1.6 Web Research
+  // registration (the §7 research-session/source-fact/insight authority)
+  // and /content-intelligence — the v1.6 Content Intelligence
+  // registration (the §6 candidate/hypothesis layer over the canonical
+  // evidence authority).
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-rights', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-intelligence', 'content-rights', 'credentials',
       'cross-platform-distribution',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
-      'reporting', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
+      'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
 });
@@ -154,11 +159,21 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   // /workspaces ownership structural port):
   assert.deepEqual(matrix['social-accounts'], ['integrations', 'credentials', 'policies', 'workspaces']);
   // The MKT-069 additive matrix line (the /product-intelligence Product
-  // Intelligence authority over the /evidence §21-guard import, the
-  // /integrations READ-ONLY structural port and the /ai-runtime
-  // model-identity port — the DISCLOSED currently-satisfiable subset of
-  // the frozen v1.6 row; /research joins at MKT-062 time):
-  assert.deepEqual(matrix['product-intelligence'], ['evidence', 'integrations', 'ai-runtime']);
+  // Intelligence authority over the /research READ-ONLY consumption
+  // surface (registered at MKT-062 time — the row now carries the FULL
+  // frozen v1.6 direction set; the MKT-069 module code imports nothing
+  // from /research yet, disclosed in the matrix note), the /evidence
+  // §21-guard import, the /integrations READ-ONLY structural port and
+  // the /ai-runtime model-identity port):
+  assert.deepEqual(matrix['product-intelligence'], ['research', 'evidence', 'integrations', 'ai-runtime']);
+  // The MKT-062 additive matrix lines — the frozen v1.6 rows VERBATIM:
+  // /research ──→ /integrations, /evidence, /ai-runtime and
+  // /content-intelligence ──→ /evidence, /metrics, /experiments,
+  // /integrations, /research.
+  assert.deepEqual(matrix['research'], ['integrations', 'evidence', 'ai-runtime']);
+  assert.deepEqual(matrix['content-intelligence'], [
+    'evidence', 'metrics', 'experiments', 'integrations', 'research',
+  ]);
   // The MKT-068 additive matrix line (the /notification-delivery
   // Notification Delivery Plane over the /notifications boundary, the
   // /policies per-channel gates and the /credentials vault — the frozen
@@ -339,6 +354,16 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // cross-platform-distribution boundary a MISSING_MODULE violation
     // (the same additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/cross-platform-distribution',
+    // The MKT-062 /research §6 registration (the v1.6 Web Research
+    // authority) makes the fixture's missing research boundary a
+    // MISSING_MODULE violation (the same additive count each sibling
+    // promotion adds).
+    'MISSING_MODULE|src/modules/research',
+    // The MKT-062 /content-intelligence §6 registration (the v1.6 Content
+    // Intelligence authority) makes the fixture's missing
+    // content-intelligence boundary a MISSING_MODULE violation (the same
+    // additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/content-intelligence',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -399,10 +424,13 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // adds — the merged-tree truth after the sibling reconciliations).
   // The MKT-065 delivery appends /cross-platform-distribution — the v1.6
   // Cross-Platform Distribution registration (the same additive count
-  // each sibling promotion adds).
+  // each sibling promotion adds). The MKT-062 delivery appends /research
+  // (the v1.6 Web Research registration) and /content-intelligence (the
+  // v1.6 Content Intelligence registration) — the same additive count
+  // each sibling promotion adds (46 → 48 enforced modules).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    46,
+    48,
     'no unexpected violation categories may be reported',
   );
 

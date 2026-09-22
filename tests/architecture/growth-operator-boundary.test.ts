@@ -537,9 +537,13 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
     compositionRoot.includes('const growthOperator = createGrowthOperatorModule'),
     'the composition root constructs the module',
   );
+  // The MKT-062 sibling registration appends research + contentIntelligence
+  // after crossPlatformDistribution (the additive composition-root
+  // adjacency — the same sibling re-pin precedent).
   assert.ok(
-    compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution },'),
-    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, and the MKT-065 sibling after that)',
+    compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research') &&
+      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence },'),
+    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, and the MKT-062 siblings last)',
   );
   assert.ok(
     compositionRoot.includes('options.growthOperatorGate'),
@@ -547,11 +551,13 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   );
   // The migration tail position (the shared infra-adapters list; the
   // MKT-065 /cross-platform-distribution sibling delivery appends 055
-  // after the MKT-067 054 — every tail position shifts once more).
+  // after the MKT-067 054, and the MKT-062 sibling delivery appends
+  // 056_research + 057_content_intelligence — every tail position shifts
+  // once more).
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 4], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 6], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------
