@@ -466,6 +466,11 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // MKT-058 registers the SECOND CONCRETE PLATFORM ADAPTER (Instagram —
 // the documented Instagram Graph API surface for Professional
 // accounts) through the SAME first-party pattern.
+// MKT-059 registers the THIRD CONCRETE PLATFORM ADAPTER (Facebook
+// Pages — the documented Graph API Pages surface: page resolution
+// through /me/accounts with per-Page tokens, first-party Page content
+// discovery, Page/post insights and feed/photos/videos publishing incl.
+// scheduled/unpublished posts) through the SAME first-party pattern.
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type {
   SocialAccountFlowImplementation,
@@ -497,6 +502,20 @@ import {
   createInstagramSocialAdapter,
   INSTAGRAM_SOCIAL_ADAPTER_KEY,
 } from './modules/social-accounts/internal/adapters/instagram/adapter.ts';
+// MKT-059: the concrete Facebook Pages platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS, the MKT-057/MKT-058 precedent: concrete
+// adapters are importable only by the composition root, where they
+// become module DATA; no adapter imports another adapter). The wiring
+// is INERT without an authorized facebook-pages integration connection
+// + OAuth grant: the fail-closed host chain (account lookup → adapter
+// registry → capability matrix → usable authorization → scope
+// pre-check → /policies gates → §21 material resolution) precedes every
+// provider call, so the registered adapter alone performs ZERO
+// provider traffic.
+import {
+  createFacebookPagesSocialAdapter,
+  FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/facebook-pages/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -616,9 +635,9 @@ export interface AppOptions {
    * /social-accounts module's normalized capability plane (the
    * socialAccountFlows composition precedent). The production
    * composition registers the FIRST-PARTY platform adapters as DATA
-   * (MKT-057 wires YouTube; MKT-058 wires Instagram; MKT-059..061
-   * follow) — an operation against a platform with NO registered
-   * adapter is still refused fail-closed.
+   * (MKT-057 wires YouTube; MKT-058 wires Instagram; MKT-059 wires
+   * Facebook Pages; MKT-060/061 follow) — an operation against a
+   * platform with NO registered adapter is still refused fail-closed.
    * A seam-supplied adapter of an already-registered first-party
    * adapter key OVERRIDES the first-party instance (the disclosed
    * MKT-057 test-seam override — the conformance-suite platform
@@ -1325,6 +1344,14 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // undeclared, so an undeclared operation against the platform refuses
   // fail-closed with zero provider traffic). Same inertness and same
   // seam-override semantics as the YouTube registration.
+  // MKT-059: the THIRD-PARTY Facebook Pages platform adapter registers as
+  // production DATA through the same first-party pattern (the documented
+  // Graph API Pages surface — the honest 4-of-5 capability matrix with
+  // the REAL Facebook Login scope names; the restriction-signals family
+  // is honestly undeclared, so an undeclared operation against the
+  // platform refuses fail-closed with zero provider traffic). Same
+  // inertness and same seam-override semantics as the YouTube and
+  // Instagram registrations.
   const seamSocialAdapters = options.socialPlatformAdapters ?? [];
   const seamSocialAdapterKeys = new Set(
     seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
@@ -1345,6 +1372,9 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       ...(seamSocialAdapterKeys.has(INSTAGRAM_SOCIAL_ADAPTER_KEY)
         ? []
         : [createInstagramSocialAdapter({ http: httpCalls })]),
+      ...(seamSocialAdapterKeys.has(FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createFacebookPagesSocialAdapter({ http: httpCalls })]),
       ...seamSocialAdapters,
     ],
   });
