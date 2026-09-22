@@ -46,7 +46,8 @@
  *   8. the spec registration exists: /content-intelligence in
  *      spec/architecture.md §6 + the matrix row + the authority-notes
  *      bullet in spec/module-dependency-matrix.md;
- *      057_content_intelligence.sql is the migration tail.
+ *      057_content_intelligence.sql is the migration tail (058_platform_health.sql
+ *      follows at MKT-066 time — the sibling re-pin).
  */
 
 import { test } from 'node:test';
@@ -554,7 +555,7 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   assert.ok(routesTs.includes("from './content-intelligence-routes.ts'"), 'routes.ts imports the content-intelligence route builder');
   assert.ok(compositionRoot.includes('createContentIntelligenceModule'), 'the composition root constructs the content-intelligence module');
   assert.ok(
-    compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence },'),
+    compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth },'),
     'the composition-root modules adjacency registers research + contentIntelligence',
   );
   // 057_content_intelligence.sql is the migration tail (the PRE-ASSIGNED
@@ -562,7 +563,11 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '057_content_intelligence.sql');
+  // The MKT-066 sibling delivery appends 058_platform_health.sql (the
+  // PRE-ASSIGNED number — every tail position shifts once more; the same
+  // additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '058_platform_health.sql');
 });
 
 test('MKT-062 static: the real codebase enforces the frozen boundaries with ZERO violations — /content-intelligence is a registered frozen module', () => {
