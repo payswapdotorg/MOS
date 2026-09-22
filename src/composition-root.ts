@@ -463,6 +463,9 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // fetch-based, zero provider SDKs; the remaining MVP platforms arrive
 // with MKT-058..061 through the same first-party pattern or the
 // disclosed AppOptions.socialPlatformAdapters seam).
+// MKT-058 registers the SECOND CONCRETE PLATFORM ADAPTER (Instagram —
+// the documented Instagram Graph API surface for Professional
+// accounts) through the SAME first-party pattern.
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type {
   SocialAccountFlowImplementation,
@@ -481,6 +484,19 @@ import {
   createYouTubeSocialAdapter,
   YOUTUBE_SOCIAL_ADAPTER_KEY,
 } from './modules/social-accounts/internal/adapters/youtube/adapter.ts';
+// MKT-058: the concrete Instagram platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS, the MKT-057 precedent: concrete adapters are
+// importable only by the composition root, where they become module
+// DATA; no adapter imports another adapter). The wiring is INERT
+// without an authorized Instagram integration connection + OAuth grant:
+// the fail-closed host chain (account lookup → adapter registry →
+// capability matrix → usable authorization → scope pre-check →
+// /policies gates → §21 material resolution) precedes every provider
+// call, so the registered adapter alone performs ZERO provider traffic.
+import {
+  createInstagramSocialAdapter,
+  INSTAGRAM_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/instagram/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -595,8 +611,9 @@ export interface AppOptions {
    * /social-accounts module's normalized capability plane (the
    * socialAccountFlows composition precedent). The production
    * composition registers the FIRST-PARTY platform adapters as DATA
-   * (MKT-057 wires YouTube; MKT-058..061 follow) — an operation against
-   * a platform with NO registered adapter is still refused fail-closed.
+   * (MKT-057 wires YouTube; MKT-058 wires Instagram; MKT-059..061
+   * follow) — an operation against a platform with NO registered
+   * adapter is still refused fail-closed.
    * A seam-supplied adapter of an already-registered first-party
    * adapter key OVERRIDES the first-party instance (the disclosed
    * MKT-057 test-seam override — the conformance-suite platform
@@ -1296,6 +1313,13 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // instance — the disclosed test-seam override of AppOptions
   // .socialPlatformAdapters; the remaining MVP platforms arrive with
   // MKT-058..061.
+  // MKT-058: the SECOND-PARTY Instagram platform adapter registers as
+  // production DATA through the same first-party pattern (the documented
+  // Instagram Graph API surface for Professional accounts — the honest
+  // 4-of-5 capability matrix; the restriction-signals family is honestly
+  // undeclared, so an undeclared operation against the platform refuses
+  // fail-closed with zero provider traffic). Same inertness and same
+  // seam-override semantics as the YouTube registration.
   const seamSocialAdapters = options.socialPlatformAdapters ?? [];
   const seamSocialAdapterKeys = new Set(
     seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
@@ -1313,6 +1337,9 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       ...(seamSocialAdapterKeys.has(YOUTUBE_SOCIAL_ADAPTER_KEY)
         ? []
         : [createYouTubeSocialAdapter({ http: httpCalls })]),
+      ...(seamSocialAdapterKeys.has(INSTAGRAM_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createInstagramSocialAdapter({ http: httpCalls })]),
       ...seamSocialAdapters,
     ],
   });
