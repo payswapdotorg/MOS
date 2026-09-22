@@ -8,11 +8,12 @@
  */
 
 import * as React from "react";
-import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, LayoutDashboard, Map, ScrollText, Workflow } from "lucide-react";
+import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, LayoutDashboard, Map, Microscope, ScrollText, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScientificTraceTab } from "@/components/mos/trace/ScientificTraceTab";
 import {
   useClient,
   useClientMemory,
@@ -43,6 +44,7 @@ import {
 
 const TABS: Array<{ value: ClientWorkspaceTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "trace", label: "Scientific trace", icon: Microscope },
   { value: "goals", label: "Goals", icon: Goal },
   { value: "playbooks", label: "Strategy", icon: Map },
   { value: "deployments", label: "Deployments", icon: Boxes },
@@ -98,6 +100,9 @@ export function ClientWorkspaceScreen({ clientId, tab }: { clientId: string; tab
 
         <TabsContent value="overview" className="mt-4">
           <OverviewTab clientId={clientId} />
+        </TabsContent>
+        <TabsContent value="trace" className="mt-4">
+          <ScientificTraceTab clientId={clientId} />
         </TabsContent>
         <TabsContent value="goals" className="mt-4">
           <GoalsTab clientId={clientId} />
