@@ -308,6 +308,39 @@ import type { ExperimentAnalysisModuleApi } from '../modules/experiment-analysis
 // authority, NO mission mutation; the historical lineage tail is fully
 // append-only).
 import type { CrossPlatformDistributionModuleApi } from '../modules/cross-platform-distribution/public.ts';
+// MKT-062: /research module contract (Web Research — the durable research
+// session and source fact layer of architecture-v1.6.md §7: the
+// agency-scoped research sessions with their IMMUTABLE versioned declared
+// sources (public web pages, documentation, research papers, news, market
+// sources, public social content — plus connected repositories/workspaces
+// ONLY when explicitly authorized), the deterministic GET-only fetch/extract
+// research pipeline over public URLs behind the replaceable page-reader
+// port, the retained source facts with FULL provenance (source reference,
+// fetched-at, extractor identity, content hash, extraction notes —
+// extracted observations, never conclusions) and the append-only research
+// insight claims with the /ai-runtime model-identity disclosure and the
+// server-computed verification state; NO mutation toward any research
+// source is expressible — the page-reader contract has no method field and
+// the integrations structural port exposes executeRead ONLY; /evidence
+// stays the sole evidence authority, consumed through the shared §21
+// material-key guard).
+import type { ResearchModuleApi } from '../modules/research/public.ts';
+// MKT-062: /content-intelligence module contract (Content Intelligence —
+// the durable candidate and hypothesis layer of architecture-v1.6.md §6:
+// platform observations normalized into evidence links VIA the /evidence
+// public contract (the sole evidence authority — one canonical 'observation'
+// evidence record per normalized provider record read through the
+// READ-ONLY /integrations structural port) and CLIENT-SCOPED append-only
+// CANDIDATE records carrying the §6 observed-feature set as data (closed
+// vocabularies where the house pattern uses them); the append-only
+// HYPOTHESIS records with honest framing (§6's explicit non-claim ships on
+// every view: observed competitor/platform performance does NOT by itself
+// establish causality for the user's account — hypotheses are inputs to
+// /experiments, never conclusions; the optional experiment reference is
+// validated READ-ONLY); the deterministic niche clustering and candidate
+// ranking as reproducible pure functions — recommendations as data, never
+// mutations, never outcome claims).
+import type { ContentIntelligenceModuleApi } from '../modules/content-intelligence/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -584,4 +617,20 @@ export interface ApplicationModules {
   // second engine, NO rights authority, NO policy authority, NO mission
   // mutation; the lineage tail is fully append-only).
   readonly crossPlatformDistribution: CrossPlatformDistributionModuleApi;
+  // MKT-062: the Web Research authority (the agency-scoped research
+  // sessions with their immutable versioned declared sources, the
+  // deterministic GET-only fetch/extract research pipeline, the retained
+  // source facts with FULL provenance and the append-only research insight
+  // claims with the /ai-runtime model-identity disclosure + the
+  // server-computed verification state — model output is a claim unless
+  // backed by evidence; the read surface /content-intelligence consumes now
+  // and /product-intelligence consumes later, by reference only).
+  readonly research: ResearchModuleApi;
+  // MKT-062: the Content Intelligence authority (platform observations
+  // normalized into canonical /evidence records + CLIENT-SCOPED append-only
+  // candidate records with the §6 observed-feature set as data, append-only
+  // hypotheses with the honest §6 non-causality framing, the deterministic
+  // niche clustering + candidate ranking as reproducible pure functions —
+  // recommendations as data toward planners, never mutations).
+  readonly contentIntelligence: ContentIntelligenceModuleApi;
 }

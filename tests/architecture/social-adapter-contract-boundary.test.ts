@@ -511,13 +511,18 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
   // the MKT-065 /cross-platform-distribution sibling delivery appends
   // 055 (the PRE-ASSIGNED numbers — the same additive precedent; every
   // tail position shifts once more).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '055_cross_platform_distribution.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '049_commerce_capabilities.sql');
+  // The MKT-062 sibling delivery appends 056_research.sql and
+  // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
+  // position shifts once more; the same additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '055_cross_platform_distribution.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------
