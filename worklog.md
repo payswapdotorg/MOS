@@ -247,3 +247,22 @@ Work Log:
 
 Stage Summary:
 - UX-004 MERGED to main as c607b78 (PR #62): the Scientific Trace — the ten-link epistemic chain with the three visually distinct registers, composing existing authorities only, truthful coming states for the not-yet-shipped surfaces. The worker's backend finding (the 065 dispatch route's 422 audit-array defect — plan dispatched despite 422) is carried as a disclosed one-line backend follow-up. THE WAVE IS COMPLETE: mkt-059 (PR #61, main 73a6516) + ux-004 (PR #62, main c607b78) both harvested over the mkt-062 baseline (PR #60, main 4b0ad68).
+
+---
+Task ID: orchestrator-takeover-doc-reconciliation
+Agent: Z.ai Code (successor orchestrator / Tech Lead)
+Task: Reconcile handoff/state documentation with current main before dispatching Wave 0.
+
+Work Log:
+- Verified repository truth: main HEAD 10f51781f8d198cd07c19259f722c1aeab7ac8e6 (ls-remote); PRs #60 (MKT-062, main 4b0ad68), #61 (MKT-059, main 73a6516), #62 (UX-004, main c607b78 + evidence 10f5178) all merged; fleet empty; wave complete.
+- Confirmed the four stale handoff docs (EXECUTION-PLAN.md, IMPLEMENTATION-STATE.md, DEPLOYMENT-PLAN-V1.6.md, UX-DISCOVERY-V1.6.md) described the 2026-09-21 state (main 5d9ebca, production c6a35db) and marked completed items (057..059, 062, 065, 067, UX-001..004) as incomplete.
+- Production state (dpl_5MfdkKM631cTvDTw4V1NYNq2xyU3 @ 0cc7d51) recorded from the 2026-09-22 handoff; the environment's Vercel token is scope-forbidden for the project team (SAML) — annotated as NOT independently re-verified; promotion gate stays with EXECUTION-PLAN §10.
+- Rewrote docs/handoff/EXECUTION-PLAN.md as the canonical execution authority: current truth (§1-2), successor three-worker model (§6), Wave 0..3 (§7), updated dependency graph (§8), the §12 MKT-065 dispatch-defect gate (422/audit-array at src/api/cross-platform-distribution-routes.ts — outcomes array vs scalar append guard; plan dispatched despite 422), verification contracts, final acceptance, orchestrator operating rule.
+- Rewrote docs/handoff/IMPLEMENTATION-STATE.md: full status table, station-verified baseline (tsc 0 / lint 0 / arch 48 modules 594 files 0 / unit 1204 / architecture 679 / serialized integration 99 files 1116), evidence locations, known defects, UX gaps (research backend merged but console UX not shipped).
+- Prepended dated state-refresh sections to DEPLOYMENT-PLAN-V1.6.md (production behind main by 4 items) and UX-DISCOVERY-V1.6.md (journey emergence map).
+- Architectural authorities untouched: no spec/ changes, no architecture edits — only state documentation reconciled with implementation, per the handoff rule.
+
+Stage Summary:
+- Documentation now agrees with repository main at 10f5178: green = 053..059(062), 063..065, 067..069, 071 + UX-001..004; remaining core = MKT-060/061/066/070/072..075 + UX-005..012.
+- One known defect gated before MKT-075 (MKT-065 HTTP dispatch route 422/audit-array — Worker B Wave 0 scope).
+- Next: dispatch Wave 0 (Worker A: MKT-060 TikTok; Worker B: MKT-066 + 065 defect fix; Worker C: UX-005 Connections Center).

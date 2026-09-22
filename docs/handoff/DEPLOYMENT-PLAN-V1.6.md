@@ -2,6 +2,26 @@
 
 Status: IMPLEMENTATION PLAN
 Audit date: 2026-09-21
+STATE REFRESH: 2026-09-22 (successor orchestrator reconciliation)
+
+## 0. State refresh 2026-09-22 (supersedes the §1 audit facts below)
+
+- Current main HEAD: 10f51781f8d198cd07c19259f722c1aeab7ac8e6 (ls-remote verified).
+- Current production deployment: dpl_5MfdkKM631cTvDTw4V1NYNq2xyU3
+  at commit 0cc7d51b0af5a4ee203f75157978e73fc9024fdf (MKT-058 / Instagram),
+  READY — recorded from the 2026-09-22 Tech-Lead handoff. The operating
+  environment's Vercel API token is scope-forbidden for the project team
+  (SAML), so production was NOT independently re-queried at refresh time;
+  re-verify with an authorized token before the §10 deployment gate.
+- Production is BEHIND main by four verified work items: UX-003 (PR #59),
+  MKT-062 (PR #60), MKT-059 (PR #61), UX-004 (PR #62).
+- Promotion remains gated: current main deployed + migrations verified +
+  provider configuration verified + production browser smoke + production SHA
+  recorded + rollback candidate recorded + runtime errors checked + major
+  journeys pass on production. See EXECUTION-PLAN.md §10.
+- The §1..§9 analysis below (topology, free-tier reasoning, provider-truth
+  discipline) remains valid as plan; only its deployment-state facts are
+  superseded by this section.
 
 ## 1. Verified current deployment
 

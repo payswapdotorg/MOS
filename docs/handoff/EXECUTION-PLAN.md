@@ -1,239 +1,240 @@
-# MOS — Unified Successor Tech Lead Execution Plan (v1.5 + v1.6, Re-audited 2026-09-21)
+# MOS — Unified Successor Tech Lead Execution Plan (v1.5 + v1.6)
 
 Architecture: v1.6 FROZEN
 Maximum concurrent implementation workers: 3
 Canonical execution authority: this file
+Reconciled with repository main: 2026-09-22 (successor orchestrator)
 
 ## 1. Repository truth
 
-- Current main HEAD: 5d9ebca14c99eae5887262ab857eeccff29302a0
-- Last source-audited implementation tree: 34cb2d4b78c2291f8602ec964b80c2b1a2acaa7b
-- Accepted implementation baseline: 1ef58f86afa0220a7fd546ad03c84bfb82e4656b
-- The post-baseline commits on main are documentation/handoff corrections only.
-- Current production: dpl_7wEndfiEdUsC38e2ttam2sjmMFdg, commit c6a35db9709cf0b343221952f724bc52cd7ddd4f, READY.
-- Direct ancestry audit proves the accepted implementation baseline is already contained in production.
-- Vercel runtime-error query for the selected 24h window returned no runtime errors.
-- Open PRs: none at audit time.
+- Current main HEAD: 10f51781f8d198cd07c19259f722c1aeab7ac8e6 (verified by ls-remote)
+- Current production deployment: dpl_5MfdkKM631cTvDTw4V1NYNq2xyU3
+- Current production commit: 0cc7d51b0af5a4ee203f75157978e73fc9024fdf (MKT-058/Instagram)
+- Production state verification: recorded from the 2026-09-22 Tech-Lead handoff; the
+  operating environment's Vercel token is scope-forbidden for the project team, so
+  production was not re-queried at reconciliation time. §10 remains the promotion gate.
+- Main is ahead of production by: UX-003 (PR #59), MKT-062 (PR #60), MKT-059 (PR #61),
+  UX-004 (PR #62 + evidence 10f5178).
+- Green in this plan means merged/verified on repository main — NOT production-live.
 
-## 2. Verified v1.6 baseline
+## 2. Verified v1.6 implementation state (main @ 10f5178)
 
 - ✅ MKT-053 Growth Mission
 - ✅ MKT-054 Growth Operator
 - ✅ MKT-055 Social Account / OAuth
 - ✅ MKT-056 Social Adapter Contract
+- ✅ MKT-057 YouTube Adapter
+- ✅ MKT-058 Instagram Adapter (in production)
+- ✅ MKT-059 Facebook Pages Adapter
+- ✅ MKT-062 Web Research / Content Intelligence (with HTTP surfaces; console UX pending)
 - ✅ MKT-063 Content Rights / Provenance
 - ✅ MKT-064 Content Assets / Transformations
+- ✅ MKT-065 Cross-Platform Distribution (with known defect — §12)
+- ✅ MKT-067 Experiment Analysis / Adaptive Allocation
 - ✅ MKT-068 Notifications
 - ✅ MKT-069 Product Intelligence
 - ✅ MKT-071 Commerce Catalog / Orders
+- ✅ UX-001 Outcome-first Home
+- ✅ UX-002 Reusable Mission Creation
+- ✅ UX-003 Mission Workspace
+- ✅ UX-004 Scientific Trace
 
 Remaining core:
-- ☐ MKT-057 YouTube Adapter
-- ☐ MKT-058 Instagram Adapter
-- ☐ MKT-059 Facebook Pages Adapter
 - ☐ MKT-060 TikTok Adapter
 - ☐ MKT-061 X Adapter
-- ☐ MKT-062 Web Research / Content Intelligence
-- ☐ MKT-065 Cross-Platform Distribution
 - ☐ MKT-066 Platform Health / Distribution Anomaly Detection
-- ☐ MKT-067 Experiment Analysis / Adaptive Allocation
 - ☐ MKT-070 Product Marketing Mission Planner
 - ☐ MKT-072 Commerce Discovery Mission
 - ☐ MKT-073 Social-to-Commerce Attribution
 - ☐ MKT-074 Growth Autopilot Console
 - ☐ MKT-075 v1.6 End-to-End Autonomy Proof
+- ☐ UX-005..UX-012
 
 Optional and never core-blocking:
 - ☐ MKT-076 Human Growth Work Extensions
 - ☐ MKT-077 UGC / Creator Offer Model
 - ☐ MKT-078 Human Amplification Optimization
 
+Station-verified baseline at this head: tsc 0 · lint 0 · arch:check 48 modules /
+594 files / 0 violations · unit 1204/1204 · architecture 679/679 · serialized
+integration 99 files 1116/1116 · migration tail 057_content_intelligence.sql.
+
 ## 3. Non-negotiable architecture rules
 
-1. Growth Operator is a persistent controller, never a second Workflow or Execution engine.
-2. Existing Workflow, Task, Execution, Evidence, Experiment, Learning, Policy, Credential, Job, Client/Workspace, Commerce and Deployment authorities remain singular.
-3. Social providers live behind the normalized MKT-056 adapter contract; capability parity is never assumed.
-4. Rights uncertainty fails closed; a connection never grants redistribution rights.
-5. Content Assets are immutable/versioned and retain source, ingredient and transformation lineage.
-6. Platform Health describes only observable provider/account signals; never invent hidden moderation state.
+1. Growth Operator is a persistent controller/decision/replanning layer — never a second Workflow or Execution engine. Correct relationship: Mission → Operator decisions → existing Workflow/Execution authorities.
+2. Existing Workflow, Task, Execution, Evidence, Experiment, Learning, Policy, Credential, Job, Client/Workspace, Commerce and Deployment authorities remain singular. No second workflow engine, execution engine, mission state machine, evidence authority, analytics hierarchy, commerce/order authority, human marketplace or payment authority.
+3. Social providers live behind the normalized MKT-056 adapter contract; capability parity is never assumed — a provider may truthfully expose fewer than the frozen five capability families.
+4. Rights uncertainty fails closed; a connection never grants redistribution rights. Cross-platform publishing requires source asset → rights/provenance → transformation lineage → destination capability → publication. No autonomous publication on ambiguous rights.
+5. Content Assets are immutable/versioned and retain source, ingredient, transformation and destination lineage.
+6. Platform Health describes only observable provider/account signals; never invent hidden moderation state, shadow bans or unsupported provider diagnostics. Use `suspected_distribution_anomaly` where only observable anomaly evidence exists.
 7. Cross-platform adaptation is compliant strategy, never anti-abuse evasion or fake engagement.
 8. Product source inspection is read-only unless separately authorized.
-9. Attribution is linkage evidence, not causal proof.
-10. Human UGC/creator work is optional acceleration. Zero human budget/capacity/offers remains a valid autonomous path.
-11. No second human marketplace, commerce/order authority, workflow engine or execution engine.
-12. Repository source/tests/runtime evidence outrank summaries, screenshots and PR descriptions.
+9. Attribution is linkage evidence, not causal proof — be explicit about evidence versus causality.
+10. Human UGC/creator work is optional acceleration. Zero human budget/capacity/offers remains a valid autonomous path; human absence must never silently become a blocker. Only genuine rights/policy/capability approval requirements may create `blocked_pending_human_action`.
+11. Repository source/tests/runtime evidence outrank summaries, screenshots and PR descriptions. When artifacts disagree, stop and investigate the disagreement.
 
-## 4. Journey simulation — current result
+## 4. Journey simulation — current result (2026-09-22)
 
-### First visit
-Live production returns 200 and exposes real Sign in, Create account and Demo accounts.
-Authentication is discoverable.
-After login, the current shell is still:
-Command Center → Clients → Attention → Profit Intelligence → Human Work → Apps → Administration.
-Learning: the first authenticated screen teaches MOS structure instead of the business outcome MOS can pursue.
+### First visit / progressive disclosure
+Outcome-first Home is live (UX-001): Grow an audience / Market a product / Find a
+product to sell / Generate leads / Generate revenue / Continue a mission. Internal
+operator/workflow/execution vocabulary stays behind drill-down (UX-010 hardening pending).
 
-### Creator growth
-Desired:
-Grow → connect accounts → research → evidence → hypothesis → experiment → rights → transform → publish → measure → learn → replan.
-Current: NOT DISCOVERABLE.
-MKT-053/054/055/056 exist, but 057..061 and the mission-first console are missing.
-Learning: “Grow an audience” must be a primary action; internal operator/workflow/execution terms belong behind progressive disclosure.
+### Journey A — creator growth (partially emerged)
+Grow → define target → connect account → research → evidence → hypothesis →
+experiment → rights → transform → publish → measure → analyze → decide → learn → replan.
+Present: outcome-first creation, mission workspace with lifecycle, scientific trace
+with the ten-link chain, three adapters, research backend authority.
+Remaining gaps: Connections onboarding UX (UX-005), research UX discoverability,
+TikTok/X adapters (MKT-060/061), rights/action operational UX (UX-006), platform
+health (MKT-066 + UX-007).
 
-### Product marketing
-Desired:
-Product URL/source → product understanding → channel/metric plan → execute → measure.
-Current: NOT DISCOVERABLE.
-MKT-069 exists, but MKT-070 and mission UI do not.
-Learning: “Market a product” must be a primary action.
+### Journey B — product marketing (backend emerged, journey pending)
+MKT-069 exists; MKT-070 and the user-facing journey remain. "Market a product"
+pre-selection exists in mission creation (UX-002/003 evidence); the full planning
+mission is not yet end-to-end.
 
-### Commerce discovery
-Desired:
-No product → research → candidate → demand test → viability → listing → traffic → order → margin → learning.
-Current: NOT DISCOVERABLE.
-MKT-071 exists, but MKT-072 and mission UI do not.
-Learning: commerce must be an outcome lifecycle, not an integration settings page.
+### Journey C — commerce discovery (backend emerged, journey pending)
+MKT-071 exists; MKT-072/073 and the mission UX remain. Must feel like:
+market → candidate → test → viability → listing → traffic → order → margin → learning.
 
-### Rights / transformation
-MKT-063 and MKT-064 are implemented and are already in current production, but not visible as a mission-first user journey.
-Learning: before publication, users must see source evidence, rights decision, lineage, transformation, destination capability and publication state.
+### Journey D — scientific learning (strongly emerged)
+Evidence → Hypothesis → Experiment → Measurement → Analysis → Decision → Learning
+rendered live through Mission Workspace + Scientific Trace with three explicit
+epistemic registers (observed facts / derived claims / causal interpretations).
 
-### Human amplification
-Human Work exists and is discoverable.
-Learning: human work belongs inside the mission as an optional experiment treatment. Lack of creators/funding/offers must not silently block autonomous operation.
+### Journey E — cross-platform distribution (backend authority exists)
+Asset → rights → lineage → transformation → destination capability → publish →
+measurement. Backend + HTTP surface merged; remaining work is operational
+visibility/actionability (UX-006) plus the §12 defect fix.
 
-### Scientific trace
-The existing Client Workspace exposes Goals, Strategy, Deployments, Workflows, Evidence, Decisions, Learning and Memory.
-Learning: compose a mission narrative over these authorities rather than inventing a second analytics hierarchy.
+### Journey F — zero human budget (to be proven explicitly)
+Mission → human treatment unavailable → non-human treatment remains → allocation
+continues → operator replans. A missing creator or rejected UGC offer must not
+kill the mission.
 
-### Platform health
-Current mission-level health is absent.
-Learning: show observable state, evidence basis, uncertainty and the next compliant action; never claim hidden moderation.
-
-### Existing operations
-Preserve Command Center/Today, Clients, Human Work, Apps and Administration as secondary operational surfaces.
-
-A fresh click-by-click Chromium session was unavailable in this audit environment because the browser executable was missing and could not be downloaded. This audit therefore does not claim fresh interactive browser results; it uses live production HTML, source, architecture/backlog, recorded E2E evidence, deployment metadata and runbooks.
+### Journey G — genuine human blocker (to be proven explicitly)
+Required rights/policy approval → blocked_pending_human_action → notification →
+human action → mission resumes. Never manufacture blockers.
 
 ## 5. UX work orders
 
-### UX-001 — Outcome-first Home
-Primary choices:
-- Grow an audience
-- Market a product
-- Find a product to sell
-- Generate leads
-- Generate revenue
-- Continue a mission
-
-Existing Command Center becomes Today / Operations.
-
-### UX-002 — Reusable Mission Creation
-Progressive flow:
-outcome → target → product/source/store context → connections → strategy → budget/quota → autonomy → optional human treatment.
-No dead controls; unavailable capabilities must show a truthful state and next action.
-
-### UX-003 — Mission Workspace
-One screen answers:
-target, progress, now, next, why, evidence, hypothesis, experiment, platforms, health, content, rights, transformation, measurement, decision, learning and blockers.
-
-### UX-004 — Scientific Trace
-Question → Research → Evidence → Hypothesis → Experiment → Publication → Measurement → Analysis → Decision → Learning.
-Observed facts, derived claims/hypotheses and causal interpretations are visually distinct.
-
 ### UX-005 — Connections Center
-Social, product/source, store and notification connections show capabilities, scopes/permissions, expiry, revocation, authorization health and provider limitations.
+Social, product/source, store and notification connections show: provider,
+connected account, capability, required permissions/scopes, permission health,
+expiration/revocation, provider limitations, and a clear connect/reconnect action.
+Backed by the MKT-055 surface (authorize-start/complete/refresh/reauthorize/
+disconnect/external-revocation + grants + events).
 
 ### UX-006 — Content + Rights
-Show:
-source asset → provenance evidence → rights state → ingredient lineage → transformations → destination capability → publication state.
+Show and operate: source asset → provenance evidence → rights state → ingredient
+lineage → transformations → destination capability → publication state.
+Read visibility is not executable capability — make the workflow operational.
 
 ### UX-007 — Platform Health
-Show descriptive state, evidence basis, confidence/uncertainty and next compliant action.
+Show descriptive state, evidence basis, confidence/uncertainty and the next
+compliant action. MKT-066 is the interpretation authority.
 
 ### UX-008 — Human Treatment
-Show UGC/creator/review as an optional experiment arm alongside non-human treatments. Human absence is never an implicit failure.
+Show UGC/creator/review as an optional experiment arm alongside non-human
+treatments. Human absence is never an implicit failure.
 
 ### UX-009 — Commerce Mission
-Market → Candidate → Test → Viability → Listing → Traffic → Order → Margin → Learning.
+Market → Candidate → Test → Viability → Listing → Traffic → Order → Margin →
+Learning. Not an integration/settings screen.
 
 ### UX-010 — Progressive Disclosure
-Goals, Playbooks, Deployments, Workflows, Evidence, Experiments, Decisions, Learning, Jobs and Apps remain drill-down operational objects.
+Goals, Playbooks, Deployments, Workflows, Evidence, Experiments, Decisions,
+Learning, Jobs and Apps remain drill-down operational objects.
 
 ### UX-011 — ShareNet-inspired visual direction
-Warm neutral/light surfaces, graphite type, restrained teal/green healthy state, amber warning/degraded, red only for true failure/block, generous whitespace, minimal chrome, progressive disclosure, subtle transitions and strong focus/contrast.
+Warm neutral/light surfaces, graphite type, restrained teal/green healthy state,
+amber warning/degraded, red only for true failure/block, generous whitespace,
+minimal chrome, progressive disclosure, subtle transitions, strong focus/contrast.
+Avoid: dense dashboard-first UI, gradients, glassmorphism, jargon-heavy onboarding,
+diagnostic panels dominating the primary workflow.
 
 ### UX-012 — Browser proof
-Every new journey must use real APIs and real authorization and pass:
-390×844 + 1280×800; zero horizontal overflow; zero page/browser errors; no raw JSON; honest loading/empty/error/blocked states; one clear next action.
+Every new journey uses real APIs and real authorization and passes 390×844 +
+1280×800; zero horizontal overflow; zero page/browser errors; no raw JSON; honest
+loading/empty/error/blocked states; one clear next action. A successful TypeScript
+build is not UI evidence; a successful API test is not user-journey evidence.
 
-## 6. Three-worker ownership
+## 6. Three-worker ownership (successor model)
 
-### Worker A — Social platform capability plane
-Own MKT-057..061, provider capability matrices, OAuth/scope constraints, rate/quota behavior, provider limitations, conformance suites, provider sandbox/double evidence, provider E2E and connection capability contract data.
-Worker A does not own the shared frontend composition root.
+### Worker A — Social capability plane
+Owns MKT-060, MKT-061, provider capability matrices, OAuth/scopes, account
+restrictions, rate/quota semantics, provider doubles, provider conformance,
+provider E2E, adapter regression across MKT-057..061 once distribution/mission UX
+consumes their capability data. Must NOT own the shared console composition root.
 
-### Worker B — Intelligence / distribution / science
-Own MKT-062, MKT-065, MKT-066, MKT-067 plus mission scientific-trace contracts.
-Important parallelism:
-- MKT-067 can start immediately because its frozen dependencies are already satisfied.
-- MKT-065 can start immediately because 054,056,063,064 are verified.
-- MKT-062 can start its provider-independent source/provenance core now, but is not accepted until 057..061 are verified.
-- MKT-066 remains gated on concrete provider adapters.
-MKT-076..078 are optional side work only if they cannot delay core work.
+### Worker B — Intelligence / growth backend
+Owns MKT-066 Platform Health / anomaly detection, MKT-070 Product Marketing
+Mission Planner, MKT-072 Commerce Discovery Mission, MKT-073 Social-to-Commerce
+Attribution, hardening of MKT-062/065/067 where integration exposes defects.
+Owns backend/domain contracts and APIs. MUST fix the §12 MKT-065 dispatch defect
+before final autonomy acceptance (Wave 0 scope).
 
-### Worker C — Mission / console / commerce / deployment
-Own MKT-070, MKT-072, MKT-073, MKT-074, MKT-075, UX-001..012, DEP-006..015 and final browser/E2E orchestration.
-Only Worker C changes the shared frontend composition root.
+### Worker C — Console / user journeys / deployment proof
+Owns UX-005..UX-012, MKT-074 Growth Autopilot Console, final browser journey
+orchestration, deployment verification/promotion. Worker C is the ONLY worker
+allowed to own the shared frontend composition root.
 
-## 7. Revised execution waves
+## 7. Execution waves (successor model)
 
-### Wave 0 — start immediately
-Worker A: start all five provider adapter lanes and current capability evidence.
-Worker B: MKT-067 end-to-end; MKT-065 distribution core + rights/authorization tests; MKT-062 provider-independent research/provenance core; define mission scientific trace.
-Worker C: UX-001/002 using only real existing APIs; MKT-070/072/073 preparation; DEP-006 deployment contract; DEP-007 actual database verification; DEP-008 object-store adapter design.
+### Wave 0 — immediate (all three concurrent)
+- Worker A: MKT-060 TikTok; then MKT-061 X.
+- Worker B: MKT-066; audit/fix the MKT-065 §12 defect; prepare MKT-070/072/073.
+- Worker C: refresh console against actual current main; UX-005 Connections
+  Center; expose the existing research authority through a real discoverable UX
+  path (the research surface must not remain hidden merely because the backend
+  was implemented first); begin UX-006.
 
-### Wave 1 — first integration
-Worker A: complete all adapters, conformance and E2E.
-Worker B: complete 062 after adapters verify; complete 065 provider integration; implement 066; harden/reproduce 067 zero-human allocation.
-Worker C: UX-003/004/005; MKT-070 as soon as 062/066/067 verify; DEP-009 worker; DEP-010 Redis; begin UX-006/007.
+### Wave 1 — capability integration
+- Worker A: finish remaining adapters; complete 057..061 capability regression.
+- Worker B: finish MKT-066; integrate research + health + experimentation into
+  product-marketing planning; finish MKT-070; continue MKT-072.
+- Worker C: UX-006, UX-007, UX-008, MKT-074 foundations; browser verification
+  for every completed journey.
 
-### Wave 2 — mission completion
-Worker A: provider regression matrix after distribution wiring.
-Worker B: harden 065/066/067; optional 076..078 only if non-blocking; publish mission trace/evidence read contracts.
-Worker C: MKT-072, MKT-073; UX-006..011; DEP-011 research provider; DEP-012 quota/budget; DEP-013 promotion; DEP-014 retention/cost.
+### Wave 2 — commerce + mission completion
+- Worker A: regression against all distribution destinations.
+- Worker B: MKT-072, MKT-073, attribution evidence and limitations, zero-human
+  treatment validation.
+- Worker C: UX-009, UX-010, UX-011, MKT-074 completion.
 
-### Wave 3 — product proof
-Worker C: MKT-074 + UX-012 and complete all outcome-first journeys.
-Tech Lead: independent cross-worker audit, MKT-075, production parity and rollback acceptance.
+### Wave 3 — final proof
+Tech Lead + Worker C: UX-012, MKT-075, complete journey battery, production
+parity, deployment promotion, rollback validation, final
+source/test/runtime/browser audit. Optional MKT-076..078 must not delay this wave.
 
-## 8. Frozen dependency graph
-
-The frozen backlog remains authoritative. This schedule only changes when work begins.
+## 8. Current dependency graph
 
 v1.5
 └── ✅ MKT-001..052
     ├── ✅ MKT-053 → ✅ MKT-054
-    ├── ✅ MKT-055 → ✅ MKT-056 → ☐ MKT-057..061
-    │                       └── ☐ MKT-062
-    ├── ✅ MKT-063 → ✅ MKT-064 → ☐ MKT-065
+    ├── ✅ MKT-055 → ✅ MKT-056 → ✅ MKT-057 ✅ MKT-058 ✅ MKT-059
+    │                              ├── ☐ MKT-060
+    │                              └── ☐ MKT-061
+    ├── ✅ MKT-062 (core; full acceptance held until 057..061 verify)
+    ├── ✅ MKT-063 → ✅ MKT-064 → ✅ MKT-065 (defect §12 pending)
+    ├── ☐ MKT-066 (deps: adapters + MKT-014/016)
+    ├── ✅ MKT-067
     ├── ✅ MKT-068
-    ├── ✅ MKT-069
-    └── ✅ MKT-071
+    ├── ✅ MKT-069 → ☐ MKT-070 (deps: 053+062+066+067+069)
+    └── ✅ MKT-071 → ☐ MKT-072 (deps: 053+062+063+065+067+071)
+                   └── ☐ MKT-073 (deps: 065+071+072+052)
 
-Parallel-ready now:
-- ☐ MKT-067 (all frozen dependencies already satisfied)
-- ☐ MKT-065 (all frozen dependencies already satisfied)
+                              ↓
 
-Next joins:
-- ☐ MKT-070 ← 053 + 062 + 066 + 067 + 069
-- ☐ MKT-072 ← 053 + 062 + 063 + 065 + 067 + 071
-- ☐ MKT-073 ← 065 + 071 + 072 + 052
-- ☐ MKT-074 ← v1.6 capability set + verified console APIs
-- ☐ MKT-075 ← 054 + 065 + 067 + 068 + 070 + 072 + 073 + 074
+                       ☐ MKT-074 (v1.6 capability set + verified console APIs)
+                              ↓
+                       ☐ MKT-075 (054+065+067+068+070+072+073+074)
 
-Optional side branch:
+Optional side branch (never blocks the core graph):
 ☐ MKT-076 → ☐ MKT-077 → ☐ MKT-078
-Never blocks the core graph.
+
+UX overlays this graph; it never creates duplicate authorities.
 
 ## 9. Mandatory journey battery
 
@@ -254,32 +255,91 @@ Never blocks the core graph.
 15. existing Client / Human Work / Apps / Admin
 16. mobile 390×844 + desktop 1280×800
 
-For every journey record SHA, tenant/persona, route, capability prerequisites, authority chain, observed result, screenshots/logs/API evidence, errors and next action.
+For every journey record SHA, tenant/persona, route, capability prerequisites,
+authority chain, observed result, screenshots/logs/API evidence, errors and next action.
 
-## 10. Deployment work orders
+## 10. Deployment gate
 
-DEP-006 — exact console/API/worker processes, Node 24, environment contract, health/readiness, migrations and rollback.
+Production promotion requires, in order:
+1. current main deployed;
+2. migrations verified;
+3. real environment/provider configuration verified;
+4. browser smoke passes against production;
+5. production SHA recorded;
+6. rollback candidate recorded;
+7. production runtime errors checked;
+8. major journeys pass on production, not only local/dev.
 
-DEP-007 — identify actual production Postgres account/provider, plan, region, backups, restore and staging isolation. Do not infer from env names.
+Do not assume Neon, R2, Upstash, Apify or another provider is production
+infrastructure without environment/account evidence. Do not call the project
+production-complete while production is behind main.
 
-DEP-008 — production object storage with immutable/content-addressed objects, signed/private access, retention and no bytes in domain tables. Candidate: Cloudflare R2.
+DEP-006..DEP-015 remain the deployment work orders (process contract, database,
+object store, worker runtime, transient coordination, research provider,
+budget/quota, promotion pipeline, retention, baseline re-acceptance). Vercel
+Hobby Cron is not a suitable autonomous scheduler; the controller uses the
+external worker/runtime path.
 
-DEP-009 — run src/entrypoints/worker.ts outside synchronous Vercel requests; prove durable pickup, restart convergence, leases, retries and graceful shutdown.
+## 11. Verification contracts
 
-DEP-010 — candidate Upstash for transient locks/rate limits/coordination only; no canonical domain state in Redis.
+Every accepted Work Item requires agreement between:
+source + schema/migrations + architecture checks + unit tests + integration
+tests + runtime behavior + relevant browser journey + deployment behavior.
 
-DEP-011 — provider-neutral research execution; candidate Apify; provenance, budget, retry/idempotency and source policy.
+No worker may claim completion from documentation alone, PR descriptions,
+test-count claims without rerunning, mocks replacing provider boundaries,
+seeded fixtures without exercising real authorities, or UI screenshots without
+live API calls.
 
-DEP-012 — budget/quota guard across social APIs, research, AI/compute, storage/bandwidth, paid media, commerce tests and human review.
+Every UI worker uses the agent-browser verification flow after starting the dev
+server: 1280×800 and 390×844, real APIs, real auth/authorization, meaningful
+rendered content, no raw JSON, no console/page errors, no horizontal overflow,
+correct loading/empty/blocked states, explicit next action, screenshots + journey
+record.
 
-DEP-013 — CI → preview → migration check → browser smoke → Tech Lead acceptance → production → health → browser smoke → rollback-ready.
+## 12. MKT-065 defect gate (before MKT-075)
 
-DEP-014 — deployment/evidence/object/queue/research retention and free-tier threshold monitoring.
+The station verification exposed a dispatch-route 422/audit-array defect: the
+HTTP dispatch route's audit emit passes the `outcomes` array where the append
+guard requires a scalar; the module commits the dispatch durably BEFORE the
+audit emit, so the plan is recorded dispatched despite the 422. The repo's
+integration tests dispatch through the module API, so the HTTP-route defect is
+unexercised.
 
-DEP-015 — whenever a NEW implementation baseline is accepted, verify ancestry + CI + preview + migrations + browser + production SHA + rollback candidate.
+Required final behavior:
+dispatch failure → publication state remains truthful; audit failure cannot
+create false success; retry/idempotency remains deterministic.
 
-Important: Vercel Hobby Cron is not a suitable autonomous scheduler for MOS; the controller must use the external worker/runtime path.
+Then rerun: distribution unit tests, architecture tests, integration tests, a
+real browser dispatch journey, and failure-path browser/runtime evidence.
+Owner: Worker B (Wave 0). This defect must not survive into MKT-075.
 
-## 11. Final acceptance
+## 13. Final acceptance
 
-v1.6 is complete only when MKT-057..075 are source/test/runtime verified; UX-001..012 pass browser proof; five adapters expose documented real capability limits; rights/distribution/health/analysis are visible in mission UX; product marketing and commerce are end-to-end; zero-human-budget autonomy is demonstrated; worker restart/recovery is demonstrated; production parity and provider/account/billing state are recorded; optional 076..078 remain non-blocking.
+v1.6 is complete only when MKT-057..075 are source/test/runtime verified;
+UX-001..012 pass browser proof; all five social adapters expose honest documented
+capabilities; Connections are operationally discoverable; Research is
+user-discoverable and executable; Content/Rights/Transformation/Distribution form
+one visible workflow; Platform Health is observable and compliant; Product
+Marketing is end-to-end; Commerce Discovery is end-to-end; Attribution is explicit
+about evidence versus causality; Autopilot is visible as the controller, not
+another execution engine; zero-human-budget autonomy is proven; genuine
+human-required blockers are proven; worker restart/recovery is proven; production
+deployment matches accepted main; rollback is demonstrated.
+
+Optional MKT-076..078 may remain incomplete without preventing v1.6 completion.
+
+## 14. Orchestrator operating rule
+
+The primary responsibility is not maximizing merged PR count. The responsibility
+is to make this statement objectively true:
+
+> A new user can state a growth/business outcome, understand what MOS needs from
+> them, execute the resulting mission across the capabilities that actually
+> exist, see the evidence behind decisions, understand blockers and uncertainty,
+> and watch the system learn and replan without discovering that the
+> "completed" architecture is only backend scaffolding.
+
+When source, tests, browser behavior, runtime behavior and deployment state
+disagree, stop and investigate the disagreement rather than choosing whichever
+artifact reports completion. The repository is the authority.

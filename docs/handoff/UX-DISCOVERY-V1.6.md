@@ -2,6 +2,37 @@
 
 Status: VERIFIED DISCOVERY INPUT FOR IMPLEMENTATION
 Audit date: 2026-09-21
+STATE REFRESH: 2026-09-22 (successor orchestrator reconciliation)
+
+## 0. Discovery state refresh 2026-09-22 (supersedes the audit facts below)
+
+Since the 2026-09-21 audit, the mission spine emerged on main
+(10f51781f8d198cd07c19259f722c1aeab7ac8e6):
+
+- ✅ UX-001 Outcome-first Home — the six primary outcome choices are live
+  (station evidence: console/evidence/UX-001).
+- ✅ UX-002 Reusable Mission Creation — progressive flow with truthful
+  coming states (console/evidence/UX-002-station).
+- ✅ UX-003 Mission Workspace — the seventeen-question composition, full
+  lifecycle vocabulary, live client surfaces, operator 403, terminal states
+  (console/evidence/UX-003-station, 12 screenshots + JOURNEY-RECORD.md).
+- ✅ UX-004 Scientific Trace — the ten-link epistemic chain with three
+  visually distinct registers (observed facts / derived claims / causal
+  interpretations), both cross-links live, mobile zero-overflow
+  (console/evidence/UX-004-station, 18 screenshots + JOURNEY-RECORD.md).
+- Backend authorities merged but NOT yet discoverable as user journeys:
+  MKT-062 research/content-intelligence (HTTP surfaces exist at
+  src/api/research-routes.ts + content-intelligence-routes.ts; the
+  Scientific Trace deliberately renders Research as a truthful coming
+  state — the dedicated research UX is NOT shipped), MKT-065
+  cross-platform distribution (read surfaces only in the workspace).
+- Remaining UX: UX-005 Connections Center, UX-006 Content/Rights
+  operational surface, UX-007 Platform Health, UX-008 Human treatment,
+  UX-009 Commerce mission, UX-010 progressive-disclosure hardening,
+  UX-011 visual polish, UX-012 complete browser acceptance battery.
+
+The journey analyses and learnings below remain valid as direction; their
+"NOT DISCOVERABLE" states are superseded where listed above.
 
 ## Method
 
