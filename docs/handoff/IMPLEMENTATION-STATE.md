@@ -14,19 +14,24 @@ Maximum active workers: 3
 ✅ MKT-001..052
 ✅ MKT-053 ✅ MKT-054 ✅ MKT-055 ✅ MKT-056
 ✅ MKT-057 ✅ MKT-058 ✅ MKT-059 ✅ MKT-062
-✅ MKT-063 ✅ MKT-064 ✅ MKT-065* ✅ MKT-067
+✅ MKT-063 ✅ MKT-064 ✅ MKT-065 ✅ MKT-067
 ✅ MKT-068 ✅ MKT-069 ✅ MKT-071
 ✅ UX-001 ✅ UX-002 ✅ UX-003 ✅ UX-004
 
 Remaining:
-☐ MKT-060 ☐ MKT-061 ☐ MKT-066 ☐ MKT-070
+✅ MKT-060 (Wave 0 harvest, PR #64) ☐ MKT-061
+✅ MKT-066 (Wave 0 harvest, PR #64) ☐ MKT-070
 ☐ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
-☐ UX-005..UX-012
+✅ UX-005 (Wave 0 harvest, PR #64) ☐ UX-006..UX-012
 
 Optional:
 ☐ MKT-076..078
 
-* MKT-065 has a known HTTP dispatch/audit correctness defect; final acceptance is blocked on its fix.
+* MKT-065's HTTP dispatch/audit defect was fixed in the Wave 0 harvest
+  (PR #64, delivery commit b5331f0): the route audit emit serializes
+  outcomes as the deterministic comma-joined string and the route failure
+  path is covered by integration tests
+  (tests/integration/cross-platform-distribution-dispatch-route.test.ts).
 
 ## v1.7 LAB
 
@@ -63,12 +68,14 @@ Architecture/coordination artifacts are frozen and present:
 ## Verification baseline
 
 Latest main baseline recorded in the September 22 reconciliation:
+Post-Wave-0-harvest baseline (PR #64, station-re-run on merge commit):
 - tsc 0
 - lint clean
-- arch:check 0 violations
-- unit 1204/1204
-- architecture 679/679
-- serialized integration 1116/1116
+- arch:check 0 violations (49 modules, 606 files)
+- unit 1242/1242
+- architecture 692/692
+- serialized integration 1144/1144
+- console: tsc 0, lint 0, build OK
 
 These numbers do not imply LAB implementation is complete.
 

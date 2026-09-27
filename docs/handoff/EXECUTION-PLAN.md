@@ -21,20 +21,21 @@ Green = objectively verified implementation on main. Specification files are not
 ✅ MKT-068 ✅ MKT-069 ✅ MKT-071
 ✅ UX-001 ✅ UX-002 ✅ UX-003 ✅ UX-004
 
-☐ MKT-060 TikTok
+✅ MKT-060 TikTok (Wave 0 harvest, PR #64)
 ☐ MKT-061 X
-☐ MKT-066 Platform Health
+✅ MKT-066 Platform Health (Wave 0 harvest, PR #64)
 ☐ MKT-070 Product Marketing Mission Planner
 ☐ MKT-072 Commerce Discovery
 ☐ MKT-073 Social-to-Commerce Attribution
 ☐ MKT-074 Growth Autopilot Console
 ☐ MKT-075 v1.6 End-to-End Autonomy Proof
-☐ UX-005..UX-012
+✅ UX-005 (Wave 0 harvest, PR #64) ☐ UX-006..UX-012
 
 Optional:
 ☐ MKT-076..078
 
-* MKT-065 has a known HTTP audit/dispatch correctness defect. It is not final-acceptance green until the route failure path is fixed and verified.
+* MKT-065's HTTP audit/dispatch defect is FIXED (Wave 0 harvest, PR #64):
+  scalar outcomes serialization + route-level integration coverage.
 
 ## 3. v1.7 frozen Lab
 
