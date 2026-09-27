@@ -299,7 +299,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration and 38 → 39 through the MKT-068 /notification-delivery
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
-  assert.equal(specModules.length, 47, 'the spec module list (47 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution and the MKT-062 /research + /content-intelligence sibling registrations) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
+  assert.equal(specModules.length, 48, 'the spec module list (48 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
   // /apps entry (this Work Item appends nothing).
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);

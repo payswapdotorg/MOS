@@ -471,6 +471,11 @@ import type { GrowthOperatorDelegationGatePort } from './modules/growth-operator
 // through /me/accounts with per-Page tokens, first-party Page content
 // discovery, Page/post insights and feed/photos/videos publishing incl.
 // scheduled/unpublished posts) through the SAME first-party pattern.
+// MKT-060 registers the FOURTH CONCRETE PLATFORM ADAPTER (TikTok — the
+// documented TikTok for Developers surface: Login Kit user info + the
+// Display API video reads + the Content Posting API direct-post
+// lifecycle + the Query Creator Info eligibility surface) through the
+// SAME first-party pattern.
 import { createSocialAccountsModule } from './modules/social-accounts/public.ts';
 import type {
   SocialAccountFlowImplementation,
@@ -516,6 +521,20 @@ import {
   createFacebookPagesSocialAdapter,
   FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY,
 } from './modules/social-accounts/internal/adapters/facebook-pages/adapter.ts';
+// MKT-060: the concrete TikTok platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS, the MKT-057/058/059 precedent: concrete
+// adapters are importable only by the composition root, where they
+// become module DATA; no adapter imports another adapter). The wiring
+// is INERT without an authorized tiktok integration connection +
+// OAuth grant: the fail-closed host chain (account lookup → adapter
+// registry → capability matrix → usable authorization → scope
+// pre-check → /policies gates → §21 material resolution) precedes every
+// provider call, so the registered adapter alone performs ZERO provider
+// traffic.
+import {
+  createTikTokSocialAdapter,
+  TIKTOK_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/tiktok/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -636,6 +655,29 @@ import type { ResearchPageReader } from './modules/research/public.ts';
 // same-agency research-insight citations, and /integrations through the
 // declared narrow READ-ONLY STRUCTURAL PORT).
 import { createContentIntelligenceModule } from './modules/content-intelligence/public.ts';
+// MKT-066: /platform-health — the Platform Health authority (the frozen
+// v1.6 §11 module: the DESCRIPTIVE health evaluation layer composed from
+// OBSERVABLE records only — the account/grant/authorization facts, the
+// connection state, the 056 publish-attempt invocation records with
+// their provider-exposed restriction signals and rate-limit observations,
+// the account's own /metrics series history as the anomaly baseline with
+// the cross-platform control comparison, and the active /experiments as
+// confounders; the frozen NINE descriptive states, baseline-relative
+// anomaly detection with the honest insufficient-baseline cold start,
+// closed reason codes + coarse confidence tiers + honest uncertainty,
+// and the compliant §11 maneuver recommendations as data — hidden
+// moderation state is never invented, observable-only anomaly evidence is
+// suspected_distribution_anomaly and there is no shadow-ban state
+// anywhere). Composition is the frozen v1.6 matrix row registered by this
+// Work Item (/platform-health ──→ /social-accounts, /integrations,
+// /metrics, /evidence, /experiments — verbatim, all five consumed
+// READ-ONLY through their public contracts; the 065 distribution
+// publications arrive as the per-account 056 publish-attempt records —
+// the 056 ledger is the only physical publish path, so the observable
+// publication-outcome surface is complete without a
+// /cross-platform-distribution dependency, which is not an allowance of
+// this row).
+import { createPlatformHealthModule } from './modules/platform-health/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1400,6 +1442,14 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // platform refuses fail-closed with zero provider traffic). Same
   // inertness and same seam-override semantics as the YouTube and
   // Instagram registrations.
+  // MKT-060: the FOURTH-PARTY TikTok platform adapter registers as
+  // production DATA through the same first-party pattern (the documented
+  // TikTok for Developers surface — the honest 5-of-5 capability matrix
+  // with the REAL Login Kit scope names; the documented audit/private-
+  // mode eligibility restrictions surface through the documented 403
+  // error semantics as honest restricted data, never a fabricated
+  // success). Same inertness and same seam-override semantics as the
+  // YouTube, Instagram and Facebook Pages registrations.
   const seamSocialAdapters = options.socialPlatformAdapters ?? [];
   const seamSocialAdapterKeys = new Set(
     seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
@@ -1423,6 +1473,9 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       ...(seamSocialAdapterKeys.has(FACEBOOK_PAGES_SOCIAL_ADAPTER_KEY)
         ? []
         : [createFacebookPagesSocialAdapter({ http: httpCalls })]),
+      ...(seamSocialAdapterKeys.has(TIKTOK_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createTikTokSocialAdapter({ http: httpCalls })]),
       ...seamSocialAdapters,
     ],
   });
@@ -1768,6 +1821,30 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     research,
   });
 
+  // MKT-066: /platform-health — the Platform Health authority (see the
+  // import block above). The REAL /social-accounts, /integrations,
+  // /metrics, /evidence and /experiments public-contract instances
+  // satisfy the module's declared dependencies structurally at this
+  // wiring point — zero cross-module imports exist inside
+  // src/modules/platform-health beyond its public-contract imports
+  // (proven by tools/arch-check and the boundary tests), and every
+  // consumed contract is READ-ONLY (no account, attempt, metric,
+  // evidence or experiment row is ever mutated from there). The client
+  // row is NOT resolvable from the module (/clients is not an allowance
+  // of its dependency row): client-scope authorization is resolved at
+  // the route layer (requireClientAccess) and the migration-058 FK
+  // anchor is the backstop.
+  const platformHealth = createPlatformHealthModule({
+    db,
+    clock,
+    ids,
+    socialAccounts,
+    integrations,
+    metrics: metricsModule,
+    evidence,
+    experiments,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -1914,7 +1991,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth },
     runtime: { aiProvider },
   };
 }

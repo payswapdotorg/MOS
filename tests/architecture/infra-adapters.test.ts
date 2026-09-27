@@ -995,6 +995,26 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // consistency CHECK); NO evidence, metric, experiment, research,
     // integration, credential or tenant table is created or mutated.
     '057_content_intelligence.sql',
+    // MKT-066 (Platform Health and Distribution Anomaly Detection)
+    // appends the platform-health migration (058 — the number
+    // PRE-ASSIGNED to this Work Item by the Tech Lead; 057 is the current
+    // tail; the MKT-060 and UX-005 siblings were told to add none — the
+    // Tech Lead reconciles numbering at merge, the 062/063/064/065
+    // precedent): the /platform-health authority — the CLIENT-SCOPED
+    // append-only EVALUATION records (the §11 frozen NINE descriptive
+    // states CHECK-fenced — there is deliberately NO shadow-ban state or
+    // synonym anywhere; the coarse confidence tier; the honest
+    // uncertainty statement; the bounded reason-code/baseline/
+    // recommendation/evidence-basis/signals-considered jsonb blocks; the
+    // version strings ph-vocab-v1/ph-baseline-v1) and the FK-anchored
+    // same-Client citation link tables (evidence / metric observations /
+    // 056 publish attempts — every anchored authority table read
+    // CHECK-ONLY); NO evidence, metric, experiment, account, grant,
+    // attempt, integration, mission or tenant table is created or
+    // mutated (the 063/064 table discipline — the health evaluation
+    // COMPOSES observable records through the five frozen-row public
+    // contracts and cites them by reference).
+    '058_platform_health.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

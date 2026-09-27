@@ -1145,6 +1145,155 @@ export type SocialAccountEventView = {
   recordedAt: string;
 };
 
+// --- UX-005 Connections Center (the MKT-055/MKT-023/MKT-068 compositions) ----
+
+/** One social-account authorization grant (serializeGrant — the append-only
+ *  grant history tail behind GET /api/clients/:clientId/social-accounts/:accountId/grants,
+ *  and inside every authorize-start/reauthorize response). Grant states:
+ *  pending | authorized | expired | revoked | refreshed | superseded. */
+export type SocialGrantView = {
+  grantId: string;
+  integrationConnectionId: string;
+  agencyId: string;
+  clientId: string;
+  socialAccountId?: string;
+  platformId: string;
+  grantState: string;
+  requestedScopes?: string[];
+  credentialReferenceId?: string;
+  expiresAt?: string;
+  successorGrantId?: string;
+  completedAt?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** The verbatim scope facts of one grant (GET …/grants/:grantId — the
+ *  provider's own answer: grantedScopes + capabilityTags). */
+export type SocialGrantScopeFactsView = {
+  grant: SocialGrantView;
+  grantedScopes: string[];
+  capabilityTags: string[];
+};
+
+/** The authorize-start / reauthorize round response (201): the round IS
+ *  recorded (the PENDING grant) and the authorizeUrl is where the provider's
+ *  login must happen — the complete step needs the provider's callback. */
+export type SocialAuthorizeStartResponse = {
+  authorizationId: string;
+  state: string;
+  authorizeUrl: string;
+  grant: SocialGrantView;
+};
+
+/** The complete / refresh round response (200): the binding + the usable
+ *  grant + the provider's verbatim scope facts. */
+export type SocialAuthorizationCompletionResponse = {
+  account: SocialAccountView;
+  grant: SocialGrantView;
+  grantedScopes: string[];
+  capabilityTags: string[];
+};
+
+/** One client integration connection (serializeConnection — GET /api/clients/:clientId/connections;
+ *  statuses: registered | connected | suspended | error; health: healthy | unreachable | unknown). */
+export type IntegrationConnectionView = {
+  connectionId: string;
+  clientId: string;
+  agencyId: string;
+  adapterKey: string;
+  providerLabel: string;
+  status: string;
+  health: string;
+  credentialReferenceId: string;
+  providerConfig: Record<string, unknown>;
+  rateLimit?: Record<string, unknown>;
+  lastError?: string;
+  lastCheckedAt?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One registered adapter's descriptor + capabilities (serializeAdapter —
+ *  GET /api/integrations/adapters — the real capability registry, no tenant data). */
+export type RegisteredAdapterView = {
+  adapterKey: string;
+  providerLabel: string;
+  description: string;
+  capabilities: Array<{
+    capabilityKey: string;
+    kind: string;
+    operations: string[];
+    description: string;
+  }>;
+};
+
+/** One notification inbox item (serializeInboxView — GET /api/clients/:clientId/notifications). */
+export type NotificationInboxItemView = {
+  inboxItemId: string;
+  notificationId: string;
+  readAt: string | null;
+  readByActor?: string;
+  deliveredAt: string;
+  notification: NotificationRecordView;
+};
+
+/** One notification record (serializeNotification — the MKT-068 delivery plane). */
+export type NotificationRecordView = {
+  notificationId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  eventType: string;
+  urgency: string;
+  explanation: string;
+  sourceKind: string;
+  sourceId: string;
+  requiredAction?: string;
+  deepLink: string;
+  deliveryStatus: string;
+  provenance: Record<string, unknown>;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One delivery receipt (serializeReceipt — the channel-health basis behind
+ *  GET /api/clients/:clientId/notifications/:notificationId). */
+export type NotificationReceiptView = {
+  receiptId: string;
+  notificationId: string;
+  channel: string;
+  outcome: string;
+  providerMessageId?: string;
+  reason?: string;
+  policyDecisionId?: string;
+  provenance: Record<string, unknown>;
+};
+
+/** One notification with its full append-only receipt tail
+ *  (GET /api/clients/:clientId/notifications/:notificationId). */
+export type NotificationDetailView = {
+  notification: NotificationRecordView;
+  receipts: NotificationReceiptView[];
+};
+
+/** One credential reference (CRED-001 — opaque, non-secret; the agency's
+ *  live references behind GET /api/agencies/:agencyId/credentials). */
+export type CredentialReferenceView = {
+  credentialId: string;
+  agencyId: string;
+  clientId?: string;
+  kind: string;
+  label: string;
+  status: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** One content asset version (serializeVersion — GET /api/clients/:clientId/content-assets;
  *  the 064 versioned-asset model). */
 export type ContentAssetVersionView = {

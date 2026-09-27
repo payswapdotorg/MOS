@@ -471,10 +471,18 @@ test('MKT-054: the platform-health seam is typed-but-unwired (the MKT-066 future
     /export interface GrowthOperatorPlatformHealthPort/.test(operatorPublic),
     'the typed platform-health port is declared (the future seam)',
   );
-  // It is NOT wired at the composition root.
+  // It is NOT wired INTO THE OPERATOR. (The MKT-066 delivery now wires
+  // the /platform-health module as its OWN frozen authority at the
+  // composition root — the re-pin: the honest assertion is that the
+  // OPERATOR's platform-health seam receives no instance; the row joins
+  // the operator at the MKT-070+ composition time.)
+  const operatorWiring = compositionRoot.slice(
+    compositionRoot.indexOf('const growthOperator = createGrowthOperatorModule({'),
+    compositionRoot.indexOf('const growthOperator = createGrowthOperatorModule({') + 1600,
+  );
   assert.ok(
-    !stripComments(compositionRoot).includes('PlatformHealth'),
-    'the platform-health port is NOT wired at the composition root (MKT-066 is a later Worker B Work Item)',
+    !/platformHealth/.test(operatorWiring),
+    'the platform-health port is NOT wired into the growth operator (the MKT-070+ composition)',
   );
   // The registered matrix row does NOT include platform-health yet.
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
@@ -542,7 +550,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // adjacency — the same sibling re-pin precedent).
   assert.ok(
     compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research') &&
-      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence },'),
+      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth },'),
     'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, and the MKT-062 siblings last)',
   );
   assert.ok(
@@ -554,10 +562,12 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // after the MKT-067 054, and the MKT-062 sibling delivery appends
   // 056_research + 057_content_intelligence — every tail position shifts
   // once more).
+  // The MKT-066 sibling delivery appends 058_platform_health — every
+  // tail position shifts once more (the same additive re-pin precedent).
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 6], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 7], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------

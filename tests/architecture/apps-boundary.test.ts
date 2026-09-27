@@ -360,7 +360,10 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // /research (the v1.6 Web Research authority) and
   // /content-intelligence (the v1.6 Content Intelligence authority) — so
   // the spec-parsed set is 47 (the same additive promotion precedent).
-  assert.equal(specModules.length, 47);
+  // The MKT-066 sibling delivery appends /platform-health (the v1.6
+  // Platform Health and Distribution Anomaly Detection registration —
+  // the same additive promotion precedent).
+  assert.equal(specModules.length, 48);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');
@@ -425,37 +428,41 @@ test('MKT-047 AC-7: the expected-migration list carries 037 in numeric position;
   // MKT-056 delivery appends 050, the MKT-063 delivery appends 051 and
   // the MKT-054 delivery (renumbered 050→052 at merge) appends 052, so
   // every tail position shifts seven earlier.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -18], '037_apps.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -17], '038_app_installs.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -16], '040_sales_continuity.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -15], '042_app_marketplace.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -14], '044_app_metering.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -13], '045_growth_missions.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -12], '046_social_accounts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -11], '047_notification_delivery.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -10], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -19], '037_apps.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -18], '038_app_installs.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -17], '040_sales_continuity.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -16], '042_app_marketplace.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -15], '044_app_metering.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -14], '045_growth_missions.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -13], '046_social_accounts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -12], '047_notification_delivery.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -11], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -10], '049_commerce_capabilities.sql');
   // The MKT-056 social-adapter-contract delivery appends 050, the
   // MKT-063 /content-rights sibling delivery appends 051 and the
   // MKT-054 growth-operator delivery appends 052 (renumbered at merge —
   // the same additive
   // precedent — plus the MKT-064 /content-assets delivery appends 053; the
   // merged-tree truth).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '053_content_assets.sql');
   // The MKT-067 /experiment-analysis delivery appends 054 and the
   // MKT-065 /cross-platform-distribution delivery appends 055 (the
   // PRE-ASSIGNED numbers — the same additive precedent; every tail
   // position shifts once more).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '054_experiment_analysis.sql');
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '055_cross_platform_distribution.sql');  // The store/entrypoint exist (the module boundary is complete).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '055_cross_platform_distribution.sql');  // The store/entrypoint exist (the module boundary is complete).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '057_content_intelligence.sql');
+  // The MKT-066 sibling delivery appends 058_platform_health.sql (the
+  // PRE-ASSIGNED number — every tail position shifts once more; the same
+  // additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '058_platform_health.sql');
   assert.ok(existsSync(src('modules', 'apps', 'public.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'module.ts')));
   assert.ok(existsSync(src('modules', 'apps', 'internal', 'store.ts')));
