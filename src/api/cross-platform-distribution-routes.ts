@@ -622,9 +622,19 @@ export function registerCrossPlatformDistributionRoutes(
           idempotencyKey: `distribution.dispatched:${ctx.params.planId}:${ctx.result.plan.version}`,
           details: {
             planState: ctx.result.plan.planState,
-            outcomes: ctx.result.destinations.map(
-              (destination) => destination.destinationStatus,
-            ),
+            // MKT-066 (the disclosed MKT-065 route fix): the audit append
+            // guard requires JSON-scalar detail values (audit-store's
+            // assertValidAuditEvent rejects arrays/objects), so the
+            // per-destination outcome list rides as the DETERMINISTIC
+            // fan-out-ordered comma-joined status string — the house
+            // serialization precedent (notification-delivery's
+            // receiptOutcomes / field-agents' specializations join(',')).
+            // Position corresponds to fan-out order: the string is
+            // lossless over the ordered outcome list (the full per-plan
+            // detail stays readable on the plan's own lineage tail).
+            outcomes: ctx.result.destinations
+              .map((destination) => destination.destinationStatus)
+              .join(','),
           },
         });
       },

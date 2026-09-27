@@ -631,8 +631,12 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '057_content_intelligence.sql');
+  // The MKT-066 sibling delivery appends 058_platform_health.sql (the
+  // PRE-ASSIGNED number — every tail position shifts once more; the same
+  // additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '058_platform_health.sql');
 });
 
 // ---------------------------------------------------------------------------

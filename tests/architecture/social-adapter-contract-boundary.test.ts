@@ -530,15 +530,19 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -1], '057_content_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '055_cross_platform_distribution.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -2], '057_content_intelligence.sql');
+  // The MKT-066 sibling delivery appends 058_platform_health.sql (the
+  // PRE-ASSIGNED number — every tail position shifts once more; the same
+  // additive re-pin precedent).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '058_platform_health.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -3], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -4], '055_cross_platform_distribution.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -5], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -6], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -7], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -8], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -9], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length -10], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------

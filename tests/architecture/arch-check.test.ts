@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (47 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (48 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 47);
+  assert.equal(modules.length, 48);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -60,6 +60,10 @@ test('frozen module set is parsed from spec/architecture.md §6 (47 modules)', (
   // and /content-intelligence — the v1.6 Content Intelligence
   // registration (the §6 candidate/hypothesis layer over the canonical
   // evidence authority).
+  // The MKT-066 delivery appends /platform-health — the v1.6 Platform
+  // Health and Distribution Anomaly Detection registration (the §11
+  // descriptive health evaluation authority over the five frozen-row
+  // public contracts).
   assert.deepEqual(
     [...modules].sort(),
     [
@@ -67,7 +71,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (47 modules)', (
       'cross-platform-distribution',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
-      'notification-delivery', 'notifications', 'operating-graph', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
+      'notification-delivery', 'notifications', 'operating-graph', 'platform-health', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -173,6 +177,13 @@ test('frozen dependency matrix is parsed from the frozen spec documents', () => 
   assert.deepEqual(matrix['research'], ['integrations', 'evidence', 'ai-runtime']);
   assert.deepEqual(matrix['content-intelligence'], [
     'evidence', 'metrics', 'experiments', 'integrations', 'research',
+  ]);
+  // The MKT-066 additive matrix line — the frozen v1.6 row VERBATIM:
+  // /platform-health ──→ /social-accounts, /integrations, /metrics,
+  // /evidence, /experiments (the §11 descriptive health evaluation
+  // authority over the five frozen-row public contracts, all READ-ONLY).
+  assert.deepEqual(matrix['platform-health'], [
+    'social-accounts', 'integrations', 'metrics', 'evidence', 'experiments',
   ]);
   // The MKT-068 additive matrix line (the /notification-delivery
   // Notification Delivery Plane over the /notifications boundary, the
@@ -364,6 +375,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // content-intelligence boundary a MISSING_MODULE violation (the same
     // additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/content-intelligence',
+    // The MKT-066 /platform-health §6 registration (the v1.6 Platform
+    // Health and Distribution Anomaly Detection authority) makes the
+    // fixture's missing platform-health boundary a MISSING_MODULE
+    // violation (the same additive count each sibling promotion adds).
+    'MISSING_MODULE|src/modules/platform-health',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -427,10 +443,13 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // each sibling promotion adds). The MKT-062 delivery appends /research
   // (the v1.6 Web Research registration) and /content-intelligence (the
   // v1.6 Content Intelligence registration) — the same additive count
-  // each sibling promotion adds (46 → 48 enforced modules).
+  // each sibling promotion adds (46 → 48 enforced modules). The MKT-066
+  // delivery appends /platform-health — the v1.6 Platform Health and
+  // Distribution Anomaly Detection registration (the same additive count
+  // each sibling promotion adds — 48 → 49 enforced modules).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    48,
+    49,
     'no unexpected violation categories may be reported',
   );
 
