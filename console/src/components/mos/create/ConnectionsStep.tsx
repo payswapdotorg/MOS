@@ -12,7 +12,7 @@
 // what is missing, why it matters, what to do next — always with an
 // explicit, working action.
 
-import { Building2, ChevronRight } from "lucide-react";
+import { Building2, ChevronRight, Link2 } from "lucide-react";
 import { useMosQuery } from "@/components/mos/hooks";
 import { useClients } from "@/components/mos/hooks";
 import { useNavigate } from "@/components/mos/home/outcomes";
@@ -126,7 +126,9 @@ export function ConnectionsStep({
               required to create a draft mission.
             </p>
           ) : (
-            <ClientConnections clientId={selectedClientId} />
+            <ClientConnections clientId={selectedClientId} clientName={
+              list.find((client) => client.clientId === selectedClientId)?.name ?? undefined
+            } />
           )}
         </div>
       )}
@@ -178,7 +180,8 @@ function ClientPickerRow({
   );
 }
 
-function ClientConnections({ clientId }: { clientId: string }) {
+function ClientConnections({ clientId, clientName }: { clientId: string; clientName?: string }) {
+  const navigate = useNavigate();
   const query = useMosQuery<SocialAccountsResponse>(
     ["client-social-accounts", clientId],
     `/api/clients/${clientId}/social-accounts`,
@@ -211,6 +214,17 @@ function ClientConnections({ clientId }: { clientId: string }) {
 
   const accounts = query.data?.socialAccounts ?? [];
 
+  const manageLink = (
+    <button
+      type="button"
+      onClick={() => navigate({ kind: "client", clientId, tab: "connections" })}
+      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-teal-800/25 bg-white px-4 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700"
+    >
+      <Link2 className="size-4" aria-hidden="true" />
+      Manage connections{clientName ? ` for ${clientName}` : ""} →
+    </button>
+  );
+
   if (accounts.length === 0) {
     return (
       <div className="rounded-xl border border-stone-200 bg-white p-5">
@@ -225,32 +239,36 @@ function ClientConnections({ clientId }: { clientId: string }) {
           without any.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-stone-600">
-          <span className="font-medium">What to do next:</span> connecting channels from this
-          console is a planned update. For now you can continue creating this mission — drafts
-          don&apos;t run anything and nothing is needed to record one.
+          <span className="font-medium">What to do next:</span> open the Connections Center —
+          connect a platform, watch its OAuth round and its granted permissions land live. You
+          can also continue creating this mission — drafts don&apos;t run anything.
         </p>
+        <div className="mt-4">{manageLink}</div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-      <ul className="divide-y divide-stone-100">
-        {accounts.map((account) => (
-          <li key={account.socialAccountId} className="flex items-center gap-3 px-4 py-3">
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-stone-800">
-                {platformLabel(account.platformId)}
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+        <ul className="divide-y divide-stone-100">
+          {accounts.map((account) => (
+            <li key={account.socialAccountId} className="flex items-center gap-3 px-4 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-stone-800">
+                  {platformLabel(account.platformId)}
+                </span>
+                <span className="block truncate text-xs text-stone-500">
+                  {account.displayIdentity ?? "account"}
+                  {account.verifiedAt ? " · verified" : ""}
+                </span>
               </span>
-              <span className="block truncate text-xs text-stone-500">
-                {account.displayIdentity ?? "account"}
-                {account.verifiedAt ? " · verified" : ""}
-              </span>
-            </span>
-            <ConnectionStatusChip status={account.status} />
-          </li>
-        ))}
-      </ul>
+              <ConnectionStatusChip status={account.status} />
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>{manageLink}</div>
     </div>
   );
 }
