@@ -1,0 +1,76 @@
+{
+  "architectureVersion": "1.7",
+  "status": "FROZEN",
+  "layeredOn": "1.6",
+  "product": "MOS",
+  "name": "Marketing Engineering Lab",
+  "newCapabilities": [
+    "reference-first-niche-corpus",
+    "multimodal-content-features",
+    "idea-graph",
+    "social-world-model",
+    "user-and-creator-dynamics",
+    "time-machine-replay",
+    "counterfactual-evaluation",
+    "offline-policy-learning",
+    "sequential-strategy-rl",
+    "world-model-ensemble",
+    "agent-body-runtime",
+    "agent-organization-search",
+    "capability-engine",
+    "external-capability-provider-integration",
+    "simulator-to-real-experiment-bridge",
+    "simulator-calibration",
+    "robust-marketing-benchmarks",
+    "marketing-engineering-social-automation"
+  ],
+  "singularV16AuthoritiesRemainCanonical": true,
+  "labArtifacts": [
+    "lab-scenario",
+    "lab-run",
+    "world-model-version",
+    "strategy-candidate",
+    "agent-organization-candidate",
+    "capability-candidate",
+    "calibration-record"
+  ],
+  "mediaPolicy": {
+    "referenceFirst": true,
+    "permanentMediaRetentionRequired": false,
+    "mediaAccessIsProviderAndRightsGated": true,
+    "publicUrlDoesNotGrantMediaRights": true
+  },
+  "learningRules": {
+    "historicalReplayIsFactualEvidence": true,
+    "counterfactualsAreModelOutputs": true,
+    "delayedInformationIsSupported": true,
+    "offlineEvaluationBeforeOnlineRl": true,
+    "robustEvaluationRequired": true,
+    "realWorldCalibrationRequired": true
+  },
+  "agentRules": {
+    "agentBodyIsMosOwned": true,
+    "modelsRemainUnderExistingAiRuntime": true,
+    "secondModelRouterForbidden": true,
+    "organizationSearchSupported": true,
+    "singleAgentBaselineRequired": true
+  },
+  "capabilityRules": {
+    "capabilitiesAreExplicitContracts": true,
+    "arenaIsExternalProvider": true,
+    "secondMosMarketplaceForbidden": true,
+    "humanCapabilityAcquisitionIsOptional": true
+  },
+  "safetyRules": {
+    "fakeEngagementForbidden": true,
+    "antiAbuseEvasionForbidden": true,
+    "impersonationForbidden": true,
+    "rightsCircumventionForbidden": true,
+    "policyViolatingSimulatorSolutionsAreInvalid": true
+  },
+  "excludedArchitecturalDependencies": [
+    "copilotkit",
+    "openmuse",
+    "code-oss"
+  ]
+}
