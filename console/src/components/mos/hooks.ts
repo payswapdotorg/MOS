@@ -63,6 +63,8 @@ import {
   type NotificationInboxItemView,
   type OfferClaimResponse,
   type PackSurfaceComposition,
+  type PlatformHealthEvaluationDetailView,
+  type PlatformHealthListResponse,
   type PlaybookRecord,
   type PolicyVersionRecord,
   type ProfitAgencyView,
@@ -1604,5 +1606,112 @@ export function useExecuteContentTransformation(clientId: string) {
     },
     onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
   });
+}
+
+// --- UX-007 Platform Health composition hooks (the MKT-066 authority) -----------
+//
+// The same COMPOSITION DISCIPLINE: every hook is a THIN wrapper over ONE
+// existing read or mutation surface of the /platform-health authority
+// (MKT-066). Zero new authorities, zero client-side derivation beyond
+// presentation grouping/formatting — the Health tab groups the client's
+// evaluation records per account (newest-first) from ONE list read; every
+// verdict field renders exactly as the authority returned it.
+
+/** The client's platform-health evaluations (all accounts, oldest first,
+ *  bounded) + the standing observability disclosure:
+ *  GET /api/clients/:clientId/platform-health (any active member). */
+export function useClientPlatformHealth(clientId: string | null) {
+  return useMosQuery<PlatformHealthListResponse>(
+    ["platform-health", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/platform-health`,
+  );
+}
+
+/** One account's append-only evaluation tail (oldest first):
+ *  GET /api/clients/:clientId/platform-health/accounts/:socialAccountId/evaluations
+ *  (any active member). */
+export function useAccountPlatformHealth(clientId: string | null, socialAccountId: string | null) {
+  return useMosQuery<PlatformHealthListResponse>(
+    ["platform-health-account", clientId, socialAccountId],
+    clientId === null || socialAccountId === null
+      ? null
+      : `/api/clients/${clientId}/platform-health/accounts/${socialAccountId}/evaluations`,
+  );
+}
+
+/** One evaluation + the FK-anchored evidence basis behind the verdict (the
+ *  /evidence, /metrics and 056 publish-attempt citations — fetched on
+ *  expand, never bulk-prefetched):
+ *  GET /api/platform-health/evaluations/:evaluationId (any active member of
+ *  the owning client). */
+export function usePlatformHealthEvaluationDetail(evaluationId: string | null) {
+  return useMosQuery<PlatformHealthEvaluationDetailView>(
+    ["platform-health-evaluation", evaluationId],
+    evaluationId === null ? null : `/api/platform-health/evaluations/${evaluationId}`,
+  );
+}
+
+/** THE EVALUATION COMMAND — compose a NEW append-only evaluation of one
+ * connected account from its OBSERVABLE RECORDS ONLY (the body is empty;
+ * every authority field is server-derived; the §11 discipline is
+ * structural — there is no route through which a claimed-but-unrecorded
+ * provider notice or a caller verdict could enter):
+ *  POST /api/clients/:clientId/platform-health/accounts/:socialAccountId/evaluations
+ *  (owner|admin; 201 returns the evaluation + its FK-anchored evidence
+ *  links). */
+export function useRunPlatformHealthEvaluation(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { socialAccountId: string }) =>
+      mosPost<PlatformHealthEvaluationDetailView>(
+        `/api/clients/${clientId}/platform-health/accounts/${input.socialAccountId}/evaluations`,
+        {},
+      ),
+    onSuccess: (outcome) => {
+      toast.success(`Evaluation recorded — ${outcome.evaluation.state} (confidence ${outcome.evaluation.confidence})`);
+      client.invalidateQueries({ queryKey: ["platform-health", clientId] });
+      client.invalidateQueries({ queryKey: ["platform-health-account", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/**
+ * The honest UI permission state for the evaluation command (the server
+ * remains the authority — this is the presentation affordance derived from
+ * the SERVER-DERIVED authorization context, never a client-side grant).
+ * The POST route authorizes owner|admin (platform administrators pass);
+ * every read stays open to any active member.
+ */
+export function usePlatformHealthRunPermission(clientId: string | null): {
+  status: "checking" | "allowed" | "forbidden";
+  role: string | null;
+} {
+  const auth = useAuthContext();
+  const client = useClient(clientId);
+  if (auth.isPending || client.isPending) {
+    return { status: "checking", role: null };
+  }
+  const context = auth.data;
+  const agencyId = client.data?.agencyId;
+  if (context === undefined || agencyId === undefined) {
+    return { status: "checking", role: null };
+  }
+  if (context.platformRoles.includes("platform_administrator")) {
+    return { status: "allowed", role: "platform_administrator" };
+  }
+  const membership = context.memberships.find((entry) => entry.agencyId === agencyId);
+  if (membership === undefined) {
+    // No membership in the owning agency — the reads themselves would be
+    // the uniform 404; the honest state here is simply "not permitted".
+    return { status: "forbidden", role: null };
+  }
+  if (membership.membershipStatus !== "active") {
+    return { status: "forbidden", role: membership.role };
+  }
+  if (membership.role === "agency_owner" || membership.role === "agency_admin") {
+    return { status: "allowed", role: membership.role };
+  }
+  return { status: "forbidden", role: membership.role };
 }
 

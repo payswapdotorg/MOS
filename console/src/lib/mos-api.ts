@@ -1294,6 +1294,103 @@ export type CredentialReferenceView = {
   updatedAt: string;
 };
 
+// --- UX-007 Platform Health (the MKT-066 compositions) -------------------------
+
+/** One §11 baseline series summary riding an evaluation record
+ *  (serializeEvaluation — the 'ph-baseline-v1' calculation disclosure:
+ *  the account's own history, the cross-platform control series, the
+ *  honest insufficient-baseline cold start). */
+export type PlatformHealthBaselineSeriesView = {
+  metricName: string;
+  scope: string;
+  priorPoints: number;
+  baselineMedian: number | null;
+  recentValues: number[];
+  suspectExcluded: number;
+  flaggedBelowBaseline: boolean;
+  insufficientBaseline: boolean;
+};
+
+/** One compliant response recommendation riding every verdict — §11's
+ *  maneuver list AS DATA (maneuver + description + rationale). The
+ *  FORBIDDEN actions are structurally absent from this vocabulary and
+ *  never appear here. */
+export type PlatformHealthRecommendationView = {
+  maneuver: string;
+  description: string;
+  rationale: string;
+};
+
+/** One evidence-basis entry — WHICH observable record produced the verdict
+ *  constituent (the discriminated 'kind' shapes of the module contract:
+ *  the account/grant/connection records, 056 publish attempts, status
+ *  polls, provider-exposed restriction signals, /metrics observations). */
+export type PlatformHealthEvidenceBasisView =
+  | { kind: "account_record"; socialAccountId: string; observedFact: string }
+  | { kind: "grant_record"; grantId: string; observedFact: string }
+  | { kind: "connection_record"; connectionId: string; observedFact: string }
+  | { kind: "publish_attempt"; attemptId: string; observedFact: string }
+  | { kind: "status_poll"; observationId: string; observedFact: string }
+  | { kind: "restriction_signal"; signalKind: string; source: string; observedFact: string }
+  | { kind: "metric_observation"; observationId: string; metricName: string; observedFact: string };
+
+/** One platform-health evaluation record (serializeEvaluation — the shape
+ *  behind GET /api/clients/:clientId/platform-health, the per-account
+ *  tails, and the evaluation inside every detail read). The descriptive
+ *  state is one of the frozen NINE, the confidence one of the three tiers,
+ *  the reason codes the closed ph-vocab-v1 vocabulary; the uncertainty
+ *  statement is the authority's own words — never a fabricated
+ *  probability). */
+export type PlatformHealthEvaluationView = {
+  evaluationId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId: string | null;
+  socialAccountId: string;
+  platformId: string;
+  state: string;
+  confidence: string;
+  uncertainty: string;
+  reasonCodes: string[];
+  baseline: PlatformHealthBaselineSeriesView[];
+  recommendations: PlatformHealthRecommendationView[];
+  evidenceBasis: PlatformHealthEvidenceBasisView[];
+  signalsConsidered: Record<string, unknown>;
+  vocabularyVersion: string;
+  baselineVersion: string;
+  observabilityDisclosure: string;
+  provenance: {
+    actor: string;
+    recordedVia: string;
+    correlationId: string;
+    causationId: string | null;
+    recordedAt: string;
+  };
+  createdAt: string;
+};
+
+/** The evaluation list responses (GET /api/clients/:clientId/platform-health
+ *  and the per-account tails): the records oldest-first + the standing
+ *  observability disclosure that ships on every view. */
+export type PlatformHealthListResponse = {
+  clientId: string;
+  socialAccountId?: string;
+  evaluations: PlatformHealthEvaluationView[];
+  observabilityDisclosure: string;
+};
+
+/** The evaluation detail response (GET /api/platform-health/evaluations/:id
+ *  and the POST run-evaluation response): the record + the FK-anchored
+ *  evidence links behind the verdict (the /evidence records, /metrics
+ *  observations and 056 publish attempts — the citation order). */
+export type PlatformHealthEvaluationDetailView = {
+  evaluation: PlatformHealthEvaluationView;
+  evidenceIds: string[];
+  metricObservationIds: string[];
+  publishAttemptIds: string[];
+  observabilityDisclosure: string;
+};
+
 /** One content asset version (serializeVersion — GET /api/clients/:clientId/content-assets;
  *  the 064 versioned-asset model). */
 export type ContentAssetVersionView = {

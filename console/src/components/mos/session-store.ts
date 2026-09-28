@@ -32,6 +32,10 @@ export type ClientWorkspaceTab =
   // UX-006 — the Content/Rights operational surface tab (the full pipeline:
   // research, candidates, rights gates, assets + transformations).
   | "content"
+  // UX-007 — the Platform Health tab (the MKT-066 composition: the
+  // per-account descriptive health picture, its evidence basis and the
+  // compliant next actions).
+  | "health"
   | "goals"
   | "playbooks"
   | "deployments"
@@ -47,7 +51,7 @@ export type MosView =
   | { kind: "home" }
   | { kind: "command-center" }
   | { kind: "clients" }
-  | { kind: "client"; clientId: string; tab: ClientWorkspaceTab }
+  | { kind: "client"; clientId: string; tab: ClientWorkspaceTab; focusSocialAccountId?: string }
   | { kind: "decision"; decisionId: string }
   | { kind: "attention" }
   | { kind: "profit" }
