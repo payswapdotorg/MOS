@@ -711,6 +711,26 @@ import { createPlatformHealthModule } from './modules/platform-health/public.ts'
 // clock, ids) — the LAB-002..018 modules and the LAB-014 real bridge
 // consume these contracts BY REFERENCE through the public surface.
 import { createLabModule } from './modules/lab/public.ts';
+// LAB-002: /lab-corpus — the Reference-First Niche Corpus authority
+// (the frozen v1.7 corpus layer: the versioned niche/platform corpus
+// definitions carrying the provider-specific acquisition-policy map,
+// the §4 Content Reference records — provider, provider_content_id,
+// canonical URL, creator/account reference, publication time,
+// observation time, rights/acquisition basis, collection method/
+// version, metadata snapshot, metadata digest, media availability
+// state, feature bundle version — the UNIQUE (client, provider,
+// provider_content_id) DEDUPLICATION fence with re-ingestion as an
+// appended observation, the append-only observation-timestamp tail,
+// and the §11 coverage reporting (coverage/freshness/duplication/
+// accessibility/extraction success). NO MEDIA BYTES ANYWHERE: the
+// durable corpus is references + metadata + provenance + observation
+// history ONLY — the media path is provider/rights gated downstream
+// in the adapters (§4). The frozen row consumes platform ports only
+// (db, clock, ids): the /lab scenario cites the corpus through the
+// OPAQUE corpusVersion binding string, BY REFERENCE — no /lab import
+// exists here and no /lab table is written (the migration-061
+// no-shadowing discipline).
+import { createLabCorpusModule } from './modules/lab-corpus/public.ts';
 // MKT-070: /product-marketing — the Product Marketing Mission Planner
 // authority (the frozen v1.6 matrix row registered by this Work Item:
 // /product-marketing ──→ /growth-missions, /product-intelligence,
@@ -1920,6 +1940,10 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // public contract BY REFERENCE.
   const lab = createLabModule({ db, clock, ids });
 
+  // LAB-002: /lab-corpus — wired exactly as the /lab precedent
+  // (platform ports only; the module resolves its own tenant fences).
+  const labCorpus = createLabCorpusModule({ db, clock, ids });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2156,7 +2180,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus },
     runtime: { aiProvider },
   };
 }

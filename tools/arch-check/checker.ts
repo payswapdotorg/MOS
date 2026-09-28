@@ -112,6 +112,16 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
   const v15CompositionModules: readonly string[] = [
     // MKT-047: the App registry authority (App Manifest and Packaging v1).
     'apps',
+    // LAB-002: the Reference-First Niche Corpus authority (src/modules/
+    // lab-corpus — the v1.7 LAB-002 Work Item: "Build provider-neutral
+    // niche corpus ingestion using content references and metadata
+    // snapshots"). Disclosed worker provision pending the Tech Lead's
+    // spec promotion (the /lab module's own §6 registration precedent —
+    // the module owns its migration-061 tables, consumes platform
+    // ports only (db, clock, ids) and depends on NO other module: the
+    // /lab scenario cites the corpus through the OPAQUE corpusVersion
+    // binding string, by reference).
+    'lab-corpus',
   ];
   const frozenModules = [
     ...specModules,

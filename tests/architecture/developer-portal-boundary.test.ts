@@ -300,12 +300,15 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
   assert.equal(specModules.length, 50, 'the spec module list (50 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, and the LAB-001 /lab v1.7 registration and the MKT-070 /product-marketing TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
-  // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
-  // /apps entry (this Work Item appends nothing).
+  // The disclosed v1.5 composition provision: the MKT-047 /apps entry
+  // (this Work Item appends nothing) PLUS the LAB-002 /lab-corpus
+  // disclosed worker provision (the v1.7 Reference-First Niche Corpus
+  // authority — the /apps additive precedent, pending the Tech Lead's
+  // spec promotion).
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null, 'the provision list is present');
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps'], 'the provision carries exactly the MKT-047 /apps entry');
+  assert.deepEqual(entries, ['apps', 'lab-corpus'], 'the provision carries the MKT-047 /apps entry plus the LAB-002 /lab-corpus disclosed worker provision');
   // The full checker still passes with zero violations.
   const result = checkArchitecture({
     codeRoot: repoRoot,

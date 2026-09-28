@@ -440,7 +440,7 @@ test('MKT-065: the real codebase enforces the frozen boundaries — zero violati
   // MKT-070 disclosed re-pin (the MKT-066 sibling-re-pin precedent): the
   // enforced set gains the /product-marketing provision module (the frozen
   // v1.6 row registered by the MKT-070 checker provision — 50 → 51).
-  assert.equal(result.frozenModules.length, 51);
+  assert.equal(result.frozenModules.length, 52);
 });
 
 // ---------------------------------------------------------------------------
@@ -468,21 +468,24 @@ test('MKT-065: the disclosed spec registration exists (the §6 line + sentence, 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 4], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 5], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 1], '061_lab_corpus.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 3], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 4], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 1], '061_lab_corpus.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(listEntries[listEntries.length - 2], '059_lab_contracts.sql');
-  assert.equal(listEntries[listEntries.length - 1], '060_product_marketing.sql');
-  assert.equal(listEntries[listEntries.length - 5], '056_research.sql');
-  assert.equal(listEntries[listEntries.length - 6], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 7], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 8], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 3], '059_lab_contracts.sql');
+  assert.equal(listEntries[listEntries.length - 2], '060_product_marketing.sql');
+  assert.equal(listEntries[listEntries.length - 6], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 7], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 8], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 9], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 1], '061_lab_corpus.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '055_cross_platform_distribution.sql')));
@@ -514,7 +517,7 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/research'));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/content-intelligence'));
   assert.ok(
-    /\n\s*51,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
+    /\n\s*52,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
     'the structure-violation total is promoted 50 → 51 (the LAB-001 /lab + the MKT-070 /product-marketing disclosed provision re-pins — the same additive promotion precedent)',
   );
 });

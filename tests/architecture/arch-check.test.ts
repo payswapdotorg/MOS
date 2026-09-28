@@ -394,6 +394,13 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // same additive count each sibling promotion adds — the MKT-066
     // provision precedent).
     'MISSING_MODULE|src/modules/product-marketing',
+    // The LAB-002 disclosed provision (tools/arch-check/checker.ts — the
+    // v1.7 LAB-002 Reference-First Niche Corpus authority, pending the
+    // Tech Lead's spec promotion): the fixture provides no lab-corpus
+    // boundary → the missing-module violation joins the exact set (the
+    // same additive count each sibling delivery adds — the /apps and
+    // product-marketing provision precedents).
+    'MISSING_MODULE|src/modules/lab-corpus',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -466,10 +473,14 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // Architect/Tech-Lead spec promotion) appends /product-marketing — the
   // v1.6 Product Marketing Mission Planner registration (the same
   // additive count each sibling promotion adds — 49 → 50 enforced
-  // modules, 50 → 51 total violations).
+  // modules, 50 → 51 total violations). The LAB-002 disclosed
+  // provision (tools/arch-check/checker.ts — the v1.7 LAB-002
+  // Reference-First Niche Corpus authority, pending the Tech Lead's
+  // spec promotion) appends /lab-corpus — the same additive count
+  // each sibling delivery adds — 51 → 52 total violations.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    51,
+    52,
     'no unexpected violation categories may be reported',
   );
 
