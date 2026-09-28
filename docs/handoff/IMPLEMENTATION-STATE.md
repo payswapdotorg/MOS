@@ -23,6 +23,13 @@ Remaining:
 ✅ MKT-066 (Wave 0 harvest, PR #64) ☐ MKT-070
 ☐ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
 ✅ UX-005 (Wave 0 harvest, PR #64)
+✅ UX-007 Platform Health Console Surface (Wave 1 harvest, PR #66 —
+   worker delivery 40c4c4cf: console/** only, HealthTab + AccountHealthCard
+   + health-atoms with the frozen NINE states, 5 hooks, Connections→Health
+   cross-link, 28-piece evidence pack; station battery: typecheck 0 / lint 0
+   / arch:check 0 (50 modules, 612 files) / unit EXIT=0 / architecture
+   EXIT=0 / integration EXIT=0 / console gates EXIT=0; TL follow-up: the
+   UX-003 mission HealthSection stale "planned surface" note updated)
 ✅ UX-006 Content/Rights Operational Surface (Wave 1 harvest, PR #65 —
    worker delivery 54846a3: console/** only, ContentTab + five sections,
    44-piece both-viewport journey evidence pack + JOURNEY-RECORD.md;

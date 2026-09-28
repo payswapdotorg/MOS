@@ -763,7 +763,7 @@ export function HealthSection({ clientId }: { clientId: string | null }) {
       summary={
         clientId === null
           ? "Waiting for a client context (map a goal first)"
-          : "Platform Health is a planned surface — showing what is observable now"
+          : "Platform Health is live — full evaluations in the Health tab; this section shows the observable now"
       }
       summaryTone="warning"
     >
