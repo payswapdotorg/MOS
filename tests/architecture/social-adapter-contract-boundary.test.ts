@@ -546,19 +546,25 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '057_content_intelligence.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '058_platform_health.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '055_cross_platform_distribution.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '058_platform_health.sql');
+  // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
+  // the MKT-070 /product-marketing sibling delivery appends
+  // 060_product_marketing.sql (every tail position shifts once more; the
+  // same additive re-pin precedent — the disclosed MKT-066 re-pin).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '059_lab_contracts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '060_product_marketing.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '055_cross_platform_distribution.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '049_commerce_capabilities.sql');
 });
 
 // ---------------------------------------------------------------------------

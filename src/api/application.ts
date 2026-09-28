@@ -359,6 +359,26 @@ import type { ContentIntelligenceModuleApi } from '../modules/content-intelligen
 // a verdict; durable state is the append-only evaluation records of
 // migration 058 with the FK-anchored same-Client citation links).
 import type { PlatformHealthModuleApi } from '../modules/platform-health/public.ts';
+// MKT-070: /product-marketing module contract (Product Marketing Mission
+// Planner — spec/effective-backlog-v1.6.md MKT-070: the DETERMINISTIC,
+// AUDITABLE planning layer for a product-marketing Growth Mission: every
+// chosen platform mix, target metric, content-strategy profile,
+// attribution plan and experiment plan is a record carrying its evidence
+// basis as FK-anchored scope-fenced citation links (the platform-health
+// evaluation-record discipline); the product URL/code context changes the
+// selected portfolio and metric plan; platform-mix decisions respect the
+// live platform-health descriptive states (restricted/publishing_blocked/
+// authorization_blocked accounts are excluded WITH the verdict cited);
+// target metrics come from the frozen objective-family vocabulary wired
+// to the mission's EXISTING goals BY REFERENCE; the attribution plan
+// declares what will be measured and how attribution will be computed —
+// never causal truth; the experiment plan is DATA toward the Growth
+// Operator's bounded experiment through the EXISTING /experiments
+// authority; plan corrections are NEW append-only versions carrying
+// actor + provenance + reason + the deterministic input digest — NO
+// second mission authority, NO workflow/execution engine, NO scheduler
+// of any kind).
+import type { ProductMarketingModuleApi } from '../modules/product-marketing/public.ts';
 import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
@@ -659,6 +679,7 @@ export interface ApplicationModules {
   // never hidden-moderation invention; append-only evaluation records
   // with the FK-anchored evidence basis behind every verdict).
   readonly platformHealth: PlatformHealthModuleApi;
+  readonly productMarketing: ProductMarketingModuleApi;
   // LAB-001: the Marketing Engineering Lab Contracts and Run Model
   // authority (the v1.7 layer: the seven versioned artifact contracts +
   // the §23 run model + the factuality labels + the no-shadowing
