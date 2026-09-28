@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (48 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (49 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 48);
+  assert.equal(modules.length, 49);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -72,6 +72,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (48 modules)', (
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'platform-health', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
+      'lab',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -380,6 +381,11 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // fixture's missing platform-health boundary a MISSING_MODULE
     // violation (the same additive count each sibling promotion adds).
     'MISSING_MODULE|src/modules/platform-health',
+    // The LAB-001 /lab §6 registration (the v1.7 Marketing Engineering
+    // Lab Contracts and Run Model authority) makes the fixture's missing
+    // lab boundary a MISSING_MODULE violation (the same additive count
+    // each sibling promotion adds).
+    'MISSING_MODULE|src/modules/lab',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -449,7 +455,7 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // each sibling promotion adds — 48 → 49 enforced modules).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    49,
+    50,
     'no unexpected violation categories may be reported',
   );
 

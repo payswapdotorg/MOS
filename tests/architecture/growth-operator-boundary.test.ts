@@ -550,7 +550,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // adjacency — the same sibling re-pin precedent).
   assert.ok(
     compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research') &&
-      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth },'),
+      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },'),
     'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, and the MKT-062 siblings last)',
   );
   assert.ok(
@@ -567,7 +567,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 7], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 8], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------

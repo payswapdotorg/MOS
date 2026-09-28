@@ -437,7 +437,7 @@ test('MKT-065: the real codebase enforces the frozen boundaries — zero violati
   // MKT-062 sibling delivery appends /research + /content-intelligence
   // and the MKT-066 sibling delivery appends /platform-health, the same
   // additive promotion precedent — + the disclosed 'apps' provision).
-  assert.equal(result.frozenModules.length, 49);
+  assert.equal(result.frozenModules.length, 50);
 });
 
 // ---------------------------------------------------------------------------
@@ -465,15 +465,15 @@ test('MKT-065: the disclosed spec registration exists (the §6 line + sentence, 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length -2], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 3], '057_content_intelligence.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 1], '058_platform_health.sql');
-  assert.equal(listEntries[listEntries.length -3], '056_research.sql');
-  assert.equal(listEntries[listEntries.length -4], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length -5], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length -6], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 2], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 4], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 5], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 6], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 7], '053_content_assets.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '055_cross_platform_distribution.sql')));
@@ -497,7 +497,7 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   // sibling delivery appends /platform-health — the same additive
   // promotion precedent) + the disclosed 'apps' provision = 49 enforced.
   const archCheckTest = read(join(repoRoot, 'tests', 'architecture', 'arch-check.test.ts'));
-  assert.ok(archCheckTest.includes('(48 modules)'));
+  assert.ok(archCheckTest.includes('(49 modules)'));
   assert.ok(archCheckTest.includes("'cross-platform-distribution'"));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/cross-platform-distribution'));
   assert.ok(archCheckTest.includes("'research'"));
@@ -505,7 +505,7 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/research'));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/content-intelligence'));
   assert.ok(
-    /\n\s*49,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
+    /\n\s*50,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
     'the structure-violation total is promoted 48 → 49 (the MKT-066 /platform-health sibling registration)',
   );
 });

@@ -39,7 +39,7 @@ Optional:
 
 ## 3. v1.7 frozen Lab
 
-☐ LAB-001 Contracts and Run Model
+✅ LAB-001 Contracts and Run Model (TL delivery: /lab module + migration 059 + registration; unblocks LAB-002/005/011/013/014 for Wave 2)
 ☐ LAB-002 Reference-First Niche Corpus
 ☐ LAB-003 Multimodal Content Feature Bundle
 ☐ LAB-004 Idea Graph

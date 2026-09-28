@@ -427,7 +427,7 @@ test('MKT-066: the disclosed spec registration exists — §6 line + authority p
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 1], '058_platform_health.sql');
+  assert.equal(migrations[migrations.length - 2], '058_platform_health.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly platformHealth: PlatformHealthModuleApi'), 'ApplicationModules.platformHealth');
   assert.ok(applicationTs.includes("from '../modules/platform-health/public.ts'"), 'the module public entry import');
@@ -451,5 +451,5 @@ test('MKT-066: the real codebase enforces the frozen boundaries with ZERO violat
     [],
   );
   assert.ok(result.frozenModules.includes('platform-health'));
-  assert.equal(result.frozenModules.length, 49);
+  assert.equal(result.frozenModules.length, 50);
 });

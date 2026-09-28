@@ -1015,6 +1015,13 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // COMPOSES observable records through the five frozen-row public
     // contracts and cites them by reference).
     '058_platform_health.sql',
+    // LAB-001: the Marketing Engineering Lab Contracts and Run Model
+    // (the v1.7 /lab authority: the six artifact-contract tables + the
+    // run event tail + the two evaluation tails — client-scoped with the
+    // optional workspace anchor, CHECK-fenced vocabularies, guarded
+    // immutable/append-only triggers, and the composite scenario-version
+    // FK chain; NO v1.6 authority table is created or joined).
+    '059_lab_contracts.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

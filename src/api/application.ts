@@ -359,6 +359,7 @@ import type { ContentIntelligenceModuleApi } from '../modules/content-intelligen
 // a verdict; durable state is the append-only evaluation records of
 // migration 058 with the FK-anchored same-Client citation links).
 import type { PlatformHealthModuleApi } from '../modules/platform-health/public.ts';
+import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -658,4 +659,10 @@ export interface ApplicationModules {
   // never hidden-moderation invention; append-only evaluation records
   // with the FK-anchored evidence basis behind every verdict).
   readonly platformHealth: PlatformHealthModuleApi;
+  // LAB-001: the Marketing Engineering Lab Contracts and Run Model
+  // authority (the v1.7 layer: the seven versioned artifact contracts +
+  // the §23 run model + the factuality labels + the no-shadowing
+  // discipline — consumed BY REFERENCE by the LAB-002..018 modules and
+  // the LAB-014 real bridge).
+  readonly lab: LabModuleApi;
 }

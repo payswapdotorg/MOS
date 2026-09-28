@@ -678,6 +678,26 @@ import { createContentIntelligenceModule } from './modules/content-intelligence/
 // /cross-platform-distribution dependency, which is not an allowance of
 // this row).
 import { createPlatformHealthModule } from './modules/platform-health/public.ts';
+// LAB-001: /lab — the Marketing Engineering Lab Contracts and Run Model
+// authority (the frozen v1.7 layer: the seven versioned artifact
+// contracts — LabScenario, LabRun, StrategyCandidate,
+// OrganizationCandidate, CapabilityCandidate, CalibrationRecord and the
+// WorldModelVersion reference — plus the §23 run model: the closed run
+// lifecycle with the resumable pause/resume pair, the deterministic
+// seed discipline, the budget caps and the per-client active-run
+// concurrency limit; the §10 Time-Machine field set with the
+// observation cutoff + information lag + world-model version; the §3/§10
+// factuality labels that keep historical fact visibly distinct from
+// counterfactual model output; the §15 single-agent-baseline topology
+// constant; and the structural NO-SHADOWING discipline — this module
+// owns only its migration-059 tables, creates no Experiment/Decision/
+// Evidence/Metric/Publication records, and stores calibration
+// real-outcome anchors as OPAQUE uuid references never FK-joined into
+// v1.6 authorities). The frozen v1.7 matrix row for /lab depends on
+// nothing beyond the v1.6 architecture: platform ports only (db,
+// clock, ids) — the LAB-002..018 modules and the LAB-014 real bridge
+// consume these contracts BY REFERENCE through the public surface.
+import { createLabModule } from './modules/lab/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1845,6 +1865,17 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     experiments,
   });
 
+  // LAB-001: /lab — the Marketing Engineering Lab Contracts and Run
+  // Model authority (see the import block above). Platform ports ONLY
+  // (db, clock, ids): the frozen v1.7 /lab row consumes NO v1.6
+  // authority module — the Lab artifacts never shadow the v1.6
+  // authorities (a Lab Run is not an Experiment, a Strategy Candidate is
+  // not a Decision, a simulated publication is not a real Publication;
+  // the calibration real-outcome anchors are OPAQUE uuid data, never
+  // FK-joined). The later Lab modules (LAB-002..018) consume this
+  // public contract BY REFERENCE.
+  const lab = createLabModule({ db, clock, ids });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -1991,7 +2022,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },
     runtime: { aiProvider },
   };
 }

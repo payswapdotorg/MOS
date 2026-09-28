@@ -35,8 +35,23 @@ Optional:
 
 ## v1.7 LAB
 
-All implementation items pending:
-☐ LAB-001..LAB-018
+✅ LAB-001 — Lab Contracts and Run Model (TL delivery, direct to main):
+the `/lab` module (src/modules/lab/ — public.ts + internal/validation.ts
++ lab-store.ts + lab-module.ts), migration `059_lab_contracts.sql` (six
+artifact tables + the run event tail + the two evaluation tails with the
+CHECK-fenced vocabularies, guarded immutable/append-only triggers, the
+frozen run transition-pair fence and the cross-client scope fences), the
+composition-root + ApplicationModules registration, the spec/architecture.md
+§6 registration paragraph (module 49), the arch-check frozen-set/canonical-
+migration-list/sibling-re-pin updates, 13 unit tests + 10 integration tests
+(lab-contracts). Verification: tsc 0 / lint 0 / arch:check 50 modules 610
+files 0 violations / unit 1255 / architecture 692 / integration incl. the
+new battery. Runbook: docs/runbooks/LAB-001.md. The /lab row allows NO
+cross-module dependency (platform ports only) — LAB-002..018 consume the
+contracts BY REFERENCE.
+
+All remaining implementation items pending:
+☐ LAB-002..LAB-018
 
 Architecture/coordination artifacts are frozen and present:
 - spec/architecture-v1.7-marketing-lab.md

@@ -25,11 +25,6 @@ async function main(): Promise<void> {
   });
 
   const handle = await server.listen(services.config.httpHost, services.config.httpPort);
-  logger.info('api.started', undefined, {
-    host: services.config.httpHost,
-    port: handle.port,
-    env: services.config.env,
-  });
 
   const shutdown = async (signal: string) => {
     logger.info('api.stopping', undefined, { signal });
@@ -37,8 +32,20 @@ async function main(): Promise<void> {
     await services.db.close();
     process.exit(0);
   };
+  // Register the graceful-shutdown handlers BEFORE the api.started line is
+  // emitted: a SIGTERM that arrives while a watcher races on the started
+  // line must never hit the default signal disposition (the LAB-001
+  // delivery's added startup work made this start-to-registration window
+  // deterministically hittable — the signal landed between the log write
+  // and the handler registration and the control plane died by raw signal).
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
   process.on('SIGINT', () => void shutdown('SIGINT'));
+
+  logger.info('api.started', undefined, {
+    host: services.config.httpHost,
+    port: handle.port,
+    env: services.config.env,
+  });
 }
 
 main().catch((error: unknown) => {
