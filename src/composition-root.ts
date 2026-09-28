@@ -535,6 +535,19 @@ import {
   createTikTokSocialAdapter,
   TIKTOK_SOCIAL_ADAPTER_KEY,
 } from './modules/social-accounts/internal/adapters/tiktok/adapter.ts';
+// MKT-061: the concrete X (Twitter) platform adapter — imported HERE ONLY
+// (CONCRETE_ADAPTER_ACCESS, the MKT-057..060 precedent: concrete adapters
+// are importable only by the composition root, where they become module
+// DATA; no adapter imports another adapter). The wiring is INERT without
+// an authorized x integration connection + OAuth 2.0 grant: the
+// fail-closed host chain (account lookup → adapter registry →
+// capability matrix → usable authorization → scope pre-check →
+// /policies gates → §21 material resolution) precedes every provider
+// call, so the registered adapter alone performs ZERO provider traffic.
+import {
+  createXSocialAdapter,
+  X_SOCIAL_ADAPTER_KEY,
+} from './modules/social-accounts/internal/adapters/x/adapter.ts';
 // MKT-069: /product-intelligence — the Product Intelligence authority
 // (the durable product/market inspection and model records of
 // spec/architecture-v1.6.md §8). Composition is the frozen-matrix row
@@ -1470,6 +1483,14 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // error semantics as honest restricted data, never a fabricated
   // success). Same inertness and same seam-override semantics as the
   // YouTube, Instagram and Facebook Pages registrations.
+  // MKT-061: the FIFTH-PARTY X (Twitter) platform adapter registers as
+  // production DATA through the same first-party pattern (the documented
+  // X API v2 surface — the honest 5-of-5 capability matrix with the REAL
+  // OAuth 2.0 scope names; the chunked v2 media upload lifecycle + the
+  // synchronous POST /2/tweets creation; the observable x-rate-limit-*
+  // header signals ride the invocation records as data). Same inertness
+  // and same seam-override semantics as the YouTube, Instagram, Facebook
+  // Pages and TikTok registrations.
   const seamSocialAdapters = options.socialPlatformAdapters ?? [];
   const seamSocialAdapterKeys = new Set(
     seamSocialAdapters.map((adapter) => adapter.descriptor.adapterKey),
@@ -1496,6 +1517,9 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
       ...(seamSocialAdapterKeys.has(TIKTOK_SOCIAL_ADAPTER_KEY)
         ? []
         : [createTikTokSocialAdapter({ http: httpCalls })]),
+      ...(seamSocialAdapterKeys.has(X_SOCIAL_ADAPTER_KEY)
+        ? []
+        : [createXSocialAdapter({ http: httpCalls })]),
       ...seamSocialAdapters,
     ],
   });
