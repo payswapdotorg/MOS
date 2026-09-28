@@ -114,6 +114,8 @@ export function ScientificTraceTab({ clientId }: { clientId: string }) {
         />
         <ChainConnector />
         <ResearchLink
+          clientId={clientId}
+          agencyId={agencyId}
           open={openSections["research"] ?? false}
           onOpenChange={(open) => setSectionOpen("research", open)}
         />

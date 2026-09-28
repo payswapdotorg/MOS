@@ -3,12 +3,20 @@
 // UX-004 — the TEN LINKS of the Scientific Trace, composed from real surfaces
 // ONLY (verified contracts, exact paths):
 //
-//   1  Question      — NO research-questions surface yet (MKT-062 in flight,
-//                      backend only): the truthful coming state + what is
-//                      observable now — the mission objective through the
-//                      mission workspace (agency missions list + per-mission
-//                      detail on expand). NEVER an invented questions store.
-//   2  Research      — same truthful coming state; dependency disclosed plainly.
+//   1  Question      — NO research-questions surface yet: the truthful
+//                      coming state + what is observable now — the mission
+//                      objective through the mission workspace (agency
+//                      missions list + per-mission detail on expand). NEVER
+//                      an invented questions store.
+//   2  Research      — THE REAL MKT-062 SURFACE (UX-006): the agency's
+//                      research sessions — GET /api/agencies/:agencyId/
+//                      research-sessions — each expandable to the composed
+//                      honest read-back (GET /api/research-sessions/:id:
+//                      declaration + versions + retained facts + insights
+//                      + runs). A READ surface: the research operations
+//                      (create, run the pass, promote a fact) live in the
+//                      client workspace's Content surface, reached through
+//                      the explicit cross-link below.
 //   3  Evidence      — GET /api/clients/:clientId/evidence (OBSERVED FACTS;
 //                      the supersede chain renders as lineage — a superseded
 //                      record is visibly historical, never deleted-looking).
@@ -58,6 +66,8 @@ import {
   useLearnings,
   useLearningRelationships,
   useMetricObservations,
+  useResearchSessionDetail,
+  useResearchSessions,
 } from "@/components/mos/hooks";
 import type {
   AllocationRecommendationView,
@@ -70,6 +80,8 @@ import type {
   ExperimentView,
   LearningRecord,
   MetricObservationView,
+  ResearchSessionDetailView,
+  ResearchSessionView,
 } from "@/lib/mos-api";
 import { useMosSession } from "@/components/mos/session-store";
 import {
@@ -204,12 +216,13 @@ function CrossLinkButton({
 // =====================================================================================
 
 /**
- * The truthful coming state: research questions will live here once the
- * research module (MKT-062 — backend, in flight by a sibling worker) exposes
- * its HTTP surfaces. What is observable NOW: the mission objective — the
- * closest live "question" — reachable through the mission workspace link
- * (the agency's missions; each row expands to its objective verbatim + goal
- * mappings, and opens the workspace).
+ * The truthful coming state: no research-QUESTIONS surface exists on
+ * this platform (the mission objective is the closest live "question").
+ * What is observable NOW: the mission objective verbatim, reachable
+ * through the mission workspace link (the agency's missions; each row
+ * expands to its objective + goal mappings, and opens the workspace).
+ * The research the questions seed composes link 2 below — the landed
+ * MKT-062 research-session surface.
  */
 export function QuestionLink({
   clientId,
@@ -226,14 +239,14 @@ export function QuestionLink({
   const list = query.data ?? [];
   const summary =
     agencyId === null
-      ? "Research module in flight — no agency selected for the mission list"
+      ? "No agency selected — the mission list is agency-scoped"
       : query.isPending
-        ? "Research module in flight — loading the mission list…"
+        ? "Loading the mission list…"
         : query.isError
-          ? "Research module in flight — the mission list couldn't load just now"
+          ? "The mission list couldn't load just now"
           : list.length === 0
-            ? "Research module in flight — no missions to show a live question from"
-            : `Research module in flight — ${list.length} mission${list.length === 1 ? "" : "s"} carry the live questions`;
+            ? "No missions to show a live question from"
+            : `${list.length} mission${list.length === 1 ? "" : "s"} carry the live questions`;
   return (
     <TraceSection
       id="question"
@@ -249,8 +262,8 @@ export function QuestionLink({
         <ComingStateCard
           missing="Research questions are not recorded on this platform yet."
           why="Questions are where the scientific chain starts — a precise, answerable question seeds the research and the evidence collection that follow, and keeps every later conclusion anchored to something actually asked."
-          coming="When the research module ships, this link will list this client's open research questions: what was asked, when, why it mattered, and which research and evidence grew from it."
-          dependency="Dependency, disclosed plainly: the research module (MKT-062) is being built now — backend only, no HTTP surface on this platform yet. This trace will never invent a questions store; it will compose that module's real read surface when it exists."
+          coming="When a questions surface ships, this link will list this client's open research questions: what was asked, when, why it mattered, and which research and evidence grew from it."
+          dependency="Dependency, disclosed plainly: no questions store exists on this platform — a mission's objective is the live question its work answers, and it composes below. The research sessions those questions seed DO exist now (MKT-062 — link 2 below composes them); this trace will never invent a questions store — it will compose that surface when it exists."
         />
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
@@ -308,7 +321,7 @@ export function QuestionLink({
       <SourceLine
         sources={
           agencyId === null
-            ? ["research questions: not built yet (MKT-062, backend in flight)"]
+            ? ["research questions: no questions store on this platform — the mission objective is the live question (research sessions compose link 2)"]
             : [
                 `GET /api/agencies/${agencyId.slice(0, 8)}…/growth-missions (all lifecycle states)`,
                 "GET /api/growth-missions/:missionId (on expand — objective verbatim + goal mappings)",
@@ -441,36 +454,338 @@ function QuestionMissionDetail({
 // LINK 2 — RESEARCH
 // =====================================================================================
 
-/** The truthful coming state: no research HTTP surface exists on main today
- *  (MKT-062 in flight, backend only). The dependency is disclosed plainly;
- *  what research WILL compose (the evidence collection of link 3) is named
- *  so the chain still reads top-to-bottom. */
+/** UX-006 — the REAL research composition (MKT-062 has landed): the
+ *  agency's research sessions, each expandable to the composed honest
+ *  read-back — the declared sources, the retained source facts (OBSERVED,
+ *  full provenance), the insight claims (DERIVED, verification-state-
+ *  carrying) and the research runs with their honest per-source outcomes.
+ *  This link is a READ surface: the research OPERATIONS — creating a
+ *  session, running the pass, promoting a retained fact into the client's
+ *  evidence ledger — live in the client workspace's Content surface, and
+ *  every row carries the explicit cross-link there (the research
+ *  discoverability requirement, EXECUTION-PLAN §6). */
 export function ResearchLink({
+  clientId,
+  agencyId,
   open,
   onOpenChange,
 }: {
+  clientId: string;
+  agencyId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const query = useResearchSessions(agencyId);
+  const list = query.data ?? [];
+  const summary =
+    agencyId === null
+      ? "No agency selected — the research session list is agency-scoped"
+      : query.isPending
+        ? "Loading the research sessions…"
+        : query.isError
+          ? "The research sessions couldn't load just now"
+          : list.length === 0
+            ? "No research sessions recorded in this agency yet"
+            : `${list.length} research session${list.length === 1 ? "" : "s"} — sources declared up front, every pass outcome recorded`;
   return (
     <TraceSection
       id="research"
       index={2}
       link="Research"
       title="What we went and found out"
-      summary="Research module in flight — no research records exist on this platform yet"
-      summaryTone="warning"
+      summary={summary}
+      registers={["observed", "derived"]}
       open={open}
       onOpenChange={onOpenChange}
     >
-      <ComingStateCard
-        missing="No research has been recorded for this client yet — and no research surface exists to record it."
-        why="Research is the gathering step between the question and the evidence: what was looked at, where it was found, and what it seemed to say. Without it, the evidence link below has no stated provenance of search — only what systems directly observed."
-        coming="When the research module ships, this link will show the research carried out for this client's questions: sources consulted, findings captured, and how each finding fed the evidence ledger."
-        dependency="Dependency, disclosed plainly: the research module (MKT-062) is being built now — backend only; no HTTP surface is deployed on this platform yet. The trace will compose that surface when it lands; until then this link stays honest and empty, and the chain continues from the evidence that IS recorded (link 3)."
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+            The research record — what was consulted, and what it yielded
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-stone-600">
+            A research session declares its sources up front, then records the honest pass over
+            them: what was fetched, what was extracted, and what failed — every outcome stays on
+            the record. Retained facts are observed records with full provenance; insight claims
+            are derived and carry their verification state. Sessions are agency-scoped, like the
+            missions above; promoting a retained fact into this client&apos;s evidence ledger
+            happens in the Content surface (and the fact then appears in the evidence link below).
+          </p>
+        </div>
+        {agencyId === null ? (
+          <WorkspaceEmptyState
+            missing="No agency is selected for this session."
+            why="Research sessions are recorded inside an agency — without one selected there is no session list to compose."
+            next="Select your agency (the session remembers it); this list fills in on its own — no reload needed."
+          />
+        ) : query.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : query.isError ? (
+          <SectionErrorView
+            error={query.error}
+            what="the research sessions"
+            onRetry={() => void query.refetch()}
+          />
+        ) : list.length === 0 ? (
+          <WorkspaceEmptyState
+            missing="No research sessions exist in your agency yet."
+            why="Research is the gathering step between the question and the evidence: a session declares the public web sources for a niche and runs the deterministic pass that retains the observed facts with full provenance."
+            next="Start the first session in the client workspace's Content surface: declare a topic and one or more public web sources, then run the research pass over them."
+            action={<ContentSurfaceCrossLink clientId={clientId} />}
+          />
+        ) : (
+          <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+            {list.map((session) => (
+              <ResearchSessionRow
+                key={session.researchSessionId}
+                session={session}
+                clientId={clientId}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+      <SourceLine
+        sources={
+          agencyId === null
+            ? ["GET /api/agencies/:agencyId/research-sessions (no agency selected)"]
+            : [
+                `GET /api/agencies/${agencyId.slice(0, 8)}…/research-sessions (the agency's sessions)`,
+                "GET /api/research-sessions/:researchSessionId (on expand — declaration + versions + retained facts + insights + runs)",
+              ]
+        }
       />
-      <SourceLine sources={["research: not built yet (MKT-062, backend in flight)"]} />
     </TraceSection>
+  );
+}
+
+/** The research discoverability cross-link: the research OPERATIONS live in
+ *  the client workspace's Content surface (UX-006) — this link goes there. */
+function ContentSurfaceCrossLink({ clientId }: { clientId: string }) {
+  const navigate = useMosSession((state) => state.navigate);
+  return (
+    <WorkspaceActionButton
+      onClick={() => navigate({ kind: "client", clientId, tab: "content" })}
+      ariaLabel="Open the Content surface"
+    >
+      Open the Content surface →
+    </WorkspaceActionButton>
+  );
+}
+
+/** One research session row (the QuestionMissionRow pattern): expand → the
+ *  session's composed honest read-back, fetched ONLY when expanded. */
+function ResearchSessionRow({
+  session,
+  clientId,
+}: {
+  session: ResearchSessionView;
+  clientId: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const detail = useResearchSessionDetail(open ? session.researchSessionId : null);
+  return (
+    <li className="rounded-xl border border-stone-200 bg-stone-50/50">
+      <RowToggle
+        open={open}
+        onToggle={() => setOpen((value) => !value)}
+        controlsId={`trace-research-session-${session.researchSessionId}`}
+      >
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <Chip
+            label={`declaration v${session.currentVersionSeq}`}
+            className="border-stone-300 bg-stone-100 text-stone-700"
+          />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-stone-800">
+            {`Research session ${shortRef(session.researchSessionId)}`}
+          </span>
+          <span className="text-xs text-stone-400">{`updated ${formatWhen(session.updatedAt)}`}</span>
+        </span>
+      </RowToggle>
+      {open ? (
+        <div
+          id={`trace-research-session-${session.researchSessionId}`}
+          className="border-t border-stone-200 bg-white px-4 py-4"
+        >
+          {detail.isPending ? (
+            <SectionSkeleton rows={2} />
+          ) : detail.isError ? (
+            <SectionErrorView
+              error={detail.error}
+              what="this session's read-back"
+              onRetry={() => void detail.refetch()}
+            />
+          ) : detail.data === undefined ? null : (
+            <ResearchSessionDetailBody detail={detail.data} clientId={clientId} />
+          )}
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+/** The expanded session read-back: the declared topic/focus verbatim, the
+ *  declared sources, the research runs with their honest per-source
+ *  outcomes, the insight claims as DERIVED records with their verification
+ *  states, and the fact counts per source (the full fact payloads render in
+ *  the Content surface; promoted facts render in the evidence link below). */
+function ResearchSessionDetailBody({
+  detail,
+  clientId,
+}: {
+  detail: ResearchSessionDetailView;
+  clientId: string;
+}) {
+  const current = detail.currentVersion;
+  const factsBySource = new Map<string, number>();
+  for (const fact of detail.sourceFacts) {
+    factsBySource.set(fact.sourceId, (factsBySource.get(fact.sourceId) ?? 0) + 1);
+  }
+  const currentInsights = detail.insights.filter(
+    (insight) => insight.supersededByResearchInsightId == null,
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="text-xs leading-relaxed text-stone-600">
+          Current declaration (version {current.versionSeq} of {detail.versions.length}
+          {detail.versions.length > 1
+            ? " — the earlier declarations stay in the append-only history"
+            : ""}
+          ), verbatim:
+        </p>
+        <blockquote className="mt-1.5 border-l-2 border-stone-300 pl-3 text-sm leading-relaxed text-stone-800">
+          {current.topic ?? "No topic declared"}
+          {current.focus ? <span className="block pt-1 text-stone-600">{current.focus}</span> : null}
+        </blockquote>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+          Declared sources ({current.sources.length})
+        </p>
+        {current.sources.map((source) => (
+          <p
+            key={source.sourceId}
+            className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-stone-700"
+          >
+            <Chip label={source.kind.replace(/_/g, " ")} className={statusToneClass(source.kind)} />
+            <span className="text-xs text-stone-400">{source.authorization}</span>
+            <span className="min-w-0 flex-1 truncate font-mono text-xs text-stone-500">
+              {source.reference}
+            </span>
+            <span className="shrink-0 text-xs text-stone-400">
+              {factsBySource.get(source.sourceId) ?? 0} fact(s) retained
+            </span>
+          </p>
+        ))}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+          Research runs ({detail.runs.length}) — the honest pass outcomes
+        </p>
+        {detail.runs.length === 0 ? (
+          <p className="text-sm leading-relaxed text-stone-600">
+            No research pass has been run yet — the session is declared, but nothing has been
+            fetched over its sources.
+          </p>
+        ) : (
+          detail.runs.map((run) => (
+            <div key={run.researchRunId} className="rounded-lg border border-stone-200 px-3 py-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <Chip label={run.status.replace(/_/g, " ")} className={statusToneClass(run.status)} />
+                <span className="text-xs text-stone-500">
+                  {run.sourcesInspected} source(s) inspected · {run.factsRetained} fact(s)
+                  retained
+                </span>
+                <span className="ml-auto shrink-0 font-mono text-[11px] text-stone-400">
+                  {formatWhen(run.finishedAt)}
+                </span>
+              </div>
+              {run.sourceOutcomes.length > 0 ? (
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {run.sourceOutcomes.map((outcome) => (
+                    <li
+                      key={outcome.researchRunSourceOutcomeId}
+                      className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-stone-600"
+                    >
+                      <Chip
+                        label={outcome.outcome.replace(/_/g, " ")}
+                        className={statusToneClass(outcome.outcome)}
+                      />
+                      <span className="shrink-0 font-mono text-[11px] text-stone-400">
+                        source {shortRef(outcome.sourceId)} → {outcome.factsExtracted} fact(s)
+                      </span>
+                      {outcome.detail ? (
+                        <span className="min-w-0 flex-1 truncate text-stone-500">
+                          {outcome.detail}
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ))
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+          Insight claims ({currentInsights.length}) — derived, verification-state-carrying
+        </p>
+        {currentInsights.length === 0 ? (
+          <p className="text-sm leading-relaxed text-stone-600">
+            No insight claim has been recorded from this session&apos;s facts yet.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {currentInsights.map((insight) => (
+              <li
+                key={insight.researchInsightId}
+                className="rounded-lg border border-amber-700/20 bg-amber-50/40 px-3 py-2"
+              >
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <Chip
+                    label={insight.derivationKind.replace(/_/g, " ")}
+                    className="border-amber-700/25 bg-white text-amber-900"
+                  />
+                  <Chip
+                    label={insight.verificationState.replace(/_/g, " ")}
+                    className={statusToneClass(insight.verificationState)}
+                  />
+                  <span className="ml-auto shrink-0 text-[11px] text-stone-400">
+                    {insight.evidenceSourceFactIds.length} linked fact(s)
+                  </span>
+                </div>
+                {typeof insight.statement["summary"] === "string" ? (
+                  <p className="mt-1 text-sm leading-relaxed text-stone-700">
+                    {insight.statement["summary"]}
+                  </p>
+                ) : (
+                  <div className="mt-1">
+                    <LabeledRows record={insight.statement} />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {detail.insights.length > currentInsights.length ? (
+          <p className="text-[11px] leading-relaxed text-stone-400">
+            {detail.insights.length - currentInsights.length} superseded insight record
+            {detail.insights.length - currentInsights.length === 1 ? "" : "s"} stay in the
+            append-only history.
+          </p>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs leading-relaxed text-stone-500">
+          The retained fact payloads ({detail.sourceFacts.length} fact
+          {detail.sourceFacts.length === 1 ? "" : "s"}) render in the Content surface, where a
+          fact can also be promoted into this client&apos;s evidence ledger (link 3 below).
+        </p>
+        <ContentSurfaceCrossLink clientId={clientId} />
+      </div>
+    </div>
   );
 }
 

@@ -36,11 +36,28 @@ const IN_PROCESS =
   process.env.MOS_BRIDGE_FORCE_PROXY !== "1";
 
 async function forwardToStaging(request: NextRequest): Promise<Response> {
-  // /api/mos/<subpath...> → /api/<subpath...>. nextUrl.pathname is decoded,
-  // so re-encode each segment to keep ids with special characters intact.
+  // /api/mos/<subpath...> → /api/<subpath...>. A path segment may arrive
+  // percent-ENCODED in nextUrl.pathname (Next 16 preserves the escapes —
+  // e.g. the ca:<id> content-asset refs of /content-assets, encoded by the
+  // console's own fetch layer) or decoded (the older behavior this bridge
+  // was written against); either way it must reach the upstream encoded
+  // EXACTLY ONCE. Normalizing per segment — decode one level (a segment
+  // that is already decoded, or that fails to decode, passes through) then
+  // encode once — keeps ids and refs with special characters intact and
+  // never double-encodes (UX-006: the double-encoded %253A form made the
+  // /content-rights/lineage/:compositeAssetRef read 404).
   const subpath = request.nextUrl.pathname.replace(/^\/api\/mos\//, "");
   const segments = subpath.split("/").filter((segment) => segment !== "");
-  const upstreamUrl = `${UPSTREAM_ORIGIN}/api/${segments.map(encodeURIComponent).join("/")}${
+  const encodeSegment = (segment: string): string => {
+    try {
+      return encodeURIComponent(decodeURIComponent(segment));
+    } catch {
+      // A literal '%' that is not a valid escape — encode the segment
+      // as it arrived.
+      return encodeURIComponent(segment);
+    }
+  };
+  const upstreamUrl = `${UPSTREAM_ORIGIN}/api/${segments.map(encodeSegment).join("/")}${
     request.nextUrl.search
   }`;
 
