@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (50 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (51 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 50);
+  assert.equal(modules.length, 51);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -74,6 +74,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (50 modules)', (
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'platform-health', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'lab',
+      'lab-corpus',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -394,12 +395,12 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // same additive count each sibling promotion adds — the MKT-066
     // provision precedent).
     'MISSING_MODULE|src/modules/product-marketing',
-    // The LAB-002 disclosed provision (tools/arch-check/checker.ts — the
-    // v1.7 LAB-002 Reference-First Niche Corpus authority, pending the
-    // Tech Lead's spec promotion): the fixture provides no lab-corpus
-    // boundary → the missing-module violation joins the exact set (the
-    // same additive count each sibling delivery adds — the /apps and
-    // product-marketing provision precedents).
+    // The LAB-002 registration (the 2026-09-28 TL spec promotion — the
+    // provision retired, the /lab registration precedent): the fixture
+    // provides no lab-corpus boundary → the missing-module violation
+    // joins the exact set (the same additive count each sibling
+    // promotion adds — the enforced total stays 52: 51 spec-parsed
+    // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-corpus',
   ].sort();
 
@@ -473,11 +474,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // Architect/Tech-Lead spec promotion) appends /product-marketing — the
   // v1.6 Product Marketing Mission Planner registration (the same
   // additive count each sibling promotion adds — 49 → 50 enforced
-  // modules, 50 → 51 total violations). The LAB-002 disclosed
-  // provision (tools/arch-check/checker.ts — the v1.7 LAB-002
-  // Reference-First Niche Corpus authority, pending the Tech Lead's
-  // spec promotion) appends /lab-corpus — the same additive count
-  // each sibling delivery adds — 51 → 52 total violations.
+  // modules, 50 → 51 total violations). The LAB-002 delivery's disclosed
+  // provision is now RETIRED (the 2026-09-28 TL spec promotion — the
+  // /lab registration precedent): /lab-corpus registers through the
+  // promoted spec/architecture.md §6, so the spec-parsed set enforces
+  // it directly and the enforced total stays 52 — 51 spec-parsed + the
+  // single /apps provision — with 51 → 52 total violations.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
     52,

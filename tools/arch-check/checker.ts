@@ -112,16 +112,11 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
   const v15CompositionModules: readonly string[] = [
     // MKT-047: the App registry authority (App Manifest and Packaging v1).
     'apps',
-    // LAB-002: the Reference-First Niche Corpus authority (src/modules/
-    // lab-corpus — the v1.7 LAB-002 Work Item: "Build provider-neutral
-    // niche corpus ingestion using content references and metadata
-    // snapshots"). Disclosed worker provision pending the Tech Lead's
-    // spec promotion (the /lab module's own §6 registration precedent —
-    // the module owns its migration-061 tables, consumes platform
-    // ports only (db, clock, ids) and depends on NO other module: the
-    // /lab scenario cites the corpus through the OPAQUE corpusVersion
-    // binding string, by reference).
-    'lab-corpus',
+    // (2026-09-28: the LAB-002 v1.7 provision RETIRED — /lab-corpus now
+    // registers through the promoted spec files (spec/architecture.md §6,
+    // the LAB-001 /lab registration precedent), so the spec-parsed list
+    // enforces it directly; the provision array is back to the single
+    // MKT-047 /apps entry.)
   ];
   const frozenModules = [
     ...specModules,
@@ -130,7 +125,9 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
   // The enforced matrix: the spec-parsed directions (the live
   // module-dependency-matrix.md + the v1.3 fallback), frozen for the run.
   // (2026-09-28: the MKT-070 v1.6 provision retired — product-marketing now
-  // registers through the promoted spec files, the MKT-066 precedent.)
+  // registers through the promoted spec files, the MKT-066 precedent. The
+  // LAB-002 v1.7 provision retired the same day — lab-corpus registers
+  // through the promoted spec files, the /lab precedent.)
   const frozenMatrix: Record<string, string[]> = Object.fromEntries(
     Object.entries(
       parseFrozenMatrix(

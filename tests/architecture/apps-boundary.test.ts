@@ -362,8 +362,10 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // the spec-parsed set is 47 (the same additive promotion precedent).
   // The MKT-066 sibling delivery appends /platform-health (the v1.6
   // Platform Health and Distribution Anomaly Detection registration —
-  // the same additive promotion precedent).
-  assert.equal(specModules.length, 50);
+  // the same additive promotion precedent) and the LAB-002 TL
+  // promotion registers /lab-corpus (the v1.7 Reference-First Niche
+  // Corpus registration — the /lab registration precedent).
+  assert.equal(specModules.length, 51);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');

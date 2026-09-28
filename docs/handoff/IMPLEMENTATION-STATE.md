@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: FROZEN Marketing Engineering Lab architecture; LAB implementation not started
+v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 delivered
 Maximum active workers: 3
 
 ## Main baseline
@@ -66,7 +66,26 @@ cross-module dependency (platform ports only) — LAB-002..018 consume the
 contracts BY REFERENCE.
 
 All remaining implementation items pending:
-☐ LAB-002..LAB-018
+☐ LAB-003..LAB-018
+
+✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
+merged as 5534c70 + the TL spec promotion): the `/lab-corpus` module
+(src/modules/lab-corpus/ — public.ts + internal/validation.ts +
+corpus-store.ts + corpus-module.ts), migration `061_lab_corpus.sql`
+(lab_corpus_versions / lab_corpus_references / lab_corpus_observations
+with CHECK-fenced vocabularies, the UNIQUE (client, provider,
+provider_content_id) dedup fence with re-ingestion as an appended
+observation, guard + no-delete + scope-consistency triggers, NO binary
+column anywhere), the composition-root + ApplicationModules registration,
+13 unit tests + 13 integration tests (lab-corpus, real embedded
+PostgreSQL). Worker verification (delivery commit 5f9876b): tsc 0 /
+lint clean / arch:check 52 modules 631 files 0 violations / unit 1294 /
+architecture 706 / integration 1196. TL spec promotion (the /lab
+registration precedent): spec/architecture.md §6 line + the
+/lab-corpus registration paragraph; the checker provision RETIRED
+(back to the single /apps entry); spec-parsed set 50 → 51; count
+assertions re-pinned (arch-check / apps-boundary / cross-platform-
+distribution / developer-portal / product-marketing boundary tests).
 
 Architecture/coordination artifacts are frozen and present:
 - spec/architecture-v1.7-marketing-lab.md

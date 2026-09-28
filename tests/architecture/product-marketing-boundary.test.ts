@@ -460,9 +460,11 @@ test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration,
   // the spec/architecture.md §6 line + the live-matrix row now carry it.
   assert.ok(/\/product-marketing/.test(architectureSpec), 'spec/architecture.md §6 carries the /product-marketing line (the TL promotion)');
   assert.ok(/product-marketing\s*──→/.test(matrixSpec), 'spec/module-dependency-matrix.md carries the product-marketing row (the TL registration)');
-  // The spec-parsed module count grew by exactly one (49 → 50).
+  // The spec-parsed module count grew by exactly one (49 → 50), then by
+  // one more through the LAB-002 /lab-corpus TL promotion (50 → 51, the
+  // /lab registration precedent — a sibling promotion, additive only).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 50);
+  assert.equal(specModules.length, 51);
 });
 
 test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {

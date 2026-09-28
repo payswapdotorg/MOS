@@ -504,12 +504,13 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   );
   assert.ok(routesTs.includes('registerCrossPlatformDistributionRoutes(router, services, modules)'));
   assert.ok(routesTs.includes("from './cross-platform-distribution-routes.ts'"));
-  // The arch-check promotion: 48 spec-parsed modules (the MKT-062 sibling
-  // delivery appends /research + /content-intelligence and the MKT-066
-  // sibling delivery appends /platform-health — the same additive
-  // promotion precedent) + the disclosed 'apps' provision = 49 enforced.
+  // The arch-check promotion: the MKT-062 sibling delivery appends
+  // /research + /content-intelligence, the MKT-066 sibling delivery
+  // appends /platform-health and the LAB-002 TL promotion registers
+  // /lab-corpus (the /lab registration precedent) — the same additive
+  // promotion precedent.
   const archCheckTest = read(join(repoRoot, 'tests', 'architecture', 'arch-check.test.ts'));
-  assert.ok(archCheckTest.includes('(50 modules)'));
+  assert.ok(archCheckTest.includes('(51 modules)'));
   assert.ok(archCheckTest.includes("'cross-platform-distribution'"));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/cross-platform-distribution'));
   assert.ok(archCheckTest.includes("'research'"));
