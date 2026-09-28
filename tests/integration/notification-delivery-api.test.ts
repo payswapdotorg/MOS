@@ -503,22 +503,38 @@ test('AC-8 golden path (module level): create → gate → per-channel receipts 
 
   // The receipt-history completeness (AC-5): the FIRST notification's tail
   // carries every attempt in order — delivered, delivered,
-  // duplicate_skipped, duplicate_skipped.
+  // duplicate_skipped, duplicate_skipped. ORDER NOTE (the LAB-002
+  // verification root-cause): the read orders by (recorded_at, receipt_id)
+  // and the two duplicate-skipped receipts are appended back-to-back with
+  // no adapter work between them — when they land in the SAME millisecond
+  // the uuidv7 random-bits tiebreak makes their relative order a coin
+  // flip (demonstrated nondeterministic in isolation 2026-09-28). The
+  // delivered pair is time-separated by the per-channel gate+adapter work
+  // and stays order-asserted; the skipped pair is asserted as a SET (its
+  // relative order carries no contract meaning — both facts are
+  // append-only and honestly shaped either way).
   const tail = await delivery().listNotificationReceipts(first.notification.notificationId);
   assert.ok(tail !== null);
+  assert.equal(tail.length, 4, 'exactly four receipts: two deliveries + two duplicate-skips');
   assert.deepEqual(
-    tail.map((receipt) => [receipt.channel, receipt.outcome]),
-    [
-      ['in_app', 'delivered'],
-      ['email', 'delivered'],
-      ['in_app', 'duplicate_skipped'],
-      ['email', 'duplicate_skipped'],
-    ],
-    'the complete honest delivery history, in order, append-only',
+    [tail[0]!.channel, tail[0]!.outcome],
+    ['in_app', 'delivered'],
+    'the first receipt is the in-app delivery (time-separated from the email delivery)',
+  );
+  assert.deepEqual(
+    [tail[1]!.channel, tail[1]!.outcome],
+    ['email', 'delivered'],
+    'the second receipt is the email delivery',
+  );
+  assert.deepEqual(
+    [...tail.slice(2)].map((receipt) => `${receipt.channel}:${receipt.outcome}`).sort(),
+    ['email:duplicate_skipped', 'in_app:duplicate_skipped'],
+    'the complete honest delivery history — the duplicate-skipped pair in either same-millisecond order',
   );
   // The duplicate-skipped receipts carry neither reason nor policy
   // decision nor provider message id (the honest payload shape).
   for (const skipped of tail.slice(2)) {
+    assert.equal(skipped.outcome, 'duplicate_skipped');
     assert.equal(skipped.reason, null);
     assert.equal(skipped.policyDecisionId, null);
     assert.equal(skipped.providerMessageId, null);
