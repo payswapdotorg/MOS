@@ -266,3 +266,79 @@ Stage Summary:
 - Documentation now agrees with repository main at 10f5178: green = 053..059(062), 063..065, 067..069, 071 + UX-001..004; remaining core = MKT-060/061/066/070/072..075 + UX-005..012.
 - One known defect gated before MKT-075 (MKT-065 HTTP dispatch route 422/audit-array — Worker B Wave 0 scope).
 - Next: dispatch Wave 0 (Worker A: MKT-060 TikTok; Worker B: MKT-066 + 065 defect fix; Worker C: UX-005 Connections Center).
+
+---
+Task ID: MKT-070
+Agent: MKT-070 Worker (Worker-B, Z.ai Code)
+Task: Implement MKT-070 (Product Marketing Mission Planner) on branch mkt/070-worker-delivery from base 0ad88f1.
+
+Work Log:
+- Read the binding set: AGENTS.md, docs/handoff/WORKER-CONTRACT.md, spec/effective-backlog-v1.6.md (MKT-070),
+  spec/module-dependency-matrix-v1.6.md (the frozen v1.6 row /product-marketing ──→ /growth-missions,
+  /product-intelligence, /content-intelligence, /platform-health, /experiment-analysis), the five consumed
+  module public contracts + /research + the MKT-066/LAB-001 precedent commits (ff30824, 80094cc, 0ad88f1).
+- Module-ownership decision (frozen-matrix reading, DISCLOSED): the v1.6 matrix NAMES this row and the
+  architecture names "the MKT-070+ planners" — a NEW module row (src/modules/product-marketing/), NOT a
+  growth-missions/operator composition extension; spec/ is worker-forbidden, so the enforced-set registration
+  is the disclosed checker provision (tools/arch-check/checker.ts, the v1.5 'apps' precedent) registering the
+  frozen row VERBATIM for TL ratification at harvest (the MKT-066 precedent).
+- src/modules/product-marketing/ — public.ts (831: pm-plan-v1/pm-vocab-v1, the family gate, the
+  platform-class DATA seam, the attribution/experiment/evidence-tier disclosures, the pure-core I/O shapes,
+  the module API + the two disclosed off-matrix ports), internal/planning.ts (1001: the deterministic pure
+  core — product-signal derivation from the cited records, the tiered platform-portfolio scoring with the
+  health-state exclusion/deprioritization, the goal-by-reference metric plan, the content-profile selection,
+  the attribution + bounded-experiment composition, the input digest), internal/product-marketing-module.ts
+  (458: the compose command — mission family gate, context/session/pursuit-scope resolution, idempotent
+  replay convergence), internal/product-marketing-store.ts (399).
+- migration 060_product_marketing.sql (692): ELEVEN own tables — the plan headers (ONE per mission) + the
+  append-only version tail (actor + provenance + REQUIRED reason + input digest) + NINE FK-anchored
+  scope-fenced citation link tables (product inputs/facts/models/risk flags same-context; research insights
+  same-session; health evaluations / experiment analyses / allocation recommendations / content hypotheses
+  same-client) with append-only + scope-fence triggers, CHECK-fenced vocabularies, CAS version advance.
+  NO authority table created or mutated; module-local and incremental (the TL owns central schema).
+- src/api/product-marketing-routes.ts (383): EXACTLY three GET/POST record routes (POST compose with the
+  authority-field denylist + REQUIRED reason; GET detail with the three disclosures; GET the version tail).
+  No PUT/PATCH/DELETE anywhere; no scheduler/timer/loop; no provider call; no experiment-creation verb.
+- composition-root seam (+112): the platform-class table pm-platform-classes-v1 (the MKT-056 AC-3 fence —
+  platform ids live ONLY here as DATA through the declared platformClasses input, the adapter-registry
+  precedent; 'x' is the data-only entry for the concurrent Worker A adapter), the research reference port +
+  the pursuit-scope port (the disclosed off-matrix READ-ONLY wrappers), the construction + the modules-map
+  registration between platformHealth and lab. application.ts (+21) + routes.ts (+14) additive.
+- The battery: 14 unit tests (determinism, vocabularies, guards, the two-context divergence, the
+  code-context signal, health exclusions with citations, latest-evaluation-only, fabrication-resistance,
+  unverified-never-influences, goal-by-reference, attribution≠causality, informed experiment plans, digest
+  stability) + 14 boundary tests (own-tables-only, CHECK fences, append-only triggers, scope fences,
+  NO-scheduler, NO-execution-verbs, import set EXACTLY the five frozen allowances, DML own-tables-only,
+  route surface, spec untouched, the checker provision, zero violations with 060 as tail, the pure core)
+  + 11 integration tests on the real embedded-PostgreSQL stack (THE ACCEPTANCE: the consumer URL context
+  vs the dev-tool CODE context compose two different auditable plans with the influencing records visible;
+  the restricted-account exclusion cites the verdict evaluation FK-resolved; nonexistent-record citation
+  rejected; cross-client citation rejected; foreign context 404; replay convergence; changed-context new
+  version; DB append-only backstops; uniform 404s; family gate + terminal freeze; owner|admin gate +
+  authority-field rejection + client isolation).
+- The 18 disclosed sibling re-pins (the MKT-066 precedent, every file carrying the disclosed comment):
+  arch-check.test.ts (exact-set + structure total 50→51), app-metering, apps-boundary, content-assets,
+  content-intelligence, content-rights, cross-platform-distribution (listEntries + frozenModules 50→51 +
+  the structure-total regex), experiment-analysis, first-party-apps (slice(-17) + adjacency),
+  growth-missions, growth-operator (adjacency + 052 index), infra-adapters (the canonical list + 060),
+  notification-delivery, platform-health (058 index + frozenModules 50→51), product-intelligence,
+  research, social-accounts, social-adapter-contract. Two were applied in the interrupted turn
+  (cross-platform-distribution frozenModules + platform-health frozenModules); the other sixteen in the
+  continuation turn.
+- docs/runbooks/MKT-070.md written (the 063/064/066 format: ownership decision, contract summary, the
+  MKT-056 fence proof, the off-matrix wiring disclosure, the migration disclosure, the re-pin list, the
+  battery table, the honest disclosures).
+
+Stage Summary:
+- Gates on the delivery tree: tsc 0 / lint 0 / arch:check 0 violations (51 frozen modules — 50 + the
+  disclosed provision; 620 files) / unit 1269/1269 (base 1255 + 14 new) / architecture 706/706 (base 692 +
+  14 new) / integration 1165/1165 (base 1154 + 11 new; run in seven foreground batches because background
+  processes are killed between tool calls in this sandbox — one batch-5 notification-delivery
+  duplicate-skip ordering flake (the mkt-054/mkt-062 disclosed load-flake class) isolated-verified 10/10
+  green and the batch-minus-it 130/130; the delta touches nothing in that suite).
+- Honest disclosures: the checker provision pending TL spec promotion; the two off-matrix READ-ONLY ports
+  (research references + pursuit scope); the 'x' platform-class data-only entry; the continuation turn
+  re-ran EVERY gate on the final tree (nothing carried from the interrupted turn); the Bash-tool
+  degradation + the background-process kills worked around with foreground batching; the one-time push
+  token was DROPPED by context compaction (not on disk, not in remotes) — the branch is committed and
+  ready, the push is withheld per the continuation instruction to stop and say so explicitly.

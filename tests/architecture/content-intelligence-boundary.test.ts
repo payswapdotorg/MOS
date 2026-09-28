@@ -554,8 +554,11 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   assert.ok(routesTs.includes('registerContentIntelligenceRoutes(router, services, modules)'), 'routes.ts registers the content-intelligence routes');
   assert.ok(routesTs.includes("from './content-intelligence-routes.ts'"), 'routes.ts imports the content-intelligence route builder');
   assert.ok(compositionRoot.includes('createContentIntelligenceModule'), 'the composition root constructs the content-intelligence module');
+  // The MKT-070 sibling registration inserts productMarketing between
+  // platformHealth and lab (the additive composition-root adjacency
+  // re-pin precedent — the disclosed MKT-066 re-pin).
   assert.ok(
-    compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },'),
+    compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab },'),
     'the composition-root modules adjacency registers research + contentIntelligence',
   );
   // 057_content_intelligence.sql is the migration tail (the PRE-ASSIGNED
@@ -563,11 +566,17 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '057_content_intelligence.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '058_platform_health.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '058_platform_health.sql');
+  // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql
+  // and the MKT-070 /product-marketing sibling delivery appends
+  // 060_product_marketing.sql (every tail position shifts once more; the
+  // same additive re-pin precedent — the disclosed MKT-066 re-pin).
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 2], '059_lab_contracts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '060_product_marketing.sql');
 });
 
 test('MKT-062 static: the real codebase enforces the frozen boundaries with ZERO violations — /content-intelligence is a registered frozen module', () => {

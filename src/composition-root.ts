@@ -711,6 +711,26 @@ import { createPlatformHealthModule } from './modules/platform-health/public.ts'
 // clock, ids) — the LAB-002..018 modules and the LAB-014 real bridge
 // consume these contracts BY REFERENCE through the public surface.
 import { createLabModule } from './modules/lab/public.ts';
+// MKT-070: /product-marketing — the Product Marketing Mission Planner
+// authority (the frozen v1.6 matrix row registered by this Work Item:
+// /product-marketing ──→ /growth-missions, /product-intelligence,
+// /content-intelligence, /platform-health, /experiment-analysis —
+// verbatim, all five consumed READ-ONLY through their public contracts:
+// the mission DATA MODEL read surface, the product URL/code context, the
+// current content hypotheses, the descriptive platform-health states and
+// the experiment-analysis results/allocation recommendations). The
+// DETERMINISTIC, AUDITABLE planning layer: every chosen platform mix,
+// target metric, content-strategy profile, attribution plan and
+// experiment plan is a record carrying its evidence basis as FK-anchored
+// scope-fenced citation links (the MKT-066 evaluation-record discipline,
+// migration 060); plan corrections are NEW append-only versions carrying
+// actor + provenance + reason + the deterministic input digest (the
+// idempotent replay convergence). The research reference port and the
+// pursuit-scope workspace port are the DISCLOSED off-matrix structural
+// wiring (the MKT-069 by-reference seam + the growth-operator /workspaces
+// precedent — both READ-ONLY, wired here exactly as the operator's
+// pursuit scope is).
+import { createProductMarketingModule } from './modules/product-marketing/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -1972,6 +1992,96 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     delegationGate: options.growthOperatorGate,
   });
 
+  // MKT-070: /product-marketing — the Product Marketing Mission Planner
+  // (see the import block above). The REAL /growth-missions,
+  // /product-intelligence, /content-intelligence, /platform-health and
+  // /experiment-analysis public-contract instances satisfy the module's
+  // declared frozen-row dependencies at this wiring point — every
+  // consumed contract is READ-ONLY (no mission, context, hypothesis,
+  // evaluation, analysis or experiment row is ever mutated from there).
+  // The research reference port is the DISCLOSED off-matrix wiring (the
+  // MKT-069 disclosure: missions attach research sessions/insights BY
+  // REFERENCE — a READ-ONLY wrapper over the /research session ownership
+  // + detail read surfaces); the pursuit-scope port is the SAME disclosed
+  // off-matrix wrapper the Growth Operator consumes (the canonical
+  // workspace → client → agency chain validated against the mission's
+  // agency).
+  const productMarketingResearchReferences = {
+    resolveResearchSessionOwnership: async (researchSessionId: string) => {
+      const ownership = await research.resolveResearchSessionOwnership(researchSessionId);
+      if (ownership === null) return null;
+      return {
+        scope: {
+          agencyId: ownership.scope.agencyId,
+          researchSessionId: ownership.scope.researchSessionId,
+        },
+        session: {
+          researchSessionId: ownership.session.researchSessionId,
+          currentVersionSeq: ownership.session.currentVersionSeq,
+        },
+      };
+    },
+    getResearchSessionDetail: async (researchSessionId: string) => {
+      const detail = await research.getResearchSessionDetail(researchSessionId);
+      if (detail === null) return null;
+      return {
+        session: {
+          researchSessionId: detail.session.researchSessionId,
+          currentVersionSeq: detail.session.currentVersionSeq,
+        },
+        currentVersion: { topic: detail.currentVersion.topic },
+        insights: detail.insights.map((insight) => ({
+          researchInsightId: insight.researchInsightId,
+          derivationKind: insight.derivationKind,
+          verificationState: insight.verificationState,
+          supersededByResearchInsightId: insight.supersededByResearchInsightId,
+        })),
+      };
+    },
+  };
+  const productMarketingPursuitScope = {
+    resolveWorkspace: async (workspaceId: string) => {
+      const ownership = await workspaces.resolveWorkspaceOwnership(workspaceId);
+      if (ownership === null) return null;
+      return {
+        workspaceId: ownership.scope.workspaceId,
+        clientId: ownership.scope.clientId,
+        agencyId: ownership.scope.agencyId,
+        status: ownership.workspace.status,
+      };
+    },
+  };
+  // THE PLATFORM-CLASS TABLE (pm-platform-classes-v1 — the MKT-056 AC-3
+  // fence honored: platform-specific identifiers live EXCLUSIVELY in this
+  // sanctioned wiring path and the adapter subtrees; the planner module
+  // consumes the table as DATA through its declared seam, exactly as the
+  // 056 adapter registry arrives as module data — the concrete map keys
+  // are the adapter keys of the merged MKT-057..060 adapters + the
+  // data-only entry for the concurrent Worker A X adapter (no dependency
+  // exists on it); an unmapped platform id honestly classifies 'unknown').
+  const productMarketingPlatformClasses = {
+    tiktok: 'short_video',
+    youtube: 'long_video',
+    instagram: 'image',
+    'facebook-pages': 'image',
+    x: 'text',
+    twitter: 'text',
+    linkedin: 'text',
+  } as const;
+  const productMarketing = createProductMarketingModule({
+    db,
+    clock,
+    ids,
+    platformClasses: productMarketingPlatformClasses,
+    missions: growthMissions,
+    productIntelligence,
+    contentIntelligence,
+    platformHealth,
+    experimentAnalysis,
+    researchReferences: productMarketingResearchReferences,
+    workspaces: productMarketingPursuitScope,
+  });
+
   // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
   // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
   // (resolveDecisionOwnership + getDecision); the playbook and
@@ -2046,7 +2156,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab },
     runtime: { aiProvider },
   };
 }

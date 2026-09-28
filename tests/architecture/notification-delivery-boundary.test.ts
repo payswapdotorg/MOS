@@ -427,31 +427,37 @@ test('MKT-068: the disclosed spec registration exists (the §6 line + sentence, 
   // The MKT-064 delivery appends 053, the MKT-067 delivery appends
   // 054 and the MKT-065 delivery appends 055 (the same additive
   // precedent — this module's positions shift once more).
-  assert.equal(listEntries[listEntries.length - 14], '046_social_accounts.sql');
-  assert.equal(listEntries[listEntries.length - 13], '047_notification_delivery.sql');
-  assert.equal(listEntries[listEntries.length - 12], '048_product_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 11], '049_commerce_capabilities.sql');
+  assert.equal(listEntries[listEntries.length - 15], '046_social_accounts.sql');
+  assert.equal(listEntries[listEntries.length - 14], '047_notification_delivery.sql');
+  assert.equal(listEntries[listEntries.length - 13], '048_product_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 12], '049_commerce_capabilities.sql');
   // The MKT-056 delivery appends 050, the MKT-063 delivery appends 051
   // and the MKT-054 delivery (renumbered 050→052) appends 052 (the same
   // additive precedent).
-  assert.equal(listEntries[listEntries.length - 10], '050_social_adapter_contract.sql');
-  assert.equal(listEntries[listEntries.length - 9], '051_content_rights.sql');
-  assert.equal(listEntries[listEntries.length - 8], '052_growth_operator.sql');
-  assert.equal(listEntries[listEntries.length - 7], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 11], '050_social_adapter_contract.sql');
+  assert.equal(listEntries[listEntries.length - 10], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length - 9], '052_growth_operator.sql');
+  assert.equal(listEntries[listEntries.length - 8], '053_content_assets.sql');
   // The MKT-067 delivery appends 054 and the MKT-065
   // /cross-platform-distribution delivery appends 055 (the same additive
   // precedent; every tail position shifts once more).
-  assert.equal(listEntries[listEntries.length - 6], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 7], '054_experiment_analysis.sql');
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 5], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 4], '056_research.sql');
-  assert.equal(listEntries[listEntries.length - 3], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 6], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 5], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 4], '057_content_intelligence.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 2], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 3], '058_platform_health.sql');
+  // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
+  // the MKT-070 /product-marketing sibling delivery appends
+  // 060_product_marketing.sql (every tail position shifts once more; the
+  // same additive re-pin precedent — the disclosed MKT-066 re-pin).
+  assert.equal(listEntries[listEntries.length - 2], '059_lab_contracts.sql');
+  assert.equal(listEntries[listEntries.length - 1], '060_product_marketing.sql');
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '047_notification_delivery.sql')));
 });

@@ -389,6 +389,17 @@ import { registerContentIntelligenceRoutes } from './content-intelligence-routes
 // append-only), and NO enforcement verb of any kind exists (the module
 // describes; the consumers decide).
 import { registerPlatformHealthRoutes } from './platform-health-routes.ts';
+// MKT-070: the /product-marketing surfaces — the deterministic, auditable
+// planning family: the compose command (POST — the durable references +
+// the REQUIRED reason; every authority-shaped field is rejected so no
+// caller-declared portfolio, metric, verdict or citation can ever enter a
+// plan; idempotent replay converges on the same input digest), the
+// composed plan read-back and the append-only version tail. GET/POST
+// ONLY — no PUT/PATCH/DELETE exists anywhere in this family (plan
+// corrections are NEW version records), and NO scheduler/timer/loop,
+// provider-call or experiment-creation verb exists (the Growth Operator
+// owns the bounded delegation; the planner is the decision layer).
+import { registerProductMarketingRoutes } from './product-marketing-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -669,5 +680,8 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-066: the /platform-health surfaces — the §11 descriptive health
   // evaluation family (see the import block above).
   registerPlatformHealthRoutes(router, services, modules);
+  // MKT-070: the /product-marketing surfaces — the deterministic,
+  // auditable planning family (see the import block above).
+  registerProductMarketingRoutes(router, services, modules);
   return router;
 }
