@@ -1544,4 +1544,329 @@ export type LearningRelationshipView = {
   };
 };
 
+// --- UX-006 Content/Rights surface composition types ---------------------------------
+//
+// Same discipline as every mirror above: each shape mirrors the named
+// module's own serializer VERBATIM — src/api/research-routes.ts,
+// src/api/content-intelligence-routes.ts, src/api/content-rights-routes.ts
+// and src/api/content-assets-routes.ts. The Content surface renders these
+// records; it never re-derives, re-computes or re-interprets them, and a
+// field the authority omits stays absent here (never faked).
 
+// MKT-062 — Web Research (the /research-sessions surfaces, agency-scoped).
+
+/** The recorded provenance block of the research records (serializeProvenance). */
+export type ResearchProvenanceView = {
+  actor: string;
+  recordedVia: string;
+  correlationId: string;
+  causationId: string;
+  recordedAt: string;
+};
+
+/** One research session record (serializeSession — GET
+ *  /api/agencies/:agencyId/research-sessions). */
+export type ResearchSessionView = {
+  researchSessionId: string;
+  agencyId: string;
+  currentVersionSeq: number;
+  version: number;
+  createdActor: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** One declared source of a session version (serializeSource). */
+export type ResearchSourceView = {
+  sourceId: string;
+  kind: string;
+  reference: string;
+  authorization: string;
+  integrationConnectionId?: string | null;
+  position: number;
+};
+
+/** One append-only declared version (serializeVersion — GET
+ *  /api/research-sessions/:id/versions). */
+export type ResearchSessionVersionView = {
+  researchSessionVersionId: string;
+  researchSessionId: string;
+  versionSeq: number;
+  topic: string | null;
+  focus: string | null;
+  sources: ResearchSourceView[];
+  provenance: ResearchProvenanceView;
+};
+
+/** One retained source fact with FULL provenance (serializeSourceFact — GET
+ *  /api/research-sessions/:id/facts). */
+export type ResearchSourceFactView = {
+  sourceFactId: string;
+  researchSessionId: string;
+  sourceId: string;
+  researchRunId: string;
+  factKind: string;
+  sourceRef: string;
+  fetchedAt: string;
+  extractor: string;
+  contentHash: string;
+  extractionNotes: string | null;
+  content: Record<string, unknown>;
+  provenance: ResearchProvenanceView;
+};
+
+/** One research insight CLAIM (serializeInsight — GET
+ *  /api/research-sessions/:id/insights). */
+export type ResearchInsightView = {
+  researchInsightId: string;
+  researchSessionId: string;
+  derivationKind: string;
+  statement: Record<string, unknown>;
+  verificationState: string;
+  supersedesResearchInsightId?: string | null;
+  supersededByResearchInsightId?: string | null;
+  aiAssistance: Record<string, unknown> | null;
+  evidenceSourceFactIds: string[];
+  provenance: ResearchProvenanceView;
+};
+
+/** One research run with per-source honest outcomes (serializeRun — GET
+ *  /api/research-sessions/:id/runs). */
+export type ResearchRunView = {
+  researchRunId: string;
+  researchSessionId: string;
+  researchSessionVersionId: string;
+  status: string;
+  sourcesInspected: number;
+  factsRetained: number;
+  startedAt: string;
+  finishedAt: string;
+  sourceOutcomes: Array<{
+    researchRunSourceOutcomeId: string;
+    sourceId: string;
+    outcome: string;
+    detail: string | null;
+    factsExtracted: number;
+  }>;
+  provenance: ResearchProvenanceView;
+};
+
+/** The composed honest read-back (serializeDetail — GET /api/research-sessions/:id). */
+export type ResearchSessionDetailView = {
+  session: ResearchSessionView;
+  currentVersion: ResearchSessionVersionView;
+  versions: ResearchSessionVersionView[];
+  sourceFacts: ResearchSourceFactView[];
+  insights: ResearchInsightView[];
+  runs: ResearchRunView[];
+  derivedRecordTier: string;
+  vocabularyVersion: string;
+};
+
+// MKT-062 — Content Intelligence (the client-scoped candidate/hypothesis layer).
+
+/** One content candidate record (serializeCandidate — GET
+ *  /api/clients/:clientId/content-intelligence/candidates). */
+export type ContentCandidateView = {
+  contentCandidateId: string;
+  clientId: string;
+  workspaceId?: string;
+  topicEntity: string;
+  niche: string;
+  subNiche?: string;
+  contentFormat: string;
+  lengthValue?: number;
+  lengthUnit?: string;
+  hookFeatures: string[];
+  narrativeStructure: string;
+  publishedAt?: string;
+  observedPerformance: Record<string, unknown>;
+  performanceVelocity?: Record<string, unknown>;
+  engagement?: Record<string, unknown>;
+  audienceFit: string;
+  freshness: string;
+  novelty: string;
+  reuseRisk: string;
+  evidenceIds: string[];
+  metricObservationIds: string[];
+  provenance: ResearchProvenanceView;
+};
+
+/** One content hypothesis record (serializeHypothesis — GET
+ *  /api/clients/:clientId/content-intelligence/hypotheses). */
+export type ContentHypothesisView = {
+  contentHypothesisId: string;
+  clientId: string;
+  workspaceId?: string;
+  hypothesisKind: string;
+  statement: Record<string, unknown>;
+  supersedesContentHypothesisId?: string | null;
+  supersededByContentHypothesisId?: string | null;
+  evidenceIds: string[];
+  candidateIds: string[];
+  researchInsightIds: string[];
+  experimentId?: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** The composed candidate read-back (serializeCandidateDetail — GET
+ *  /api/content-candidates/:contentCandidateId). */
+export type ContentCandidateDetailView = {
+  candidate: ContentCandidateView;
+  /** The frozen §6 tier: candidates are OBSERVED FEATURES, never conclusions. */
+  candidateTier: string;
+  vocabularyVersion: string;
+};
+
+/** One observation-ingestion run (serializeIngestionRun — GET
+ *  /api/clients/:clientId/content-intelligence/ingestion-runs). */
+export type ContentIngestionRunView = {
+  ingestionRunId: string;
+  clientId: string;
+  workspaceId?: string;
+  connectionId: string;
+  observationKind: string;
+  operation: string;
+  status: string;
+  recordsObserved: number;
+  evidenceAppended: number;
+  appendedEvidenceIds: string[];
+  startedAt: string;
+  finishedAt: string;
+  detail?: string;
+  provenance: ResearchProvenanceView;
+};
+
+// MKT-063 — Content Rights and Provenance (the rights records + the gate).
+
+/** One rights-record transition event (serializeEvent). */
+export type ContentRightsEventView = {
+  eventId: string;
+  rightsRecordId: string;
+  fromState: string | null;
+  toState: string;
+  eventKind: string;
+  reason: string;
+  clearanceId?: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** One human-clearance record (serializeClearance). */
+export type ContentRightsClearanceView = {
+  clearanceId: string;
+  rightsRecordId: string;
+  clearedByActor: string;
+  clearedVia: string;
+  rationale: string;
+  evidenceRef?: string;
+  clearedAt: string;
+};
+
+/** One destination-platform permission row (serializePermission). */
+export type ContentRightsPermissionView = {
+  permissionId: string;
+  rightsRecordId: string;
+  platformKey: string;
+  permission: string;
+  evidenceRef: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** One ingredient lineage link (serializeLineage — GET
+ *  /api/clients/:clientId/content-rights/lineage/:compositeAssetRef). */
+export type ContentRightsLineageView = {
+  lineageLinkId: string;
+  agencyId: string;
+  clientId: string;
+  workspaceId?: string;
+  compositeAssetRef: string;
+  ingredientAssetRef: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** One gate evaluation result (serializeGateResult — POST
+ *  /api/clients/:clientId/content-rights/gate; outcome: allow | review_required | blocked). */
+export type ContentRightsGateResultView = {
+  outcome: string;
+  reasons: Array<{ code: string; detail: string }>;
+  assetRef: string;
+  destinationPlatform: string;
+  composite: boolean;
+  ingredientEvaluations: Array<{
+    assetRef: string;
+    outcome: string;
+    reasonCodes: string[];
+  }>;
+  policyDecisionId: string;
+  evaluatedAt: string;
+  vocabularyVersion: string;
+};
+
+/** The composed rights-record read-back (GET
+ *  /api/clients/:clientId/content-rights/:rightsRecordId). */
+export type ContentRightsRecordDetailView = {
+  record: ContentRightsRecordView;
+  events: ContentRightsEventView[];
+  permissions: ContentRightsPermissionView[];
+  clearances: ContentRightsClearanceView[];
+  vocabularyVersion: string;
+};
+
+// MKT-064 — Content Assets and Transformations (the versioned asset model).
+
+/** One asset lifecycle event (serializeLifecycleEvent). */
+export type ContentAssetLifecycleEventView = {
+  eventId: string;
+  versionId: string;
+  eventKind: string;
+  fromState?: string | null;
+  toState: string;
+  reason: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** One quality observation (serializeObservation). */
+export type ContentQualityObservationView = {
+  observationId: string;
+  versionId: string;
+  metric: string;
+  metricValueNumeric?: number;
+  metricValueText?: string;
+  observedAt: string;
+  provenance: ResearchProvenanceView;
+};
+
+/** One transformation ingredient row (serializeIngredient — the immutable
+ *  frozen input tail, GET /api/clients/:clientId/content-assets/transformations/:id). */
+export type ContentTransformationIngredientView = {
+  ingredientId: string;
+  transformationId: string;
+  inputVersionId: string;
+  inputAssetRef: string;
+  inputVersionNumber: number;
+  position: number;
+  provenance: ResearchProvenanceView;
+};
+
+/** The composed transformation read-back (GET
+ *  /api/clients/:clientId/content-assets/transformations/:transformationId:
+ *  the transformation + its immutable ingredient tail + the derived output
+ *  version when one exists). */
+export type ContentTransformationDetailView = {
+  transformation: ContentTransformationView;
+  ingredients: ContentTransformationIngredientView[];
+  output?: ContentAssetVersionView;
+  vocabularyVersion: string;
+};
+
+/** The composed asset-version read-back (GET
+ *  /api/clients/:clientId/content-assets/:versionId: the version + every
+ *  version of the same asset + the lifecycle-event tail + the quality
+ *  observations). */
+export type ContentAssetVersionDetailView = {
+  version: ContentAssetVersionView;
+  versionsOfAsset: ContentAssetVersionView[];
+  events: ContentAssetLifecycleEventView[];
+  observations: ContentQualityObservationView[];
+  vocabularyVersion: string;
+};

@@ -11,6 +11,11 @@
 // section renders the WORKER-CONTRACT empty state and makes ZERO
 // client-scoped calls — the queries are disabled at null input.
 //
+// UX-006 — the CONTENT / RIGHTS / TRANSFORMATION sections now also carry the
+// research-discoverability link: the mission's research-backed content work
+// reaches the full Content/Rights operational surface (the client
+// workspace's Content tab) through the explicit cross-link below.
+//
 // NEVER a second analytics layer: each section renders one authority's own
 // records, formatted; progress is never computed here.
 
@@ -57,6 +62,24 @@ import {
   formatMetricValue,
   formatWhen,
 } from "./workspace-atoms";
+
+// --- The UX-006 research-discoverability cross-link ---------------------------------
+
+/** The mission-context link into the Content/Rights operational surface
+ *  (the second UX-006 entry point): the mission's research-backed content
+ *  work — candidates, rights gates, the asset pipeline — is OPERATED in the
+ *  client workspace's Content tab; this link goes there. */
+function ContentSurfaceLink({ clientId }: { clientId: string }) {
+  const navigate = useMosSession((state) => state.navigate);
+  return (
+    <WorkspaceActionButton
+      onClick={() => navigate({ kind: "client", clientId, tab: "content" })}
+      ariaLabel="Open the Content surface"
+    >
+      Open the Content surface →
+    </WorkspaceActionButton>
+  );
+}
 
 // --- The shared no-client-context state --------------------------------------------
 
@@ -898,14 +921,20 @@ export function ContentSection({ clientId }: { clientId: string | null }) {
         <WorkspaceEmptyState
           missing="No content assets are recorded on this client yet."
           why="A mission promotes material — a post, a video, a product shot — and each piece carries its own versioned record here, from source to transformed output."
-          next="Assets are recorded through the platform's content pipeline as material is sourced and transformed; the console's full Content + Rights view is a planned update (UX-006)."
+          next="The full pipeline is operated in the client workspace's Content surface: research a niche, record candidates from the evidence, register the asset and transform it — with the rights gates visible at every step."
+          action={<ContentSurfaceLink clientId={clientId} />}
         />
       ) : (
-        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
-          {list.map((version) => (
-            <ContentAssetRow key={version.versionId} version={version} />
-          ))}
-        </ul>
+        <>
+          <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+            {list.map((version) => (
+              <ContentAssetRow key={version.versionId} version={version} />
+            ))}
+          </ul>
+          <div className="mt-3">
+            <ContentSurfaceLink clientId={clientId} />
+          </div>
+        </>
       )}
       <SourceLine
         sources={clientId === null ? [] : [`GET /api/clients/${clientId.slice(0, 8)}…/content-assets`]}
@@ -970,14 +999,20 @@ export function RightsSection({ clientId }: { clientId: string | null }) {
         <WorkspaceEmptyState
           missing="No rights records exist on this client yet."
           why="Before anything is published, each asset needs its rights state — owned, licensed, cleared, review or blocked. Without a record, publication is not permitted."
-          next="Rights records are determined through the platform's rights surfaces as assets are sourced; the gate evaluates them before any autonomous publication."
+          next="Rights records are registered in the client workspace's Content surface, citing the candidate's evidence as the source provenance; the publication gate then evaluates every destination with its reasons."
+          action={<ContentSurfaceLink clientId={clientId} />}
         />
       ) : (
-        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
-          {list.map((record) => (
-            <RightsRow key={record.rightsRecordId} record={record} />
-          ))}
-        </ul>
+        <>
+          <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+            {list.map((record) => (
+              <RightsRow key={record.rightsRecordId} record={record} />
+            ))}
+          </ul>
+          <div className="mt-3">
+            <ContentSurfaceLink clientId={clientId} />
+          </div>
+        </>
       )}
       <SourceLine
         sources={clientId === null ? [] : [`GET /api/clients/${clientId.slice(0, 8)}…/content-rights`]}
@@ -1049,14 +1084,20 @@ export function TransformationSection({ clientId }: { clientId: string | null })
         <WorkspaceEmptyState
           missing="No transformations have been requested on this client yet."
           why="One source asset becomes many channel-ready pieces through recorded transformations — a clip, a crop, a caption — each with its ingredients and output versioned."
-          next="Transformations are requested through the platform's content pipeline as the mission composes material; each one records its lineage here."
+          next="Transformations are requested in the client workspace's Content surface from materialized ingredient versions; each one records its lineage, visible on the drill-down there."
+          action={<ContentSurfaceLink clientId={clientId} />}
         />
       ) : (
-        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
-          {list.map((transformation) => (
-            <TransformationRow key={transformation.transformationId} transformation={transformation} />
-          ))}
-        </ul>
+        <>
+          <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+            {list.map((transformation) => (
+              <TransformationRow key={transformation.transformationId} transformation={transformation} />
+            ))}
+          </ul>
+          <div className="mt-3">
+            <ContentSurfaceLink clientId={clientId} />
+          </div>
+        </>
       )}
       <SourceLine
         sources={

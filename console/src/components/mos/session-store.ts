@@ -27,6 +27,11 @@ const AGENCY_STORAGE_KEY = "mos.presentation.agency.v1";
 export type ClientWorkspaceTab =
   | "overview"
   | "trace"
+  // UX-005 — the Connections Center tab (the full center).
+  | "connections"
+  // UX-006 — the Content/Rights operational surface tab (the full pipeline:
+  // research, candidates, rights gates, assets + transformations).
+  | "content"
   | "goals"
   | "playbooks"
   | "deployments"
@@ -34,9 +39,7 @@ export type ClientWorkspaceTab =
   | "evidence"
   | "decisions"
   | "learning"
-  | "memory"
-  // UX-005 — the Connections Center tab (the full center).
-  | "connections";
+  | "memory";
 
 export type AppsTab = "installed" | "marketplace" | "first-party" | "developer";
 
