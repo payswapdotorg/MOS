@@ -363,7 +363,7 @@ test('MKT-056: NO social-SDK import exists anywhere in src/ (the EXTERNAL_PACKAG
 // 5. The adapter subtree contract
 // ---------------------------------------------------------------------------
 
-test('MKT-056: the sanctioned adapter subtree exists; MKT-057/MKT-058/MKT-059/MKT-060 add the concrete platform adapters (youtube, instagram, facebook-pages, tiktok) beside the re-export shim', () => {
+test('MKT-056: the sanctioned adapter subtree exists; MKT-057/MKT-058/MKT-059/MKT-060/MKT-061 add the concrete platform adapters (youtube, instagram, facebook-pages, tiktok, x) beside the re-export shim', () => {
   const adaptersDir = src('modules', 'social-accounts', 'internal', 'adapters');
   assert.ok(existsSync(adaptersDir), 'internal/adapters/ exists (the MKT-057..061 home)');
   const residents = readdirSync(adaptersDir);
@@ -376,7 +376,9 @@ test('MKT-056: the sanctioned adapter subtree exists; MKT-057/MKT-058/MKT-059/MK
   // joins the subtree beside youtube and instagram.
   // MKT-060 re-pin: the FOURTH concrete platform adapter (tiktok) joins
   // the subtree beside youtube, instagram and facebook-pages.
-  assert.deepEqual(residents, ['adapter-contract.ts', 'facebook-pages', 'instagram', 'tiktok', 'youtube'], 'the subtree holds the re-export shim + the MKT-057 youtube + MKT-058 instagram + MKT-059 facebook-pages + MKT-060 tiktok platform adapter directories');
+  // MKT-061 re-pin: the FIFTH concrete platform adapter (x) joins the
+  // subtree beside youtube, instagram, facebook-pages and tiktok.
+  assert.deepEqual(residents, ['adapter-contract.ts', 'facebook-pages', 'instagram', 'tiktok', 'x', 'youtube'], 'the subtree holds the re-export shim + the MKT-057 youtube + MKT-058 instagram + MKT-059 facebook-pages + MKT-060 tiktok + MKT-061 x platform adapter directories');
   // The youtube subtree is a SINGLE adapter file (the arch-check adapter
   // classification: every file under an adapters path segment is a
   // concrete adapter — a second subtree file would be ADAPTER_COUPLING).
@@ -395,6 +397,10 @@ test('MKT-056: the sanctioned adapter subtree exists; MKT-057/MKT-058/MKT-059/MK
   // (the same one-file subtree discipline).
   const tiktokResidents = readdirSync(src('modules', 'social-accounts', 'internal', 'adapters', 'tiktok'));
   assert.deepEqual(tiktokResidents, ['adapter.ts'], 'the tiktok adapter is a single self-contained file (the honest 5-of-5 matrix + the documented API mapping)');
+  // The MKT-061 re-pin: the x subtree is a single adapter file (the
+  // same one-file subtree discipline).
+  const xResidents = readdirSync(src('modules', 'social-accounts', 'internal', 'adapters', 'x'));
+  assert.deepEqual(xResidents, ['adapter.ts'], 'the x adapter is a single self-contained file (the honest 5-of-5 matrix + the documented API mapping)');
   // The shim re-exports the contract from the module's internal contract
   // (NOT from another adapter — ADAPTER_COUPLING is impossible by shape).
   assert.ok(adaptersShim.includes("from '../adapter-contract.ts'"));
@@ -460,6 +466,12 @@ test('MKT-056: the disclosed composition seams exist; MKT-057 registers the FIRS
     compositionRoot.includes('createTikTokSocialAdapter({ http: httpCalls })'),
     'the first-party TikTok platform adapter is registered as production DATA on the platform HttpCallPort (MKT-060)',
   );
+  // MKT-061 re-pin: the FIFTH first-party platform adapter (X) registers
+  // as production DATA through the same pattern.
+  assert.ok(
+    compositionRoot.includes('createXSocialAdapter({ http: httpCalls })'),
+    'the first-party X platform adapter is registered as production DATA on the platform HttpCallPort (MKT-061)',
+  );
   assert.ok(
     compositionRoot.includes('seamSocialAdapterKeys.has(YOUTUBE_SOCIAL_ADAPTER_KEY)'),
     'a seam-supplied adapter of an already-registered first-party key OVERRIDES the first-party instance (the disclosed MKT-057 test-seam override)',
@@ -475,6 +487,10 @@ test('MKT-056: the disclosed composition seams exist; MKT-057 registers the FIRS
   assert.ok(
     compositionRoot.includes('seamSocialAdapterKeys.has(TIKTOK_SOCIAL_ADAPTER_KEY)'),
     'the same seam-override semantics hold for the TikTok registration (the disclosed MKT-060 test-seam override)',
+  );
+  assert.ok(
+    compositionRoot.includes('seamSocialAdapterKeys.has(X_SOCIAL_ADAPTER_KEY)'),
+    'the same seam-override semantics hold for the X registration (the disclosed MKT-061 test-seam override)',
   );
   assert.ok(
     compositionRoot.includes('...seamSocialAdapters'),
