@@ -90,7 +90,11 @@ function MosAppInner() {
         agencyId === null ? <AgencyGate /> : <ClientsScreen />
       ) : null}
       {view.kind === "client" ? (
-        <ClientWorkspaceScreen clientId={view.clientId} tab={view.tab} />
+        <ClientWorkspaceScreen
+          clientId={view.clientId}
+          tab={view.tab}
+          focusSocialAccountId={view.focusSocialAccountId ?? null}
+        />
       ) : null}
       {view.kind === "decision" ? <DecisionDetailScreen decisionId={view.decisionId} /> : null}
       {view.kind === "attention" ? (
