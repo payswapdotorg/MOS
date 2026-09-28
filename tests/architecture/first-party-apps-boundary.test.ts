@@ -197,7 +197,11 @@ test('AC-3: ZERO SQL, ZERO tables, ZERO database dependency in the module (no du
   // additive re-pin precedent; the merged-tree truth).
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — the same additive re-pin precedent).
-  assert.deepEqual(migrations.slice(-16), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql', '055_cross_platform_distribution.sql', '056_research.sql', '057_content_intelligence.sql', '058_platform_health.sql', '059_lab_contracts.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth — the LAB-001 /lab contracts delivery appends 059, the same additive precedent)');});
+  // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
+  // the MKT-070 /product-marketing sibling delivery appends
+  // 060_product_marketing.sql (the same additive re-pin precedent — the
+  // disclosed MKT-066 re-pin).
+  assert.deepEqual(migrations.slice(-17), ['044_app_metering.sql', '045_growth_missions.sql', '046_social_accounts.sql', '047_notification_delivery.sql', '048_product_intelligence.sql', '049_commerce_capabilities.sql', '050_social_adapter_contract.sql', '051_content_rights.sql', '052_growth_operator.sql', '053_content_assets.sql', '054_experiment_analysis.sql', '055_cross_platform_distribution.sql', '056_research.sql', '057_content_intelligence.sql', '058_platform_health.sql', '059_lab_contracts.sql', '060_product_marketing.sql'], 'the migration list tail carries the sibling promotions only (the merged-tree truth — the LAB-001 /lab contracts delivery appends 059 and the MKT-070 /product-marketing delivery appends 060, the same additive precedent)');});
 function mutations_owns_migration(migrations: readonly string[]): boolean {
   return migrations.some((name) => name.startsWith('043_'));
 }
@@ -345,4 +349,4 @@ test('AC-6: the composition root wires the module with NO database handle (the n
   // and the MKT-067 /experiment-analysis and MKT-065
   // /cross-platform-distribution deliveries append theirs after those
   // — the sibling promotion precedent).
-  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },'));});
+  assert.ok(root.includes('firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab },'));});

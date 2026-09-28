@@ -386,6 +386,13 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // lab boundary a MISSING_MODULE violation (the same additive count
     // each sibling promotion adds).
     'MISSING_MODULE|src/modules/lab',
+    // The MKT-070 disclosed provision (tools/arch-check/checker.ts — the
+    // v1.6 frozen matrix row /product-marketing VERBATIM, pending the
+    // Architect/Tech-Lead spec promotion): the fixture provides no such
+    // boundary → the missing-module violation joins the exact set (the
+    // same additive count each sibling promotion adds — the MKT-066
+    // provision precedent).
+    'MISSING_MODULE|src/modules/product-marketing',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -453,9 +460,15 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // delivery appends /platform-health — the v1.6 Platform Health and
   // Distribution Anomaly Detection registration (the same additive count
   // each sibling promotion adds — 48 → 49 enforced modules).
+  // The MKT-070 disclosed provision (tools/arch-check/checker.ts — the
+  // v1.6 frozen matrix row /product-marketing VERBATIM, pending the
+  // Architect/Tech-Lead spec promotion) appends /product-marketing — the
+  // v1.6 Product Marketing Mission Planner registration (the same
+  // additive count each sibling promotion adds — 49 → 50 enforced
+  // modules, 50 → 51 total violations).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    50,
+    51,
     'no unexpected violation categories may be reported',
   );
 

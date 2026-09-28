@@ -1022,6 +1022,22 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // immutable/append-only triggers, and the composite scenario-version
     // FK chain; NO v1.6 authority table is created or joined).
     '059_lab_contracts.sql',
+    // MKT-070 (Product Marketing Mission Planner) appends the
+    // product-marketing migration (060 — the next free number; the
+    // disclosed additive re-pin precedent — every end-anchored tail
+    // position shifts once more): the /product-marketing authority — the
+    // CLIENT-SCOPED append-only composed PLAN records (the deterministic
+    // input digest for idempotent replay convergence; the frozen
+    // portfolio/metric-plan/content-profile/attribution/experiment-plan
+    // vocabularies CHECK-fenced) with their FK-anchored same-Client
+    // evidence citation links (mission / product-intelligence context /
+    // content hypotheses / platform-health evaluations / experiment
+    // analyses — every anchored authority table read CHECK-ONLY) and the
+    // append-only version tail (plan corrections are NEW version records
+    // carrying actor + provenance + reason); NO mission, context,
+    // hypothesis, evaluation, analysis, experiment, asset or tenant table
+    // is created or mutated.
+    '060_product_marketing.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

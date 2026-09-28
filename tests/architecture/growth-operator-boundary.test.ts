@@ -548,10 +548,13 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // The MKT-062 sibling registration appends research + contentIntelligence
   // after crossPlatformDistribution (the additive composition-root
   // adjacency — the same sibling re-pin precedent).
+  // The MKT-070 sibling registration inserts productMarketing between
+  // platformHealth and lab (the same additive composition-root adjacency
+  // re-pin precedent — the disclosed MKT-066 re-pin).
   assert.ok(
     compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research') &&
-      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, lab },'),
-    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, and the MKT-062 siblings last)',
+      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab },'),
+    'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, the MKT-062 siblings after that, the MKT-066 sibling after those, and the MKT-070 planner sibling before the LAB-001 /lab tail)',
   );
   assert.ok(
     compositionRoot.includes('options.growthOperatorGate'),
@@ -564,10 +567,14 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // once more).
   // The MKT-066 sibling delivery appends 058_platform_health — every
   // tail position shifts once more (the same additive re-pin precedent).
+  // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
+  // the MKT-070 /product-marketing sibling delivery appends
+  // 060_product_marketing.sql — every tail position shifts once more (the
+  // same additive re-pin precedent — the disclosed MKT-066 re-pin).
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 8], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 9], '052_growth_operator.sql');
 });
 
 // ---------------------------------------------------------------------------
