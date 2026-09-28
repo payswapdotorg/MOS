@@ -21,8 +21,18 @@ import {
   type ClientMemoryView,
   type ClientRecord,
   type CommandCenterView,
+  type ContentAssetLifecycleEventView,
+  type ContentAssetVersionDetailView,
   type ContentAssetVersionView,
+  type ContentCandidateView,
+  type ContentHypothesisView,
+  type ContentIngestionRunView,
+  type ContentRightsGateResultView,
+  type ContentRightsLineageView,
+  type ContentRightsPermissionView,
+  type ContentRightsRecordDetailView,
   type ContentRightsRecordView,
+  type ContentTransformationDetailView,
   type ContentTransformationView,
   type CredentialReferenceView,
   type DecisionEventRecord,
@@ -58,6 +68,9 @@ import {
   type ProfitAgencyView,
   type ProfitClientView,
   type RegisteredAdapterView,
+  type ResearchRunView,
+  type ResearchSessionDetailView,
+  type ResearchSessionView,
   type SocialAccountEventView,
   type SocialAccountView,
   type SocialAuthorizeStartResponse,
@@ -1029,3 +1042,567 @@ export function useCreateUser() {
     onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
   });
 }
+
+// --- UX-006 Content/Rights surface composition hooks ----------------------------------
+//
+// Same COMPOSITION DISCIPLINE as every family above: THIN useMosQuery
+// wrappers over the three authorities' own read surfaces + mutations through
+// their own POST routes ONLY. The Content surface composes MKT-062
+// (research-sessions + content-intelligence), MKT-063 (content-rights) and
+// MKT-064 (content-assets); it never becomes a second authority.
+
+// MKT-062 — Web Research (agency-scoped sessions; the owning agency resolves
+// from the CLIENT record, never from a caller-side guess).
+
+/** The agency's research sessions (oldest first):
+ *  GET /api/agencies/:agencyId/research-sessions. */
+export function useResearchSessions(agencyId: string | null) {
+  const query = useMosQuery<{ agencyId: string; sessions: ResearchSessionView[] }>(
+    ["research-sessions", agencyId],
+    agencyId === null ? null : `/api/agencies/${agencyId}/research-sessions`,
+  );
+  return { ...query, data: query.data?.sessions };
+}
+
+/** One session's composed honest read-back — the current declaration, the
+ *  version tail, the retained source facts, the insight claims and the runs
+ *  with their per-source outcomes (mounted per-expanded-card, the
+ *  expand→fetch house pattern):
+ *  GET /api/research-sessions/:researchSessionId. */
+export function useResearchSessionDetail(researchSessionId: string | null) {
+  return useMosQuery<ResearchSessionDetailView>(
+    ["research-session-detail", researchSessionId],
+    researchSessionId === null ? null : `/api/research-sessions/${researchSessionId}`,
+  );
+}
+
+/** Create a research session (version 1 of the declared topic/focus/sources):
+ *  POST /api/agencies/:agencyId/research-sessions (owner|admin). */
+export function useCreateResearchSession(agencyId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      topic?: string;
+      focus?: string;
+      sources: Array<{
+        kind: string;
+        reference: string;
+        authorization: string;
+        integrationConnectionId?: string;
+      }>;
+    }) =>
+      mosPost<ResearchSessionDetailView>(`/api/agencies/${agencyId}/research-sessions`, {
+        ...(input.topic === undefined || input.topic === "" ? {} : { topic: input.topic }),
+        ...(input.focus === undefined || input.focus === "" ? {} : { focus: input.focus }),
+        sources: input.sources,
+      }),
+    onSuccess: (detail) => {
+      toast.success(
+        `Research session created — ${detail.currentVersion.topic ?? "untitled session"}`,
+      );
+      client.invalidateQueries({ queryKey: ["research-sessions", agencyId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Run the DETERMINISTIC research pass over the current declared sources
+ *  (the empty-body contract; every per-source outcome is recorded honestly):
+ *  POST /api/research-sessions/:researchSessionId/runs (owner|admin). */
+export function useRunResearchPass(researchSessionId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      mosPost<ResearchRunView>(`/api/research-sessions/${researchSessionId}/runs`, {}),
+    onSuccess: (run) => {
+      toast.success(`Research pass ${run.status} — ${run.factsRetained} fact(s) retained`);
+      client.invalidateQueries({
+        queryKey: ["research-session-detail", researchSessionId],
+      });
+      client.invalidateQueries({ queryKey: ["research-sessions"] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+// MKT-062 — Content Intelligence (the client-scoped candidate layer).
+
+/** The client's content candidates (oldest first; append-only):
+ *  GET /api/clients/:clientId/content-intelligence/candidates. */
+export function useContentCandidates(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; candidates: ContentCandidateView[] }>(
+    ["content-candidates", clientId],
+    clientId === null
+      ? null
+      : `/api/clients/${clientId}/content-intelligence/candidates`,
+  );
+  return { ...query, data: query.data?.candidates };
+}
+
+/** The client's content hypotheses (oldest first; superseded history stays
+ *  readable): GET /api/clients/:clientId/content-intelligence/hypotheses. */
+export function useContentHypotheses(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; hypotheses: ContentHypothesisView[] }>(
+    ["content-hypotheses", clientId],
+    clientId === null
+      ? null
+      : `/api/clients/${clientId}/content-intelligence/hypotheses`,
+  );
+  return { ...query, data: query.data?.hypotheses };
+}
+
+/** Record one hypothesis (a DERIVED register claim, evidence-separated from
+ *  the candidates it cites; the non-causal framing ships on the record):
+ *  POST /api/clients/:clientId/content-intelligence/hypotheses (owner|admin). */
+export function useRecordContentHypothesis(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      workspaceId?: string;
+      hypothesisKind: string;
+      statement: Record<string, unknown>;
+      evidenceIds: string[];
+      candidateIds: string[];
+      researchInsightIds?: string[];
+      experimentId?: string;
+      supersedesContentHypothesisId?: string;
+    }) =>
+      mosPost<ContentHypothesisView>(
+        `/api/clients/${clientId}/content-intelligence/hypotheses`,
+        {
+          hypothesisKind: input.hypothesisKind,
+          statement: input.statement,
+          evidenceIds: input.evidenceIds,
+          candidateIds: input.candidateIds,
+          ...(input.workspaceId === undefined ? {} : { workspaceId: input.workspaceId }),
+          ...(input.researchInsightIds === undefined ? {} : { researchInsightIds: input.researchInsightIds }),
+          ...(input.experimentId === undefined ? {} : { experimentId: input.experimentId }),
+          ...(input.supersedesContentHypothesisId === undefined
+            ? {}
+            : { supersedesContentHypothesisId: input.supersedesContentHypothesisId }),
+        },
+      ),
+    onSuccess: (hypothesis) => {
+      toast.success(`Hypothesis recorded — ${hypothesis.hypothesisKind.replace(/_/g, " ")}`);
+      client.invalidateQueries({ queryKey: ["content-hypotheses", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Record one candidate (the §6 observed-feature set as data, ≥1 same-client
+ *  /evidence link required):
+ *  POST /api/clients/:clientId/content-intelligence/candidates (owner|admin). */
+export function useRecordContentCandidate(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      workspaceId?: string;
+      features: {
+        topicEntity: string;
+        niche: string;
+        subNiche?: string;
+        contentFormat: string;
+        lengthValue?: number;
+        lengthUnit?: string;
+        hookFeatures: string[];
+        narrativeStructure: string;
+        publishedAt?: string;
+        observedPerformance: Record<string, unknown>;
+        performanceVelocity?: Record<string, unknown>;
+        engagement?: Record<string, unknown>;
+        audienceFit: string;
+        freshness: string;
+        novelty: string;
+        reuseRisk: string;
+      };
+      evidenceIds: string[];
+      metricObservationIds: string[];
+    }) =>
+      mosPost<ContentCandidateView>(
+        `/api/clients/${clientId}/content-intelligence/candidates`,
+        {
+          ...input.features,
+          ...(input.workspaceId === undefined ? {} : { workspaceId: input.workspaceId }),
+          evidenceIds: input.evidenceIds,
+          metricObservationIds: input.metricObservationIds,
+        },
+      ),
+    onSuccess: (candidate) => {
+      toast.success(`Candidate recorded — ${candidate.topicEntity}`);
+      client.invalidateQueries({ queryKey: ["content-candidates", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** The client's observation-ingestion runs (the honest ingestion tail):
+ *  GET /api/clients/:clientId/content-intelligence/ingestion-runs. */
+export function useContentIngestionRuns(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; ingestionRuns: ContentIngestionRunView[] }>(
+    ["content-ingestion-runs", clientId],
+    clientId === null
+      ? null
+      : `/api/clients/${clientId}/content-intelligence/ingestion-runs`,
+  );
+  return { ...query, data: query.data?.ingestionRuns };
+}
+
+// The /evidence authority (the sole evidence authority — the candidate
+// provenance source and the research→content bridge).
+
+/** The client's append-only evidence ledger (newest first; the candidate
+ *  cards' provenance rows and the record-candidate evidence pick compose
+ *  THIS surface): GET /api/clients/:clientId/evidence. */
+export function useClientEvidence(clientId: string | null) {
+  const query = useMosQuery<{ clientId: string; evidence: EvidenceRecord[] }>(
+    ["client-evidence", clientId],
+    clientId === null ? null : `/api/clients/${clientId}/evidence`,
+  );
+  return { ...query, data: query.data?.evidence };
+}
+
+/** Append one immutable evidence record (the REAL creation path; a research
+ *  source fact becomes a citable client observation through THIS route):
+ *  POST /api/clients/:clientId/evidence. */
+export function useAppendClientEvidence(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      class: string;
+      sourceSystem: string;
+      sourceRef?: string;
+      observedAt: string;
+      content: Record<string, unknown>;
+      contentRef?: string;
+      quality: string;
+      confidence?: number;
+    }) =>
+      mosPost<EvidenceRecord>(`/api/clients/${clientId}/evidence`, {
+        class: input.class,
+        sourceSystem: input.sourceSystem,
+        ...(input.sourceRef === undefined || input.sourceRef === "" ? {} : { sourceRef: input.sourceRef }),
+        observedAt: input.observedAt,
+        content: input.content,
+        ...(input.contentRef === undefined || input.contentRef === "" ? {} : { contentRef: input.contentRef }),
+        quality: input.quality,
+        ...(input.confidence === undefined ? {} : { confidence: input.confidence }),
+      }),
+    onSuccess: (record) => {
+      toast.success(`Evidence recorded — ${record.class} · ${record.source.system}`);
+      client.invalidateQueries({ queryKey: ["client-evidence", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+// MKT-063 — Content Rights (the rights records + the publication gate).
+
+/** One rights record + its full append-only tails (events, permissions,
+ *  clearances), mounted per-expanded-card:
+ *  GET /api/clients/:clientId/content-rights/:rightsRecordId. */
+export function useContentRightsDetail(clientId: string | null, rightsRecordId: string | null) {
+  return useMosQuery<ContentRightsRecordDetailView>(
+    ["content-rights-detail", clientId, rightsRecordId],
+    clientId === null || rightsRecordId === null
+      ? null
+      : `/api/clients/${clientId}/content-rights/${rightsRecordId}`,
+  );
+}
+
+/** The composite's ingredient lineage links (the v1.6 lineage-mandatory
+ *  seam): GET /api/clients/:clientId/content-rights/lineage/:compositeAssetRef. */
+export function useRightsLineage(clientId: string | null, compositeAssetRef: string | null) {
+  const query = useMosQuery<{
+    clientId: string;
+    compositeAssetRef: string;
+    lineageLinks: ContentRightsLineageView[];
+  }>(
+    ["rights-lineage", clientId, compositeAssetRef],
+    clientId === null || compositeAssetRef === null
+      ? null
+      : `/api/clients/${clientId}/content-rights/lineage/${encodeURIComponent(compositeAssetRef)}`,
+  );
+  return { ...query, data: query.data?.lineageLinks };
+}
+
+/** Register the rights record for one content-asset reference (born
+ *  'unknown'; the source provenance is the REQUIRED /evidence reference):
+ *  POST /api/clients/:clientId/content-rights (owner|admin). */
+export function useRegisterContentRights(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      contentAssetRef: string;
+      assetKind: string;
+      sourceEvidenceRef: string;
+      licenceLabel?: string;
+      licenceEvidenceRef?: string;
+      validUntil?: string;
+      workspaceId?: string;
+    }) =>
+      mosPost<{ record: ContentRightsRecordView }>(`/api/clients/${clientId}/content-rights`, {
+        contentAssetRef: input.contentAssetRef,
+        assetKind: input.assetKind,
+        sourceEvidenceRef: input.sourceEvidenceRef,
+        ...(input.licenceLabel === undefined || input.licenceLabel === ""
+          ? {}
+          : { licenceLabel: input.licenceLabel }),
+        ...(input.licenceEvidenceRef === undefined || input.licenceEvidenceRef === ""
+          ? {}
+          : { licenceEvidenceRef: input.licenceEvidenceRef }),
+        ...(input.validUntil === undefined || input.validUntil === ""
+          ? {}
+          : { validUntil: input.validUntil }),
+        ...(input.workspaceId === undefined ? {} : { workspaceId: input.workspaceId }),
+      }),
+    onSuccess: (outcome) => {
+      toast.success(`Rights record registered — born ${outcome.record.state}`);
+      client.invalidateQueries({ queryKey: ["content-rights", clientId] });
+      client.invalidateQueries({ queryKey: ["content-rights-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Record ONE state transition (the append-only event; the human_clearance
+ *  kind is the ONLY review → cleared path):
+ *  POST /api/clients/:clientId/content-rights/:rightsRecordId/transitions
+ *  (owner|admin). */
+export function useRecordRightsTransition(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      rightsRecordId: string;
+      eventKind: string;
+      toState: string;
+      reason: string;
+      rationale?: string;
+      evidenceRef?: string;
+    }) =>
+      mosPost<{ record: ContentRightsRecordView }>(
+        `/api/clients/${clientId}/content-rights/${input.rightsRecordId}/transitions`,
+        {
+          eventKind: input.eventKind,
+          toState: input.toState,
+          reason: input.reason,
+          ...(input.rationale === undefined || input.rationale === ""
+            ? {}
+            : { rationale: input.rationale }),
+          ...(input.evidenceRef === undefined || input.evidenceRef === ""
+            ? {}
+            : { evidenceRef: input.evidenceRef }),
+        },
+      ),
+    onSuccess: (outcome) => {
+      toast.success(`Rights transition recorded — state ${outcome.record.state}`);
+      client.invalidateQueries({ queryKey: ["content-rights", clientId] });
+      client.invalidateQueries({ queryKey: ["content-rights-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Append ONE destination-platform permission row (the newest row per
+ *  platform is the effective permission):
+ *  POST /api/clients/:clientId/content-rights/:rightsRecordId/permissions
+ *  (owner|admin). */
+export function useRecordRightsPermission(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      rightsRecordId: string;
+      platformKey: string;
+      permission: string;
+      evidenceRef: string;
+    }) =>
+      mosPost<{ permission: ContentRightsPermissionView }>(
+        `/api/clients/${clientId}/content-rights/${input.rightsRecordId}/permissions`,
+        {
+          platformKey: input.platformKey,
+          permission: input.permission,
+          evidenceRef: input.evidenceRef,
+        },
+      ),
+    onSuccess: (outcome) => {
+      toast.success(
+        `Permission recorded — ${outcome.permission.platformKey}: ${outcome.permission.permission}`,
+      );
+      client.invalidateQueries({ queryKey: ["content-rights", clientId] });
+      client.invalidateQueries({ queryKey: ["content-rights-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** THE PUBLICATION GATE evaluation (allow / review_required / blocked WITH
+ *  reasons — the honest WHY an asset is gated; an EVALUATION, never a
+ *  publication):
+ *  POST /api/clients/:clientId/content-rights/gate. */
+export function useEvaluateRightsGate(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { assetRef: string; destinationPlatform: string }) =>
+      mosPost<{ gate: ContentRightsGateResultView }>(
+        `/api/clients/${clientId}/content-rights/gate`,
+        {
+          assetRef: input.assetRef,
+          destinationPlatform: input.destinationPlatform,
+        },
+      ),
+    onSuccess: (outcome) => {
+      toast.success(`Gate evaluation: ${outcome.gate.outcome}`);
+      client.invalidateQueries({ queryKey: ["content-rights-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+// MKT-064 — Content Assets and Transformations.
+
+/** One transformation + its immutable ingredient tail + the derived output
+ *  version (mounted per-expanded-row):
+ *  GET /api/clients/:clientId/content-assets/transformations/:transformationId. */
+export function useContentTransformationDetail(
+  clientId: string | null,
+  transformationId: string | null,
+) {
+  return useMosQuery<ContentTransformationDetailView>(
+    ["content-transformation-detail", clientId, transformationId],
+    clientId === null || transformationId === null
+      ? null
+      : `/api/clients/${clientId}/content-assets/transformations/${transformationId}`,
+  );
+}
+
+/** One asset version + every version of the same asset + the lifecycle-event
+ *  tail + the quality observations (mounted per-expanded-row):
+ *  GET /api/clients/:clientId/content-assets/:versionId. */
+export function useContentAssetVersionDetail(clientId: string | null, versionId: string | null) {
+  return useMosQuery<ContentAssetVersionDetailView>(
+    ["content-asset-version-detail", clientId, versionId],
+    clientId === null || versionId === null
+      ? null
+      : `/api/clients/${clientId}/content-assets/${versionId}`,
+  );
+}
+
+/** Register an asset version (born draft; a known asset id creates the NEXT
+ *  explicit version; the source provenance is the REQUIRED /evidence
+ *  reference): POST /api/clients/:clientId/content-assets (owner|admin). */
+export function useRegisterContentAsset(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      mediaKind: string;
+      displayName: string;
+      contentType: string;
+      sourceEvidenceRef: string;
+      assetId?: string;
+      workspaceId?: string;
+    }) =>
+      mosPost<{ version: ContentAssetVersionView }>(`/api/clients/${clientId}/content-assets`, {
+        mediaKind: input.mediaKind,
+        displayName: input.displayName,
+        contentType: input.contentType,
+        sourceEvidenceRef: input.sourceEvidenceRef,
+        ...(input.assetId === undefined ? {} : { assetId: input.assetId }),
+        ...(input.workspaceId === undefined ? {} : { workspaceId: input.workspaceId }),
+      }),
+    onSuccess: (outcome) => {
+      toast.success(`Asset version registered — ${outcome.version.assetRef} (draft)`);
+      client.invalidateQueries({ queryKey: ["content-assets", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** THE MATERIALIZATION MOVE (store the object bytes the operator provides,
+ *  draft → materialized):
+ *  POST /api/clients/:clientId/content-assets/:versionId/materialize
+ *  (owner|admin). */
+export function useMaterializeContentAsset(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { versionId: string; bytesBase64: string }) =>
+      mosPost<{ version: ContentAssetVersionView; event: ContentAssetLifecycleEventView }>(
+        `/api/clients/${clientId}/content-assets/${input.versionId}/materialize`,
+        { bytesBase64: input.bytesBase64 },
+      ),
+    onSuccess: (outcome) => {
+      toast.success(
+        `Materialized — ${outcome.version.objectSize ?? 0} byte(s) stored, ${outcome.version.lifecycleState}`,
+      );
+      client.invalidateQueries({ queryKey: ["content-assets", clientId] });
+      client.invalidateQueries({ queryKey: ["content-asset-version-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Request a transformation (the kind + the EXPLICIT ingredient versions +
+ *  parameters + output spec; the engine registry resolves the runner):
+ *  POST /api/clients/:clientId/content-assets/transformations (owner|admin). */
+export function useRequestContentTransformation(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      transformationKind: string;
+      parameters: Record<string, unknown>;
+      outputSpec: Record<string, unknown>;
+      ingredients: Array<{ assetId: string; version: number }>;
+      engineId?: string;
+      workspaceId: string;
+    }) =>
+      mosPost<{ transformation: ContentTransformationView }>(
+        `/api/clients/${clientId}/content-assets/transformations`,
+        {
+          transformationKind: input.transformationKind,
+          parameters: input.parameters,
+          outputSpec: input.outputSpec,
+          ingredients: input.ingredients,
+          workspaceId: input.workspaceId,
+          ...(input.engineId === undefined || input.engineId === ""
+            ? {}
+            : { engineId: input.engineId }),
+        },
+      ),
+    onSuccess: (outcome) => {
+      toast.success(`Transformation requested — ${outcome.transformation.transformationKind}`);
+      client.invalidateQueries({ queryKey: ["content-transformations", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
+/** Execute ONE requested transformation (the module runner drives the
+ *  /executions authority; the output version is BORN derived WITH lineage):
+ *  POST /api/clients/:clientId/content-assets/transformations/:transformationId/execute
+ *  (owner|admin). */
+export function useExecuteContentTransformation(clientId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { transformationId: string }) =>
+      mosPost<{
+        transformation: ContentTransformationView;
+        output?: ContentAssetVersionView;
+        replayed: boolean;
+      }>(
+        `/api/clients/${clientId}/content-assets/transformations/${input.transformationId}/execute`,
+        {},
+      ),
+    onSuccess: (outcome) => {
+      toast.success(
+        outcome.output === undefined
+          ? `Transformation ${outcome.transformation.status}`
+          : `Transformation ${outcome.transformation.status} — output ${outcome.output.assetRef}${outcome.replayed ? " (replayed)" : ""}`,
+      );
+      client.invalidateQueries({ queryKey: ["content-transformations", clientId] });
+      client.invalidateQueries({ queryKey: ["content-assets", clientId] });
+      client.invalidateQueries({ queryKey: ["content-transformation-detail", clientId] });
+      client.invalidateQueries({ queryKey: ["content-asset-version-detail", clientId] });
+    },
+    onError: (error) => toast.error(String(error instanceof Error ? error.message : error)),
+  });
+}
+
