@@ -93,11 +93,15 @@ export function ConnectionCard({
   id,
   children,
   detail,
+  detailLabel = "Authorization history, permissions and provider limitations",
   defaultOpen = false,
 }: {
   id: string;
   children: React.ReactNode;
   detail: React.ReactNode;
+  /** The disclosure affordance label (the UX-007 health card carries its
+   *  own: the evidence basis, recommendations and evaluation history). */
+  detailLabel?: string;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = React.useState(defaultOpen);
@@ -111,9 +115,7 @@ export function ConnectionCard({
         onClick={() => setOpen((value) => !value)}
         className="flex min-h-[44px] w-full items-center justify-between gap-3 border-t border-stone-100 px-5 py-2.5 text-left transition-colors hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-700"
       >
-        <span className="text-xs font-medium text-stone-500">
-          Authorization history, permissions and provider limitations
-        </span>
+        <span className="text-left text-xs font-medium text-stone-500">{detailLabel}</span>
         <ChevronDown
           aria-hidden="true"
           className={`size-4 shrink-0 text-stone-400 transition-transform ${open ? "rotate-180" : ""}`}

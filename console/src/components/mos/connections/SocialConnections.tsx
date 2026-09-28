@@ -23,7 +23,7 @@
 // it reads the registry, so sibling adapters compose naturally.
 
 import * as React from "react";
-import { Link2, RefreshCw, ShieldAlert, Unplug } from "lucide-react";
+import { HeartPulse, Link2, RefreshCw, ShieldAlert, Unplug } from "lucide-react";
 import {
   useAdapterRegistry,
   useIntegrationConnections,
@@ -43,6 +43,7 @@ import type {
   SocialGrantView,
 } from "@/lib/mos-api";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMosSession } from "@/components/mos/session-store";
 import {
   Chip,
   LabeledRows,
@@ -282,6 +283,7 @@ function SocialAccountCard({
   account: SocialAccountView;
   registryAdapter: RegisteredAdapterView | null;
 }) {
+  const navigate = useMosSession((state) => state.navigate);
   const grants = useSocialAccountGrants(clientId, account.socialAccountId);
   const events = useSocialAccountEvents(clientId, account.socialAccountId);
 
@@ -471,6 +473,23 @@ function SocialAccountCard({
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <WorkspaceActionButton
+            tone="plain"
+            onClick={() =>
+              navigate({
+                kind: "client",
+                clientId,
+                tab: "health",
+                focusSocialAccountId: account.socialAccountId,
+              })
+            }
+            ariaLabel={`Open the health picture for ${providerLabel}`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <HeartPulse className="size-4" aria-hidden="true" />
+              Health
+            </span>
+          </WorkspaceActionButton>
           {dead ? (
             <span className="max-w-[220px] text-right text-xs leading-relaxed text-stone-500">
               Terminal — a dead binding is never reactivated in place. A fresh
