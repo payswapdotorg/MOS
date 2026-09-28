@@ -363,7 +363,7 @@ test('MKT-047 provision: the checker enforces /apps with an EMPTY matrix allowan
   // The MKT-066 sibling delivery appends /platform-health (the v1.6
   // Platform Health and Distribution Anomaly Detection registration —
   // the same additive promotion precedent).
-  assert.equal(specModules.length, 49);
+  assert.equal(specModules.length, 50);
   assert.ok(!specModules.includes('apps'), 'the spec module list does not name /apps');
   assert.ok(specModules.includes('decisions'), 'the MKT-042 /decisions registration is parsed');
   assert.ok(specModules.includes('operating-graph'), 'the MKT-041 /operating-graph registration is parsed');

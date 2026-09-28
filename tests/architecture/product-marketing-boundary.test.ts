@@ -454,30 +454,30 @@ test('MKT-070: the route surface is EXACTLY the three GET/POST record routes —
 //    the Tech Lead performs the spec promotion at harvest)
 // ---------------------------------------------------------------------------
 
-test('MKT-070: the spec documents are UNTOUCHED by this Work Item (the checker-provision registration — the TL promotes at harvest)', () => {
-  // The dispatch forbids spec/ modification: the frozen documents must
-  // NOT carry the product-marketing registration (the TL adds the
-  // spec/architecture.md §6 line + the live-matrix row at harvest, the
-  // MKT-066 precedent).
-  assert.ok(!/\/product-marketing/.test(architectureSpec), 'spec/architecture.md §6 has no /product-marketing line (the TL promotes it at harvest)');
-  assert.ok(!/product-marketing\s*──→/.test(matrixSpec), 'spec/module-dependency-matrix.md has no product-marketing row (the TL registers it at harvest)');
-  // The spec-parsed module count is unchanged (49 — no spec drift).
+test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration, the MKT-066 precedent)', () => {
+  // The worker delivered the disclosed checker provision (spec/ untouched
+  // at dispatch time); the Tech Lead promoted the registration at harvest:
+  // the spec/architecture.md §6 line + the live-matrix row now carry it.
+  assert.ok(/\/product-marketing/.test(architectureSpec), 'spec/architecture.md §6 carries the /product-marketing line (the TL promotion)');
+  assert.ok(/product-marketing\s*──→/.test(matrixSpec), 'spec/module-dependency-matrix.md carries the product-marketing row (the TL registration)');
+  // The spec-parsed module count grew by exactly one (49 → 50).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 49);
+  assert.equal(specModules.length, 50);
 });
 
-test('MKT-070: the checker provision enforces the module with EXACTLY its declared frozen-row directions', () => {
+test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {
   const specDir = join(repoRoot, 'spec');
   const modules = parseFrozenModules(join(specDir, 'architecture.md'));
-  // The pre-provision matrix has NO product-marketing row (the provision
-  // is the only registration).
-  const preProvisionMatrix = parseFrozenMatrix(
+  // The spec promotion registered the row in the live matrix itself —
+  // the parsed matrix carries product-marketing (no provision needed).
+  const promotedMatrix = parseFrozenMatrix(
     join(specDir, 'module-dependency-matrix.md'),
     join(specDir, 'module-dependency-v1.3.md'),
     [...modules, 'apps'],
   );
-  assert.ok(!('product-marketing' in preProvisionMatrix));
-  // The checker registers the module with the frozen v1.6 row VERBATIM.
+  assert.ok('product-marketing' in promotedMatrix, 'the live matrix carries the promoted row');
+  // The checker enforces the module with the frozen v1.6 row VERBATIM
+  // (now through the spec-parsed registration, the MKT-066 precedent).
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir,
@@ -491,10 +491,9 @@ test('MKT-070: the checker provision enforces the module with EXACTLY its declar
     'platform-health',
     'experiment-analysis',
   ]);
-  // 51 enforced modules after this registration (49 spec-parsed + the
-  // disclosed 'apps' provision + the disclosed 'product-marketing'
-  // provision — the MKT-066 sibling-re-pin precedent updated the sibling
-  // boundary count assertions accordingly).
+  // 51 enforced modules (50 spec-parsed after the promotion + the
+  // v1.5 'apps' provision — the checker's v1.6 provision retired at
+  // the TL harvest, exactly as its own comment directed).
   assert.equal(result.frozenModules.length, 51);
 });
 

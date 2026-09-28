@@ -19,8 +19,8 @@ Maximum active workers: 3
 ✅ UX-001 ✅ UX-002 ✅ UX-003 ✅ UX-004
 
 Remaining:
-✅ MKT-060 (Wave 0 harvest, PR #64) ☐ MKT-061
-✅ MKT-066 (Wave 0 harvest, PR #64) ☐ MKT-070
+✅ MKT-060 (Wave 0 harvest, PR #64) ✅ MKT-061 (Wave 1 harvest, PR #67)
+✅ MKT-066 (Wave 0 harvest, PR #64) ✅ MKT-070 (Wave 1 harvest, PR #68 + spec promotion)
 ☐ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
 ✅ UX-005 (Wave 0 harvest, PR #64)
 ✅ UX-007 Platform Health Console Surface (Wave 1 harvest, PR #66 —

@@ -22,9 +22,9 @@ Green = objectively verified implementation on main. Specification files are not
 ✅ UX-001 ✅ UX-002 ✅ UX-003 ✅ UX-004
 
 ✅ MKT-060 TikTok (Wave 0 harvest, PR #64)
-☐ MKT-061 X
+✅ MKT-061 X (Wave 1 harvest, PR #67 — the fifth MKT-056 concrete adapter; unit 1267/arch 692/integ 1170+2-flake→21/21-isolated; migration-free; runbook + doubles + 17/17 conformance)
 ✅ MKT-066 Platform Health (Wave 0 harvest, PR #64)
-☐ MKT-070 Product Marketing Mission Planner
+✅ MKT-070 Product Marketing Mission Planner (Wave 1 harvest, PR #68 — /product-marketing + migration 060 + the spec promotion at harvest: §6 registration, live-matrix row, checker provision retired; unit 1281/arch 706/integ 1182+1-flake→3/3-isolated)
 ☐ MKT-072 Commerce Discovery
 ☐ MKT-073 Social-to-Commerce Attribution
 ☐ MKT-074 Growth Autopilot Console

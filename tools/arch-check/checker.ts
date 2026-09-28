@@ -113,58 +113,14 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
     // MKT-047: the App registry authority (App Manifest and Packaging v1).
     'apps',
   ];
-  // -------------------------------------------------------------------------
-  // v1.6 COMPOSITION MODULES — DISCLOSED PROVISION (MKT-070 worker →
-  // Tech Lead, for Architect ratification).
-  //
-  // The frozen v1.6 dependency matrix (spec/module-dependency-matrix-v1.6.md)
-  // DIRECTS a module row for the product-marketing mission planner, VERBATIM:
-  //
-  //   /product-marketing → /growth-missions, /product-intelligence,
-  //                       /content-intelligence, /platform-health,
-  //                       /experiment-analysis
-  //
-  // (spec/effective-backlog-v1.6.md MKT-070; spec/architecture-v1.6.md — the
-  // "MKT-070+ planners" clause of the /platform-health row: "the module
-  // holds NO enforcement verb (it describes; the MKT-070+ planners, the
-  // Growth Operator platform-health seam and UX-007 decide)"). The MKT-070
-  // dispatch FORBIDS the worker from modifying anything under spec/ — so,
-  // exactly like the v1.5 provision above, the module is appended to the
-  // enforced set HERE with its declared frozen-row directions until the
-  // Architect/Tech Lead ratifies the spec promotion (the one-line
-  // spec/architecture.md §6 addition + the live-matrix row registration —
-  // the MKT-066 harvest precedent; at which point this provision should
-  // be REMOVED and the spec-parsed list used directly).
-  //
-  // NO existing rule is relaxed: the 48 spec-parsed modules + the v1.5
-  // provision keep their frozen matrix exactly as enforced; this only ADDS
-  // one strictly-enforced boundary whose declared directions are the
-  // frozen v1.6 row VERBATIM (all five consumed READ-ONLY through their
-  // public contracts).
-  // -------------------------------------------------------------------------
-  const v16CompositionModules: readonly string[] = [
-    // MKT-070: the Product Marketing Mission Planner authority.
-    'product-marketing',
-  ];
-  const v16CompositionModuleDirections: Readonly<Record<string, readonly string[]>> = {
-    'product-marketing': [
-      'growth-missions',
-      'product-intelligence',
-      'content-intelligence',
-      'platform-health',
-      'experiment-analysis',
-    ],
-  };
   const frozenModules = [
     ...specModules,
     ...v15CompositionModules.filter((module) => !specModules.includes(module)),
-    ...v16CompositionModules.filter(
-      (module) => !specModules.includes(module) && !v15CompositionModules.includes(module),
-    ),
   ];
-  // The MKT-070 declared directions (the frozen v1.6 row, VERBATIM) join the
-  // enforced matrix here — additive only, never overriding a parsed entry
-  // (a mutable copy of the parsed matrix; the returned matrix stays frozen).
+  // The enforced matrix: the spec-parsed directions (the live
+  // module-dependency-matrix.md + the v1.3 fallback), frozen for the run.
+  // (2026-09-28: the MKT-070 v1.6 provision retired — product-marketing now
+  // registers through the promoted spec files, the MKT-066 precedent.)
   const frozenMatrix: Record<string, string[]> = Object.fromEntries(
     Object.entries(
       parseFrozenMatrix(
@@ -174,13 +130,6 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
       ),
     ).map(([from, to]) => [from, [...to]]),
   );
-  for (const [from, directions] of Object.entries(v16CompositionModuleDirections)) {
-    for (const to of directions) {
-      if (!frozenMatrix[from]!.includes(to)) {
-        frozenMatrix[from]!.push(to);
-      }
-    }
-  }
 
   const violations: ArchViolation[] = [];
   const push = (rule: string, file: string, detail: string) => {

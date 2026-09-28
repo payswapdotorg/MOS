@@ -287,7 +287,7 @@ test('MKT-049 AC-8 static: NO portal module directory — the portal rides the /
   );
 });
 
-test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-parsed set stays 31 and /apps remains the only v1.5 provision entry', () => {
+test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-parsed set grew with each TL promotion (50 at the MKT-070 harvest) and /apps remains the only v1.5 provision entry', () => {
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
   // The spec module list is untouched by THIS Work Item: the count moved
   // 30 → 31 only through the disclosed MKT-050 /app-marketplace
@@ -299,7 +299,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration and 38 → 39 through the MKT-068 /notification-delivery
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
-  assert.equal(specModules.length, 49, 'the spec module list (49 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, and the LAB-001 /lab v1.7 registration) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
+  assert.equal(specModules.length, 50, 'the spec module list (50 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, and the LAB-001 /lab v1.7 registration and the MKT-070 /product-marketing TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: still EXACTLY the MKT-047
   // /apps entry (this Work Item appends nothing).
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);

@@ -506,7 +506,7 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   // sibling delivery appends /platform-health — the same additive
   // promotion precedent) + the disclosed 'apps' provision = 49 enforced.
   const archCheckTest = read(join(repoRoot, 'tests', 'architecture', 'arch-check.test.ts'));
-  assert.ok(archCheckTest.includes('(49 modules)'));
+  assert.ok(archCheckTest.includes('(50 modules)'));
   assert.ok(archCheckTest.includes("'cross-platform-distribution'"));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/cross-platform-distribution'));
   assert.ok(archCheckTest.includes("'research'"));
