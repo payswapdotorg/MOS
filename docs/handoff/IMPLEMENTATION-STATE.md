@@ -22,7 +22,15 @@ Remaining:
 ✅ MKT-060 (Wave 0 harvest, PR #64) ☐ MKT-061
 ✅ MKT-066 (Wave 0 harvest, PR #64) ☐ MKT-070
 ☐ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
-✅ UX-005 (Wave 0 harvest, PR #64) ☐ UX-006..UX-012
+✅ UX-005 (Wave 0 harvest, PR #64)
+✅ UX-006 Content/Rights Operational Surface (Wave 1 harvest, PR #65 —
+   worker delivery 54846a3: console/** only, ContentTab + five sections,
+   44-piece both-viewport journey evidence pack + JOURNEY-RECORD.md;
+   station battery re-run: typecheck 0 / lint 0 / arch:check 0
+   (50 modules) / unit 1255 / architecture 692 / integration re-run EXIT=0
+   after one environmental postgres-termination flake / console tsc 0 +
+   lint 0 + build OK)
+☐ UX-007..UX-012
 
 Optional:
 ☐ MKT-076..078

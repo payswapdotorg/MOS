@@ -29,7 +29,9 @@ Green = objectively verified implementation on main. Specification files are not
 ☐ MKT-073 Social-to-Commerce Attribution
 ☐ MKT-074 Growth Autopilot Console
 ☐ MKT-075 v1.6 End-to-End Autonomy Proof
-✅ UX-005 (Wave 0 harvest, PR #64) ☐ UX-006..UX-012
+✅ UX-005 (Wave 0 harvest, PR #64)
+✅ UX-006 Content/Rights Operational Surface (Wave 1 harvest, PR #65)
+☐ UX-007..UX-012
 
 Optional:
 ☐ MKT-076..078
