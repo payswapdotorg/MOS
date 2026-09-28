@@ -380,6 +380,7 @@ import type { PlatformHealthModuleApi } from '../modules/platform-health/public.
 // of any kind).
 import type { ProductMarketingModuleApi } from '../modules/product-marketing/public.ts';
 import type { LabModuleApi } from '../modules/lab/public.ts';
+import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -686,4 +687,12 @@ export interface ApplicationModules {
   // discipline — consumed BY REFERENCE by the LAB-002..018 modules and
   // the LAB-014 real bridge).
   readonly lab: LabModuleApi;
+  // LAB-002: the Reference-First Niche Corpus authority (the v1.7
+  // corpus layer: the versioned niche/platform corpus definitions +
+  // the §4 Content Reference records + the append-only observation
+  // tail + the provider-specific acquisition-policy gate + the
+  // coverage reporting surface — consumed BY REFERENCE by the LAB-003
+  // feature layer, the LAB-004 Idea Graph and the LAB-005 simulator
+  // through the opaque corpusVersion binding string).
+  readonly labCorpus: LabCorpusModuleApi;
 }

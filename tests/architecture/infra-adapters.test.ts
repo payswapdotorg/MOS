@@ -1038,6 +1038,7 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // hypothesis, evaluation, analysis, experiment, asset or tenant table
     // is created or mutated.
     '060_product_marketing.sql',
+    '061_lab_corpus.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
