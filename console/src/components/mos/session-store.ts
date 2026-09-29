@@ -36,6 +36,13 @@ export type ClientWorkspaceTab =
   // per-account descriptive health picture, its evidence basis and the
   // compliant next actions).
   | "health"
+  // UX-008 — the Human Treatment tab (the optional human arm made visible:
+  // each experiment's human treatment arm, its bounded allocation and its
+  // outcome attribution through the MKT-067 adaptive-allocation authority,
+  // the truthful availability picture, and the never-blocks guarantee —
+  // the non-human arm proceeding — with the mission-level
+  // blocked-pending-human-action exception rendered explicitly).
+  | "treatments"
   | "goals"
   | "playbooks"
   | "deployments"
