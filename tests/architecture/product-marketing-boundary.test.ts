@@ -495,8 +495,10 @@ test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its
   ]);
   // 51 enforced modules (50 spec-parsed after the promotion + the
   // v1.5 'apps' provision — the checker's v1.6 provision retired at
-  // the TL harvest, exactly as its own comment directed).
-  assert.equal(result.frozenModules.length, 52);
+  // the TL harvest, exactly as its own comment directed). The LAB-011
+  // disclosed re-pin appends the /lab-agent-body provision (the LAB-002
+  // provision precedent, pending the TL spec promotion) — 52 → 53.
+  assert.equal(result.frozenModules.length, 53);
 });
 
 test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violations; migration 060 is the tail', () => {
@@ -518,8 +520,9 @@ test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 2], '060_product_marketing.sql');
-  assert.equal(numbered[numbered.length - 1], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 3], '060_product_marketing.sql');
+  assert.equal(numbered[numbered.length - 2], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 1], '063_lab_agent_body.sql');
 });
 
 // ---------------------------------------------------------------------------

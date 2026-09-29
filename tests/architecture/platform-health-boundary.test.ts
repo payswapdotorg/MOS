@@ -431,10 +431,11 @@ test('MKT-066: the disclosed spec registration exists — §6 line + authority p
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrations[migrations.length - 4], '058_platform_health.sql');
-  assert.equal(migrations[migrations.length - 3], '059_lab_contracts.sql');
-  assert.equal(migrations[migrations.length - 2], '060_product_marketing.sql');
-  assert.equal(migrations[migrations.length - 1], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 5], '058_platform_health.sql');
+  assert.equal(migrations[migrations.length - 4], '059_lab_contracts.sql');
+  assert.equal(migrations[migrations.length - 3], '060_product_marketing.sql');
+  assert.equal(migrations[migrations.length - 2], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 1], '063_lab_agent_body.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly platformHealth: PlatformHealthModuleApi'), 'ApplicationModules.platformHealth');
   assert.ok(applicationTs.includes("from '../modules/platform-health/public.ts'"), 'the module public entry import');
@@ -461,5 +462,10 @@ test('MKT-066: the real codebase enforces the frozen boundaries with ZERO violat
   // MKT-070 disclosed re-pin (the MKT-066 sibling-re-pin precedent): the
   // enforced set gains the /product-marketing provision module (the frozen
   // v1.6 row registered by the MKT-070 checker provision — 50 → 51).
-  assert.equal(result.frozenModules.length, 52);
+  // LAB-011 disclosed re-pin (the same sibling precedent): the enforced
+  // set gains the /lab-agent-body provision module (the v1.7 LAB-011
+  // Agent Body Runtime Contract authority — the LAB-002 provision
+  // precedent, pending the TL spec promotion — 51 → 52 enforced, 52 → 53
+  // total).
+  assert.equal(result.frozenModules.length, 53);
 });

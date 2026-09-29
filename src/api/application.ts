@@ -381,6 +381,7 @@ import type { PlatformHealthModuleApi } from '../modules/platform-health/public.
 import type { ProductMarketingModuleApi } from '../modules/product-marketing/public.ts';
 import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
+import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -695,4 +696,15 @@ export interface ApplicationModules {
   // feature layer, the LAB-004 Idea Graph and the LAB-005 simulator
   // through the opaque corpusVersion binding string).
   readonly labCorpus: LabCorpusModuleApi;
+  // LAB-011: the Agent Body Runtime Contract authority (the v1.7
+  // agent-engineering layer: the versioned Agent Body registry
+  // carrying the FULL §14 field set as declared data + the Agent
+  // Instance runtime that runs `Agent Body version + selected model
+  // + permitted tools` to an honest terminal state — the model
+  // identity is DATA resolved through the /ai-runtime public
+  // boundary, NEVER selected here — consumed BY REFERENCE by the
+  // LAB-012 organization search, the LAB-013 capability engine and
+  // the LAB-016/018 evaluation consumers through the opaque
+  // body-version reference string).
+  readonly labAgentBody: LabAgentBodyModuleApi;
 }
