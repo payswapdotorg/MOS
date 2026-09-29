@@ -731,6 +731,32 @@ import { createLabModule } from './modules/lab/public.ts';
 // exists here and no /lab table is written (the migration-061
 // no-shadowing discipline).
 import { createLabCorpusModule } from './modules/lab-corpus/public.ts';
+// LAB-011: /lab-agent-body — the Agent Body Runtime Contract authority
+// (the frozen v1.7 agent-engineering layer: the versioned Agent Body
+// registry carrying the FULL §14 field set as declared data — role
+// contract, input/output contracts, tool declarations, permissions,
+// memory-interface declarations, communication interface, action
+// interface, opaque capability references (the capability ENGINE is
+// LAB-013), budget, latency limits, evaluation-hook declarations and
+// safety/policy constraints — plus the Agent Instance runtime that
+// instantiates `Agent Body version + selected model + permitted tools
+// = Agent Instance` and runs it to an honest terminal state with the
+// append-only event tail LAB-012 composes organizations from). THE
+// NO-SECOND-ROUTER RULE IS STRUCTURAL: the module implements ZERO
+// model-selection policy — the model identity arrives as run-input
+// DATA selected by the caller, is resolved through the /ai-runtime
+// public API (the narrow structural port wired HERE: getModel + the
+// append-only appendModelObservation — the real AiRuntimeModuleApi
+// satisfies the port structurally, the /product-intelligence
+// model-identity port precedent) and is executed through the
+// per-run caller-supplied model-backend port (the /ai-runtime
+// routeTask adapter discipline — the composition root wires provider
+// adapters for route-time callers; NO provider adapter is hard-wired
+// into the module). The /lab organization candidates cite bodies
+// through the OPAQUE body-version reference string — by reference,
+// the /lab-corpus discipline: no /lab import exists here and no /lab
+// table is written (the migration-063 no-shadowing discipline).
+import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
 // MKT-070: /product-marketing — the Product Marketing Mission Planner
 // authority (the frozen v1.6 matrix row registered by this Work Item:
 // /product-marketing ──→ /growth-missions, /product-intelligence,
@@ -1944,6 +1970,16 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // (platform ports only; the module resolves its own tenant fences).
   const labCorpus = createLabCorpusModule({ db, clock, ids });
 
+  // LAB-011: /lab-agent-body — platform ports + the narrow /ai-runtime
+  // structural port ONLY (the real AiRuntimeModuleApi instance wired
+  // directly — getModel + appendModelObservation satisfy the port
+  // structurally; the model backend + tool executor are per-run
+  // caller-supplied ports, the routeTask adapter discipline, so NO
+  // provider adapter is hard-wired here). The module resolves its own
+  // tenant fences; zero cross-module imports exist inside
+  // src/modules/lab-agent-body (the /lab family discipline).
+  const labAgentBody = createLabAgentBodyModule({ db, clock, ids, aiRuntime });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2180,7 +2216,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody },
     runtime: { aiProvider },
   };
 }
