@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (51 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (52 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 51);
+  assert.equal(modules.length, 52);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -74,6 +74,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (51 modules)', (
       'extensions', 'field-agents', 'first-party-apps', 'goals', 'growth-missions', 'growth-operator', 'integrations', 'jobs', 'learnings', 'metrics',
       'notification-delivery', 'notifications', 'operating-graph', 'platform-health', 'playbooks', 'policies', 'product-intelligence', 'profit-intelligence',
       'lab',
+      'lab-agent-body',
       'lab-corpus',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
@@ -402,12 +403,12 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 52: 51 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-corpus',
-    // The LAB-011 disclosed provision (tools/arch-check/checker.ts — the
-    // v1.7 LAB-011 Agent Body Runtime Contract authority, pending the
-    // Tech Lead's spec promotion): the fixture provides no
-    // lab-agent-body boundary → the missing-module violation joins
-    // the exact set (the same additive count each sibling delivery
-    // adds — the LAB-002 provision precedent).
+    // The LAB-011 registration (the 2026-09-29 TL spec promotion — the
+    // provision retired, the /lab registration precedent): the fixture
+    // provides no lab-agent-body boundary → the missing-module violation
+    // joins the exact set (the same additive count each sibling
+    // promotion adds — the enforced total stays 53: 52 spec-parsed
+    // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-agent-body',
   ].sort();
 
@@ -487,11 +488,12 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // promoted spec/architecture.md §6, so the spec-parsed set enforces
   // it directly and the enforced total stays 52 — 51 spec-parsed + the
   // single /apps provision — with 51 → 52 total violations. The LAB-011
-  // disclosed provision (tools/arch-check/checker.ts — the v1.7 LAB-011
-  // Agent Body Runtime Contract authority, pending the Tech Lead's spec
-  // promotion) appends /lab-agent-body — the same additive count each
-  // sibling delivery adds — 52 → 53 enforced modules (51 spec-parsed +
-  // the /apps + lab-agent-body provisions), 52 → 53 total violations.
+  // delivery's disclosed provision is likewise RETIRED (the 2026-09-29
+  // TL spec promotion — the /lab registration precedent): /lab-agent-body
+  // registers through the promoted spec/architecture.md §6, so the
+  // spec-parsed set enforces it directly and the enforced total stays
+  // 53 — 52 spec-parsed + the single /apps provision — with the
+  // total violations staying 53.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
     53,

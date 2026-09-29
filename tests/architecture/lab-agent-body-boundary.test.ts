@@ -103,8 +103,9 @@ test('LAB-011 AC-1: the module imports NO other module — the /lab family disci
     );
   }
   // The static checker enforces it with zero violations (53 enforced
-  // modules: 51 spec-parsed + /apps + the disclosed lab-agent-body
-  // provision).
+  // modules: 52 spec-parsed after the 2026-09-29 TL spec promotion +
+  // the single /apps provision — the disclosed lab-agent-body worker
+  // provision RETIRED, the /lab registration precedent).
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
@@ -195,22 +196,23 @@ test('LAB-011 AC-3: the module structure is public.ts + internal/ only (the froz
   assert.deepEqual(internal.sort(), ['agent-body-module.ts', 'agent-body-store.ts', 'agent-instance.ts', 'validation.ts']);
 });
 
-test('LAB-011 AC-4: the registration — the composition root wires the REAL /ai-runtime instance as the structural port and registers the module; the disclosed checker provision carries the enforced-set entry', () => {
+test('LAB-011 AC-4: the registration — the composition root wires the REAL /ai-runtime instance as the structural port and registers the module; the TL spec promotion registered it in the spec files (the provision retired)', () => {
   assert.ok(compositionRoot.includes("import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts'"));
   assert.ok(compositionRoot.includes('const labAgentBody = createLabAgentBodyModule({ db, clock, ids, aiRuntime });'));
   assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody },'));
   assert.ok(applicationTs.includes("import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts'"));
   assert.ok(applicationTs.includes('readonly labAgentBody: LabAgentBodyModuleApi'));
-  // The disclosed provision (pending the TL spec promotion — the
-  // LAB-002 precedent): the provision array carries the entry.
+  // The provision is RETIRED (the 2026-09-29 TL spec promotion — the
+  // LAB-002 precedent): the provision array is back to the single
+  // /apps entry; the module registers through the spec files.
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null);
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps', 'lab-agent-body']);
-  // The spec-parsed set does NOT include the module yet (the promotion
-  // is the TL's harvest step, never a worker edit).
+  assert.deepEqual(entries, ['apps']);
+  // The spec-parsed set NOW includes the module (the TL promotion —
+  // the /lab registration precedent; never a worker edit).
   const specModules = /## 6\. Core domain modules\s*```text([\s\S]*?)```/.exec(read(join(repoRoot, 'spec', 'architecture.md')))![1]!;
-  assert.ok(!/^\/lab-agent-body$/m.test(specModules), 'no worker spec edit: the provision is the disclosed registration');
+  assert.ok(/^\/lab-agent-body$/m.test(specModules), 'the TL spec promotion registered /lab-agent-body in the frozen list');
 });
 
 test('LAB-011 AC-5: 063_lab_agent_body.sql is the migration tail (062 reserved for the parallel worker); the header cites the §14 authority', () => {

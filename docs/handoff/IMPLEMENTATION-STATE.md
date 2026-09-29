@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 delivered
+v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered
 Maximum active workers: 3
 
 ## Main baseline
@@ -66,7 +66,7 @@ cross-module dependency (platform ports only) — LAB-002..018 consume the
 contracts BY REFERENCE.
 
 All remaining implementation items pending:
-☐ LAB-003..LAB-018
+☐ LAB-003..LAB-010, LAB-012..LAB-018
 
 ✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
 merged as 5534c70 + the TL spec promotion): the `/lab-corpus` module
@@ -86,6 +86,37 @@ registration precedent): spec/architecture.md §6 line + the
 (back to the single /apps entry); spec-parsed set 50 → 51; count
 assertions re-pinned (arch-check / apps-boundary / cross-platform-
 distribution / developer-portal / product-marketing boundary tests).
+
+✅ LAB-011 — Agent Body Runtime Contract (external Worker delivery,
+PR #70 merged as f8d2fb0 + the TL spec promotion): the `/lab-agent-body`
+module (src/modules/lab-agent-body/ — public.ts 779 + internal/
+validation.ts 537 + agent-body-store.ts 675 + agent-instance.ts 521 +
+agent-body-module.ts 332), migration `063_lab_agent_body.sql` (062
+reserved for the parallel MKT-072 worker — four own tables with
+CHECK-fenced closed vocabularies, the guard/append-only triggers — body
+identity immutable, no-delete version history, runs born running with
+the single terminal advance + terminal-freeze, events append-only
+outright, memory upsert-only current state; NO binary column, NO
+authority table, NO /ai-runtime table), the composition-root wiring
+with the REAL aiRuntime instance as the structural port (getModel +
+appendModelObservation only — no second model router: zero routing
+vocabulary, zero cross-module imports), 13 unit + 17 integration tests
+(the ACCEPTANCE: two interchangeable model backends through the real
+/ai-runtime registry — same body + same input, one runtime path,
+contract-identical outputs with different content; the full 8-label
+failure taxonomy; the tool loop; memory persistence + capacity
+refusal; tenant isolation; DB backstops) + 7 boundary tests, 19 sibling
+re-pins. TL station harvest (tl/harvest-lab011 2b103cb): typecheck 0 /
+lint 0 / arch:check 0 violations (53 enforced — 51 spec-parsed + /apps
++ the disclosed provision) / unit 1307/1307 / architecture 713/713 /
+integration 1213/1213 exit 0 (the worker-disclosed environmental
+postgres flake did not reproduce) / console tsc+lint+build green. TL
+spec promotion (the /lab registration precedent): spec/architecture.md
+§6 line + the /lab-agent-body registration paragraph; the checker
+provision RETIRED (back to the single /apps entry); spec-parsed set
+51 → 52; count assertions re-pinned (arch-check / apps-boundary /
+product-marketing / developer-portal boundary tests; enforced total
+stays 53 — 52 spec-parsed + the single /apps provision).
 
 Architecture/coordination artifacts are frozen and present:
 - spec/architecture-v1.7-marketing-lab.md

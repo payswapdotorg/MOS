@@ -52,7 +52,7 @@ Optional:
 ☐ LAB-008 World Model Ensemble
 ☐ LAB-009 Offline Evaluation / Contextual Bandit
 ☐ LAB-010 Sequential Strategy RL
-☐ LAB-011 Agent Body Runtime Contract
+✅ LAB-011 Agent Body Runtime Contract (external Worker delivery branch lab/011-worker-delivery → TL station harvest PR #70 → main f8d2fb0 + TL spec promotion; unblocks LAB-012/LAB-013)
 ☐ LAB-012 Agent Organization Search
 ☐ LAB-013 Capability Engine + Arena Adapter
 ☐ LAB-014 Lab → MOS Experiment Bridge

@@ -299,19 +299,17 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration and 38 → 39 through the MKT-068 /notification-delivery
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
-  assert.equal(specModules.length, 51, 'the spec module list (51 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, the LAB-001 /lab and the LAB-002 /lab-corpus v1.7 registrations, and the MKT-070 /product-marketing TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
-  // The disclosed v1.5 composition provision: exactly the MKT-047
-  // /apps entry plus the LAB-011 worker provision (this Work Item
-  // appends /lab-agent-body pending the TL spec promotion — the
-  // LAB-002 provision precedent, retired at that worker's harvest).
-  // The LAB-002 /lab-corpus worker provision was RETIRED at the
-  // 2026-09-28 TL harvest (the spec promotion — the /lab registration
-  // precedent): /lab-corpus now registers through the promoted spec
-  // files.
+  assert.equal(specModules.length, 52, 'the spec module list (52 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, the LAB-001 /lab, the LAB-002 /lab-corpus and the LAB-011 /lab-agent-body v1.7 registrations, and the MKT-070 /product-marketing TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
+  // The disclosed v1.5 composition provision: exactly the single
+  // MKT-047 /apps entry. The LAB-011 /lab-agent-body worker provision
+  // was RETIRED at the 2026-09-29 TL spec promotion (the /lab
+  // registration precedent): /lab-agent-body now registers through
+  // the promoted spec files, exactly as the LAB-002 /lab-corpus
+  // provision was retired at the 2026-09-28 TL harvest.
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null, 'the provision list is present');
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps', 'lab-agent-body'], 'the provision carries the MKT-047 /apps entry plus the disclosed LAB-011 /lab-agent-body worker provision — the LAB-002 provision precedent, retired at the TL spec promotion');
+  assert.deepEqual(entries, ['apps'], 'the provision carries the single MKT-047 /apps entry — the LAB-011 /lab-agent-body provision retired at the TL spec promotion (the /lab registration precedent)');
   // The full checker still passes with zero violations.
   const result = checkArchitecture({
     codeRoot: repoRoot,

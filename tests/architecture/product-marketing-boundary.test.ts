@@ -462,9 +462,11 @@ test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration,
   assert.ok(/product-marketing\s*──→/.test(matrixSpec), 'spec/module-dependency-matrix.md carries the product-marketing row (the TL registration)');
   // The spec-parsed module count grew by exactly one (49 → 50), then by
   // one more through the LAB-002 /lab-corpus TL promotion (50 → 51, the
-  // /lab registration precedent — a sibling promotion, additive only).
+  // /lab registration precedent — a sibling promotion, additive only)
+  // and one more through the LAB-011 /lab-agent-body TL promotion
+  // (51 → 52, the /lab registration precedent).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 51);
+  assert.equal(specModules.length, 52);
 });
 
 test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {
@@ -496,8 +498,10 @@ test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its
   // 51 enforced modules (50 spec-parsed after the promotion + the
   // v1.5 'apps' provision — the checker's v1.6 provision retired at
   // the TL harvest, exactly as its own comment directed). The LAB-011
-  // disclosed re-pin appends the /lab-agent-body provision (the LAB-002
-  // provision precedent, pending the TL spec promotion) — 52 → 53.
+  // provision is likewise RETIRED (the 2026-09-29 TL spec promotion —
+  // /lab-agent-body registers through the promoted spec files) — the
+  // enforced total stays 53: 52 spec-parsed + the single /apps
+  // provision.
   assert.equal(result.frozenModules.length, 53);
 });
 

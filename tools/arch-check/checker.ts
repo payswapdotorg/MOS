@@ -117,24 +117,11 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
     // the LAB-001 /lab registration precedent), so the spec-parsed list
     // enforces it directly; the provision array is back to the single
     // MKT-047 /apps entry.)
-    // LAB-011: the Agent Body Runtime Contract authority (src/modules/
-    // lab-agent-body — the v1.7 LAB-011 Work Item: "Implement
-    // model-agnostic Agent Body execution with tools, memory,
-    // permissions, budgets and evaluation hooks. Acceptance: at least
-    // two interchangeable model backends through the existing AI
-    // runtime; no second model router."). Disclosed worker provision
-    // pending the Tech Lead's spec promotion (the /lab-corpus
-    // provision precedent — the module owns its migration-063 tables,
-    // consumes platform ports + the narrow /ai-runtime STRUCTURAL
-    // PORT only (wired at the composition root: getModel +
-    // appendModelObservation — the /product-intelligence
-    // model-identity port precedent; zero cross-module imports exist
-    // inside the module), and implements NO model-selection policy:
-    // the model identity is run-input DATA resolved through the
-    // /ai-runtime public boundary, and the /lab organization
-    // candidates cite bodies through the OPAQUE body-version
-    // reference string, by reference).
-    'lab-agent-body',
+    // (2026-09-29: the LAB-011 v1.7 provision RETIRED — /lab-agent-body now
+    // registers through the promoted spec files (spec/architecture.md §6,
+    // the /lab registration precedent), so the spec-parsed list enforces
+    // it directly; the provision array is back to the single MKT-047
+    // /apps entry.)
   ];
   const frozenModules = [
     ...specModules,
@@ -145,7 +132,9 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
   // (2026-09-28: the MKT-070 v1.6 provision retired — product-marketing now
   // registers through the promoted spec files, the MKT-066 precedent. The
   // LAB-002 v1.7 provision retired the same day — lab-corpus registers
-  // through the promoted spec files, the /lab precedent.)
+  // through the promoted spec files, the /lab precedent. The LAB-011 v1.7
+  // provision retired 2026-09-29 — lab-agent-body registers through the
+  // promoted spec files, the /lab precedent.)
   const frozenMatrix: Record<string, string[]> = Object.fromEntries(
     Object.entries(
       parseFrozenMatrix(
