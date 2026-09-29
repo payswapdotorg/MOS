@@ -4,14 +4,14 @@
  * Journey B — the Client Workspace: Overview, Goals, Strategy/Playbooks,
  * Deployments, Workflows, Evidence, Decisions, Learning, Operating Memory,
  * Connections (UX-005 — the Connections Center), Content (UX-006 — the
- * Content/Rights operational surface) and Health (UX-007 — the Platform
- * Health surface).
+ * Content/Rights operational surface), Health (UX-007 — the Platform
+ * Health surface) and Treatments (UX-008 — the Human Treatment surface).
  * Each tab renders the corresponding live MOS domain listing (or the
  * decision-room composed view for Overview).
  */
 
 import * as React from "react";
-import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, HeartPulse, LayoutDashboard, Map, Microscope, Plug, ScrollText, Shapes, Workflow } from "lucide-react";
+import { ArrowRight, Beaker, BookOpen, Boxes, Brain, Goal, HeartPulse, LayoutDashboard, Map, Microscope, Plug, ScrollText, Shapes, Users, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConnectionsTab } from "@/components/mos/connections/ConnectionsTab";
 import { ContentTab } from "@/components/mos/content/ContentTab";
 import { HealthTab } from "@/components/mos/health/HealthTab";
+import { TreatmentsTab } from "@/components/mos/treatments/TreatmentsTab";
 import { ScientificTraceTab } from "@/components/mos/trace/ScientificTraceTab";
 import {
   useClient,
@@ -54,6 +55,7 @@ const TABS: Array<{ value: ClientWorkspaceTab; label: string; icon: React.Compon
   { value: "connections", label: "Connections", icon: Plug },
   { value: "content", label: "Content", icon: Shapes },
   { value: "health", label: "Health", icon: HeartPulse },
+  { value: "treatments", label: "Treatments", icon: Users },
   { value: "goals", label: "Goals", icon: Goal },
   { value: "playbooks", label: "Strategy", icon: Map },
   { value: "deployments", label: "Deployments", icon: Boxes },
@@ -129,6 +131,9 @@ export function ClientWorkspaceScreen({
         </TabsContent>
         <TabsContent value="health" className="mt-4">
           <HealthTab clientId={clientId} focusSocialAccountId={focusSocialAccountId ?? null} />
+        </TabsContent>
+        <TabsContent value="treatments" className="mt-4">
+          <TreatmentsTab clientId={clientId} />
         </TabsContent>
         <TabsContent value="goals" className="mt-4">
           <GoalsTab clientId={clientId} />
