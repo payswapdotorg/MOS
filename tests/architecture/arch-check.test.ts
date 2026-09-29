@@ -402,6 +402,13 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 52: 51 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-corpus',
+    // The LAB-011 disclosed provision (tools/arch-check/checker.ts — the
+    // v1.7 LAB-011 Agent Body Runtime Contract authority, pending the
+    // Tech Lead's spec promotion): the fixture provides no
+    // lab-agent-body boundary → the missing-module violation joins
+    // the exact set (the same additive count each sibling delivery
+    // adds — the LAB-002 provision precedent).
+    'MISSING_MODULE|src/modules/lab-agent-body',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -479,10 +486,15 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // /lab registration precedent): /lab-corpus registers through the
   // promoted spec/architecture.md §6, so the spec-parsed set enforces
   // it directly and the enforced total stays 52 — 51 spec-parsed + the
-  // single /apps provision — with 51 → 52 total violations.
+  // single /apps provision — with 51 → 52 total violations. The LAB-011
+  // disclosed provision (tools/arch-check/checker.ts — the v1.7 LAB-011
+  // Agent Body Runtime Contract authority, pending the Tech Lead's spec
+  // promotion) appends /lab-agent-body — the same additive count each
+  // sibling delivery adds — 52 → 53 enforced modules (51 spec-parsed +
+  // the /apps + lab-agent-body provisions), 52 → 53 total violations.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    52,
+    53,
     'no unexpected violation categories may be reported',
   );
 

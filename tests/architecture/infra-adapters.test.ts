@@ -1039,6 +1039,20 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // is created or mutated.
     '060_product_marketing.sql',
     '061_lab_corpus.sql',
+    // LAB-011 (Agent Body Runtime Contract) appends the agent-body
+    // migration (063 — the PRE-ASSIGNED next-free number: 062 is
+    // reserved for a parallel worker, so this delivery takes 063; the
+    // disclosed additive re-pin precedent — every end-anchored tail
+    // position shifts once more): the /lab-agent-body authority — the
+    // versioned Agent Body registry carrying the FULL §14 field set as
+    // declared data, the Agent Instance run records (the model
+    // identity as DATA resolved through the /ai-runtime public
+    // boundary — NO routing column anywhere: the no-second-router rule
+    // is structural), the append-only run event tail and the bounded
+    // memory current-state store; NO v1.6 authority table is created
+    // or mutated, and NO /ai-runtime table is written (the model
+    // observations flow through the module's /ai-runtime port).
+    '063_lab_agent_body.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
