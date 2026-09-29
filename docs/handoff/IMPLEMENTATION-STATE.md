@@ -37,7 +37,20 @@ Remaining:
    (50 modules) / unit 1255 / architecture 692 / integration re-run EXIT=0
    after one environmental postgres-termination flake / console tsc 0 +
    lint 0 + build OK)
-☐ UX-007..UX-012
+☐ UX-009..UX-012
+✅ UX-008 Human Treatment Console Surface (external worker delivery, PR #71 —
+   worker delivery d53b0ff: console/** only, TreatmentsTab +
+   HumanTreatmentExperimentCard + treatments-atoms with the frozen
+   presentation vocabularies, session-store/client-workspace wiring, the
+   never-blocks guarantee made VISIBLE, the ONE honest human blocker
+   (blocked_pending_human_action with the genuine rights-gate reason),
+   13-screenshot browser journey evidence on the real embedded-PG + real-
+   API stack; station battery on tl/harvest-ux008: typecheck 0 / lint 0 /
+   arch:check 0 / unit 1307 / architecture 713 / integration 1212+1
+   load-timing flake isolated-green / console gates EXIT=0; the C-lane
+   queued duplicate chat deleted BEFORE generation — zero wasted
+   execution, the LAB-002 precedent)
+
 
 Optional:
 ☐ MKT-076..078

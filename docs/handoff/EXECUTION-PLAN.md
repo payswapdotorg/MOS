@@ -32,7 +32,8 @@ Green = objectively verified implementation on main. Specification files are not
 ✅ UX-005 (Wave 0 harvest, PR #64)
 ✅ UX-006 Content/Rights Operational Surface (Wave 1 harvest, PR #65)
 ✅ UX-007 Platform Health Console Surface (Wave 1 harvest, PR #66)
-☐ UX-008..UX-012
+✅ UX-008 Human Treatment Console Surface (external worker delivery → TL station harvest PR #71 → main 352c68f; console-only delta, the never-blocks guarantee made VISIBLE + the ONE honest human blocker; the C-lane queued duplicate deleted BEFORE generation)
+☐ UX-009..UX-012
 
 Optional:
 ☐ MKT-076..078
