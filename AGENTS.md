@@ -11,22 +11,24 @@ This repository is the architecture and implementation source of truth for MOS. 
 5. spec/change-request-006.md
 6. spec/effective-backlog-v1.6.md
 7. spec/module-dependency-matrix-v1.6.md
-8. spec/frozen-manifest-v1.7.json
-9. spec/architecture-v1.7-marketing-lab.md
-10. spec/architecture-lock-v1.7.md
-11. spec/effective-backlog-v1.7.md
-12. spec/module-dependency-matrix-v1.7.md
-13. applicable v1.5 frozen documents and explicit supersessions
-14. applicable v1.5 dependency / traceability / security / module matrices
-15. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
-16. docs/product/PRODUCT-CONSOLE-V1.6.md
-17. docs/handoff/IMPLEMENTATION-STATE.md
-18. docs/handoff/EXECUTION-PLAN.md
-19. docs/handoff/WORKER-CONTRACT.md
-20. docs/handoff/UX-DISCOVERY-V1.6.md
-21. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
-22. docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
-23. the exact Work Item / task
+8. spec/change-request-007-content-production-studio.md
+9. spec/frozen-manifest-v1.7.json
+10. spec/architecture-v1.7-marketing-lab.md
+11. spec/content-studio-contract-v1.0.md (for Studio work)
+12. spec/architecture-lock-v1.7.md
+13. spec/effective-backlog-v1.7.md
+14. spec/module-dependency-matrix-v1.7.md
+15. applicable v1.5 frozen documents and explicit supersessions
+16. applicable v1.5 dependency / traceability / security / module matrices
+17. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
+18. docs/product/PRODUCT-CONSOLE-V1.6.md
+19. docs/handoff/IMPLEMENTATION-STATE.md
+20. docs/handoff/EXECUTION-PLAN.md
+21. docs/handoff/WORKER-CONTRACT.md
+22. docs/handoff/UX-DISCOVERY-V1.6.md
+23. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+24. docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+25. the exact Work Item / task
 
 Actual Git history, source, tests, migrations and provider verification outrank summaries, screenshots, PR descriptions and stale coordination documents.
 
