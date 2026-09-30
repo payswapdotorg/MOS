@@ -1,196 +1,185 @@
-# Final Tech Lead Handoff — MOS Marketing Engineering Lab v1.7
+# Final Tech Lead Handoff — MOS Marketing Engineering Lab v1.7 + Content Studio
 
-## Current base
+## Current repository posture
 
 Repository: payswapdotorg/MOS
-v1.7 architecture base: 10f51781f8d198cd07c19259f722c1aeab7ac8e6
-v1.7 implementation status: 0 LAB items complete
+Architecture: v1.7 Marketing Engineering Lab, frozen with CR-007 content-production amendment
+Manifest revision: 1.7.1
 Maximum workers: 3
+
+The repository is the unique source of truth. Historical worker reports, chat context, PR descriptions and screenshots are evidence only.
 
 ## Read in order
 
 1. AGENTS.md
-2. spec/architecture-v1.6.md
-3. spec/architecture-lock-v1.6.md
-4. spec/frozen-manifest-v1.6.json
-5. spec/effective-backlog-v1.6.md
-6. spec/architecture-v1.7-marketing-lab.md
-7. spec/architecture-lock-v1.7.md
-8. spec/frozen-manifest-v1.7.json
-9. spec/effective-backlog-v1.7.md
-10. spec/module-dependency-matrix-v1.7.md
-11. docs/handoff/EXECUTION-PLAN.md
-12. docs/handoff/IMPLEMENTATION-STATE.md
-13. docs/handoff/WORKER-CONTRACT.md
-14. docs/research/MARKETING-LAB-DESIGN-BASIS.md
+2. spec/change-request-007-content-production-studio.md
+3. spec/architecture-v1.6.md
+4. spec/architecture-lock-v1.6.md
+5. spec/frozen-manifest-v1.6.json
+6. spec/effective-backlog-v1.6.md
+7. spec/architecture-v1.7-marketing-lab.md
+8. spec/content-studio-contract-v1.0.md
+9. spec/architecture-lock-v1.7.md
+10. spec/frozen-manifest-v1.7.json
+11. spec/effective-backlog-v1.7.md
+12. spec/module-dependency-matrix-v1.7.md
+13. docs/handoff/IMPLEMENTATION-STATE.md
+14. docs/handoff/WORKER-CONTRACT.md
+15. docs/handoff/EXECUTION-PLAN.md
+16. exact Work Item.
+
+## Current delivered v1.7 items
+
+✅ LAB-001
+✅ LAB-002
+✅ LAB-011
+
+The exact current v1.6/UX verification state is in IMPLEMENTATION-STATE and must be reconciled against main before dispatch.
 
 ## Mission
 
-Build a marketing-engineering system that can take:
-niche + platform + goal
+Given:
+niche + platform + business/social goal
 
-and discover:
-- strong ideas from a broad reference-first niche corpus;
-- a robust content/marketing strategy;
-- the Agent Body organization best suited to the task;
-- model assignments;
-- required capabilities;
-- when a human/provider capability is worth acquiring;
-- a candidate worth testing on the real platform.
+MOS must be able to discover a complete marketing production program, not just a post idea:
+- idea/source;
+- no-op/repost or transformation;
+- transform graph;
+- Transform Pawn Agents;
+- Agent Organization;
+- model assignments through /ai-runtime;
+- capabilities;
+- human contribution requirements;
+- Studio format/configuration;
+- production acceptance criteria;
+- waiting/stopping economics.
 
-Then learn from the real result and improve the simulator.
+It then simulates/evaluates the program, invokes production where needed, runs a bounded real experiment through existing MOS authorities, measures the result and calibrates the simulator.
 
-## Non-negotiable architecture
+## Non-negotiable boundaries
 
-- v1.6 remains frozen and authoritative.
-- Lab simulation is not real Experiment/Execution.
-- Lab never publishes directly.
-- Social provider calls go through existing adapters.
-- Business experiments go through Mission/Policy/Rights/Distribution/Workflow/Execution.
-- Evidence/Experiment/Learning remain canonical for real outcomes.
-- Media corpus is reference-first and rights/provider gated.
-- Historical facts and counterfactual predictions are visibly distinct.
-- Time Machine must enforce the information cutoff.
-- Reward is versioned and business-outcome-first.
-- World-model uncertainty/OOD/robustness are first-class.
-- Agent Body is MOS-owned; LLMs are interchangeable occupants through /ai-runtime.
-- Generalist single-agent baseline is mandatory.
-- Agent Organization is a searchable graph, not a workflow engine.
-- Capabilities are explicit, evaluated contracts.
-- Arena is an external provider behind Integration.
-- Zero human budget must remain a valid path.
-- Fake engagement, anti-abuse evasion, impersonation and rights circumvention are invalid.
-- CopilotKit, OpenMuse and Code-OSS are excluded.
+- v1.6 authorities remain singular.
+- Lab Run is not a real Experiment.
+- Studio Session is not a Workflow/Execution engine.
+- Studio is not a publishing, Rights, Policy, Evidence, Experiment, AI-router or marketplace authority.
+- Lab and Studio never publish directly.
+- Transform Pawn Agents use the existing Agent Body runtime.
+- LLM selection remains under /ai-runtime.
+- Public URLs do not imply media rights.
+- Human output rights are explicit; recording does not create unrestricted reuse rights.
+- Human participation is optional and economically bounded.
+- Waiting can be abandoned when delay is not worth expected value.
+- Prohibited strategies are invalid regardless of simulated reward.
+- CopilotKit, OpenMuse and Code-OSS remain excluded architectural dependencies.
 
-## Worker A
+## Production architecture
 
-MKT-060/061 + LAB-002..010 + LAB-015.
-
-Own social adapters and the entire corpus/simulation/world-model pipeline.
-
-## Worker B
-
-MKT-065 defect + MKT-066/070/072/073 + LAB-011/012/013.
-
-Own growth backend completion plus Agent Body, organization search and capabilities.
-
-## Worker C
-
-UX-005..012 + MKT-074/075 + LAB-014/016/017/018.
-
-Own the shared console composition root, real-world bridge, marketing automation UX and final proof.
-
-## Parallelization rules
-
-Workers stay inside assigned subtrees.
-Do not concurrently modify the same central schema/migration/composition files.
-Workers submit module-local contracts first when a shared surface is unavoidable.
-TL performs the final integration of shared surfaces.
-
-Independent work may start as soon as frozen dependencies are satisfied; do not wait for unrelated sequential work.
-
-## Lab workflow
-
-Historical corpus
-→ feature extraction
-→ Idea Graph
-→ Social World Model
-→ offline evaluation
-→ RL/policy search
-→ Agent Organization search
-→ capability gap detection
-→ Arena/provider acquisition if needed
-→ robust simulation
-→ real MOS experiment
-→ measurement
+Lab
+→ Production Strategy
+→ {idea/source, transform graph, organization, pawns, capabilities, human tasks, Studio format, budget/delay policy}
+→ Studio/Arena/automated capability
+→ raw/intermediate artifacts
+→ selected organization
+→ final Artifact Package
+→ Lab acceptance/treatment
+→ existing MOS real-experiment authorities
+→ evidence/experiment
 → calibration
-→ repeat.
+→ next Lab run.
 
-## Strategy-space requirement
+## Content Studio
 
-Always compare:
-- generate from scratch;
-- retrieve;
-- retrieve + transform;
-- retrieve + recombine;
-- retrieve + mutate;
-- hybrid approaches.
+Content Studio is one shared runtime with two entry modes:
+- standalone user creation;
+- Lab-initiated production.
 
-Do not hard-code the belief that the next best idea must already exist in the corpus. Measure coverage and test that hypothesis.
+Initial formats:
+- reaction;
+- audio podcast;
+- video podcast.
 
-## Media requirement
+Standalone user flow:
+intent or script/questions
+→ format
+→ organization
+→ interview/capture
+→ processing
+→ review/re-take
+→ final Artifact Package.
 
-Store references/features by default.
-Do not promise universal redownloadability of social URLs.
-Use temporary streaming/access only when the provider and rights permit it.
+Lab flow:
+discovered Production Request
+→ Studio
+→ organization execution
+→ Artifact Package
+→ Lab evaluation.
 
-## Agent requirement
+## Podcast requirements
 
-A body is independent of the model inhabiting it.
+One-person:
+- AI/synthetic/prerecorded/voice/text/avatar/hybrid interviewer;
+- adaptive follow-up;
+- provenance of interviewer representation.
 
-Agent Body:
-role + tools + permissions + memory + communication + evaluation + budget + capabilities.
+Multi-person:
+- multiple authorized accounts/devices;
+- participation grants;
+- per-participant identity/credential boundaries;
+- consent/withdrawal handling;
+- contribution provenance.
 
-Then:
-Agent Body + LLM = Agent Instance.
+## Reaction requirements
 
-Organization search can alter:
-number of agents, roles, graph topology, memory sharing, delegation, tool allocation and model assignment.
+Raw user capture can be passed to an organization that composes it with the source using a learned/layout-configurable strategy such as:
+- bottom-left PIP;
+- source-first then reaction;
+- alternating;
+- clipped source then response.
 
-## Time Machine requirement
+The exact composition is data/organization output, not a hard-coded universal rule.
 
-Support:
-- historical replay;
-- delayed-information replay with user-selected lag;
-- counterfactual branching.
+## Human task requirements
 
-Future leakage is a hard failure.
+A Lab-discovered human contribution produces:
+script/questions + source material + capture brief + target format + output contract + consent/rights + quality criteria + deadline + delay economics + substitutions.
 
-## Real-world learning requirement
+The result re-enters the organization as an intermediate artifact.
 
-Every selected real experiment records the simulated prediction and uncertainty, then the actual outcome.
-The simulator must be versioned/calibrated from prediction error.
-A later run must be able to use the calibrated state.
+## Verification and harvest
 
-## Capability requirement
+A Work Item is green only after source/tests/runtime and applicable browser/deployment evidence agree.
 
-The system must be able to say:
-"This strategy requires capability X."
-Then:
-"X is unavailable."
-Then:
-"Acquire X through Arena/provider."
-Then verify, version, simulate and potentially use it.
+For Studio work, record:
+- Production Request version;
+- Studio Session version;
+- format version;
+- organization version;
+- transform graph version;
+- capability versions;
+- human task version;
+- artifact/treatment lineage;
+- costs/durations;
+- acceptance/rejection/treatment result.
 
-A capability acquired through a human/provider does not grant unspecified content rights.
+The Tech Lead must reject "complete" claims that omit real runtime evidence or hide doubles/placeholders as production implementations.
 
-## Mandatory proof
+## Mandatory end-to-end proof
 
-At least one complete niche+platform+goal scenario must demonstrate:
-- reference-first corpus;
-- Idea Graph;
-- simulator;
-- delayed Time Machine;
-- counterfactual;
-- policy learning;
-- organization search;
-- interchangeable LLM occupancy;
-- capability gap;
-- optional Arena path;
-- robust evaluation;
-- real bounded post;
-- measured outcome;
-- calibration;
-- second improved run;
-- zero-human path;
-- rejection of a prohibited strategy.
+At least one complete scenario must show:
+1. broad niche corpus;
+2. Idea Graph;
+3. transform search including no-op;
+4. Transform Pawn execution;
+5. organization search;
+6. one-person podcast;
+7. multi-person podcast;
+8. human reaction recording;
+9. organization treatment of raw human output;
+10. Lab rejection and treatment;
+11. delay-based abandonment;
+12. zero-human alternative;
+13. real MOS experiment;
+14. real measurement;
+15. calibration;
+16. second improved run.
 
-## Existing v1.6 blocker
-
-MKT-065 HTTP dispatch/audit route correctness must be fixed before MKT-075 final acceptance.
-
-## Definition of done
-
-The system is not done because an RL trainer or simulator runs.
-
-It is done when the full closed loop is demonstrated and the real-world experiment changes the subsequent simulator/strategy state with auditable provenance.
