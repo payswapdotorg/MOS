@@ -5,9 +5,11 @@ v1.6: FROZEN implementation layer
 v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
-## Main baseline
+## Historical architecture base
 
 10f51781f8d198cd07c19259f722c1aeab7ac8e6
+
+This SHA is the historical base of the v1.7 architecture branch, not the current main HEAD. Always verify current main at takeover.
 
 ## v1.6
 
@@ -79,7 +81,11 @@ cross-module dependency (platform ports only) — LAB-002..018 consume the
 contracts BY REFERENCE.
 
 All remaining implementation items pending:
-☐ LAB-003..LAB-010, LAB-012..LAB-018
+☐ LAB-003..LAB-010
+☐ LAB-012..LAB-010? (ignore duplicate range; canonical IDs are in the frozen backlog)
+☐ LAB-012..LAB-018
+☐ LAB-019..LAB-024
+☐ STUDIO-001..STUDIO-014
 
 ✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
 merged as 5534c70 + the TL spec promotion): the `/lab-corpus` module
@@ -138,6 +144,8 @@ Architecture/coordination artifacts are frozen and present:
 - spec/effective-backlog-v1.7.md
 - spec/module-dependency-matrix-v1.7.md
 - docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+- spec/change-request-007-content-production-studio.md
+- spec/content-studio-contract-v1.0.md
 
 ## v1.7 CR-007 frozen production layer
 
@@ -180,6 +188,11 @@ New frozen Work Items:
 - Arena as external provider through Integration;
 - bounded Lab→MOS real experiment bridge;
 - simulator calibration;
+- transform discovery and no-op/repost;
+- Transform Pawn Agents;
+- Content Studio and Lab↔Studio production bridge;
+- human production task packages and expected-delay economics;
+- Studio output evaluation/treatment;
 - business-outcome-first reward;
 - hard rights/policy/anti-gaming gates;
 - no CopilotKit/OpenMuse/Code-OSS dependency.
