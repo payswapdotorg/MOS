@@ -73,7 +73,17 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Simulator calibration cannot rewrite historical observations.
 - Strategies that violate rights, policy or anti-gaming constraints are invalid regardless of simulated reward.
 - CopilotKit, OpenMuse and Code-OSS are excluded architecture dependencies.
-- Long-running simulation/training uses durable worker infrastructure, not synchronous requests or Vercel Hobby Cron.
+- Long-running simulation/training and production processing use durable worker infrastructure, not synchronous requests or Vercel Hobby Cron.
+- The Lab searches the complete production program: ideas + no-op/repost + transforms + Transform Pawns + organizations + Studio + human contributions + delay/stopping economics.
+- No-op/repost is a first-class transform candidate; transforms may be atomic, composed or newly discovered.
+- Human-generated media is an intermediate artifact and must pass through the selected organization for treatment when the strategy requires it.
+- Human production tasks are explicit, versioned and rights/consent scoped; human waiting never silently becomes a mandatory workflow.
+- Content Studio is the single MOS-owned AI+Human production runtime for standalone and Lab-initiated creation; it initially supports reaction, audio podcast and video podcast.
+- Studio may load any compatible submitted organization and may span multiple authorized accounts in one session.
+- One-person podcasts may use voice/text/avatar/prerecorded/generated/hybrid interviewer representations with provenance.
+- Lab output evaluation may accept, reject, request treatment, switch organization/transform, request human action, or abandon; every treatment creates a new immutable artifact version.
+- Expected value of delay is a first-class production decision variable.
+- Policy/Rights/Distribution/Workflow/Execution/Evidence/Experiment remain singular authorities for real publication and outcomes.
 
 ## UX / evidence
 
