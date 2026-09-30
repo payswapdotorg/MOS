@@ -254,7 +254,6 @@ Worker A:
 - LAB-003
 - LAB-004
 - LAB-005
-- MKT-072 where independent v1.6 prerequisites are satisfied
 
 Worker B:
 - LAB-012
