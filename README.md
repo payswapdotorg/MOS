@@ -1,100 +1,104 @@
 # MarketingOS
 
-Status: v1.6 implementation in progress; v1.7 Marketing Engineering Lab architecture frozen
-Current Architecture: 1.7 layered on 1.6
+Status: v1.6 implementation + v1.7 Marketing Engineering Lab implementation in progress
+Current Architecture: v1.7 layered on v1.6; manifest revision 1.7.1 after CR-007
 Repository: payswapdotorg/MOS
 
 MarketingOS is a provider-independent, evidence-driven, multi-tenant Growth and Marketing Operating System.
 
-## v1.6 verified on main @ 10f51781f8d198cd07c19259f722c1aeab7ac8e6
+## Repository source of truth
 
-- ✅ MKT-001..052
-- ✅ MKT-053 Growth Mission
-- ✅ MKT-054 Growth Operator
-- ✅ MKT-055 Social Account / OAuth
-- ✅ MKT-056 Social Adapter Contract
-- ✅ MKT-057 YouTube
-- ✅ MKT-058 Instagram
-- ✅ MKT-059 Facebook Pages
-- ✅ MKT-062 Research / Content Intelligence
-- ✅ MKT-063 Rights / Provenance
-- ✅ MKT-064 Content Assets / Transformations
-- ✅ MKT-065 Distribution authority (known HTTP audit correctness defect remains)
-- ✅ MKT-067 Experiment Analysis / Adaptive Allocation
-- ✅ MKT-068 Notifications
-- ✅ MKT-069 Product Intelligence
-- ✅ MKT-071 Commerce Catalog / Orders
-- ✅ UX-001 Outcome-first Home
-- ✅ UX-002 Mission Creation
-- ✅ UX-003 Mission Workspace
-- ✅ UX-004 Scientific Trace
+The repository is the unique implementation source of truth.
 
-Remaining v1.6 core:
-- ☐ MKT-060 TikTok
-- ☐ MKT-061 X
-- ☐ MKT-066 Platform Health
-- ☐ MKT-070 Product Marketing Mission Planner
-- ☐ MKT-072 Commerce Discovery
-- ☐ MKT-073 Social-to-Commerce Attribution
-- ☐ MKT-074 Growth Autopilot Console
-- ☐ MKT-075 v1.6 End-to-End Autonomy Proof
-- ☐ UX-005..UX-012
+Read:
+1. `AGENTS.md`
+2. `spec/architecture-v1.7-marketing-lab.md`
+3. `spec/content-studio-contract-v1.0.md`
+4. `spec/architecture-lock-v1.7.md`
+5. `spec/frozen-manifest-v1.7.json`
+6. `spec/effective-backlog-v1.7.md`
+7. `spec/module-dependency-matrix-v1.7.md`
+8. `docs/handoff/IMPLEMENTATION-STATE.md`
+9. `docs/handoff/EXECUTION-PLAN.md`
+10. `docs/handoff/WORKER-CONTRACT.md`
 
-Optional:
-- ☐ MKT-076..078
+Actual source/tests/migrations/runtime/browser/deployment evidence outrank summaries.
 
-## v1.7 Marketing Engineering Lab
+## Verified implementation state recorded in repo
 
-Frozen architecture:
-- spec/architecture-v1.7-marketing-lab.md
-- spec/architecture-lock-v1.7.md
-- spec/frozen-manifest-v1.7.json
+v1.6 verified items include the completed MKT/UX foundation through the latest state record, including:
+✅ MKT-053..059
+✅ MKT-060
+✅ MKT-061
+✅ MKT-062..070
+✅ MKT-071
+✅ UX-001..008
 
-Frozen execution:
-- spec/effective-backlog-v1.7.md
-- spec/module-dependency-matrix-v1.7.md
-- docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+v1.7:
+✅ LAB-001 Lab Contracts + Run Model
+✅ LAB-002 Reference-First Niche Corpus
+✅ LAB-011 Agent Body Runtime Contract
+
+All remaining items are pending unless `docs/handoff/IMPLEMENTATION-STATE.md` proves otherwise.
+
+## Marketing Engineering Lab
 
 Core loop:
 
 niche + platform + goal
 → reference-first corpus
 → multimodal features + Idea Graph
+→ transform/idea search
 → Social World Model
-→ strategy learning/search
+→ sequential strategy learning
 → Agent Body / Organization search
-→ capability acquisition if needed
-→ robust simulation
-→ real bounded experiment
+→ capability acquisition
+→ production program
+→ Content Studio / automated production
+→ Lab evaluation/treatment
+→ real MOS experiment
+→ measurement
 → calibration
-→ repeat
+→ repeat.
 
-First productized application: company social-media automation.
+The strategy space includes:
+- no-op/repost;
+- transform;
+- recombination/mutation;
+- generated content;
+- human+AI production.
+
+Production delay and human participation are explicit economic variables.
+
+## Content Studio
+
+Content Studio is the MOS-owned AI+Human production runtime for both:
+- standalone user creation;
+- Lab-initiated production.
+
+Initial formats:
+- reaction;
+- audio podcast;
+- video podcast.
+
+It supports intent or explicit scripts/questions, adaptive interviewers, one-person podcasts, multi-account sessions and arbitrary compatible organizations.
+
+Raw human recordings are intermediate production artifacts and can be passed through the selected organization for editing/composition before finalization.
 
 ## Architecture boundaries
 
-- Lab Runs are simulation artifacts, not business Experiments.
-- Historical replay is evidence-backed; counterfactuals are labeled model output.
-- Media access is provider/rights gated.
-- Agent Body is MOS-owned; LLMs remain under /ai-runtime.
-- Arena is an external capability provider through Integration.
-- Zero-human-budget operation remains valid.
-- Fake engagement, rights circumvention, impersonation and anti-abuse evasion are forbidden.
-- CopilotKit, OpenMuse and Code-OSS are not architectural dependencies.
+- v1.6 Mission, Policy, Rights, Content Asset, Distribution, Integration, Workflow, Execution, Evidence, Experiment and AI runtime authorities remain singular.
+- Lab and Studio never publish directly.
+- Lab Run is not a real Experiment.
+- Studio Session is not a Workflow/Execution engine.
+- Transform Pawns use existing Agent Bodies.
+- LLM routing remains under `/ai-runtime`.
+- Public URLs do not grant media rights.
+- Human contribution does not silently block autonomous paths.
+- Expected value of delay may cause wait/substitute/retry/abandon.
+- Every production treatment creates a new immutable linked artifact version.
+- CopilotKit, OpenMuse and Code-OSS are excluded architectural dependencies.
 
-## Repository truth
+## Canonical architecture change record
 
-Architecture branch base: 10f51781f8d198cd07c19259f722c1aeab7ac8e6
-
-Production observed in the September 22 audit:
-dpl_5MfdkKM631cTvDTw4V1NYNq2xyU3
-commit 0cc7d51b0af5a4ee203f75157978e73fc9024fdf
-
-Production promotion remains a separate acceptance gate.
-
-## Canonical handoff
-
-- docs/handoff/EXECUTION-PLAN.md
-- docs/handoff/IMPLEMENTATION-STATE.md
-- docs/handoff/WORKER-CONTRACT.md
-- docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+`spec/change-request-007-content-production-studio.md` records the approved CR-007 amendment; it is an audit trail, not a competing architecture authority.
