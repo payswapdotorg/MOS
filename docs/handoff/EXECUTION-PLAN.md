@@ -1,310 +1,310 @@
 # MOS — Unified Tech Lead Execution Plan — v1.6 + v1.7
 
-Architecture: v1.6 FROZEN + v1.7 Marketing Engineering Lab FROZEN
+Architecture: v1.6 FROZEN + v1.7 Marketing Engineering Lab FROZEN (manifest revision 1.7.1 / CR-007)
 Maximum concurrent workers: 3
 Canonical execution authority: this file
+Architecture authority: `spec/architecture-v1.7-marketing-lab.md`
 
-## 1. Repository truth
+## 1. Repository truth and takeover rule
 
-v1.7 architecture branch base: 10f51781f8d198cd07c19259f722c1aeab7ac8e6.
-The architecture branch contains only specification/governance/handoff artifacts. No LAB Work Item is implemented yet.
-Latest pre-branch source/test evidence is preserved in Git history and existing runbooks.
+The repository is the unique source of truth for implementation.
 
-Green = objectively verified implementation on main. Specification files are not implementation evidence.
+At takeover the Tech Lead MUST:
+1. inspect current `main` HEAD;
+2. read the canonical architecture, lock, manifest, backlog and dependency matrix;
+3. inspect actual source/migrations/tests for every claimed completed Work Item;
+4. reconcile `IMPLEMENTATION-STATE.md` against source/test/runtime evidence;
+5. derive the next executable wave from the frozen dependency graph, not from stale worker plans.
 
-## 2. v1.6 state
+Historical SHAs in this document are evidence anchors only; they are not a substitute for verifying current main.
 
-✅ MKT-001..052
-✅ MKT-053 ✅ MKT-054 ✅ MKT-055 ✅ MKT-056
-✅ MKT-057 ✅ MKT-058 ✅ MKT-059 ✅ MKT-062
-✅ MKT-063 ✅ MKT-064 ✅ MKT-065* ✅ MKT-067
-✅ MKT-068 ✅ MKT-069 ✅ MKT-071
-✅ UX-001 ✅ UX-002 ✅ UX-003 ✅ UX-004
+Canonical read order:
+AGENTS.md
+→ change-request-007-content-production-studio.md
+→ architecture-v1.6 + lock + manifest
+→ architecture-v1.7-marketing-lab.md
+→ content-studio-contract-v1.0.md
+→ architecture-lock-v1.7.md
+→ frozen-manifest-v1.7.json
+→ effective-backlog-v1.7.md
+→ module-dependency-matrix-v1.7.md
+→ IMPLEMENTATION-STATE.md
+→ WORKER-CONTRACT.md
+→ this file
+→ FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+→ exact Work Item.
 
-✅ MKT-060 TikTok (Wave 0 harvest, PR #64)
-✅ MKT-061 X (Wave 1 harvest, PR #67 — the fifth MKT-056 concrete adapter; unit 1267/arch 692/integ 1170+2-flake→21/21-isolated; migration-free; runbook + doubles + 17/17 conformance)
-✅ MKT-066 Platform Health (Wave 0 harvest, PR #64)
-✅ MKT-070 Product Marketing Mission Planner (Wave 1 harvest, PR #68 — /product-marketing + migration 060 + the spec promotion at harvest: §6 registration, live-matrix row, checker provision retired; unit 1281/arch 706/integ 1182+1-flake→3/3-isolated)
-☐ MKT-072 Commerce Discovery
-☐ MKT-073 Social-to-Commerce Attribution
-☐ MKT-074 Growth Autopilot Console
-☐ MKT-075 v1.6 End-to-End Autonomy Proof
-✅ UX-005 (Wave 0 harvest, PR #64)
-✅ UX-006 Content/Rights Operational Surface (Wave 1 harvest, PR #65)
-✅ UX-007 Platform Health Console Surface (Wave 1 harvest, PR #66)
-✅ UX-008 Human Treatment Console Surface (external worker delivery → TL station harvest PR #71 → main 352c68f; console-only delta, the never-blocks guarantee made VISIBLE + the ONE honest human blocker; the C-lane queued duplicate deleted BEFORE generation)
-☐ UX-009..UX-012
+Specification text never counts as implementation evidence by itself.
 
-Optional:
-☐ MKT-076..078
+## 2. Current verified implementation state
 
-* MKT-065's HTTP audit/dispatch defect is FIXED (Wave 0 harvest, PR #64):
-  scalar outcomes serialization + route-level integration coverage.
+The latest repository state records these v1.7 items as delivered:
+- ✅ LAB-001
+- ✅ LAB-002
+- ✅ LAB-011
 
-## 3. v1.7 frozen Lab
+Current v1.6 state, UX state and exact verification are maintained in `docs/handoff/IMPLEMENTATION-STATE.md`. Do not copy status into this file manually when it changes; update the state file from evidence during each harvest.
 
-✅ LAB-001 Contracts and Run Model (TL delivery: /lab module + migration 059 + registration; unblocks LAB-002/005/011/013/014 for Wave 2)
-✅ LAB-002 Reference-First Niche Corpus (Worker-A delivery PR #69 → main 5534c70 + TL spec promotion; unblocks LAB-003)
-☐ LAB-003 Multimodal Content Feature Bundle
-☐ LAB-004 Idea Graph
-☐ LAB-005 Social Simulator Kernel
-☐ LAB-006 User/Creator/Competition Dynamics
-☐ LAB-007 Time Machine
-☐ LAB-008 World Model Ensemble
-☐ LAB-009 Offline Evaluation / Contextual Bandit
-☐ LAB-010 Sequential Strategy RL
-✅ LAB-011 Agent Body Runtime Contract (external Worker delivery branch lab/011-worker-delivery → TL station harvest PR #70 → main f8d2fb0 + TL spec promotion; unblocks LAB-012/LAB-013)
-☐ LAB-012 Agent Organization Search
-☐ LAB-013 Capability Engine + Arena Adapter
-☐ LAB-014 Lab → MOS Experiment Bridge
-☐ LAB-015 Online Calibration Loop
-☐ LAB-016 Robust Marketing Benchmark
-☐ LAB-017 Marketing Strategy Compiler / Social Automation Surface
-☐ LAB-018 Closed-Loop Marketing Engineering Proof
+New CR-007 work is specification-only until source/tests/runtime evidence is present.
 
-## 4. Frozen Lab architecture
+## 3. v1.7 system shape
 
 niche + platform + goal
 → reference-first corpus
-→ multimodal representation + Idea Graph
-→ Social World Model
-→ offline/counterfactual evaluation
-→ sequential strategy learning
+→ multimodal features + Idea Graph
+→ idea/transform search
+→ Social World Model + Time Machine
+→ strategy learning/search
 → Agent Body / Organization search
-→ capability acquisition when required
+→ capability discovery/acquisition
+→ production program
+→ Content Studio / automated production
+→ Lab output evaluation/treatment
 → robust simulation
 → bounded real MOS experiment
-→ real measurement
-→ simulator calibration
-→ repeat
+→ measurement
+→ calibration
+→ repeat.
 
-Key invariants:
-- corpus completeness is measured, never assumed;
-- media is reference-first and provider/rights gated;
-- historical and counterfactual outputs are distinct;
-- time-machine lag prevents future leakage;
-- business objective outranks vanity metrics;
-- world-model uncertainty/OOD/robustness are first class;
-- Agent Body uses interchangeable LLM occupants through /ai-runtime;
-- Arena is a provider, not a new MOS marketplace;
-- real posting goes through existing v1.6 authorities;
-- prohibited strategies are invalid regardless of simulated reward.
+The production program is part of the candidate strategy. It can include:
+- no-op/repost;
+- transforms;
+- composed/discovered transforms;
+- Transform Pawn Agents;
+- Studio format/configuration;
+- organization;
+- human tasks;
+- capability acquisitions;
+- budget;
+- delay/stopping decisions.
 
-## 5. Three workers
+## 4. Worker graph
 
 ### Worker A — Social + Data/World Models
-MKT-060, MKT-061, LAB-002..010, LAB-015.
+Owns:
+MKT-060, MKT-061,
+LAB-002..010,
+LAB-015,
+LAB-019.
+
+Scope:
+provider adapters, corpus, feature/idea representation, simulator/world-model/time-machine/learning, transform definitions/discovery.
 
 ### Worker B — Backend + Agent Engineering
-MKT-066, MKT-070, MKT-072, MKT-073, MKT-065 defect fix, LAB-011..013.
+Owns:
+MKT-065 defect,
+MKT-066, MKT-070, MKT-072, MKT-073,
+LAB-011/012/013/020/021/024.
 
-### Worker C — UX + Integration + Proof
-UX-005..012, MKT-074, MKT-075, LAB-014, LAB-016..018.
+Scope:
+Agent Body, organization search, capabilities, Transform Pawns, human task packages, bottleneck economics, v1.6 backend tail.
 
-Only Worker C changes the shared frontend composition root.
-Only TL resolves central schema/composition collisions.
+### Worker C — Content Studio + UX + Real-World Integration
+Owns:
+STUDIO-001..014,
+LAB-014/016/017/018/022/023,
+MKT-074/075,
+UX-005..012.
 
-## 6. Execution waves
+Scope:
+Studio runtime/format/session/artifact contracts, Lab↔Studio bridge, Studio output evaluation/treatment, social automation product surface, browser/production proof.
 
-### Wave 0 — parallel start
-A:
-- MKT-060
-- LAB-002
+Only Worker C owns shared console composition.
+Only TL owns frozen manifest/architecture/central schema/migration/registration collision resolution.
 
-B:
-- MKT-065 HTTP defect
-- MKT-066
-- LAB-011 contract/runtime skeleton
+## 5. Current executable waves
 
-C:
-- UX-005 Connections Center
-- Research discoverability UX
-- LAB-014 integration contract skeleton
+Completed prerequisites already on main are not re-run as work items.
 
-TL:
-- merge architecture branch
-- verify exact source baseline
-- protect ownership boundaries
+### Wave N — immediately executable
 
-### Wave 1
-A:
-- MKT-061
+Worker A:
 - LAB-003
 - LAB-004
 - LAB-005
 
-B:
-- MKT-066 completion
-- LAB-011 hardening
+Worker B:
+- LAB-012
 - LAB-013
+- MKT-072
+- MKT-073
 
-C:
-- UX-006
-- UX-007
-- UX-008
-- MKT-074 foundations
-- LAB-014
+Worker C:
+- STUDIO-001
+- STUDIO-002
+- STUDIO-003
+- STUDIO-007
+- STUDIO-009
+- UX-009
+- UX-010
+- MKT-074 foundation
 
-### Wave 2
-A:
+LAB-019 begins once LAB-003/004 are both satisfied.
+
+### Wave N+1 — production and transform execution
+
+Worker A:
 - LAB-006
 - LAB-007
 - LAB-008
+- LAB-019
+- LAB-009 preparation
 
-B:
-- MKT-070
-- MKT-072
-- LAB-012
+Worker B:
+- LAB-020
+- LAB-021
+- LAB-024
+- LAB-012 hardening
+- LAB-013 hardening
 
-C:
-- UX-009
-- UX-010
-- LAB-017 initial product surface
+Worker C:
+- STUDIO-004
+- STUDIO-005
+- STUDIO-006
+- STUDIO-008
+- STUDIO-010
+- STUDIO-011
+- STUDIO-012
+- LAB-022 skeleton
+- UX-009/010 completion
 
-### Wave 3
-A:
+### Wave N+2 — learning and Lab/Studio feedback
+
+Worker A:
 - LAB-009
 - LAB-010
+- LAB-015
 
-B:
-- MKT-073
-- LAB-012 hardening
-- capability/org evaluation support
+Worker B:
+- capability/organization regression
+- remaining v1.6 backend tail
+- LAB-024 regression
 
-C:
+Worker C:
+- STUDIO-013
+- STUDIO-014
+- LAB-022
+- LAB-023
+- LAB-014
 - MKT-074 completion
-- LAB-014 real bridge
-- LAB-016 benchmark
 - UX-011
 
-### Wave 4
-A:
-- LAB-015
-- full simulator/model regression
+### Wave N+3 — productization and proof
 
-B:
-- MKT-066/070/072/073 regression
-- LAB-013 capability regression
-- agent organization regression
+Worker A:
+- full simulator/world-model regression
+- transform discovery benchmark support
 
-C:
+Worker B:
+- MKT-072/073 regression
+- Agent Organization / Transform Pawn / capability regression
+
+Worker C:
+- LAB-016
 - LAB-017
 - LAB-018
-- UX-012
 - MKT-075
-- production proof
+- UX-012
+- final browser/deployment proof
 
-## 7. Mandatory Lab benchmark
+## 6. Studio production protocol
 
-Every benchmark includes:
-- generalist single-agent baseline;
-- hand-designed multi-agent baseline;
-- generation-only ideas;
-- retrieval-only ideas;
-- retrieval + transformation;
-- retrieval + recombination/mutation;
-- simulator-trained policy.
+Lab-issued Production Request:
+strategy + source/idea + transform graph + Studio format + organization version + capability requirements + human tasks + acceptance criteria + budget + delay/stopping policy
+→ Studio
+→ production session
+→ raw/intermediate artifacts
+→ selected organization
+→ transformations/composition
+→ Artifact Package
+→ Lab evaluation.
 
-Evaluate:
-- declared objective;
-- cost;
-- latency;
-- uncertainty;
-- ensemble robustness;
-- seed robustness;
-- OOD;
-- rights/policy feasibility;
-- capability dependencies.
+The Studio can also be entered directly by a user:
+intent/script → format → organization → interview/capture → processing → review → final output.
 
-Never treat simulator leaderboard ordering as real-world truth.
+Studio does not publish directly.
 
-## 8. Mandatory Time Machine proof
+## 7. Human participation protocol
 
-Run:
-1. historical replay;
-2. delayed-information run with user-selected lag;
-3. counterfactual branches.
+Human involvement is a variable in the strategy search.
 
-At simulated time T, delayed mode exposes only information available by T-lag.
-Counterfactual results show model version and uncertainty.
+The Lab can create a Human Production Task Package and route it to:
+- project owner;
+- authorized collaborator;
+- Arena/provider.
 
-## 9. Mandatory real-world loop
+A human branch records expected value, delay and alternatives.
 
-Selected candidate:
-Lab simulation
-→ existing Growth Mission
-→ existing Policy/Rights/Assets/Distribution/Integration/Workflow/Execution
-→ real platform
-→ Evidence/Metrics/Experiment
-→ prediction error
-→ calibration
-→ next Lab run.
+Lab decisions:
+wait | retry | substitute | switch organization | switch transform | reduce scope | proceed without human | abandon.
 
-Lab never calls the provider directly.
+Abandonment is auditable and is not a failure of the system when the expected value of waiting is negative.
 
-## 10. Capability acquisition proof
+## 8. Studio review/treatment protocol
 
-When simulation detects an unavailable capability:
-- formalize capability contract;
-- estimate value;
-- request through Arena/provider Integration;
-- verify returned result;
-- version capability;
-- re-run simulation;
-- optionally send through real experiment bridge.
+The Lab may:
+- accept output;
+- reject quality/strategy;
+- request structured treatment;
+- require human action;
+- select alternate organization;
+- select alternate transform;
+- abandon branch.
 
-No Arena dependency may block the zero-human path.
+Every retry/treatment is a new immutable linked artifact version.
 
-## 11. Media/corpus policy
+## 9. Proof requirements
 
-Default durable corpus:
-reference + metadata + provenance + feature bundle + observation history.
+The complete v1.7 proof must demonstrate:
+- broad reference-first corpus;
+- Idea Graph;
+- no-op/repost search;
+- at least one learned transform;
+- at least one Transform Pawn;
+- Time Machine historical/delayed/counterfactual behavior;
+- world-model ensemble/OOD/robustness;
+- organization search;
+- interchangeable model occupancy through /ai-runtime;
+- capability gap + governed acquisition path;
+- one-person podcast with non-human interviewer representation;
+- multi-account podcast;
+- reaction content with raw human capture entering an organization;
+- Lab rejection → treatment → accepted/new output;
+- production branch abandoned because of delay economics;
+- zero-human path;
+- real bounded platform experiment;
+- real measurement;
+- calibration;
+- second improved strategy/run;
+- hard rejection of prohibited strategies.
 
-Temporary media only through provider/rights-gated acquisition.
+## 10. Verification discipline
 
-Record coverage, freshness, duplication, accessibility and extraction success.
+A Work Item becomes green only when evidence agrees across:
+source;
+tests;
+database/migrations where applicable;
+runtime/API;
+browser for presentation changes;
+deployment for production gates.
 
-## 12. v1.6 known defect
+Workers must disclose environmental limitations, doubles, unsupported provider operations and flaky infrastructure rather than converting them into green claims.
 
-MKT-065 HTTP dispatch can return audit 422 after durable dispatch state is recorded.
-Fix this before MKT-075 and cover the actual HTTP route failure path with integration and browser/runtime evidence.
+## 11. Central-file conflict rule
 
-## 13. Browser acceptance
+Workers do not concurrently edit:
+- frozen architecture/manifest/lock;
+- effective backlog/dependency matrix;
+- central application module maps;
+- composition root;
+- migration-count/checker central assertions.
 
-For every UI journey:
-- real API/auth;
-- 390x844;
-- 1280x800;
-- no raw JSON;
-- no horizontal overflow;
-- no page/browser errors;
-- truthful loading/empty/error/blocked states;
-- explicit next action.
+They implement module-local seams and give TL the exact promotion/re-pin notes.
 
-Use the repository's agent-browser verification skill after starting a dev server.
+## 12. Final acceptance
 
-## 14. Documentation/update rule
+v1.6 and v1.7 are separate but layered acceptance programs.
 
-Do not create a second execution authority.
-Update this file and IMPLEMENTATION-STATE when accepted milestones change.
-The frozen architecture files define architecture; this file defines orchestration.
+v1.7 is complete only after the full Lab → production → real-world → calibration loop is demonstrated, including the Content Studio paths above.
 
-## 15. Final acceptance
-
-v1.6 requires its existing end-to-end and production gates.
-
-v1.7 requires the complete:
-niche + platform + goal
-→ corpus
-→ idea search
-→ simulator
-→ strategy learning
-→ agent organization search
-→ capability acquisition where needed
-→ robust selection
-→ real bounded experiment
-→ measurement
-→ calibration
-→ improved next run.
-
-Source + tests + runtime + browser + deployment evidence must agree.
+Production promotion is a separate gate from repository completion.

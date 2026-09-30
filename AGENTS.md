@@ -11,22 +11,24 @@ This repository is the architecture and implementation source of truth for MOS. 
 5. spec/change-request-006.md
 6. spec/effective-backlog-v1.6.md
 7. spec/module-dependency-matrix-v1.6.md
-8. spec/frozen-manifest-v1.7.json
-9. spec/architecture-v1.7-marketing-lab.md
-10. spec/architecture-lock-v1.7.md
-11. spec/effective-backlog-v1.7.md
-12. spec/module-dependency-matrix-v1.7.md
-13. applicable v1.5 frozen documents and explicit supersessions
-14. applicable v1.5 dependency / traceability / security / module matrices
-15. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
-16. docs/product/PRODUCT-CONSOLE-V1.6.md
-17. docs/handoff/IMPLEMENTATION-STATE.md
-18. docs/handoff/EXECUTION-PLAN.md
-19. docs/handoff/WORKER-CONTRACT.md
-20. docs/handoff/UX-DISCOVERY-V1.6.md
-21. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
-22. docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
-23. the exact Work Item / task
+8. spec/change-request-007-content-production-studio.md
+9. spec/frozen-manifest-v1.7.json
+10. spec/architecture-v1.7-marketing-lab.md
+11. spec/content-studio-contract-v1.0.md (for Studio work)
+12. spec/architecture-lock-v1.7.md
+13. spec/effective-backlog-v1.7.md
+14. spec/module-dependency-matrix-v1.7.md
+15. applicable v1.5 frozen documents and explicit supersessions
+16. applicable v1.5 dependency / traceability / security / module matrices
+17. docs/architecture/IMPLEMENTATION-GOVERNANCE.md
+18. docs/product/PRODUCT-CONSOLE-V1.6.md
+19. docs/handoff/IMPLEMENTATION-STATE.md
+20. docs/handoff/EXECUTION-PLAN.md
+21. docs/handoff/WORKER-CONTRACT.md
+22. docs/handoff/UX-DISCOVERY-V1.6.md
+23. docs/handoff/DEPLOYMENT-PLAN-V1.6.md
+24. docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+25. the exact Work Item / task
 
 Actual Git history, source, tests, migrations and provider verification outrank summaries, screenshots, PR descriptions and stale coordination documents.
 
@@ -73,7 +75,17 @@ Actual Git history, source, tests, migrations and provider verification outrank 
 - Simulator calibration cannot rewrite historical observations.
 - Strategies that violate rights, policy or anti-gaming constraints are invalid regardless of simulated reward.
 - CopilotKit, OpenMuse and Code-OSS are excluded architecture dependencies.
-- Long-running simulation/training uses durable worker infrastructure, not synchronous requests or Vercel Hobby Cron.
+- Long-running simulation/training and production processing use durable worker infrastructure, not synchronous requests or Vercel Hobby Cron.
+- The Lab searches the complete production program: ideas + no-op/repost + transforms + Transform Pawns + organizations + Studio + human contributions + delay/stopping economics.
+- No-op/repost is a first-class transform candidate; transforms may be atomic, composed or newly discovered.
+- Human-generated media is an intermediate artifact and must pass through the selected organization for treatment when the strategy requires it.
+- Human production tasks are explicit, versioned and rights/consent scoped; human waiting never silently becomes a mandatory workflow.
+- Content Studio is the single MOS-owned AI+Human production runtime for standalone and Lab-initiated creation; it initially supports reaction, audio podcast and video podcast.
+- Studio may load any compatible submitted organization and may span multiple authorized accounts in one session.
+- One-person podcasts may use voice/text/avatar/prerecorded/generated/hybrid interviewer representations with provenance.
+- Lab output evaluation may accept, reject, request treatment, switch organization/transform, request human action, or abandon; every treatment creates a new immutable artifact version.
+- Expected value of delay is a first-class production decision variable.
+- Policy/Rights/Distribution/Workflow/Execution/Evidence/Experiment remain singular authorities for real publication and outcomes.
 
 ## UX / evidence
 

@@ -34,3 +34,30 @@ Status: FROZEN
 30. Long-running Lab work runs on durable worker infrastructure; Vercel Hobby Cron is not the scheduler authority.
 31. CopilotKit, OpenMuse and Code-OSS are not architectural dependencies.
 32. A productized social-automation service is an application of the Lab, not a second architecture.
+
+
+33. v1.7 Amendment CR-007: the Lab searches the full production program, including a first-class no-op/repost option, atomic/composed/discovered transforms, Transform Pawn Agents, human production tasks, Studio format/configuration, organizations, and bottleneck/stopping decisions.
+
+34. Transform Definitions and Transform Graphs are versioned contracts. A discovered transform is not production authority until validated/evaluated and explicitly versioned.
+
+35. Transform Pawn Agents use the existing Agent Body runtime. No second agent runtime or model router is permitted.
+
+36. Human-generated media is an intermediate production artifact. It may be passed into a selected organization for editing, composition and packaging before it becomes a final candidate.
+
+37. Human production dependencies are economic variables. The Lab records expected incremental value, wait, delay cost, acquisition cost, probability, quality impact and alternatives and may wait, substitute, retry, reduce scope or abandon a branch.
+
+38. Content Studio is a MOS-owned AI+Human production runtime that is both standalone and Lab-invoked. It initially supports reaction, audio podcast and video podcast through a pluggable format contract.
+
+39. Studio can load any submitted organization satisfying the Studio compatibility contract, whether Lab-discovered or user-supplied. Organization selection is versioned and explicit.
+
+40. One-person podcasts may use voice, text, avatar, prerecorded, generated or hybrid interviewer representations. The system preserves generated/human provenance.
+
+41. Multi-person podcast sessions may span multiple authorized MOS accounts and devices while preserving each participant's identity, consent, credentials and contribution provenance.
+
+42. Studio outputs are immutable/versioned artifact packages. The Lab can accept, reject, request treatment, request human action, switch organization/transform or abandon. Each treatment creates a new linked output version.
+
+43. The Studio is not a marketing objective, publishing, rights, policy, experiment, evidence, workflow, execution, model-routing or marketplace authority.
+
+44. The Lab-to-Studio contract carries the selected strategy, transform graph, organization version, Studio format, human tasks, acceptance criteria, budget and delay/stopping policy. Studio returns auditable production artifacts, costs, delays, failures and provenance.
+
+45. Any implementation that assumes every successful strategy needs a transform, every production requires human participation, or every human bottleneck must be waited on violates the v1.7 freeze.

@@ -76,3 +76,29 @@ historical observations
 → repeat
 
 The research references do not override MOS's frozen authority, rights, policy, tenancy or provider-boundary rules.
+
+
+## Content production and Studio synthesis
+
+The Lab is intentionally a search system over production programs, not merely a selector of post ideas.
+
+The production search space includes:
+- no-op/repost;
+- clipping/reframing and other transformations;
+- composed transformations such as source + human reaction;
+- stylization such as anime conversion where the required capability is lawful and available;
+- generated content;
+- human+AI production;
+- alternate production organizations and specialized Transform Pawn Agents.
+
+The Content Studio provides a shared production runtime for standalone and Lab-initiated AI+Human creation. Initial formats are reaction, audio podcast and video podcast.
+
+The Studio synthesis adds several design requirements:
+- one-person podcasts can synthesize the interviewer through voice, text, avatar, prerecorded or generated material;
+- multi-person sessions can span authorized accounts while preserving participant boundaries;
+- any compatible submitted organization can be loaded by the Studio;
+- raw human captures remain intermediate artifacts until transformed/composed;
+- the Lab can reject or treat Studio outputs and may substitute organization/transform;
+- human waiting has an economic cost and can be abandoned when expected value is insufficient.
+
+These are MOS-specific architecture decisions and do not establish external product dependencies or platform claims.

@@ -2,12 +2,14 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered
+v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
-## Main baseline
+## Historical architecture base
 
 10f51781f8d198cd07c19259f722c1aeab7ac8e6
+
+This SHA is the historical base of the v1.7 architecture branch, not the current main HEAD. Always verify current main at takeover.
 
 ## v1.6
 
@@ -79,7 +81,28 @@ cross-module dependency (platform ports only) — LAB-002..018 consume the
 contracts BY REFERENCE.
 
 All remaining implementation items pending:
-☐ LAB-003..LAB-010, LAB-012..LAB-018
+☐ LAB-003
+☐ LAB-004
+☐ LAB-005
+☐ LAB-006
+☐ LAB-007
+☐ LAB-008
+☐ LAB-009
+☐ LAB-010
+☐ LAB-012
+☐ LAB-013
+☐ LAB-014
+☐ LAB-015
+☐ LAB-016
+☐ LAB-017
+☐ LAB-018
+☐ LAB-019
+☐ LAB-020
+☐ LAB-021
+☐ LAB-022
+☐ LAB-023
+☐ LAB-024
+☐ STUDIO-001..STUDIO-014
 
 ✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
 merged as 5534c70 + the TL spec promotion): the `/lab-corpus` module
@@ -138,6 +161,34 @@ Architecture/coordination artifacts are frozen and present:
 - spec/effective-backlog-v1.7.md
 - spec/module-dependency-matrix-v1.7.md
 - docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+- spec/change-request-007-content-production-studio.md
+- spec/content-studio-contract-v1.0.md
+
+## v1.7 CR-007 frozen production layer
+
+Architecture amendment is now incorporated into the repo:
+- no-op/repost is a first-class strategy candidate;
+- Transform Definitions/Graphs can be atomic, composed or newly discovered;
+- Transform Pawn Agents use the existing Agent Body runtime;
+- human production is explicit, versioned and economically bounded by expected value of delay;
+- Content Studio is standalone and Lab-invoked;
+- initial formats: reaction, audio podcast, video podcast;
+- single-person podcasts support pluggable AI/synthetic/prerecorded interviewer representations;
+- multi-account sessions preserve separate participant authorization, identity, consent and provenance;
+- Studio can load any compatible submitted organization;
+- raw human media can be treated by the loaded organization;
+- Lab can accept/reject Studio outputs and issue immutable treatment/retry requests;
+- organization/transform substitution and branch abandonment are explicit;
+- Studio does not become a publishing, workflow, rights/policy, experiment, evidence, model-router or marketplace authority.
+
+New frozen Work Items:
+☐ LAB-019 Transform Definitions + Transform Graph
+☐ LAB-020 Transform Pawn Agents
+☐ LAB-021 Human Production Task Packages
+☐ LAB-024 Production Bottleneck + Expected Delay Economics
+☐ STUDIO-001..014 Content Studio
+☐ LAB-022 Lab → Studio Production Bridge
+☐ LAB-023 Studio Output Evaluation / Treatment Loop
 
 ## Frozen v1.7 decisions
 
@@ -154,6 +205,11 @@ Architecture/coordination artifacts are frozen and present:
 - Arena as external provider through Integration;
 - bounded Lab→MOS real experiment bridge;
 - simulator calibration;
+- transform discovery and no-op/repost;
+- Transform Pawn Agents;
+- Content Studio and Lab↔Studio production bridge;
+- human production task packages and expected-delay economics;
+- Studio output evaluation/treatment;
 - business-outcome-first reward;
 - hard rights/policy/anti-gaming gates;
 - no CopilotKit/OpenMuse/Code-OSS dependency.
