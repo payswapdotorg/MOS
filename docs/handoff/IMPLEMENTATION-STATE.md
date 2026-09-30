@@ -81,10 +81,27 @@ cross-module dependency (platform ports only) — LAB-002..018 consume the
 contracts BY REFERENCE.
 
 All remaining implementation items pending:
-☐ LAB-003..LAB-010
-☐ LAB-012..LAB-010? (ignore duplicate range; canonical IDs are in the frozen backlog)
-☐ LAB-012..LAB-018
-☐ LAB-019..LAB-024
+☐ LAB-003
+☐ LAB-004
+☐ LAB-005
+☐ LAB-006
+☐ LAB-007
+☐ LAB-008
+☐ LAB-009
+☐ LAB-010
+☐ LAB-012
+☐ LAB-013
+☐ LAB-014
+☐ LAB-015
+☐ LAB-016
+☐ LAB-017
+☐ LAB-018
+☐ LAB-019
+☐ LAB-020
+☐ LAB-021
+☐ LAB-022
+☐ LAB-023
+☐ LAB-024
 ☐ STUDIO-001..STUDIO-014
 
 ✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
