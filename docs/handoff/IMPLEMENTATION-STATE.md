@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered
+v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Main baseline
@@ -138,6 +138,32 @@ Architecture/coordination artifacts are frozen and present:
 - spec/effective-backlog-v1.7.md
 - spec/module-dependency-matrix-v1.7.md
 - docs/handoff/FINAL-TECH-LEAD-HANDOFF-V1.7-LAB.md
+
+## v1.7 CR-007 frozen production layer
+
+Architecture amendment is now incorporated into the repo:
+- no-op/repost is a first-class strategy candidate;
+- Transform Definitions/Graphs can be atomic, composed or newly discovered;
+- Transform Pawn Agents use the existing Agent Body runtime;
+- human production is explicit, versioned and economically bounded by expected value of delay;
+- Content Studio is standalone and Lab-invoked;
+- initial formats: reaction, audio podcast, video podcast;
+- single-person podcasts support pluggable AI/synthetic/prerecorded interviewer representations;
+- multi-account sessions preserve separate participant authorization, identity, consent and provenance;
+- Studio can load any compatible submitted organization;
+- raw human media can be treated by the loaded organization;
+- Lab can accept/reject Studio outputs and issue immutable treatment/retry requests;
+- organization/transform substitution and branch abandonment are explicit;
+- Studio does not become a publishing, workflow, rights/policy, experiment, evidence, model-router or marketplace authority.
+
+New frozen Work Items:
+☐ LAB-019 Transform Definitions + Transform Graph
+☐ LAB-020 Transform Pawn Agents
+☐ LAB-021 Human Production Task Packages
+☐ LAB-024 Production Bottleneck + Expected Delay Economics
+☐ STUDIO-001..014 Content Studio
+☐ LAB-022 Lab → Studio Production Bridge
+☐ LAB-023 Studio Output Evaluation / Treatment Loop
 
 ## Frozen v1.7 decisions
 
