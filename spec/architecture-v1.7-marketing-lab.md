@@ -545,3 +545,306 @@ The first v1.7 proof is complete only when:
 14. zero-human-budget paths work;
 15. prohibited strategies are rejected by hard gates;
 16. a complete niche+platform+goal social-automation loop is demonstrated end-to-end.
+
+
+## 27. Production Strategy, Transform Discovery and Content Studio
+
+v1.7 extends strategy search from "what should be posted?" to the complete production program required to produce and evaluate the candidate.
+
+A Production Strategy may contain:
+- source/reference selection;
+- idea selection or generation;
+- zero or more transformations;
+- transform ordering and parameters;
+- Agent Body organization;
+- model assignments through /ai-runtime;
+- tool/capability assignments;
+- human contributions;
+- Content Studio format and configuration;
+- waiting/stopping policy;
+- expected production cost and delay;
+- evaluation and acceptance criteria.
+
+The Lab MUST be able to search the no-op path, simple transforms, composed transforms, human+AI transforms, and new transform candidates.
+
+### 27.1 Transform definitions and transform graphs
+
+A Transform Definition is a versioned contract describing:
+- accepted input artifact/reference types;
+- produced artifact types;
+- parameters;
+- rights/provenance requirements;
+- quality evaluator;
+- cost;
+- latency;
+- required capabilities;
+- simulator representation where available;
+- real execution representation where available;
+- lineage rules;
+- safety/policy constraints.
+
+A Transform Graph is an ordered or branching graph of Transform Definitions with explicit data dependencies, artifact lineage and acceptance conditions.
+
+The transform graph MAY terminate in "no-op", meaning the original artifact is preserved and reused subject to the existing rights/distribution authorities.
+
+The Lab MUST distinguish:
+- source artifact;
+- unchanged/no-op candidate;
+- derived transformation;
+- composed transformation;
+- generated content;
+- human contribution;
+- final assembled output.
+
+A newly discovered transform is only promotable after contract validation and bounded evaluation. Discovered transforms are data/strategy candidates until explicitly versioned and accepted.
+
+### 27.2 Transform Pawn Agents
+
+Transform Pawn Agents are specialized Agent Instances whose body contract is optimized for one transformation or production operation.
+
+Examples include:
+- clip selection;
+- hook extraction;
+- reaction composition;
+- podcast question design;
+- interviewer control;
+- visual stylization;
+- anime transformation;
+- scene/layout composition;
+- editing;
+- captioning;
+- dubbing;
+- quality criticism.
+
+A pawn is still an Agent Body + selected model + permitted tools/capabilities. It MUST NOT introduce another agent runtime or model-routing authority.
+
+A production organization can feed raw camera output or other intermediate artifacts to specialized pawns that adapt, edit, compose and package them to satisfy the selected strategy.
+
+### 27.3 Human production task packages
+
+When the Lab discovers a strategy that requires a human contribution, it creates a Human Production Task Package containing:
+- objective;
+- requested role/contribution;
+- source/reference material;
+- script or question set;
+- talking-point or response constraints;
+- capture instructions;
+- framing/audio/video guidance;
+- target duration/modality/format;
+- required output artifacts;
+- consent/rights requirements;
+- quality/evaluation criteria;
+- deadline and expected value of waiting;
+- acceptable substitutions.
+
+The task may be submitted to:
+- the project owner;
+- an authorized collaborator;
+- Arena or another governed provider.
+
+A received human artifact is never considered final merely because the recording is complete. It enters the production organization for treatment, composition and evaluation.
+
+### 27.4 Production bottlenecks and cost of delay
+
+Human work, unavailable capabilities, provider latency and other production dependencies are treated as economic bottlenecks.
+
+A production branch records:
+- expected incremental value;
+- estimated wait;
+- delay cost;
+- acquisition cost;
+- probability of success;
+- quality impact;
+- alternative paths.
+
+The Lab may:
+- wait;
+- retry;
+- substitute another capability;
+- switch organization;
+- switch transform;
+- reduce scope;
+- proceed with an AI-only or automated alternative;
+- abandon the branch.
+
+Waiting is therefore a decision variable, not a mandatory workflow state.
+
+Abandoned branches remain auditable and may become learning data. No blocked human branch may prevent an autonomous path when an acceptable alternative exists.
+
+### 27.5 Content Studio
+
+The Content Studio is the MOS-owned AI+Human content-production runtime. It is both:
+- a standalone user-facing creation product;
+- a production actuator that can be invoked by the Marketing Lab.
+
+The Studio initially supports:
+- reaction content;
+- audio podcasts;
+- video podcasts.
+
+Formats are pluggable. Future formats can be added without changing the Lab authority.
+
+A Studio production request may provide:
+- an explicit script;
+- a podcast question list;
+- an intent/objective from which the Studio/selected organization generates a script;
+- a Lab-generated production program.
+
+The Studio MUST be able to load any organization that satisfies its declared Studio compatibility contract, whether that organization was:
+- discovered by the Lab;
+- supplied by the user;
+- previously saved/versioned.
+
+The Studio does not become a second workflow or experiment authority. It owns production sessions and production artifacts only.
+
+### 27.6 One-person and multi-person podcasts
+
+For one-person podcasts, the Studio may construct the interviewer portion from:
+- voice;
+- voice + text;
+- avatar;
+- prerecorded interviewer material;
+- generated interviewer material;
+- another declared multimodal interviewer representation;
+- a hybrid.
+
+The interviewer can use adaptive follow-ups based on the person's answers. Generated/synthetic interviewer elements retain their provenance and are not represented as human-authored recordings when they are not.
+
+For multi-person podcasts, a Studio Session may span multiple authorized MOS accounts and devices.
+
+Each participant has an explicit participation grant and retains their own credential/identity boundary. The session aggregates participant contributions under a shared production scope, preserving participant provenance, consent and output rights.
+
+### 27.7 Studio artifact and treatment loop
+
+A Studio session produces a versioned Artifact Package that may contain:
+- raw captures;
+- final media;
+- alternate takes;
+- transcript;
+- question/answer graph;
+- timestamps;
+- participant contributions;
+- edit/composition metadata;
+- captions/subtitles;
+- derived clips;
+- provenance/consent records;
+- production measurements.
+
+The Lab may evaluate a Studio output and:
+- accept it;
+- reject it with structured treatment instructions;
+- request another organization;
+- request another transform;
+- request human action;
+- accept an alternate output;
+- abandon the production branch.
+
+Every treatment creates a new immutable/versioned output linked to its predecessor.
+
+A rejection is not equivalent to a platform policy rejection. Policy/Rights authorities remain singular and authoritative.
+
+### 27.8 Human raw-output treatment
+
+Organizations that receive user-generated or human-generated material MUST be able to place that material into the broader content strategy.
+
+For example, a reaction organization may learn that an output should be:
+- picture-in-picture;
+- bottom-left reaction window;
+- source-first then reaction;
+- alternating source/reaction segments;
+- clipped source followed by response;
+- another learned composition.
+
+Composition, timing and placement are searchable strategy variables and may be carried forward as organization versions.
+
+The Studio therefore accepts raw human captures as intermediate artifacts, not only finished assets.
+
+## 28. Lab-to-Studio contract
+
+The Lab-to-Studio request is a versioned production contract containing at minimum:
+- mission/scenario binding;
+- objective and reward context;
+- source/reference artifacts;
+- selected strategy;
+- transform graph;
+- selected Studio format;
+- selected organization version;
+- model/capability requirements;
+- human production tasks;
+- quality/acceptance criteria;
+- budget;
+- delay/stopping policy;
+- provenance and rights context;
+- return artifact contract.
+
+The Studio returns a versioned Artifact Package plus production status, costs, delays, failures and provenance.
+
+The Lab may issue a new treatment request against the prior Artifact Package without mutating the previous result.
+
+## 29. Studio standalone flow
+
+A standalone Studio session follows the same runtime contracts but does not require a Lab.
+
+User:
+intent or script
+→ format selection
+→ production plan
+→ organization selection
+→ interview/capture
+→ AI transformation/composition
+→ review/retake
+→ final Artifact Package
+
+The user may directly request a podcast or reaction without creating a marketing mission.
+
+## 30. Studio/Lab authority boundary
+
+The Studio MUST NOT:
+- choose a business marketing objective as its own authority;
+- publish directly to social providers;
+- replace MOS Workflow/Execution;
+- replace Rights/Policy;
+- replace Evidence/Experiment;
+- create a second model router;
+- become a marketplace.
+
+The Lab MUST NOT bypass the Studio's production contract when a Studio-originating transform is selected.
+
+The final real publication path remains:
+Lab candidate
+→ Studio/capability production where required
+→ existing Content Asset/Rights/Policy/Distribution/Integration/Workflow/Execution authorities
+→ Evidence/Metrics/Experiment
+→ calibration.
+
+## 31. Cross-cutting invariants
+
+- No-op/repost is a first-class strategy candidate.
+- Any transform can be a composition of other transforms or a newly discovered versioned transform.
+- Transform discovery, organization discovery and human participation can be jointly optimized.
+- Human contribution is optional and economically bounded.
+- Expected value of delay is explicit and can trigger branch abandonment.
+- Studio organizations are replaceable/versioned and may be loaded from Lab or user input.
+- Studio outputs are intermediate artifacts until accepted by the governing caller.
+- Human-generated raw media can be post-processed by agent organizations before finalization.
+- Multiple-account Studio sessions preserve participant identity, authorization, consent and provenance.
+- Synthetic interviewer representations remain provenance-labeled.
+- Every derived artifact retains lineage to its inputs.
+- The Lab, Studio, Agent Runtime, Workflow, Experiment, Evidence and Marketplace authorities remain singular.
+
+## 32. Updated v1.7 definition of done
+
+In addition to the prior v1.7 proof, the implementation is complete only when:
+1. transform search compares no-op/repost against meaningful transform alternatives;
+2. new transform candidates can be proposed, versioned, evaluated and reused;
+3. specialized Transform Pawn Agents can execute discovered transforms;
+4. a human production task can be generated from a Lab-discovered production strategy;
+5. human output can enter an organization as a raw intermediate artifact and be transformed into the final composition;
+6. the Lab can accept/reject Studio outputs and issue structured treatment/retry requests;
+7. expected value of delay can cause the Lab to wait, substitute or abandon a human/capability bottleneck;
+8. the Content Studio works both standalone and as a Lab actuator;
+9. reaction, audio podcast and video podcast formats work through the same Studio runtime;
+10. a one-person podcast can use a declared AI/synthetic/prerecorded interviewer representation;
+11. a multi-person podcast can span multiple authorized accounts;
+12. the Studio can load a user-supplied or Lab-discovered compatible organization;
+13. complete artifact/provenance/treatment lineage survives each production iteration.
