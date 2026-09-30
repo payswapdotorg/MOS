@@ -3,7 +3,7 @@
 Version: 1.7
 Status: FROZEN
 Layered on: v1.6 Growth Autonomy
-Canonical purpose: learn robust marketing strategies and agent organizations in simulation, then validate and calibrate them against real platform outcomes.
+Canonical purpose: learn robust marketing strategies and complete production programs—including ideas, transforms, organizations, capabilities, human participation and Content Studio configurations—in simulation, then validate and calibrate them against real platform outcomes.
 
 ## 1. Product thesis
 
@@ -49,6 +49,7 @@ Existing v1.6 authorities remain singular:
 - AI runtime.
 
 v1.7 introduces Lab-owned simulation artifacts only:
+- Studio-owned production artifacts are defined separately by the Content Studio Contract and are not Lab simulation artifacts.
 - Lab Scenario;
 - Lab Run;
 - World Model Version;
@@ -161,7 +162,7 @@ No generated idea is treated as source evidence merely because it resembles an o
 ## 7. Content generation is modality-agnostic
 
 The strategy action space may include:
-- reuse where permitted;
+- no-op / repost the original where permitted;
 - clip;
 - crop/reframe;
 - remix;
@@ -178,6 +179,10 @@ The strategy action space may include:
 - original human performance;
 - creator collaboration;
 - hybrid transformations.
+
+"No transform" is a first-class candidate and MUST be evaluated against transformed alternatives.
+
+The Lab searches over both the content choice and its production/transformation program. A transform may be atomic, composed from other transforms, or newly discovered as a versioned candidate.
 
 The Lab optimizes resulting content state and expected outcome, not production modality.
 
