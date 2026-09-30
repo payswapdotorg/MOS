@@ -22,7 +22,19 @@
     "simulator-to-real-experiment-bridge",
     "simulator-calibration",
     "robust-marketing-benchmarks",
-    "marketing-engineering-social-automation"
+    "marketing-engineering-social-automation",
+    "transform-discovery-and-transform-graphs",
+    "transform-pawn-agents",
+    "human-production-task-packages",
+    "production-bottleneck-economics",
+    "content-studio",
+    "pluggable-content-formats",
+    "adaptive-interviewer",
+    "multi-account-studio-sessions",
+    "studio-organization-loading",
+    "studio-output-evaluation-and-treatment",
+    "lab-to-studio-production-bridge",
+    "strategy-production-program-search"
   ],
   "singularV16AuthoritiesRemainCanonical": true,
   "labArtifacts": [
@@ -32,7 +44,12 @@
     "strategy-candidate",
     "agent-organization-candidate",
     "capability-candidate",
-    "calibration-record"
+    "calibration-record",
+    "transform-definition",
+    "transform-graph-candidate",
+    "human-production-task",
+    "production-strategy-candidate",
+    "bottleneck-decision"
   ],
   "mediaPolicy": {
     "referenceFirst": true,
@@ -72,5 +89,49 @@
     "copilotkit",
     "openmuse",
     "code-oss"
-  ]
+  ],
+  "productionArtifacts": [
+    "production-request",
+    "studio-session",
+    "studio-artifact-package",
+    "studio-output-version",
+    "studio-treatment-request",
+    "participant-contribution",
+    "interviewer-representation"
+  ],
+  "transformRules": {
+    "noOpRepostIsFirstClassCandidate": true,
+    "transformsCanBeComposed": true,
+    "newTransformsCanBeDiscovered": true,
+    "discoveredTransformRequiresVersionedContractAndEvaluation": true,
+    "transformPawnAgentsUseExistingAgentBodyRuntime": true,
+    "rawHumanOutputIsIntermediateArtifact": true
+  },
+  "humanProductionRules": {
+    "humanContributionIsOptional": true,
+    "taskPackagesAreVersioned": true,
+    "projectOwnerOrAuthorizedParticipantMayFulfill": true,
+    "arenaProviderPathAllowed": true,
+    "expectedValueOfDelayIsExplicit": true,
+    "waitSubstituteRetryOrAbandonSupported": true,
+    "blockedHumanBranchCannotBlockAutonomousAlternative": true
+  },
+  "studioRules": {
+    "standaloneAndLabInitiated": true,
+    "initialFormats": [
+      "reaction",
+      "audio-podcast",
+      "video-podcast"
+    ],
+    "pluggableFormats": true,
+    "intentOrScriptInput": true,
+    "adaptiveSinglePersonInterviewer": true,
+    "multiAccountSessions": true,
+    "arbitraryCompatibleOrganizationLoading": true,
+    "immutableArtifactVersions": true,
+    "structuredTreatmentRetry": true,
+    "studioIsNotPublicationOrExperimentAuthority": true
+  },
+  "manifestRevision": "1.7.1",
+  "amendmentStatus": "FROZEN_AFTER_CR_007"
 }
