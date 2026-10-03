@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 + MKT-072 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -39,7 +39,7 @@ Remaining:
    (50 modules) / unit 1255 / architecture 692 / integration re-run EXIT=0
    after one environmental postgres-termination flake / console tsc 0 +
    lint 0 + build OK)
-☐ UX-009..UX-012
+☐ UX-009, UX-011..UX-012
 ✅ UX-008 Human Treatment Console Surface (external worker delivery, PR #71 —
    worker delivery d53b0ff: console/** only, TreatmentsTab +
    HumanTreatmentExperimentCard + treatments-atoms with the frozen
@@ -256,6 +256,28 @@ triple-merged tree): typecheck 0 / lint 0 / unit 1354 / architecture
 MKT-056 teardown race — same family as the STUDIO-001 battery). 22-file multi-worker conflict
 resolution to the merged truth (55 spec-parsed / 56 enforced with the
 single /apps provision).
+
+✅ UX-010 — Progressive-Disclosure Console Hardening (external Worker
+delivery, PR #76 merged): console/** ONLY (59 files, +1736/-951).
+Every surface's first view is now the calm stack of LIVE section
+summary rows (SurfaceSection, collapsed by default, loading/empty/
+error summaries included); records, forms, diagnostics and route
+SourceLines render only on expand; composition + route disclosures
+demoted to a collapsed SourcesDisclosure footer. One primary action
+per screen state (Connect a channel / Start a research session); the
+Avoid list fixed (no route/authority/MKT-xxx names on first screens;
+no mono internal identifiers as primary UI). Zero new authorities,
+zero route changes — composition only. Real browser journey evidence
+(console/evidence/UX-010/: JOURNEY-RECORD.md + screenshots, desktop
+1280×800 + mobile 390×844) on the REAL stack: embedded PostgreSQL 18,
+the repo's own API entrypoint as a detached subprocess, real sign-up
+through the console orchestrator — no seeded data. Station battery on
+tl/harvest-ux010: repo tsc 0 / lint 0 / unit 1354 / architecture 742 /
+integration 1245+3 MKT-056 teardown-race flakes isolated-green 35/35;
+console tsc 0 / lint 0 / build EXIT=0. The worker's turn-died-mid-
+delivery saga: brief re-delivered after the un-started-turn diagnosis;
+completion achieved via continuation nudges (the mid-turn-death
+recovery pattern).
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
