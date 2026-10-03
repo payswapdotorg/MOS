@@ -305,7 +305,7 @@ test('LAB-013 AC: the module imports NO other module — the /lab family discipl
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('lab-capabilities'));
-  assert.equal(result.frozenModules.length, 58);
+  assert.equal(result.frozenModules.length, 59);
 });
 
 test('LAB-013 AC: the registration — the granted worker spec append + the composition-root wiring + the ApplicationModules entry', () => {
@@ -332,7 +332,7 @@ test('LAB-013 AC: the registration — the granted worker spec append + the comp
   assert.ok(compositionRoot.includes('listRegisteredAdapters: () => integrations.listRegisteredAdapters(),'), 'the port delegates the READ-ONLY registry read to the REAL /integrations instance');
   assert.ok(compositionRoot.includes('executeMutation: (input, provenance) => integrations.executeMutation(input, provenance),'), 'the port delegates the governed mutation to the REAL /integrations instance (the fail-closed gates stay there)');
   assert.ok(compositionRoot.includes('evaluator: createFirstPartyLabCapabilityEvaluator(),'), 'the first-party quality evaluator is the wired port');
-  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas }'), 'the modules map carries the entry');
+  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas, labSimulator }'), 'the modules map carries the entry');
   // ApplicationModules.
   assert.ok(applicationTs.includes("from '../modules/lab-capabilities/public.ts'"), 'application.ts imports the public contract');
   assert.ok(applicationTs.includes('readonly labCapabilities: LabCapabilitiesModuleApi;'), 'ApplicationModules carries the entry');
@@ -343,8 +343,8 @@ test('LAB-013 AC: the migration tail — 067_lab_capabilities.sql after the merg
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('067_lab_capabilities.sql'));
-  assert.equal(migrations[migrations.length - 2], '067_lab_capabilities.sql');
-  assert.equal(migrations[migrations.length - 4], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 3], '067_lab_capabilities.sql');
+  assert.equal(migrations[migrations.length - 5], '065_lab_features.sql');
   assert.ok(migrations.some((name) => name.startsWith('066_')), '066 is the merged LAB-004 /lab-ideas delivery (the TL reconciled the numbering at merge: 065 → 066 → 067)');
   // The module boundary is complete.
   assert.ok(existsSync(join(moduleDir, 'public.ts')));

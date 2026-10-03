@@ -139,7 +139,7 @@ test('STUDIO-001 AC-1: the module imports NO other module — the /lab family di
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('content-studio'));
-  assert.equal(result.frozenModules.length, 58);
+  assert.equal(result.frozenModules.length, 59);
 });
 
 test('STUDIO-001 AC-2: the module owns EXACTLY its six migration-064 tables — no v1.6 authority table, no /lab-agent-body table, no /ai-runtime table', () => {
@@ -257,7 +257,7 @@ test('STUDIO-001 AC-4: the registration — the composition root wires the REAL 
   assert.ok(compositionRoot.includes('const contentStudio = createContentStudioModule({'));
   assert.ok(compositionRoot.includes('agentBodies: contentStudioAgentBodies,'));
   assert.ok(compositionRoot.includes('formats: CONTENT_STUDIO_INITIAL_FORMATS,'));
-  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas },'));
+  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas, labSimulator },'));
   assert.ok(applicationTs.includes("import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts'"));
   assert.ok(applicationTs.includes('readonly contentStudio: ContentStudioModuleApi'));
   // The checker provision RETIRED (the 2026-10-03 TL spec promotion —
@@ -278,9 +278,9 @@ test('STUDIO-001 AC-5: 064_content_studio_runtime.sql appends before the LAB-003
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 5], '064_content_studio_runtime.sql');
-  assert.equal(migrations[migrations.length - 4], '065_lab_features.sql');
-  assert.equal(migrations[migrations.length - 3], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 6], '064_content_studio_runtime.sql');
+  assert.equal(migrations[migrations.length - 5], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 4], '066_lab_ideas.sql');
   assert.ok(!migrations.includes('062_agent_capability_candidates.sql'), '062 is reserved for the parallel worker (the TL reconciles numbering at merge — the LAB-011 disclosure)');
   // The header cites the governing sub-contract + the acceptance
   // verbatim (the house pattern).

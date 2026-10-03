@@ -387,6 +387,7 @@ import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts
 import type { LabFeaturesModuleApi } from '../modules/lab-features/public.ts';
 import type { LabCapabilitiesModuleApi } from '../modules/lab-capabilities/public.ts';
 import type { LabIdeasModuleApi } from '../modules/lab-ideas/public.ts';
+import type { LabSimulatorModuleApi } from '../modules/lab-simulator/public.ts';
 
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
@@ -785,4 +786,26 @@ export interface ApplicationModules {
   // simulator, the LAB-019 transform graph and the later Lab
   // layers; NO generated idea is ever treated as source evidence).
   readonly labIdeas: LabIdeasModuleApi;
+  // LAB-005: the Social Simulator Kernel authority (the v1.7
+  // configurable platform world model with deterministic seeded replay
+  // plus stochastic ensembles and NO invented hidden provider state:
+  // the world-model CONFIGURATION records — the closed vocabulary of
+  // declared knobs, immutable once instantiated; the SEED records —
+  // the recorded seed + configuration pair that reproduces a
+  // trajectory exactly; the RUN records — born running with the
+  // single completion advance, carrying the seed + configuration
+  // citation + the deterministic-replay flag + the factuality label
+  // 'simulated_model_output'; the STEP/TRAJECTORY records — candidates
+  // surfaced → exposure decisions → user interactions with their
+  // stochastic outcomes, every step append-only with its
+  // deterministic digest; the ENSEMBLE records — the family of runs
+  // over sampled seeds/configurations with the SQL-computed
+  // agreement/disagreement (a single run is never ground truth); and
+  // the OBSERVABLE-STATE snapshot records — the observable/hidden
+  // split: ONLY what the simulated agent could observe. The ranking/
+  // exposure parameters are DECLARED world-model assumptions — never
+  // claims about any provider's actual algorithm. Consumed BY
+  // REFERENCE by the LAB-006 dynamics, the LAB-007 time machine, the
+  // LAB-008 ensembles and the later learning ladder.)
+  readonly labSimulator: LabSimulatorModuleApi;
 }

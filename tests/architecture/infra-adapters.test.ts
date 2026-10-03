@@ -1149,6 +1149,17 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // references; NO /lab-capabilities table is created or referenced);
     // NO v1.6 authority table is created or mutated.
     '068_studio_format_framework.sql',
+    // LAB-005 (Social Simulator Kernel) appends the simulator
+    // migration (071 — the TL pre-assigned number; 069/070 are
+    // held by the in-flight parallel MKT-073/STUDIO-003 workers,
+    // the TL resolves the merge; the same additive precedent):
+    // the world-model configurations, the seed records, the runs
+    // with their steps + observable snapshots, and the ensembles
+    // with their members; NO v1.6 authority table is created or
+    // mutated, and NO /lab, /lab-features or /lab-ideas table is
+    // written (the content-universe citations are opaque recorded
+    // data — the /lab family by-reference discipline).
+    '071_lab_simulator.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

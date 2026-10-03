@@ -358,33 +358,33 @@ test('MKT-067 boundary 8: the disclosed spec registration exists — §6 line + 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 12], '057_content_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 8], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 6], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 4], '065_lab_features.sql');
-  assert.equal(listEntries[listEntries.length - 3], '066_lab_ideas.sql');
+  assert.equal(listEntries[listEntries.length - 13], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 9], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 7], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 5], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 4], '066_lab_ideas.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 11], '058_platform_health.sql');
-  assert.equal(listEntries[listEntries.length - 8], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 6], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 4], '065_lab_features.sql');
-  assert.equal(listEntries[listEntries.length - 3], '066_lab_ideas.sql');
+  assert.equal(listEntries[listEntries.length - 12], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 9], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 7], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 5], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 4], '066_lab_ideas.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql
   // and the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(listEntries[listEntries.length - 10], '059_lab_contracts.sql');
-  assert.equal(listEntries[listEntries.length - 9], '060_product_marketing.sql');
-  assert.equal(listEntries[listEntries.length - 13], '056_research.sql');
-  assert.equal(listEntries[listEntries.length - 14], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 15], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 16], '053_content_assets.sql');
-  assert.equal(listEntries[listEntries.length - 8], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 6], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 4], '065_lab_features.sql');
-  assert.equal(listEntries[listEntries.length - 3], '066_lab_ideas.sql');
+  assert.equal(listEntries[listEntries.length - 11], '059_lab_contracts.sql');
+  assert.equal(listEntries[listEntries.length - 10], '060_product_marketing.sql');
+  assert.equal(listEntries[listEntries.length - 14], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 15], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 16], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 17], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 9], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 7], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 5], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 4], '066_lab_ideas.sql');
   assert.ok(existsSync(src('platform', 'db', 'migrations', '054_experiment_analysis.sql')));
   // 055 is the last migration on disk (the MKT-065 sibling tail).
   const onDisk = readdirSync(src('platform', 'db', 'migrations'))
@@ -393,32 +393,32 @@ test('MKT-067 boundary 8: the disclosed spec registration exists — §6 line + 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(onDisk[onDisk.length - 12], '057_content_intelligence.sql');
-  assert.equal(onDisk[onDisk.length - 8], '061_lab_corpus.sql');
-  assert.equal(onDisk[onDisk.length - 6], '063_lab_agent_body.sql');
-  assert.equal(onDisk[onDisk.length - 4], '065_lab_features.sql');
-  assert.equal(onDisk[onDisk.length - 3], '066_lab_ideas.sql');
+  assert.equal(onDisk[onDisk.length - 13], '057_content_intelligence.sql');
+  assert.equal(onDisk[onDisk.length - 9], '061_lab_corpus.sql');
+  assert.equal(onDisk[onDisk.length - 7], '063_lab_agent_body.sql');
+  assert.equal(onDisk[onDisk.length - 5], '065_lab_features.sql');
+  assert.equal(onDisk[onDisk.length - 4], '066_lab_ideas.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(onDisk[onDisk.length - 11], '058_platform_health.sql');
-  assert.equal(onDisk[onDisk.length - 8], '061_lab_corpus.sql');
-  assert.equal(onDisk[onDisk.length - 6], '063_lab_agent_body.sql');
-  assert.equal(onDisk[onDisk.length - 4], '065_lab_features.sql');
-  assert.equal(onDisk[onDisk.length - 3], '066_lab_ideas.sql');
+  assert.equal(onDisk[onDisk.length - 12], '058_platform_health.sql');
+  assert.equal(onDisk[onDisk.length - 9], '061_lab_corpus.sql');
+  assert.equal(onDisk[onDisk.length - 7], '063_lab_agent_body.sql');
+  assert.equal(onDisk[onDisk.length - 5], '065_lab_features.sql');
+  assert.equal(onDisk[onDisk.length - 4], '066_lab_ideas.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql
   // and the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(onDisk[onDisk.length - 10], '059_lab_contracts.sql');
-  assert.equal(onDisk[onDisk.length - 9], '060_product_marketing.sql');
-  assert.equal(onDisk[onDisk.length - 13], '056_research.sql');
-  assert.equal(onDisk[onDisk.length - 14], '055_cross_platform_distribution.sql');
-  assert.equal(onDisk[onDisk.length - 15], '054_experiment_analysis.sql');
-  assert.equal(onDisk[onDisk.length - 8], '061_lab_corpus.sql');
-  assert.equal(onDisk[onDisk.length - 6], '063_lab_agent_body.sql');
-  assert.equal(onDisk[onDisk.length - 4], '065_lab_features.sql');
-  assert.equal(onDisk[onDisk.length - 3], '066_lab_ideas.sql');
+  assert.equal(onDisk[onDisk.length - 11], '059_lab_contracts.sql');
+  assert.equal(onDisk[onDisk.length - 10], '060_product_marketing.sql');
+  assert.equal(onDisk[onDisk.length - 14], '056_research.sql');
+  assert.equal(onDisk[onDisk.length - 15], '055_cross_platform_distribution.sql');
+  assert.equal(onDisk[onDisk.length - 16], '054_experiment_analysis.sql');
+  assert.equal(onDisk[onDisk.length - 9], '061_lab_corpus.sql');
+  assert.equal(onDisk[onDisk.length - 7], '063_lab_agent_body.sql');
+  assert.equal(onDisk[onDisk.length - 5], '065_lab_features.sql');
+  assert.equal(onDisk[onDisk.length - 4], '066_lab_ideas.sql');
 });
 
 // ---------------------------------------------------------------------------
@@ -450,7 +450,7 @@ test('MKT-067 boundary 9: the composition root constructs and registers the modu
   // The MKT-070 sibling registration inserts productMarketing between
   // platformHealth and lab (the same additive composition-root adjacency
   // re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.ok(compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas },'))  // No ai-runtime dependency anywhere in the module wiring (determinism).
+  assert.ok(compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas, labSimulator },'))  // No ai-runtime dependency anywhere in the module wiring (determinism).
   assert.ok(!wiring.includes('aiRuntime'));
   // The vocabulary version is exported from the public contract.
   assert.ok(analysisPublic.includes(`'${EXPERIMENT_ANALYSIS_VOCABULARY_VERSION}'`));

@@ -561,7 +561,7 @@ test('MKT-072: the spec registration is COMPLETE (the §6 line + the live-matrix
   // registration; the LAB-001/LAB-002/LAB-011/MKT-070 promotions carried
   // it to 52 before).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 57);
+  assert.equal(specModules.length, 58);
   assert.ok(specModules.includes('commerce-discovery'));
 });
 
@@ -589,7 +589,7 @@ test('MKT-072: the spec-parsed registration enforces the module with EXACTLY its
     'platform-health',
   ]);
   // 54 enforced modules (53 spec-parsed + the single /apps provision).
-  assert.equal(result.frozenModules.length, 58);
+  assert.equal(result.frozenModules.length, 59);
 });
 
 test('MKT-072: the real codebase enforces the frozen boundaries with ZERO violations; migration 062 sits in its pre-assigned slot', () => {
@@ -612,9 +612,9 @@ test('MKT-072: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 8], '061_lab_corpus.sql');
-  assert.equal(numbered[numbered.length - 7], '062_commerce_discovery.sql');
-  assert.equal(numbered[numbered.length - 6], '063_lab_agent_body.sql');
+  assert.equal(numbered[numbered.length - 9], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 8], '062_commerce_discovery.sql');
+  assert.equal(numbered[numbered.length - 7], '063_lab_agent_body.sql');
 });
 
 // ---------------------------------------------------------------------------
