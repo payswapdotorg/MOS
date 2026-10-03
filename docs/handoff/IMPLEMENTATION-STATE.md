@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + LAB-013 + STUDIO-001 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -278,6 +278,46 @@ console tsc 0 / lint 0 / build EXIT=0. The worker's turn-died-mid-
 delivery saga: brief re-delivered after the un-started-turn diagnosis;
 completion achieved via continuation nudges (the mid-turn-death
 recovery pattern).
+
+✅ LAB-013 — Capability Engine + Arena Adapter (external Worker
+delivery, PR #77 merged, main e53c22e): the /lab-capabilities module
+(src/modules/lab-capabilities/** + migration 067_lab_capabilities.sql,
+1440 lines, NINE §17 flow-stage tables — gaps, contracts,
+value_estimates, requests, results, verifications, versions,
+simulations, real_tests — with CHECK-fenced closed vocabularies, the
+actor split on every stage record, guarded lifecycles, append-only/
+no-delete triggers, scope-consistency triggers, the
+unverified-never-presented citation trigger, tenant-only + same-module
+FK anchors). The full §16 declared field set as one-level-schema DATA;
+the LAB-011 draft → active → retired lifecycle discipline with
+append-only version corrections and immutable chain identity. NO
+SECOND MARKETPLACE AUTHORITY (the core acceptance, structural): zero
+marketplace vocabulary in the public surface, zero provider-selection
+logic (caller-declared provider-target data), the Arena dispatch
+through the DECLARED NARROW STRUCTURAL PORT (listRegisteredAdapters +
+executeMutation ONLY — the LAB-011 /ai-runtime port precedent)
+satisfied structurally by the REAL /integrations instance at the
+composition root, so the fail-closed policy/credential/capability
+gates stay in /integrations. Human-plane boundary: opaque citations
+(never re-modeled); human availability never a prerequisite.
+Contract-rights discipline: granted-rights as recorded data, null =
+nothing granted. Verification discipline: the declared quality
+evaluator runs against the delivered artifact; a capability version
+may cite ONLY a passing verification (DB citation-trigger fence) —
+verified state is linked evidence, never an asserted boolean. Granted
+spec §6 registration append (the /lab-capabilities module list line +
+the registration paragraph; the empty-allowance /lab family posture,
+no matrix row). 29 new tests (11 unit + 9 architecture boundary + 9
+integration) + the LAB-013 runbook (docs/runbooks/LAB-013.md) + the
+sibling test re-pins. Station battery on tl/harvest-lab013 (clean
+merge onto eec1eee, zero conflicts): typecheck 0 / lint 0 / unit
+1365/1365 / architecture 751/751 / integration 1257 tests (1255 pass
++ 2 known MKT-056 teardown-race flakes, isolated re-run 27/27 green).
+The harvest proceeded on branch-push + workspace-worklog evidence per
+the mid-turn-death doctrine (the worker's chat transcript content
+never persisted server-side after its final turn died; the delivery
+branch faf7614 and the final-report-style worklog disclosures are the
+attestation).
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
