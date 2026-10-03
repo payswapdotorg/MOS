@@ -45,6 +45,7 @@ The latest repository state records these v1.7 items as delivered:
 - ✅ LAB-011
 - ✅ STUDIO-001
 - ✅ MKT-072
+- ✅ UX-010
 
 Current v1.6 state, UX state and exact verification are maintained in `docs/handoff/IMPLEMENTATION-STATE.md`. Do not copy status into this file manually when it changes; update the state file from evidence during each harvest.
 
