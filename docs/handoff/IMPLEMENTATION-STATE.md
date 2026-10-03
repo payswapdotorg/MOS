@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -346,6 +346,39 @@ nudge sent after the near-end death (worklog survived at 5600B with
 the 20/20 fence battery done); the resumed turn completed
 verification, pushed studio/002-worker-delivery (2409cac) and
 posted the completion report.
+
+✅ LAB-004 — Idea Graph (external Worker delivery, PR #79 merged,
+main c9ab7be): the /lab-ideas module — the v1.7 §6 conceptual-
+primitive LAYER over the cited /lab-features feature bundles: the
+CLOSED, versioned primitive vocabulary (contract identity
+'lab-ideas-contract-v1' + idea-set version 'lab-ideaset-v1', the ten
+§6 primitive kinds, the closed 8-relation edge vocabulary, the closed
+4-value origin-class vocabulary); THE OBSERVED-DERIVED-GENERATED-
+COMBINED SEPARATION structural at the DB (origin class fenced to the
+creation path; a decomposition of one cited bundle produces
+observed_source nodes ONLY with the deterministic identity digest as
+the idempotence fence; derive/recombine/mutate/analogy/invert/
+fill_gap operations produce the derived/generated/combined nodes each
+carrying recorded lineage + creation-time novelty); deterministic
+bounded cursor-paginated SQL retrieval with the MANDATORY explicit
+origin-class filter; versioned deterministic clustering (frozen
+'lab-idea-clustering-v1', kind-partitioned connected components at
+Jaccard>=0.5); frozen novelty version ('lab-idea-novelty-v1' — Jaccard
+max vs observed same-kind, never against generated); lineage bounded
+at 64 steps; the replaceable decomposer + generator ports with honest
+first-party implementations (structural only; open-ended generation
+ships the honest pending refusal). Migration 066 (7 tables, the
+066-MID-CHAIN merge: 065→066→067→068), 13 unit + 8 architecture + 17
+integration tests, the runbook, the registration seams. 27-file
+multi-worker merge resolution (both /lab-ideas AND /lab-capabilities
+registrations — 57 spec-parsed / 58 enforced; 22 sibling files
+normalized against the true 62-migration list; count + adjacency
+ladder). Station battery: typecheck 0 / lint 0 / unit 1380 /
+architecture 759 / integration 1280 (1278 + 2 lab-agent-body
+latency-deadline timing flakes isolated-green 17/17). Recovery saga:
+turn died twice; the EXECUTE NOW nudge ran the implementation; the
+push token lost to worker context compaction was re-supplied by the
+TL (used once, never stored).
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
