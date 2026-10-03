@@ -207,7 +207,7 @@ test('LAB-003 AC: the module imports NO other module — the /lab family discipl
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('lab-features'));
-  assert.equal(result.frozenModules.length, 55);
+  assert.equal(result.frozenModules.length, 56);
 });
 
 test('LAB-003 AC: the registration — the granted worker spec append + the composition-root wiring + the ApplicationModules entry', () => {
@@ -227,21 +227,21 @@ test('LAB-003 AC: the registration — the granted worker spec append + the comp
   assert.ok(compositionRoot.includes('const labFeatures = createLabFeaturesModule({'), 'the composition root wires the module');
   assert.ok(compositionRoot.includes('extractor: createFirstPartyLabFeatureExtractor(),'), 'the first-party extractor is the wired port');
   assert.ok(compositionRoot.includes('mediaFetch: createPendingLabMediaFetchPort(),'), 'the pending media-fetch port is the wired port');
-  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures }'), 'the modules map carries the entry');
+  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery }'), 'the modules map carries the entry');
   // ApplicationModules.
   assert.ok(applicationTs.includes("from '../modules/lab-features/public.ts'"), 'application.ts imports the public contract');
   assert.ok(applicationTs.includes('readonly labFeatures: LabFeaturesModuleApi;'), 'ApplicationModules carries the entry');
 });
 
-test('LAB-003 AC: the migration tail — 065_lab_features.sql after the merged STUDIO-001 064 (062 reserved for the parallel MKT-072 worker)', () => {
+test('LAB-003 AC: the migration tail — 065_lab_features.sql after the merged STUDIO-001 064 and MKT-072 062 (the merged-tree truth)', () => {
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('065_lab_features.sql'));
   assert.equal(migrations[migrations.length - 1], '065_lab_features.sql');
   assert.equal(migrations[migrations.length - 3], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 4], '061_lab_corpus.sql');
-  assert.ok(!migrations.includes('062_commerce_discovery.sql'), '062 stays reserved for the parallel worker (not taken here)');
+  assert.equal(migrations[migrations.length - 5], '061_lab_corpus.sql');
+  assert.ok(migrations.includes('062_commerce_discovery.sql'), '062 is taken by the merged MKT-072 sibling delivery (the merged-tree truth — the TL reconciles numbering at merge)');
   assert.ok(migrations.some((name) => name.startsWith('064_')), '064 is taken by the merged STUDIO-001 sibling delivery (the disclosed re-pin precedent — the merged-tree truth)');
   // The module boundary is complete.
   assert.ok(existsSync(join(moduleDir, 'public.ts')));

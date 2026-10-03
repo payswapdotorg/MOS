@@ -470,7 +470,7 @@ test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration,
   // the LAB-003 /lab-features granted worker spec registration
   // (52 → 53, the MKT-066 platform-health precedent).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 54);
+  assert.equal(specModules.length, 55);
 });
 
 test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {
@@ -508,7 +508,7 @@ test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its
   // spec registration (the MKT-066 platform-health precedent) — the
   // enforced total becomes 54: 53 spec-parsed + the single /apps
   // provision.
-  assert.equal(result.frozenModules.length, 55);
+  assert.equal(result.frozenModules.length, 56);
 });
 
 test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violations; migration 060 is the tail', () => {
@@ -530,8 +530,8 @@ test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 5], '060_product_marketing.sql');
-  assert.equal(numbered[numbered.length - 4], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 6], '060_product_marketing.sql');
+  assert.equal(numbered[numbered.length - 5], '061_lab_corpus.sql');
   assert.equal(numbered[numbered.length - 3], '063_lab_agent_body.sql');
   assert.equal(numbered[numbered.length - 1], '065_lab_features.sql');
 });

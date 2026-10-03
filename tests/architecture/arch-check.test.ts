@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (54 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (55 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 54);
+  assert.equal(modules.length, 55);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -67,7 +67,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (54 modules)', (
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-intelligence', 'content-rights', 'content-studio', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'commerce-discovery', 'content-assets', 'content-intelligence', 'content-rights', 'content-studio', 'credentials',
       'cross-platform-distribution',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'product-marketing',
@@ -426,6 +426,10 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total becomes 54: 53 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-features',
+    // The MKT-072 /commerce-discovery registration (the frozen v1.6 matrix
+    // row registered VERBATIM in the live spec files — the MKT-070 promoted-
+    // spec precedent; the granted worker spec registration):
+    'MISSING_MODULE|src/modules/commerce-discovery',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -525,7 +529,7 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // — with the total violations becoming 54.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    55,
+    56,
     'no unexpected violation categories may be reported',
   );
 
