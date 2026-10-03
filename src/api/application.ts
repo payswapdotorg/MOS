@@ -383,6 +383,7 @@ import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
 import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts';
 import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts';
+import type { LabFeaturesModuleApi } from '../modules/lab-features/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -722,4 +723,17 @@ export interface ApplicationModules {
   // (STUDIO-002..014) and the LAB-022 Lab→Studio production bridge
   // through the public session/step/output contracts).
   readonly contentStudio: ContentStudioModuleApi;
+
+  // LAB-003: the Multimodal Content Feature Bundle authority (the
+  // v1.7 feature-extraction layer: the closed, versioned feature-set
+  // definition over the 27 §5 feature keys with the per-modality
+  // grouping, the deterministic bundle identity + the append-only
+  // per-reference version chain, the full recorded-data source
+  // linkage, the optional ephemeral media access with the fail-
+  // closed grant gate, and the bounded batch extraction with the
+  // closed outcome/failure vocabularies — consumed BY REFERENCE by
+  // the LAB-004 Idea Graph, the LAB-005 simulator and the TL's
+  // corpus advance integration; the /lab-corpus feature_bundle_
+  // version advance stays the /lab-corpus module's own seam).
+  readonly labFeatures: LabFeaturesModuleApi;
 }

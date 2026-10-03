@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (53 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (54 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 53);
+  assert.equal(modules.length, 54);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -76,6 +76,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (53 modules)', (
       'lab',
       'lab-agent-body',
       'lab-corpus',
+      'lab-features',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -417,6 +418,14 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 54: 53 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/content-studio',
+    // The LAB-003 /lab-features §6 registration (the v1.7 Multimodal
+    // Content Feature Bundle authority — the granted worker spec
+    // append, the MKT-066 platform-health registration precedent)
+    // makes the fixture's missing lab-features boundary a
+    // MISSING_MODULE violation (the same additive count each sibling
+    // promotion adds — the enforced total becomes 54: 53 spec-parsed
+    // + the single /apps provision).
+    'MISSING_MODULE|src/modules/lab-features',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -506,9 +515,17 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // appends /content-studio: the enforced total becomes 54 and the
   // structure-violation total 53 → 54 (the same additive promotion
   // precedent).
+  // total violations staying 53. The LAB-003 delivery appends
+  // /lab-features through the granted worker spec registration (the
+  // MKT-066 platform-health registration precedent — the §6 line +
+  // the registration paragraph, no checker provision needed: the
+  // provision mechanism is structurally for spec-pending modules
+  // only): the spec-parsed set enforces it directly, so the enforced
+  // total becomes 54 — 53 spec-parsed + the single /apps provision
+  // — with the total violations becoming 54.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    54,
+    55,
     'no unexpected violation categories may be reported',
   );
 
