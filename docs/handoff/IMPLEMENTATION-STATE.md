@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-005 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-005 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + STUDIO-003 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -413,6 +413,38 @@ spec-parsed / 58→59 enforced). Station battery (the first
 zero-conflict merge — the worker based on the fully-reconciled main
 87ee744): typecheck 0 / lint 0 / unit 1394/1394 / architecture
 767/767 / integration 1289/1289 ZERO flakes.
+
+✅ STUDIO-003 — Intent → Script / Question Graph (external Worker
+delivery, PR #81 merged, main e515894): the /content-studio
+intent-to-script extension — the §8 record surfaces over the
+STUDIO-001 runtime + the STUDIO-002 framework: the four request paths
+(a supplied complete script → the versioned script record; a supplied
+podcast question list → the versioned declared question/branch graph;
+intent-only / intent+source → the generation path with the selected
+organization version generating the script/question graph); the
+generated records carry FULL PROVENANCE (the generator identity —
+organization version + model/capability references as opaque recorded
+data — and the intent lineage; no generated material is ever
+presented without its provenance record); the HUMAN-REVIEW option
+(the closed review vocabulary pending/approved/rejected/superseded
+with the reviewer actor and the honest autonomous/human split; the
+format-requires-explicit-user-confirmation flag honored STRUCTURALLY
+— a production request against a format that requires confirmation
+can cite ONLY an approved generated script/graph); the
+ADAPTIVE-BRANCHING hooks (the declared question/branch graph — nodes
+are questions with closed modality hints, edges are declared branch
+conditions; the chosen-edge/conversation-graph append surface
+preserving the resulting conversation graph as data — the STUDIO-004
+interviewer's structural home). Migration 070 (070_studio_script_
+question_graph.sql — slots between 068 and 071; 069 held by the
+in-flight MKT-073 worker), +821 integration / +213 unit test lines,
+the runbook. Station battery (the second consecutive zero-conflict
+merge — based on the fully-reconciled main 3d5de78): typecheck 0 /
+lint 0 / unit 1403/1403 / architecture 773/773 / integration
+1298/1298 ZERO flakes. Recovery saga: the original session hit the
+un-started-turn plague (nudges staged in DOM but never committed
+server-side); voided + re-dispatched fresh per the waiting-costs-hours
+doctrine — the r2 session delivered in ONE pass.
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph

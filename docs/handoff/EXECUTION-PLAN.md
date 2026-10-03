@@ -48,6 +48,7 @@ The latest repository state records these v1.7 items as delivered:
 - ✅ LAB-013
 - ✅ STUDIO-001
 - ✅ STUDIO-002
+- ✅ STUDIO-003
 - ✅ MKT-072
 - ✅ UX-010
 
