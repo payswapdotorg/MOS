@@ -464,9 +464,11 @@ test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration,
   // one more through the LAB-002 /lab-corpus TL promotion (50 → 51, the
   // /lab registration precedent — a sibling promotion, additive only)
   // and one more through the LAB-011 /lab-agent-body TL promotion
-  // (51 → 52, the /lab registration precedent).
+  // (51 → 52, the /lab registration precedent) and one more through
+  // the STUDIO-001 /content-studio TL promotion (52 → 53, the /lab
+  // registration precedent).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 52);
+  assert.equal(specModules.length, 53);
 });
 
 test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {

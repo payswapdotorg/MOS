@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 + STUDIO-001 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -102,7 +102,7 @@ All remaining implementation items pending:
 ☐ LAB-022
 ☐ LAB-023
 ☐ LAB-024
-☐ STUDIO-001..STUDIO-014
+☐ STUDIO-002..STUDIO-014
 
 ✅ LAB-002 — Reference-First Niche Corpus (Worker-A delivery, PR #69
 merged as 5534c70 + the TL spec promotion): the `/lab-corpus` module
@@ -181,12 +181,40 @@ Architecture amendment is now incorporated into the repo:
 - organization/transform substitution and branch abandonment are explicit;
 - Studio does not become a publishing, workflow, rights/policy, experiment, evidence, model-router or marketplace authority.
 
+✅ STUDIO-001 — Content Studio Runtime (external Worker delivery, PR #73
+merged as 79eb931 + the TL spec promotion): the `/content-studio` module
+(src/modules/content-studio/ — public.ts 904 + internal/
+content-studio-module.ts 1010 + content-studio-store.ts 812 +
+validation.ts 638), migration `064_content_studio_runtime.sql` (the
+module's own tables, CHECK-fenced closed vocabularies, append/immutable
+guard triggers — applied cleanly as migration 57 of the chain; 062
+remains reserved for the parallel MKT-072 worker), the pluggable format
+seam (ContentStudioFormatDeclaration; initial reaction / audio-podcast /
+video-podcast as minimal declared DATA; pluggability proven by unit test
+with a custom format), organization loading through the NARROW
+/lab-agent-body structural port (versioned declarations citing OPAQUE
+body-version references, compatibility resolution READ-ONLY over the
+REAL instance — the disclosed off-matrix wrapper precedent), guarded
+lifecycle with the frozen transition table + explicit failure listing
+(never silent replacement), composition-root wiring + application.ts
+entry, zero cross-module imports inside the module (the strictest EMPTY
+dependency-matrix allowance; structural ports only). 20 unit + 7
+boundary/architecture + 16 integration tests. Station battery on
+tl/harvest-studio001: tsc/lint/arch:check clean / unit 1327 /
+architecture 720 / integration 1227 + 2 load-timing flakes isolated-green
+27/27 (the UX-008 flake family — MKT-056 teardown race, unrelated to the
+delivery). TL spec promotion (the /lab registration precedent):
+spec/architecture.md §6 line + the /content-studio registration
+paragraph; the checker provision RETIRED (back to the single /apps
+entry); spec-parsed set 52 → 53; count assertions re-pinned (arch-check
++ content-studio-boundary AC-4 updated to the promoted state).
+
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
 ☐ LAB-020 Transform Pawn Agents
 ☐ LAB-021 Human Production Task Packages
 ☐ LAB-024 Production Bottleneck + Expected Delay Economics
-☐ STUDIO-001..014 Content Studio
+☐ STUDIO-002..014 Content Studio
 ☐ LAB-022 Lab → Studio Production Bridge
 ☐ LAB-023 Studio Output Evaluation / Treatment Loop
 

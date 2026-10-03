@@ -128,9 +128,10 @@ test('STUDIO-001 AC-1: the module imports NO other module — the /lab family di
   assert.ok(publicTs.includes('resolveAgentBody'), 'the port resolves body-version references (compatibility only)');
   assert.ok(publicTs.includes('READ-ONLY'), 'the port is declared READ-ONLY — the pawn runtime stays /lab-agent-body');
   // The static checker enforces it with zero violations (54 enforced
-  // modules: 52 spec-parsed + the single /apps provision + the
-  // disclosed content-studio worker provision pending the TL spec
-  // promotion — the LAB-011 worker-delivery precedent).
+  // modules: 53 spec-parsed + the single /apps provision — the 2026-10-03
+  // TL spec promotion registered /content-studio in the spec §6 list and
+  // retired the disclosed worker provision, the /lab registration
+  // precedent).
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
@@ -251,7 +252,7 @@ test('STUDIO-001 AC-3: the module structure is public.ts + internal/ only (the f
   assert.deepEqual(internal.sort(), ['content-studio-module.ts', 'content-studio-store.ts', 'validation.ts']);
 });
 
-test('STUDIO-001 AC-4: the registration — the composition root wires the REAL /lab-agent-body instance behind the disclosed READ-ONLY adapter + the initial formats through the §2 seam, and registers the module; the checker provision is the disclosed worker registration pending the TL spec promotion', () => {
+test('STUDIO-001 AC-4: the registration — the composition root wires the REAL /lab-agent-body instance behind the disclosed READ-ONLY adapter + the initial formats through the §2 seam, and registers the module; the spec promotion registered /content-studio (the provision retired, the /lab registration precedent)', () => {
   assert.ok(compositionRoot.includes("import { createContentStudioModule, CONTENT_STUDIO_INITIAL_FORMATS } from './modules/content-studio/public.ts'"));
   assert.ok(compositionRoot.includes('const contentStudio = createContentStudioModule({'));
   assert.ok(compositionRoot.includes('agentBodies: contentStudioAgentBodies,'));
@@ -259,17 +260,18 @@ test('STUDIO-001 AC-4: the registration — the composition root wires the REAL 
   assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio },'));
   assert.ok(applicationTs.includes("import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts'"));
   assert.ok(applicationTs.includes('readonly contentStudio: ContentStudioModuleApi'));
-  // The disclosed checker provision (the LAB-011 worker-delivery
-  // precedent — pending the TL spec promotion): the provision array
-  // carries the /apps entry + the content-studio worker entry.
+  // The checker provision RETIRED (the 2026-10-03 TL spec promotion —
+  // the /lab registration precedent): the provision array is back to
+  // the single /apps entry; /content-studio enforces through the
+  // spec-parsed list directly.
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null);
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps', 'content-studio']);
-  // The spec files remain worker-untouched (the /content-studio
-  // registration is NOT in the frozen list — the TL promotes it).
+  assert.deepEqual(entries, ['apps']);
+  // The spec promotion is present: /content-studio registers through
+  // the frozen §6 list (the TL promotion, the /lab precedent).
   const specModules = /## 6\. Core domain modules\s*```text([\s\S]*?)```/.exec(read(join(repoRoot, 'spec', 'architecture.md')))![1]!;
-  assert.ok(!/^\/content-studio$/m.test(specModules), 'no worker spec edit — the TL spec promotion registers /content-studio (the /lab precedent)');
+  assert.ok(/^\/content-studio$/m.test(specModules), 'the TL spec promotion registered /content-studio in the frozen list (the /lab precedent)');
 });
 
 test('STUDIO-001 AC-5: 064_content_studio_runtime.sql is the migration tail (the next-free number on frozen main; 062 remains reserved for the parallel worker); the header cites the governing contract', () => {

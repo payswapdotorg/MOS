@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (52 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (53 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 52);
+  assert.equal(modules.length, 53);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -67,7 +67,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (52 modules)', (
   assert.deepEqual(
     [...modules].sort(),
     [
-      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-intelligence', 'content-rights', 'credentials',
+      'agencies', 'agents', 'ai-operator', 'ai-runtime', 'app-installs', 'app-marketplace', 'app-metering', 'audit', 'auth', 'client-memory', 'clients', 'content-assets', 'content-intelligence', 'content-rights', 'content-studio', 'credentials',
       'cross-platform-distribution',
       'decisions', 'deployments', 'domain-packs', 'evidence', 'executions', 'experiment-analysis', 'experiments',
       'product-marketing',
@@ -410,15 +410,12 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 53: 52 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-agent-body',
-    // The STUDIO-001 disclosed provision (tools/arch-check/checker.ts —
-    // the v1.7 Content Studio Runtime authority, spec/
-    // content-studio-contract-v1.0.md, pending the Architect/Tech-Lead
-    // spec promotion — the LAB-011 worker-delivery precedent): the
-    // fixture provides no content-studio boundary → the missing-module
-    // violation joins the exact set (the same additive count each
-    // sibling promotion adds — the enforced total becomes 54: 52
-    // spec-parsed + the /apps provision + the disclosed content-studio
-    // worker provision).
+    // The STUDIO-001 registration (the 2026-10-03 TL spec promotion — the
+    // provision retired, the /lab registration precedent): the fixture
+    // provides no content-studio boundary → the missing-module violation
+    // joins the exact set (the same additive count each sibling
+    // promotion adds — the enforced total stays 54: 53 spec-parsed
+    // + the single /apps provision).
     'MISSING_MODULE|src/modules/content-studio',
   ].sort();
 

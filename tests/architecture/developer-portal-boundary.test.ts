@@ -299,7 +299,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   // registration and 38 → 39 through the MKT-068 /notification-delivery
   // registration (the sibling promotions — the same additive
   // precedent); no portal registration was added.
-  assert.equal(specModules.length, 52, 'the spec module list (52 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, the LAB-001 /lab, the LAB-002 /lab-corpus and the LAB-011 /lab-agent-body v1.7 registrations, and the MKT-070 /product-marketing TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
+  assert.equal(specModules.length, 53, 'the spec module list (53 spec-parsed after the MKT-053 /growth-missions, MKT-055 /social-accounts, MKT-068 /notification-delivery, MKT-069 /product-intelligence, MKT-063 /content-rights, MKT-054 /growth-operator, MKT-064 /content-assets, MKT-067 /experiment-analysis, MKT-065 /cross-platform-distribution, the MKT-062 /research + /content-intelligence and the MKT-066 /platform-health sibling registrations, the LAB-001 /lab, the LAB-002 /lab-corpus and the LAB-011 /lab-agent-body v1.7 registrations, the MKT-070 /product-marketing TL promotion, and the STUDIO-001 /content-studio TL promotion) parses cleanly');  assert.ok(!specModules.includes('developer-portal'), 'no portal registration was added to the frozen list');
   // The disclosed v1.5 composition provision: exactly the single
   // MKT-047 /apps entry. The LAB-011 /lab-agent-body worker provision
   // was RETIRED at the 2026-09-29 TL spec promotion (the /lab
@@ -309,7 +309,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null, 'the provision list is present');
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps', 'content-studio'], 'the provision carries the MKT-047 /apps entry + the STUDIO-001 /content-studio disclosed worker provision (the LAB-011 worker-delivery precedent — the LAB-011 provision itself retired at the TL spec promotion, the /lab registration precedent)');
+  assert.deepEqual(entries, ['apps'], 'the provision carries the single MKT-047 /apps entry (the LAB-011 provision retired at the 2026-09-29 TL spec promotion, and the STUDIO-001 provision retired at the 2026-10-03 TL spec promotion — the /lab registration precedent, the spec-parsed list enforces both directly)');
   // The full checker still passes with zero violations.
   const result = checkArchitecture({
     codeRoot: repoRoot,

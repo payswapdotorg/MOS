@@ -515,11 +515,12 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   // The arch-check promotion: the MKT-062 sibling delivery appends
   // /research + /content-intelligence, the MKT-066 sibling delivery
   // appends /platform-health, the LAB-002 TL promotion registers
-  // /lab-corpus and the LAB-011 TL promotion registers /lab-agent-body
+  // /lab-corpus, the LAB-011 TL promotion registers /lab-agent-body
+  // and the STUDIO-001 TL promotion registers /content-studio
   // (the /lab registration precedent) — the same additive promotion
   // precedent.
   const archCheckTest = read(join(repoRoot, 'tests', 'architecture', 'arch-check.test.ts'));
-  assert.ok(archCheckTest.includes('(52 modules)'));
+  assert.ok(archCheckTest.includes('(53 modules)'));
   assert.ok(archCheckTest.includes("'cross-platform-distribution'"));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/cross-platform-distribution'));
   assert.ok(archCheckTest.includes("'research'"));

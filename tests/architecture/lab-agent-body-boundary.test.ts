@@ -213,7 +213,9 @@ test('LAB-011 AC-4: the registration — the composition root wires the REAL /ai
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null);
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps', 'content-studio']);
+  // (2026-10-03: the STUDIO-001 provision RETIRED at its TL spec promotion —
+  // the provision array is back to the single /apps entry.)
+  assert.deepEqual(entries, ['apps']);
   // The spec-parsed set NOW includes the module (the TL promotion —
   // the /lab registration precedent; never a worker edit).
   const specModules = /## 6\. Core domain modules\s*```text([\s\S]*?)```/.exec(read(join(repoRoot, 'spec', 'architecture.md')))![1]!;
