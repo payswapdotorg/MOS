@@ -553,7 +553,7 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   // re-pin precedent — the disclosed MKT-066 re-pin).
   assert.ok(
     compositionRoot.includes('growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research') &&
-      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities },'),
+      compositionRoot.includes('crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas },'),
     'the composition root registers the module in the modules map (the MKT-063 sibling joins after it at merge; the MKT-067 sibling joins after that, the MKT-065 sibling after that, the MKT-062 siblings after that, the MKT-066 sibling after those, and the MKT-070 planner sibling before the LAB-001 /lab tail)',
   );
   assert.ok(
@@ -574,10 +574,11 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 16], '052_growth_operator.sql');
-  assert.equal(migrations[migrations.length - 7], '061_lab_corpus.sql');
-  assert.equal(migrations[migrations.length - 5], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 3], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 17], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 8], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 6], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 4], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 3], '066_lab_ideas.sql');
 });
 
 // ---------------------------------------------------------------------------
