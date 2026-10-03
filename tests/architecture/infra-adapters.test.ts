@@ -1149,9 +1149,26 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // references; NO /lab-capabilities table is created or referenced);
     // NO v1.6 authority table is created or mutated.
     '068_studio_format_framework.sql',
+    // STUDIO-003 (Intent → Script / Question Graph) appends the
+    // intent-to-script migration (070 — the TL pre-assigned number,
+    // slotting into the 068→071 gap in the ordered list; 069 is held
+    // by the in-flight parallel MKT-073 worker and 071 is taken by the
+    // merged LAB-005 delivery — the TL resolves any stacked shifts at
+    // merge, the 062/063/064/065/068 precedent; the same additive
+    // re-pin — every end-anchored tail position shifts once more):
+    // the INTENT records, the VERSIONED SCRIPT records (supplied |
+    // generated with the FULL provenance + the guarded review
+    // lifecycle), the DECLARED question/branch graphs (the
+    // deterministic adjacency), the HUMAN-REVIEW decision records and
+    // the CONVERSATION-GRAPH hook records (the adaptive-branching
+    // surface); NO v1.6 authority table is created or mutated, and NO
+    // other module's table is written (the one additive CHECK rides
+    // the same-module studio_formats table).
+    '070_studio_script_question_graph.sql',
     // LAB-005 (Social Simulator Kernel) appends the simulator
-    // migration (071 — the TL pre-assigned number; 069/070 are
-    // held by the in-flight parallel MKT-073/STUDIO-003 workers,
+    // migration (071 — the TL pre-assigned number; 069 is held
+    // by the in-flight parallel MKT-073 worker and 070 is taken
+    // by the STUDIO-003 intent-to-script delivery above,
     // the TL resolves the merge; the same additive precedent):
     // the world-model configurations, the seed records, the runs
     // with their steps + observable snapshots, and the ensembles

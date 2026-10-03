@@ -789,7 +789,15 @@ import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
 // per CLIENT scope (materialize-if-absent, born active through the
 // guarded draft → active → retired lifecycle) while future formats
 // arrive through the SAME seam or the registerFormat/activateFormat
-// commands — never a second Studio runtime. Zero cross-module imports
+// commands — never a second Studio runtime. STUDIO-003 extended the
+// same module with the §8 INTENT-TO-SCRIPT pipeline (migration 070 —
+// the versioned script/question-graph records with the FULL
+// generation provenance, the explicit human-review lifecycle, the
+// declared question/branch graphs with the deterministic adjacency,
+// the conversation-graph hooks and the format-requires-confirmation
+// gate) — the §8 surfaces ride the SAME module construction with ZERO
+// new structural ports (the wiring below is UNCHANGED; the STUDIO-002
+// comment-only precedent). Zero cross-module imports
 // exist inside src/modules/content-studio (the /lab family
 // discipline).
 import { createContentStudioModule, CONTENT_STUDIO_INITIAL_FORMATS } from './modules/content-studio/public.ts';

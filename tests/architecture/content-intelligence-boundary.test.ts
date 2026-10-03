@@ -566,29 +566,29 @@ test('MKT-062 static: the disclosed spec registration exists — §6 line + the 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '057_content_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 14], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '058_platform_health.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '058_platform_health.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql
   // and the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '059_lab_contracts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '060_product_marketing.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '059_lab_contracts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '060_product_marketing.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
 });
 
 test('MKT-062 static: the real codebase enforces the frozen boundaries with ZERO violations — /content-intelligence is a registered frozen module', () => {

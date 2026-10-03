@@ -38,16 +38,28 @@ import type { DbRow, DbTransaction } from '../../../platform/db/contract.ts';
 import type { Clock } from '../../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../../platform/ids/ids.ts';
 import type {
+  ContentStudioDeclaredQuestionGraph,
+  ContentStudioConversationStepRecord,
   ContentStudioFormatDeclaration,
   ContentStudioFormatRecord,
   ContentStudioFormatStatus,
+  ContentStudioGeneratorProvenance,
+  ContentStudioIntentRecord,
   ContentStudioOrganizationDeclaration,
   ContentStudioOrganizationValidation,
   ContentStudioOutputVersionRecord,
   ContentStudioProcessingStepRecord,
   ContentStudioProductionRequestContent,
   ContentStudioProductionRequestRecord,
+  ContentStudioQuestionGraphRecord,
+  ContentStudioQuestionGraphReviewRecord,
+  ContentStudioReviewState,
+  ContentStudioReviewVerdict,
+  ContentStudioReviewerKind,
   ContentStudioScope,
+  ContentStudioScriptOrigin,
+  ContentStudioScriptRecord,
+  ContentStudioScriptReviewRecord,
   ContentStudioSessionEventKind,
   ContentStudioSessionEventRecord,
   ContentStudioSessionRecord,
@@ -58,7 +70,7 @@ import type {
   ContentStudioTreatmentRequestRecord,
   ContentStudioTreatmentSpecification,
 } from '../public.ts';
-import { CONTENT_STUDIO_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION } from '../public.ts';
+import { CONTENT_STUDIO_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION, CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION } from '../public.ts';
 
 // ---------------------------------------------------------------------------
 // Row shapes (snake_case as returned by PostgreSQL)
@@ -188,6 +200,113 @@ interface FormatCapabilityLinkRow extends DbRow {
   agency_id: string;
   client_id: string;
   workspace_id: string | null;
+  contract_version: string;
+  created_at: Date;
+}
+
+// The STUDIO-003 rows (migration 070's studio_intents, studio_scripts,
+// studio_script_reviews, studio_question_graphs,
+// studio_question_graph_reviews, studio_conversation_edges).
+
+interface IntentRow extends DbRow {
+  intent_id: string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  request_id: string;
+  request_version: number | string;
+  objective: string;
+  source_references: unknown;
+  contract_version: string;
+  created_at: Date;
+}
+
+interface ScriptRow extends DbRow {
+  script_id: string;
+  script_version: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  request_id: string;
+  request_version: number | string;
+  origin: string;
+  body: unknown;
+  intent_id: string | null;
+  generator_organization: unknown;
+  generator_model_references: unknown;
+  review_state: string | null;
+  contract_version: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface ScriptReviewRow extends DbRow {
+  review_id: string;
+  script_id: string;
+  script_version: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  verdict: string;
+  reviewer_kind: string;
+  reviewer_actor: string;
+  note: string | null;
+  decided_at: Date;
+  contract_version: string;
+  created_at: Date;
+}
+
+export interface QuestionGraphRow extends DbRow {
+  graph_id: string;
+  graph_version: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  request_id: string;
+  request_version: number | string;
+  origin: string;
+  declared_graph: unknown;
+  intent_id: string | null;
+  generator_organization: unknown;
+  generator_model_references: unknown;
+  review_state: string | null;
+  contract_version: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface QuestionGraphReviewRow extends DbRow {
+  review_id: string;
+  graph_id: string;
+  graph_version: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  verdict: string;
+  reviewer_kind: string;
+  reviewer_actor: string;
+  note: string | null;
+  decided_at: Date;
+  contract_version: string;
+  created_at: Date;
+}
+
+interface ConversationEdgeRow extends DbRow {
+  conversation_id: string;
+  session_id: string;
+  revision: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  seq: number | string;
+  graph_id: string;
+  graph_version: number | string;
+  question_id: string;
+  answer_reference: string;
+  answer_kind: string;
+  chosen_to_question_id: string | null;
+  chosen_condition: string | null;
+  chooser_kind: string;
   contract_version: string;
   created_at: Date;
 }
@@ -347,6 +466,123 @@ export function mapFormatRow(r: FormatRow, capabilityLinks: ReadonlyArray<string
   };
 }
 
+// The STUDIO-003 mappers (migration 070).
+
+export function mapIntentRow(r: IntentRow): ContentStudioIntentRecord {
+  return {
+    intentId: r.intent_id,
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    requestId: r.request_id,
+    requestVersion: Number(r.request_version),
+    objective: r.objective,
+    sourceReferences: r.source_references as ReadonlyArray<string>,
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+  };
+}
+
+export function mapScriptRow(r: ScriptRow): ContentStudioScriptRecord {
+  return {
+    scriptId: r.script_id,
+    scriptVersion: Number(r.script_version),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    requestId: r.request_id,
+    requestVersion: Number(r.request_version),
+    origin: r.origin as ContentStudioScriptOrigin,
+    body: r.body as Readonly<Record<string, unknown>>,
+    intentId: r.intent_id,
+    generatorOrganization: r.generator_organization === null ? null : (r.generator_organization as ContentStudioOrganizationDeclaration),
+    generatorModelReferences: r.generator_model_references === null ? null : (r.generator_model_references as ReadonlyArray<string>),
+    reviewState: r.review_state === null ? null : (r.review_state as ContentStudioReviewState),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+    updatedAt: toIso(r.updated_at),
+  };
+}
+
+export function mapScriptReviewRow(r: ScriptReviewRow): ContentStudioScriptReviewRecord {
+  return {
+    reviewId: r.review_id,
+    scriptId: r.script_id,
+    scriptVersion: Number(r.script_version),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    verdict: r.verdict as ContentStudioReviewVerdict,
+    reviewerKind: r.reviewer_kind as ContentStudioReviewerKind,
+    reviewerActor: r.reviewer_actor,
+    note: r.note,
+    decidedAt: toIso(r.decided_at),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+  };
+}
+
+export function mapQuestionGraphRow(r: QuestionGraphRow): ContentStudioQuestionGraphRecord {
+  return {
+    graphId: r.graph_id,
+    graphVersion: Number(r.graph_version),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    requestId: r.request_id,
+    requestVersion: Number(r.request_version),
+    origin: r.origin as ContentStudioScriptOrigin,
+    declaredGraph: r.declared_graph as ContentStudioDeclaredQuestionGraph,
+    intentId: r.intent_id,
+    generatorOrganization: r.generator_organization === null ? null : (r.generator_organization as ContentStudioOrganizationDeclaration),
+    generatorModelReferences: r.generator_model_references === null ? null : (r.generator_model_references as ReadonlyArray<string>),
+    reviewState: r.review_state === null ? null : (r.review_state as ContentStudioReviewState),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+    updatedAt: toIso(r.updated_at),
+  };
+}
+
+export function mapQuestionGraphReviewRow(r: QuestionGraphReviewRow): ContentStudioQuestionGraphReviewRecord {
+  return {
+    reviewId: r.review_id,
+    graphId: r.graph_id,
+    graphVersion: Number(r.graph_version),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    verdict: r.verdict as ContentStudioReviewVerdict,
+    reviewerKind: r.reviewer_kind as ContentStudioReviewerKind,
+    reviewerActor: r.reviewer_actor,
+    note: r.note,
+    decidedAt: toIso(r.decided_at),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+  };
+}
+
+export function mapConversationEdgeRow(r: ConversationEdgeRow): ContentStudioConversationStepRecord {
+  return {
+    conversationId: r.conversation_id,
+    sessionId: r.session_id,
+    revision: Number(r.revision),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    seq: Number(r.seq),
+    graphId: r.graph_id,
+    graphVersion: Number(r.graph_version),
+    questionId: r.question_id,
+    answerReference: r.answer_reference,
+    answerKind: r.answer_kind as ContentStudioConversationStepRecord['answerKind'],
+    chosenToQuestionId: r.chosen_to_question_id,
+    chosenCondition: r.chosen_condition === null ? null : (r.chosen_condition as ContentStudioConversationStepRecord['chosenCondition']),
+    chooserKind: r.chooser_kind as ContentStudioConversationStepRecord['chooserKind'],
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // The store
 // ---------------------------------------------------------------------------
@@ -448,6 +684,99 @@ export interface AdvanceFormatStatusInput {
   readonly formatVersionId: string;
   readonly from: ContentStudioFormatStatus;
   readonly to: ContentStudioFormatStatus;
+}
+
+// The STUDIO-003 insert inputs (migration 070).
+
+export interface InsertIntentInput {
+  readonly intentId: string;
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  readonly objective: string;
+  readonly sourceReferences: ReadonlyArray<string>;
+}
+
+export interface InsertScriptVersionInput {
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  readonly origin: ContentStudioScriptOrigin;
+  readonly body: Readonly<Record<string, unknown>>;
+  /** REQUIRED for generated rows (the intent lineage). */
+  readonly intentId?: string;
+  /** REQUIRED for generated rows (the FULL generation provenance). */
+  readonly generator?: ContentStudioGeneratorProvenance;
+}
+
+export interface AdvanceScriptReviewStateInput {
+  readonly clientId: string;
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly to: ContentStudioReviewState;
+  readonly from: ContentStudioReviewState;
+}
+
+export interface InsertScriptReviewInput {
+  readonly reviewId: string;
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly scope: ContentStudioScope;
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  readonly reviewerActor: string;
+  readonly note?: string | null;
+}
+
+export interface InsertQuestionGraphVersionInput {
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  readonly origin: ContentStudioScriptOrigin;
+  readonly declaredGraph: ContentStudioDeclaredQuestionGraph;
+  /** REQUIRED for generated rows (the intent lineage). */
+  readonly intentId?: string;
+  /** REQUIRED for generated rows (the FULL generation provenance). */
+  readonly generator?: ContentStudioGeneratorProvenance;
+}
+
+export interface AdvanceQuestionGraphReviewStateInput {
+  readonly clientId: string;
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly to: ContentStudioReviewState;
+  readonly from: ContentStudioReviewState;
+}
+
+export interface InsertQuestionGraphReviewInput {
+  readonly reviewId: string;
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly scope: ContentStudioScope;
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  readonly reviewerActor: string;
+  readonly note?: string | null;
+}
+
+export interface InsertConversationEdgeInput {
+  readonly conversationId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly scope: ContentStudioScope;
+  readonly seq: number;
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly questionId: string;
+  readonly answerReference: string;
+  readonly answerKind: ContentStudioConversationStepRecord['answerKind'];
+  readonly chosenToQuestionId?: string | null;
+  readonly chosenCondition?: string | null;
+  readonly chooserKind: ContentStudioConversationStepRecord['chooserKind'];
 }
 
 export class ContentStudioStore {
@@ -973,5 +1302,357 @@ export class ContentStudioStore {
       [input.to, this.nowIso(), input.formatVersionId, input.from],
     );
     return r.rows[0] ?? null;
+  }
+
+  // --- the §8 INTENT-TO-SCRIPT tables (STUDIO-003 — migration 070) ---
+
+  async insertIntent(input: InsertIntentInput): Promise<IntentRow> {
+    const r = await this.db.query<IntentRow>(
+      `INSERT INTO studio_intents
+         (intent_id, agency_id, client_id, workspace_id,
+          request_id, request_version, objective, source_references,
+          contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10::timestamptz)
+       RETURNING *`,
+      [
+        input.intentId,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.requestId,
+        input.requestVersion,
+        input.objective,
+        JSON.stringify(input.sourceReferences),
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        this.nowIso(),
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findIntent(clientId: string, intentId: string): Promise<IntentRow | null> {
+    const r = await this.db.query<IntentRow>(
+      `SELECT * FROM studio_intents WHERE client_id = $1 AND intent_id = $2`,
+      [clientId, intentId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findIntentForRequest(clientId: string, requestId: string, requestVersion: number): Promise<IntentRow | null> {
+    const r = await this.db.query<IntentRow>(
+      `SELECT * FROM studio_intents
+        WHERE client_id = $1 AND request_id = $2 AND request_version = $3`,
+      [clientId, requestId, requestVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async insertScriptVersion(input: InsertScriptVersionInput): Promise<ScriptRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<ScriptRow>(
+      `INSERT INTO studio_scripts
+         (script_id, script_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, body,
+          intent_id, generator_organization, generator_model_references, review_state,
+          contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11::jsonb, $12::jsonb, $13, $14, $15::timestamptz, $15::timestamptz)
+       RETURNING *`,
+      [
+        input.scriptId,
+        input.scriptVersion,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.requestId,
+        input.requestVersion,
+        input.origin,
+        JSON.stringify(input.body),
+        input.intentId ?? null,
+        input.generator === undefined ? null : JSON.stringify(input.generator.organization),
+        input.generator === undefined ? null : JSON.stringify(input.generator.modelReferences),
+        input.origin === 'generated' ? 'pending' : null,
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findScriptVersion(clientId: string, scriptId: string, scriptVersion: number): Promise<ScriptRow | null> {
+    const r = await this.db.query<ScriptRow>(
+      `SELECT * FROM studio_scripts
+        WHERE client_id = $1 AND script_id = $2 AND script_version = $3`,
+      [clientId, scriptId, scriptVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findLatestScriptVersion(clientId: string, scriptId: string): Promise<ScriptRow | null> {
+    const r = await this.db.query<ScriptRow>(
+      `SELECT * FROM studio_scripts
+        WHERE client_id = $1 AND script_id = $2
+        ORDER BY script_version DESC LIMIT 1`,
+      [clientId, scriptId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findLatestScriptForRequest(clientId: string, requestId: string, requestVersion: number): Promise<ScriptRow | null> {
+    // The one-materialization fence guarantees at most ONE chain per
+    // (request, request version); the latest version of that chain.
+    const r = await this.db.query<ScriptRow>(
+      `SELECT * FROM studio_scripts
+        WHERE client_id = $1 AND request_id = $2 AND request_version = $3
+        ORDER BY script_version DESC LIMIT 1`,
+      [clientId, requestId, requestVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async listScriptVersions(clientId: string, scriptId: string): Promise<ReadonlyArray<ScriptRow>> {
+    const r = await this.db.query<ScriptRow>(
+      `SELECT * FROM studio_scripts
+        WHERE client_id = $1 AND script_id = $2
+        ORDER BY script_version ASC`,
+      [clientId, scriptId],
+    );
+    return r.rows;
+  }
+
+  /**
+   * The guarded review-state advance: a CAS update over the exact
+   * from-state — the DB guard trigger is the authority (the legal-edge
+   * table + the decision-record backing); the CAS is the honest
+   * concurrency surface. Returns null when the row moved on.
+   */
+  async advanceScriptReviewState(input: AdvanceScriptReviewStateInput): Promise<ScriptRow | null> {
+    const r = await this.db.query<ScriptRow>(
+      `UPDATE studio_scripts
+          SET review_state = $4, updated_at = $5::timestamptz
+        WHERE client_id = $1 AND script_id = $2 AND script_version = $3 AND review_state = $6
+        RETURNING *`,
+      [input.clientId, input.scriptId, input.scriptVersion, input.to, this.nowIso(), input.from],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async insertScriptReview(input: InsertScriptReviewInput): Promise<ScriptReviewRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<ScriptReviewRow>(
+      `INSERT INTO studio_script_reviews
+         (review_id, script_id, script_version, agency_id, client_id, workspace_id,
+          verdict, reviewer_kind, reviewer_actor, note, decided_at,
+          contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::timestamptz)
+       RETURNING *`,
+      [
+        input.reviewId,
+        input.scriptId,
+        input.scriptVersion,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.verdict,
+        input.reviewerKind,
+        input.reviewerActor,
+        input.note ?? null,
+        now,
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async listScriptReviews(clientId: string, scriptId: string): Promise<ReadonlyArray<ScriptReviewRow>> {
+    const r = await this.db.query<ScriptReviewRow>(
+      `SELECT * FROM studio_script_reviews
+        WHERE client_id = $1 AND script_id = $2
+        ORDER BY created_at ASC, review_id ASC`,
+      [clientId, scriptId],
+    );
+    return r.rows;
+  }
+
+  async insertQuestionGraphVersion(input: InsertQuestionGraphVersionInput): Promise<QuestionGraphRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<QuestionGraphRow>(
+      `INSERT INTO studio_question_graphs
+         (graph_id, graph_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, declared_graph,
+          intent_id, generator_organization, generator_model_references, review_state,
+          contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11::jsonb, $12::jsonb, $13, $14, $15::timestamptz, $15::timestamptz)
+       RETURNING *`,
+      [
+        input.graphId,
+        input.graphVersion,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.requestId,
+        input.requestVersion,
+        input.origin,
+        JSON.stringify(input.declaredGraph),
+        input.intentId ?? null,
+        input.generator === undefined ? null : JSON.stringify(input.generator.organization),
+        input.generator === undefined ? null : JSON.stringify(input.generator.modelReferences),
+        input.origin === 'generated' ? 'pending' : null,
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findQuestionGraphVersion(clientId: string, graphId: string, graphVersion: number): Promise<QuestionGraphRow | null> {
+    const r = await this.db.query<QuestionGraphRow>(
+      `SELECT * FROM studio_question_graphs
+        WHERE client_id = $1 AND graph_id = $2 AND graph_version = $3`,
+      [clientId, graphId, graphVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findLatestQuestionGraphVersion(clientId: string, graphId: string): Promise<QuestionGraphRow | null> {
+    const r = await this.db.query<QuestionGraphRow>(
+      `SELECT * FROM studio_question_graphs
+        WHERE client_id = $1 AND graph_id = $2
+        ORDER BY graph_version DESC LIMIT 1`,
+      [clientId, graphId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findLatestQuestionGraphForRequest(clientId: string, requestId: string, requestVersion: number): Promise<QuestionGraphRow | null> {
+    const r = await this.db.query<QuestionGraphRow>(
+      `SELECT * FROM studio_question_graphs
+        WHERE client_id = $1 AND request_id = $2 AND request_version = $3
+        ORDER BY graph_version DESC LIMIT 1`,
+      [clientId, requestId, requestVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async listQuestionGraphVersions(clientId: string, graphId: string): Promise<ReadonlyArray<QuestionGraphRow>> {
+    const r = await this.db.query<QuestionGraphRow>(
+      `SELECT * FROM studio_question_graphs
+        WHERE client_id = $1 AND graph_id = $2
+        ORDER BY graph_version ASC`,
+      [clientId, graphId],
+    );
+    return r.rows;
+  }
+
+  /** The guarded review-state advance (the script precedent — CAS over the exact from-state). */
+  async advanceQuestionGraphReviewState(input: AdvanceQuestionGraphReviewStateInput): Promise<QuestionGraphRow | null> {
+    const r = await this.db.query<QuestionGraphRow>(
+      `UPDATE studio_question_graphs
+          SET review_state = $4, updated_at = $5::timestamptz
+        WHERE client_id = $1 AND graph_id = $2 AND graph_version = $3 AND review_state = $6
+        RETURNING *`,
+      [input.clientId, input.graphId, input.graphVersion, input.to, this.nowIso(), input.from],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async insertQuestionGraphReview(input: InsertQuestionGraphReviewInput): Promise<QuestionGraphReviewRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<QuestionGraphReviewRow>(
+      `INSERT INTO studio_question_graph_reviews
+         (review_id, graph_id, graph_version, agency_id, client_id, workspace_id,
+          verdict, reviewer_kind, reviewer_actor, note, decided_at,
+          contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::timestamptz)
+       RETURNING *`,
+      [
+        input.reviewId,
+        input.graphId,
+        input.graphVersion,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.verdict,
+        input.reviewerKind,
+        input.reviewerActor,
+        input.note ?? null,
+        now,
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async listQuestionGraphReviews(clientId: string, graphId: string): Promise<ReadonlyArray<QuestionGraphReviewRow>> {
+    const r = await this.db.query<QuestionGraphReviewRow>(
+      `SELECT * FROM studio_question_graph_reviews
+        WHERE client_id = $1 AND graph_id = $2
+        ORDER BY created_at ASC, review_id ASC`,
+      [clientId, graphId],
+    );
+    return r.rows;
+  }
+
+  async insertConversationEdge(input: InsertConversationEdgeInput): Promise<ConversationEdgeRow> {
+    const r = await this.db.query<ConversationEdgeRow>(
+      `INSERT INTO studio_conversation_edges
+         (conversation_id, session_id, revision, agency_id, client_id, workspace_id,
+          seq, graph_id, graph_version, question_id, answer_reference, answer_kind,
+          chosen_to_question_id, chosen_condition, chooser_kind,
+          contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::timestamptz)
+       RETURNING *`,
+      [
+        input.conversationId,
+        input.sessionId,
+        input.revision,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.seq,
+        input.graphId,
+        input.graphVersion,
+        input.questionId,
+        input.answerReference,
+        input.answerKind,
+        input.chosenToQuestionId ?? null,
+        input.chosenCondition ?? null,
+        input.chooserKind,
+        CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+        this.nowIso(),
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async listSessionConversationEdges(clientId: string, sessionId: string): Promise<ReadonlyArray<ConversationEdgeRow>> {
+    const r = await this.db.query<ConversationEdgeRow>(
+      `SELECT * FROM studio_conversation_edges
+        WHERE client_id = $1 AND session_id = $2
+        ORDER BY conversation_id ASC, seq ASC`,
+      [clientId, sessionId],
+    );
+    return r.rows;
+  }
+
+  async listConversationEdges(clientId: string, conversationId: string): Promise<ReadonlyArray<ConversationEdgeRow>> {
+    const r = await this.db.query<ConversationEdgeRow>(
+      `SELECT * FROM studio_conversation_edges
+        WHERE client_id = $1 AND conversation_id = $2
+        ORDER BY seq ASC`,
+      [clientId, conversationId],
+    );
+    return r.rows;
+  }
+
+  async maxConversationSeq(clientId: string, conversationId: string): Promise<number> {
+    const r = await this.db.query<{ max_seq: number | string | null }>(
+      `SELECT MAX(seq) AS max_seq FROM studio_conversation_edges
+        WHERE client_id = $1 AND conversation_id = $2`,
+      [clientId, conversationId],
+    );
+    const current = r.rows[0]?.max_seq;
+    return current === null || current === undefined ? 0 : Number(current);
   }
 }

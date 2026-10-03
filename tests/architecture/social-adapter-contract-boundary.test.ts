@@ -562,37 +562,37 @@ test('MKT-056: NO new module/matrix row (the extension posture) — the enforced
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '057_content_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 14], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '058_platform_health.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '058_platform_health.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '059_lab_contracts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '060_product_marketing.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 14], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 15], '055_cross_platform_distribution.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 16], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 17], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 18], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 19], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 20], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 21], '049_commerce_capabilities.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '061_lab_corpus.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '065_lab_features.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '059_lab_contracts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '060_product_marketing.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 15], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 16], '055_cross_platform_distribution.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 17], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 18], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 19], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 20], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 21], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 22], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '065_lab_features.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '066_lab_ideas.sql');
 });
 
 // ---------------------------------------------------------------------------

@@ -28,26 +28,42 @@
  *   4. THE §4 ORGANIZATION FENCE — the submitted organization
  *      declaration discipline (versioned, opaque body references).
  *   5. THE §13 TREATMENT GUARDS — the structured treatment shape.
+ *   6. THE §8 INTENT-TO-SCRIPT GUARDS (STUDIO-003) — the declared
+ *      question/branch graph (the deterministic adjacency), the
+ *      supplied-list linear derivation, the generation provenance, the
+ *      review-decision input and the conversation-step choice.
  */
 
 import { InvalidRequestError } from '../../../platform/errors/errors.ts';
 import type {
+  ContentStudioAnswerKind,
+  ContentStudioBranchCondition,
+  ContentStudioChooserKind,
+  ContentStudioDeclaredQuestionGraph,
   ContentStudioEntryMode,
   ContentStudioFormatDeclaration,
+  ContentStudioGeneratorProvenance,
   ContentStudioInputMode,
   ContentStudioOrganizationDeclaration,
   ContentStudioProductionRequestContent,
+  ContentStudioQuestionModalityHint,
+  ContentStudioReviewVerdict,
+  ContentStudioReviewerKind,
   ContentStudioSessionState,
   ContentStudioTerminalReason,
   ContentStudioTerminalSessionState,
   ContentStudioTreatmentSpecification,
 } from '../public.ts';
 import {
+  CONTENT_STUDIO_ANSWER_KINDS,
+  CONTENT_STUDIO_BRANCH_CONDITIONS,
   CONTENT_STUDIO_CAPTURE_MODALITIES,
   CONTENT_STUDIO_CONSENT_KINDS,
+  CONTENT_STUDIO_CHOOSER_KINDS,
   CONTENT_STUDIO_ENTRY_MODES,
   CONTENT_STUDIO_EVALUATION_HOOK_SURFACES,
   CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES,
+  CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES,
   CONTENT_STUDIO_INPUT_MODES,
   CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES,
   CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS,
@@ -55,6 +71,9 @@ import {
   CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS,
   CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS,
   CONTENT_STUDIO_PROVENANCE_ELEMENTS,
+  CONTENT_STUDIO_QUESTION_MODALITY_HINTS,
+  CONTENT_STUDIO_REVIEW_VERDICTS,
+  CONTENT_STUDIO_REVIEWER_KINDS,
   CONTENT_STUDIO_SESSION_STATES,
   CONTENT_STUDIO_TERMINAL_SESSION_STATES,
 } from '../public.ts';
@@ -65,6 +84,8 @@ import {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+/** The §8 declared-graph question-node identity (the same shape as the format/stage ids). */
+const QUESTION_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$/;
 /** The opaque /lab-agent-body version-reference format (`<bodyId>#v<version>`). */
 const BODY_REFERENCE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}#v[1-9][0-9]{0,3}$/;
@@ -216,6 +237,17 @@ function assertFormatInputRequirements(format: ContentStudioFormatDeclaration): 
   }
   if (requirements.sourceArtifacts !== 'required' && requirements.sourceArtifacts !== 'optional') {
     throw new InvalidRequestError(`format '${format.formatId}' inputRequirements.sourceArtifacts must be 'required' or 'optional'`);
+  }
+  // §8 (STUDIO-003): the OPTIONAL generated-input review requirement —
+  // the closed vocabulary; ABSENT means 'not_required' (every
+  // STUDIO-002 declaration and every materialized registry row is
+  // unaffected).
+  if (requirements.generatedInputReview !== undefined && requirements.generatedInputReview !== null) {
+    if (!CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES.includes(requirements.generatedInputReview)) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' inputRequirements.generatedInputReview must be one of ${CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES.join(', ')} (or absent — absent means 'not_required')`,
+      );
+    }
   }
 }
 
@@ -791,5 +823,205 @@ export function assertTerminalReasonForAdvance(to: ContentStudioSessionState, te
     }
   } else if (terminalReason !== undefined && terminalReason !== null) {
     throw new InvalidRequestError(`terminalReason is only accepted when advancing to cancelled/failed/expired (found target '${to}')`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 6. THE §8 INTENT-TO-SCRIPT GUARDS (STUDIO-003 — the declared
+// question/branch graph, the generation provenance, the review input,
+// the conversation choice)
+// ---------------------------------------------------------------------------
+
+/**
+ * The §8 DECLARED QUESTION/BRANCH GRAPH discipline (the deterministic
+ * adjacency substrate): 1-128 unique question nodes (bounded ids +
+ * trimmed texts + optional closed modality hints); 0-256 declared
+ * edges whose from/to endpoints ARE declared nodes (and differ) and
+ * whose condition is from the closed 6-member vocabulary; at most ONE
+ * edge per (from, condition); the entry question is a declared node.
+ * Pure: the migration-070 CHECK fences backstop exactly these rules.
+ */
+export function assertValidContentStudioDeclaredQuestionGraph(graph: ContentStudioDeclaredQuestionGraph): void {
+  if (!isPlainObject(graph)) {
+    throw new InvalidRequestError('declaredGraph must be an object');
+  }
+  if (typeof graph.entryQuestionId !== 'string' || !QUESTION_ID_PATTERN.test(graph.entryQuestionId)) {
+    throw new InvalidRequestError('declaredGraph.entryQuestionId must be 1-64 chars of [a-z0-9_-]');
+  }
+  if (!Array.isArray(graph.nodes) || graph.nodes.length < 1 || graph.nodes.length > 128) {
+    throw new InvalidRequestError('declaredGraph.nodes must be an array of 1-128 question nodes');
+  }
+  const nodeIds = new Set<string>();
+  for (const node of graph.nodes) {
+    if (!isPlainObject(node)) {
+      throw new InvalidRequestError('declaredGraph.nodes entries must be objects');
+    }
+    if (typeof node.questionId !== 'string' || !QUESTION_ID_PATTERN.test(node.questionId)) {
+      throw new InvalidRequestError('declaredGraph.nodes entries must carry a questionId of 1-64 chars of [a-z0-9_-]');
+    }
+    if (nodeIds.has(node.questionId)) {
+      throw new InvalidRequestError(`declaredGraph.nodes entry '${node.questionId}' is duplicated`);
+    }
+    nodeIds.add(node.questionId);
+    if (typeof node.text !== 'string' || !boundedTrimmedString(node.text, 1, 2000)) {
+      throw new InvalidRequestError(`declaredGraph.nodes entry '${node.questionId}' text must be a trimmed string of 1-2000 chars`);
+    }
+    if (node.modalityHints !== undefined && node.modalityHints !== null) {
+      if (!Array.isArray(node.modalityHints) || node.modalityHints.length < 1 || node.modalityHints.length > CONTENT_STUDIO_QUESTION_MODALITY_HINTS.length) {
+        throw new InvalidRequestError(`declaredGraph.nodes entry '${node.questionId}' modalityHints must be a non-empty subset of the closed modality-hint vocabulary`);
+      }
+      const hintsSeen = new Set<string>();
+      for (const hint of node.modalityHints) {
+        if (!CONTENT_STUDIO_QUESTION_MODALITY_HINTS.includes(hint as ContentStudioQuestionModalityHint)) {
+          throw new InvalidRequestError(`declaredGraph.nodes entry '${node.questionId}' modalityHints entry '${String(hint)}' is not in the closed interviewer-representation vocabulary`);
+        }
+        if (hintsSeen.has(hint)) {
+          throw new InvalidRequestError(`declaredGraph.nodes entry '${node.questionId}' modalityHints entry '${String(hint)}' is duplicated`);
+        }
+        hintsSeen.add(hint);
+      }
+    }
+  }
+  if (!nodeIds.has(graph.entryQuestionId)) {
+    throw new InvalidRequestError(`declaredGraph.entryQuestionId '${graph.entryQuestionId}' is not a declared node`);
+  }
+  if (!Array.isArray(graph.edges)) {
+    throw new InvalidRequestError('declaredGraph.edges must be an array of declared edges (may be empty)');
+  }
+  if (graph.edges.length > 256) {
+    throw new InvalidRequestError('declaredGraph.edges must hold at most 256 declared edges');
+  }
+  const edgeKeys = new Set<string>();
+  for (const edge of graph.edges) {
+    if (!isPlainObject(edge)) {
+      throw new InvalidRequestError('declaredGraph.edges entries must be objects');
+    }
+    if (typeof edge.fromQuestionId !== 'string' || !QUESTION_ID_PATTERN.test(edge.fromQuestionId)) {
+      throw new InvalidRequestError('declaredGraph.edges entries must carry a fromQuestionId of 1-64 chars of [a-z0-9_-]');
+    }
+    if (typeof edge.toQuestionId !== 'string' || !QUESTION_ID_PATTERN.test(edge.toQuestionId)) {
+      throw new InvalidRequestError('declaredGraph.edges entries must carry a toQuestionId of 1-64 chars of [a-z0-9_-]');
+    }
+    if (edge.fromQuestionId === edge.toQuestionId) {
+      throw new InvalidRequestError(`declaredGraph.edges entry '${edge.fromQuestionId}' → '${edge.toQuestionId}' is a self-loop (the declared graph is acyclic per-edge)`);
+    }
+    if (!nodeIds.has(edge.fromQuestionId) || !nodeIds.has(edge.toQuestionId)) {
+      throw new InvalidRequestError(`declaredGraph.edges entry '${edge.fromQuestionId}' → '${edge.toQuestionId}' cites an endpoint that is not a declared node`);
+    }
+    if (!CONTENT_STUDIO_BRANCH_CONDITIONS.includes(edge.condition as ContentStudioBranchCondition)) {
+      throw new InvalidRequestError(`declaredGraph.edges entry '${edge.fromQuestionId}' → '${edge.toQuestionId}' condition '${String(edge.condition)}' is not in the closed branch-condition vocabulary`);
+    }
+    const key = `${edge.fromQuestionId}|${String(edge.condition)}`;
+    if (edgeKeys.has(key)) {
+      throw new InvalidRequestError(
+        `declaredGraph.edges declare more than one edge with from-question '${edge.fromQuestionId}' under condition '${String(edge.condition)}' — the DETERMINISTIC ADJACENCY fence (at most one edge per (from-question, condition))`,
+      );
+    }
+    edgeKeys.add(key);
+  }
+}
+
+/**
+ * The supplied-question-list derivation (§8 "a podcast question list"):
+ * the SMALLEST architecture-consistent declared graph a flat question
+ * list materializes as — the deterministic LINEAR graph (questions in
+ * the supplied order; each question followed by the next under the
+ * 'always' condition; the first question is the entry). Pure and
+ * deterministic: the same list always derives the same graph.
+ */
+export function deriveLinearQuestionGraph(questions: ReadonlyArray<string>): ContentStudioDeclaredQuestionGraph {
+  assertBoundedStringArray(questions, 256, 2000, 'questions');
+  const nodes = questions.map((text, index) => ({ questionId: `q${index + 1}`, text }));
+  const edges = questions.slice(0, -1).map((_, index) => ({
+    fromQuestionId: `q${index + 1}`,
+    toQuestionId: `q${index + 2}`,
+    condition: 'always' as const,
+  }));
+  return {
+    entryQuestionId: 'q1',
+    nodes,
+    edges,
+  };
+}
+
+/**
+ * The §8 GENERATION PROVENANCE discipline: every generated
+ * script/question-graph record carries the generator identity (the
+ * organization version, validated through the §4 submitted-declaration
+ * shape) + the participating model/capability references (bounded
+ * OPAQUE strings; may be empty). No generated material is ever
+ * presented without it.
+ */
+export function assertValidContentStudioGeneratorProvenance(generator: ContentStudioGeneratorProvenance): void {
+  if (!isPlainObject(generator)) {
+    throw new InvalidRequestError('generator must be an object');
+  }
+  assertValidContentStudioOrganizationDeclaration(generator.organization);
+  assertBoundedStringArray(generator.modelReferences, 32, 256, 'generator.modelReferences');
+}
+
+/** The review-decision input fence: the closed verdict + reviewer vocabularies + the bounded actor/note. */
+export function assertValidContentStudioReviewDecision(input: {
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  readonly reviewerActor: string;
+  readonly note?: string;
+}): void {
+  if (!CONTENT_STUDIO_REVIEW_VERDICTS.includes(input.verdict)) {
+    throw new InvalidRequestError(`verdict must be one of ${CONTENT_STUDIO_REVIEW_VERDICTS.join(', ')} (pending is the born state, not a decision)`);
+  }
+  if (!CONTENT_STUDIO_REVIEWER_KINDS.includes(input.reviewerKind)) {
+    throw new InvalidRequestError(`reviewerKind must be one of ${CONTENT_STUDIO_REVIEWER_KINDS.join(', ')} (the honest autonomous/human split)`);
+  }
+  if (typeof input.reviewerActor !== 'string' || !boundedTrimmedString(input.reviewerActor, 1, 128)) {
+    throw new InvalidRequestError('reviewerActor must be a trimmed string of 1-128 chars (the OPAQUE actor identity)');
+  }
+  if (input.note !== undefined && input.note !== null && !boundedTrimmedString(input.note, 1, 2000)) {
+    throw new InvalidRequestError('note must be a trimmed string of 1-2000 chars');
+  }
+}
+
+/**
+ * The §8 CONVERSATION-STEP choice fence: the asked question + the
+ * recorded answer (the OPAQUE reference + the closed answer kind) +
+ * the chosen edge pairing (BOTH the target question AND its declared
+ * condition, or NEITHER — the conversation ends) + the honest chooser
+ * split. The declared-graph membership validation (the node + the
+ * declared edge) happens in the module orchestration against the
+ * resolved declared graph (it is a cross-record rule, not a pure
+ * shape).
+ */
+export function assertValidContentStudioConversationChoice(input: {
+  readonly questionId: string;
+  readonly answerReference: string;
+  readonly answerKind: ContentStudioAnswerKind;
+  readonly chosenToQuestionId?: string;
+  readonly chosenCondition?: ContentStudioBranchCondition;
+  readonly chooserKind: ContentStudioChooserKind;
+}): void {
+  if (typeof input.questionId !== 'string' || !QUESTION_ID_PATTERN.test(input.questionId)) {
+    throw new InvalidRequestError('questionId must be 1-64 chars of [a-z0-9_-] (a declared node identity)');
+  }
+  if (typeof input.answerReference !== 'string' || !boundedTrimmedString(input.answerReference, 1, 512)) {
+    throw new InvalidRequestError('answerReference must be a trimmed string of 1-512 chars (the OPAQUE answer artifact reference)');
+  }
+  if (!CONTENT_STUDIO_ANSWER_KINDS.includes(input.answerKind)) {
+    throw new InvalidRequestError(`answerKind must be one of ${CONTENT_STUDIO_ANSWER_KINDS.join(', ')}`);
+  }
+  const hasTarget = input.chosenToQuestionId !== undefined && input.chosenToQuestionId !== null;
+  const hasCondition = input.chosenCondition !== undefined && input.chosenCondition !== null;
+  if (hasTarget !== hasCondition) {
+    throw new InvalidRequestError('the chosen edge is complete or the conversation ends — chosenToQuestionId and chosenCondition come together (or neither)');
+  }
+  if (hasTarget) {
+    if (typeof input.chosenToQuestionId !== 'string' || !QUESTION_ID_PATTERN.test(input.chosenToQuestionId)) {
+      throw new InvalidRequestError('chosenToQuestionId must be 1-64 chars of [a-z0-9_-] (a declared node identity)');
+    }
+    if (!CONTENT_STUDIO_BRANCH_CONDITIONS.includes(input.chosenCondition as ContentStudioBranchCondition)) {
+      throw new InvalidRequestError(`chosenCondition must be one of ${CONTENT_STUDIO_BRANCH_CONDITIONS.join(', ')} (the declared edge condition)`);
+    }
+  }
+  if (!CONTENT_STUDIO_CHOOSER_KINDS.includes(input.chooserKind)) {
+    throw new InvalidRequestError(`chooserKind must be one of ${CONTENT_STUDIO_CHOOSER_KINDS.join(', ')} (the honest interviewer/human choice split)`);
   }
 }

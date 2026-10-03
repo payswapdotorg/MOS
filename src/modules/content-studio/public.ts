@@ -142,6 +142,19 @@ export const CONTENT_STUDIO_CONTRACT_VERSION = 'content-studio-runtime-v1' as co
  */
 export const CONTENT_STUDIO_FORMAT_CONTRACT_VERSION = 'content-studio-format-v1' as const;
 
+/**
+ * The versioned identity of the intent-to-script contract (STUDIO-003 —
+ * the migration-070 CHECK fence pins it on every intent/script/graph/
+ * review/conversation row): the §8 record surfaces — the INTENT
+ * records, the VERSIONED SCRIPT records, the VERSIONED QUESTION-GRAPH
+ * records, the HUMAN-REVIEW DECISION records and the CONVERSATION-
+ * GRAPH HOOK records. A THIRD contract identity inside the one module
+ * (the STUDIO-002 sub-contract precedent): the migration-064 runtime
+ * tables and the migration-068 registry rows keep their identities
+ * immutable; the migration-070 rows carry this one.
+ */
+export const CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION = 'content-studio-script-v1' as const;
+
 import type { Clock } from '../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../platform/ids/ids.ts';
 import type { Db } from '../../platform/db/contract.ts';
@@ -440,6 +453,122 @@ export const CONTENT_STUDIO_FORMAT_STATUSES = ['draft', 'active', 'retired'] as 
 export type ContentStudioFormatStatus = (typeof CONTENT_STUDIO_FORMAT_STATUSES)[number];
 
 // ---------------------------------------------------------------------------
+// §8 — the INTENT-TO-SCRIPT vocabularies (STUDIO-003 — the closed sets
+// the migration-070 CHECK fences pin)
+// ---------------------------------------------------------------------------
+
+/**
+ * §8 — the two script/question-graph record origins: 'supplied' (the
+ * §3 path — a complete script or a podcast question list supplied by
+ * the user: recorded, versioned, NO generation, NO review state) or
+ * 'generated' (the selected organization's output from an intent:
+ * FULL provenance required — the intent lineage, the generator
+ * organization identity, the participating model/capability references
+ * — and the explicit human-review lifecycle, born 'pending').
+ */
+export const CONTENT_STUDIO_SCRIPT_ORIGINS = ['supplied', 'generated'] as const;
+export type ContentStudioScriptOrigin = (typeof CONTENT_STUDIO_SCRIPT_ORIGINS)[number];
+
+/**
+ * §8 — the CLOSED review-state vocabulary (the explicit human-review
+ * option): a generated script/question-graph version is BORN
+ * 'pending' and advances ONLY along pending → approved | rejected |
+ * superseded, approved | rejected → superseded (no resurrection). A
+ * 'superseded' version is replaced by a newer version of the same
+ * chain (a correction or a regeneration). Supplied records carry NO
+ * review state (user-authored material is its own authority).
+ */
+export const CONTENT_STUDIO_REVIEW_STATES = ['pending', 'approved', 'rejected', 'superseded'] as const;
+export type ContentStudioReviewState = (typeof CONTENT_STUDIO_REVIEW_STATES)[number];
+
+/** The CLOSED review-DECISION vocabulary (pending is the born state, not a decision). */
+export const CONTENT_STUDIO_REVIEW_VERDICTS = ['approved', 'rejected', 'superseded'] as const;
+export type ContentStudioReviewVerdict = (typeof CONTENT_STUDIO_REVIEW_VERDICTS)[number];
+
+/**
+ * The HONEST autonomous/human reviewer split (§6 "generated versus
+ * human-authored distinction", extended to the review decision): a
+ * 'human' reviewer is an explicit human actor; an 'autonomous'
+ * reviewer is the system (e.g. the generation registry superseding a
+ * prior version on regeneration). Never conflated.
+ */
+export const CONTENT_STUDIO_REVIEWER_KINDS = ['human', 'autonomous'] as const;
+export type ContentStudioReviewerKind = (typeof CONTENT_STUDIO_REVIEWER_KINDS)[number];
+
+/**
+ * §8 — "The generated script is versioned and reviewable before
+ * recording WHEN THE FORMAT REQUIRES explicit user confirmation": the
+ * OPTIONAL format input-requirements field a declaring format pins
+ * (ABSENT = 'not_required' — every STUDIO-002 declaration and every
+ * already-materialized tenant registry row is unaffected). When
+ * 'required', a session against the format may enter RECORDING only
+ * with an APPROVED generated script/question-graph for the request
+ * version — the structural gate (honored at session open when the
+ * generated material already exists, and at the recording advance).
+ */
+export const CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES = ['required', 'not_required'] as const;
+export type ContentStudioGeneratedInputReviewMode = (typeof CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES)[number];
+
+/**
+ * §8 (the declared question/branch graph) — the CLOSED question
+ * modality-hint vocabulary: the §6/§27.6 interviewer representation
+ * forms a question node may declare as its delivery hints (the same
+ * 7-member set the format declarations use — one closed vocabulary,
+ * two declaration surfaces).
+ */
+export const CONTENT_STUDIO_QUESTION_MODALITY_HINTS = [
+  'voice',
+  'voice_text',
+  'avatar',
+  'prerecorded',
+  'generated',
+  'multimodal_declared',
+  'hybrid',
+] as const;
+export type ContentStudioQuestionModalityHint = (typeof CONTENT_STUDIO_QUESTION_MODALITY_HINTS)[number];
+
+/**
+ * §8 — the CLOSED branch-condition vocabulary (the declared edge
+ * conditions of the question/branch graph, the DISCLOSED mapping of
+ * "choose a follow-up ... based on the preceding answer" to a closed
+ * deterministic set): 'always' (the unconditional next question) and
+ * the five answer-shaped conditions — 'on_answer_positive',
+ * 'on_answer_negative', 'on_answer_neutral', 'on_answer_elaborate',
+ * 'on_answer_abbreviated'. At most ONE declared edge per (from,
+ * condition) — the deterministic adjacency: a follow-up chosen by
+ * condition always resolves to exactly one next question.
+ */
+export const CONTENT_STUDIO_BRANCH_CONDITIONS = [
+  'always',
+  'on_answer_positive',
+  'on_answer_negative',
+  'on_answer_neutral',
+  'on_answer_elaborate',
+  'on_answer_abbreviated',
+] as const;
+export type ContentStudioBranchCondition = (typeof CONTENT_STUDIO_BRANCH_CONDITIONS)[number];
+
+/**
+ * §9 (the conversation records) — the CLOSED answer-kind vocabulary:
+ * the modality of the recorded answer behind a conversation step
+ * (grounded in the §9 capture modalities audio/video + the text
+ * modality of the voice+text interviewer surface).
+ */
+export const CONTENT_STUDIO_ANSWER_KINDS = ['audio', 'video', 'text'] as const;
+export type ContentStudioAnswerKind = (typeof CONTENT_STUDIO_ANSWER_KINDS)[number];
+
+/**
+ * §8 (the conversation records) — the HONEST chooser split: who chose
+ * the declared follow-up edge — the ADAPTIVE INTERVIEWER ('interviewer'
+ * — the autonomous choice mechanics, STUDIO-004's runtime) or an
+ * explicit human choice ('human'). The resulting conversation graph
+ * preserves the distinction as data (§6 "generated versus human-
+ * authored distinction").
+ */
+export const CONTENT_STUDIO_CHOOSER_KINDS = ['interviewer', 'human'] as const;
+export type ContentStudioChooserKind = (typeof CONTENT_STUDIO_CHOOSER_KINDS)[number];
+
+// ---------------------------------------------------------------------------
 // The scope + the platform ports (the composition-root wiring point)
 // ---------------------------------------------------------------------------
 
@@ -501,6 +630,18 @@ export interface ContentStudioFormatInputRequirements {
   readonly modes: ReadonlyArray<ContentStudioInputMode>;
   /** Whether source/reference artifacts are REQUIRED (§3 source/reference artifacts). */
   readonly sourceArtifacts: 'required' | 'optional';
+  /**
+   * §8 (STUDIO-003) — the OPTIONAL generated-input review requirement:
+   * 'required' pins the explicit-confirmation gate (a session against
+   * this format may enter RECORDING only with an APPROVED generated
+   * script/question-graph for the request version — the structural
+   * honor of "reviewable before recording when the format requires
+   * explicit user confirmation"); ABSENT means 'not_required' (every
+   * STUDIO-002 declaration and every materialized registry row is
+   * unaffected — the smallest architecture-consistent extension of
+   * the frozen nine-surface declaration, DISCLOSED in the runbook).
+   */
+  readonly generatedInputReview?: ContentStudioGeneratedInputReviewMode;
 }
 
 /**
@@ -1256,6 +1397,346 @@ export interface ContentStudioStepCompletionResult {
 }
 
 // ---------------------------------------------------------------------------
+// §8 — the INTENT-TO-SCRIPT records (STUDIO-003 — the migration-070
+// surfaces: the intent records, the versioned script/question-graph
+// records, the review decisions, the conversation-graph hooks)
+// ---------------------------------------------------------------------------
+
+/**
+ * §8 — the DECLARED QUESTION/BRANCH GRAPH: nodes are questions (each
+ * with a bounded unique questionId + its text + the OPTIONAL closed
+ * modality hints — the interviewer representation forms that may
+ * deliver the question); edges are the declared branch conditions
+ * (from/to endpoints that ARE declared nodes + one condition from the
+ * closed 6-member vocabulary); the entry question starts every walk.
+ * At most ONE edge per (fromQuestionId, condition) — the DETERMINISTIC
+ * ADJACENCY (a follow-up chosen by condition resolves to exactly one
+ * next question). One-level declared data (the LAB-011 contract
+ * discipline) — never runtime logic.
+ */
+export interface ContentStudioDeclaredQuestionGraph {
+  /** The declared entry question (a declared node — the conversation's first asked question). */
+  readonly entryQuestionId: string;
+  /** The declared question nodes (1..128, unique questionIds). */
+  readonly nodes: ReadonlyArray<{
+    /** The question identity (1-64 chars of [a-z0-9_-]; unique within the graph). */
+    readonly questionId: string;
+    /** The question text (1-2000 chars, trimmed). */
+    readonly text: string;
+    /** The OPTIONAL closed modality hints (a deduplicated subset of the 7-member interviewer representation vocabulary). */
+    readonly modalityHints?: ReadonlyArray<ContentStudioQuestionModalityHint>;
+  }>;
+  /** The declared branch edges (0..256; unique (fromQuestionId, condition) pairs — the deterministic adjacency). */
+  readonly edges: ReadonlyArray<{
+    readonly fromQuestionId: string;
+    readonly toQuestionId: string;
+    readonly condition: ContentStudioBranchCondition;
+  }>;
+}
+
+/**
+ * §8 — the generation provenance (REQUIRED on every generated
+ * script/question-graph record): the generator identity (the
+ * organization version that generated the material, cited VERBATIM —
+ * identity, version, the agent-body references and the capabilities it
+ * declared at generation time) + the participating model/capability
+ * references (OPAQUE strings — never resolved here; the /ai-runtime and
+ * /lab-capabilities authorities stay the resolvers). No generated
+ * material is ever presented without this record.
+ */
+export interface ContentStudioGeneratorProvenance {
+  /** The organization version that generated the material (the §4 submitted-declaration shape, recorded verbatim). */
+  readonly organization: ContentStudioOrganizationDeclaration;
+  /** The OPAQUE model/capability references that participated in the generation (0..32 × 1..256 chars). */
+  readonly modelReferences: ReadonlyArray<string>;
+}
+
+/** The public record view of one INTENT record (immutable — one per request version on the intent path). */
+export interface ContentStudioIntentRecord {
+  readonly intentId: string;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  /** The declared objective (§3 "declared objective" / §8 "an intent/objective"). */
+  readonly objective: string;
+  /** The OPTIONAL supplied source/reference material citations (§8 "an intent plus supplied source material") — OPAQUE strings. */
+  readonly sourceReferences: ReadonlyArray<string>;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+}
+
+/**
+ * The public record view of one VERSIONED SCRIPT record. A SUPPLIED
+ * script (origin 'supplied') carries no provenance and no review
+ * state; a GENERATED script (origin 'generated') carries the FULL
+ * provenance (the intent lineage + the generator identity + the
+ * participating model/capability references) and the review state.
+ */
+export interface ContentStudioScriptRecord {
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  readonly origin: ContentStudioScriptOrigin;
+  /** The script body as declared data. */
+  readonly body: Readonly<Record<string, unknown>>;
+  /** The intent lineage (generated records only — which intent + source citations produced it). */
+  readonly intentId: string | null;
+  /** The generator organization identity (generated records only — recorded verbatim). */
+  readonly generatorOrganization: ContentStudioOrganizationDeclaration | null;
+  /** The participating model/capability references (generated records only — OPAQUE). */
+  readonly generatorModelReferences: ReadonlyArray<string> | null;
+  /** The review state (generated records only; supplied records carry none — user material is its own authority). */
+  readonly reviewState: ContentStudioReviewState | null;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** The public record view of one VERSIONED QUESTION-GRAPH record (the declared question/branch graph). */
+export interface ContentStudioQuestionGraphRecord {
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly requestId: string;
+  readonly requestVersion: number;
+  readonly origin: ContentStudioScriptOrigin;
+  /** The declared question/branch graph (nodes + edges + the entry question — the deterministic adjacency substrate). */
+  readonly declaredGraph: ContentStudioDeclaredQuestionGraph;
+  readonly intentId: string | null;
+  readonly generatorOrganization: ContentStudioOrganizationDeclaration | null;
+  readonly generatorModelReferences: ReadonlyArray<string> | null;
+  readonly reviewState: ContentStudioReviewState | null;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** The public record view of one append-only HUMAN-REVIEW DECISION record (scripts). */
+export interface ContentStudioScriptReviewRecord {
+  readonly reviewId: string;
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly verdict: ContentStudioReviewVerdict;
+  /** The honest autonomous/human split: who made the decision. */
+  readonly reviewerKind: ContentStudioReviewerKind;
+  /** The OPAQUE reviewer actor identity. */
+  readonly reviewerActor: string;
+  readonly note: string | null;
+  readonly decidedAt: string;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+}
+
+/** The public record view of one append-only HUMAN-REVIEW DECISION record (question graphs). */
+export interface ContentStudioQuestionGraphReviewRecord {
+  readonly reviewId: string;
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  readonly reviewerActor: string;
+  readonly note: string | null;
+  readonly decidedAt: string;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+}
+
+/**
+ * The public record view of one CONVERSATION-GRAPH step (the adaptive-
+ * branching hook surface): the question asked, the recorded answer
+ * (the OPAQUE answer reference + the closed answer kind), the CHOSEN
+ * declared edge (the follow-up chosen for the preceding answer + its
+ * declared condition; null ends the conversation) and the honest
+ * chooser split. The interviewer CHOICE MECHANICS are STUDIO-004 —
+ * this surface is where the choices land as data.
+ */
+export interface ContentStudioConversationStepRecord {
+  readonly conversationId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly seq: number;
+  /** The walked declared question-graph version (the exact version this conversation cites on every step). */
+  readonly graphId: string;
+  readonly graphVersion: number;
+  /** The question asked this step (a declared node of the walked graph). */
+  readonly questionId: string;
+  /** The recorded answer: the OPAQUE answer reference (the capture/answer artifact). */
+  readonly answerReference: string;
+  readonly answerKind: ContentStudioAnswerKind;
+  /** The chosen declared edge's target question (null when the conversation ends — no follow-up). */
+  readonly chosenToQuestionId: string | null;
+  /** The chosen declared edge's condition (null when the conversation ends). */
+  readonly chosenCondition: ContentStudioBranchCondition | null;
+  /** The honest chooser split: the adaptive interviewer (autonomous) vs an explicit human choice. */
+  readonly chooserKind: ContentStudioChooserKind;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// §8 — the INTENT-TO-SCRIPT module inputs (STUDIO-003)
+// ---------------------------------------------------------------------------
+
+/** Records the request's declared intent as the INTENT record (the generation-path lineage anchor; intent-only AND intent+source). */
+export interface RecordContentStudioIntentInput {
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  /** The exact request version to materialize (defaults to the latest in scope). */
+  readonly requestVersion?: number;
+}
+
+/** Records the request's supplied script as the VERSIONED SCRIPT chain v1 (the §3 path — recorded, versioned, no generation). */
+export interface RecordContentStudioSuppliedScriptInput {
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  /** The exact request version to materialize (defaults to the latest in scope; its input mode must be 'script'). */
+  readonly requestVersion?: number;
+}
+
+/** Appends a SUPPLIED script correction (a NEW immutable version row under the same chain id). */
+export interface AppendContentStudioSuppliedScriptVersionInput {
+  readonly scope: ContentStudioScope;
+  readonly scriptId: string;
+  /** The corrected script body (the full corrected script — never a mutation). */
+  readonly body: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Records (or regenerates) the organization's GENERATED script for the
+ * request version: a NEW immutable version row BORN 'pending' with the
+ * FULL provenance; a regeneration supersedes the prior version
+ * transactionally (the autonomous supersession decision rides the
+ * append-only review tail).
+ */
+export interface RecordContentStudioGeneratedScriptInput {
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  /** The exact request version (defaults to the latest in scope; its input mode must be 'intent'). */
+  readonly requestVersion?: number;
+  /** The intent lineage (the materialized intent record for the SAME request version). */
+  readonly intentId: string;
+  /** The generated script body (the organization's output as declared data). */
+  readonly body: Readonly<Record<string, unknown>>;
+  /** The FULL generation provenance (the generator organization identity + the participating model/capability references). */
+  readonly generator: ContentStudioGeneratorProvenance;
+}
+
+/** Reviews a GENERATED script version: the append-only decision + the guarded review-state advance (one transaction). */
+export interface ReviewContentStudioScriptInput {
+  readonly scope: ContentStudioScope;
+  readonly scriptId: string;
+  readonly scriptVersion: number;
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  /** The OPAQUE reviewer actor identity (1-128 chars). */
+  readonly reviewerActor: string;
+  readonly note?: string;
+}
+
+/** The result of a review: the append-only decision record + the advanced script version. */
+export interface ContentStudioScriptReviewResult {
+  readonly decision: ContentStudioScriptReviewRecord;
+  readonly script: ContentStudioScriptRecord;
+}
+
+/** Records the request's supplied question list as the DECLARED question-graph chain v1 (the deterministic linear graph). */
+export interface RecordContentStudioSuppliedQuestionGraphInput {
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  /** The exact request version to materialize (defaults to the latest in scope; its input mode must be 'question_list'). */
+  readonly requestVersion?: number;
+}
+
+/** Appends a SUPPLIED question-graph correction (a NEW immutable version row under the same chain id). */
+export interface AppendContentStudioSuppliedQuestionGraphVersionInput {
+  readonly scope: ContentStudioScope;
+  readonly graphId: string;
+  /** The corrected declared question/branch graph (the full corrected graph — never a mutation). */
+  readonly declaredGraph: ContentStudioDeclaredQuestionGraph;
+}
+
+/**
+ * Records (or regenerates) the organization's GENERATED question graph
+ * for the request version: a NEW immutable version row BORN 'pending'
+ * with the FULL provenance; a regeneration supersedes the prior
+ * version transactionally.
+ */
+export interface RecordContentStudioGeneratedQuestionGraphInput {
+  readonly scope: ContentStudioScope;
+  readonly requestId: string;
+  /** The exact request version (defaults to the latest in scope; its input mode must be 'intent'). */
+  readonly requestVersion?: number;
+  /** The intent lineage (the materialized intent record for the SAME request version). */
+  readonly intentId: string;
+  /** The generated declared question/branch graph (the organization's output as declared data). */
+  readonly declaredGraph: ContentStudioDeclaredQuestionGraph;
+  /** The FULL generation provenance. */
+  readonly generator: ContentStudioGeneratorProvenance;
+}
+
+/** Reviews a GENERATED question-graph version: the append-only decision + the guarded review-state advance (one transaction). */
+export interface ReviewContentStudioQuestionGraphInput {
+  readonly scope: ContentStudioScope;
+  readonly graphId: string;
+  readonly graphVersion: number;
+  readonly verdict: ContentStudioReviewVerdict;
+  readonly reviewerKind: ContentStudioReviewerKind;
+  readonly reviewerActor: string;
+  readonly note?: string;
+}
+
+/** The result of a question-graph review: the decision record + the advanced graph version. */
+export interface ContentStudioQuestionGraphReviewResult {
+  readonly decision: ContentStudioQuestionGraphReviewRecord;
+  readonly graph: ContentStudioQuestionGraphRecord;
+}
+
+/**
+ * Records one CONVERSATION-GRAPH step (the adaptive-branching hook
+ * surface): the question asked + the recorded answer + the CHOSEN
+ * declared edge for the follow-up. When conversationId is omitted a
+ * NEW conversation starts (its first step MUST ask the walked graph's
+ * declared entry question). Every step cites the walked declared
+ * question-graph version bound to the session's request version; the
+ * chosen edge MUST be a declared edge of that graph (the module + the
+ * DB trigger both enforce it — the deterministic adjacency surface).
+ */
+export interface RecordContentStudioConversationStepInput {
+  readonly scope: ContentStudioScope;
+  readonly sessionId: string;
+  /** The conversation to append to (omitted = a NEW conversation for the session's current revision). */
+  readonly conversationId?: string;
+  /** The question asked this step (a declared node; the FIRST step of a conversation asks the declared entry question). */
+  readonly questionId: string;
+  /** The recorded answer: the OPAQUE answer reference (the capture/answer artifact). */
+  readonly answerReference: string;
+  readonly answerKind: ContentStudioAnswerKind;
+  /** The chosen follow-up (a DECLARED edge from the asked question); omit BOTH to end the conversation. */
+  readonly chosenToQuestionId?: string;
+  /** The declared condition of the chosen edge (REQUIRED with chosenToQuestionId). */
+  readonly chosenCondition?: ContentStudioBranchCondition;
+  /** The honest chooser split: the adaptive interviewer (autonomous) vs an explicit human choice. */
+  readonly chooserKind: ContentStudioChooserKind;
+}
+
+// ---------------------------------------------------------------------------
 // The module API
 // ---------------------------------------------------------------------------
 
@@ -1336,6 +1817,79 @@ export interface ContentStudioModuleApi {
 
   requestTreatment(input: RequestContentStudioTreatmentInput): Promise<ContentStudioTreatmentResult>;
   listTreatmentRequests(scope: ContentStudioScope, sessionId: string): Promise<ReadonlyArray<ContentStudioTreatmentRequestRecord>>;
+
+  // --- The §8 INTENT-TO-SCRIPT pipeline (STUDIO-003 — the intents, the
+  // versioned scripts/question graphs, the human review, the
+  // conversation-graph hooks) ---
+
+  /**
+   * Materializes the request version's declared intent (+ its supplied
+   * source/reference citations) as the IMMUTABLE INTENT record — the
+   * generation-path lineage anchor (one per request version; the
+   * request's input mode must be 'intent').
+   */
+  recordIntent(input: RecordContentStudioIntentInput): Promise<ContentStudioIntentRecord>;
+  /** Resolves one intent record (the uniform NotFound for foreign/unknown scope — no existence oracle). */
+  getIntent(scope: ContentStudioScope, intentId: string): Promise<ContentStudioIntentRecord>;
+  /** Resolves the intent record materialized for one request version (if any). */
+  getIntentForRequest(scope: ContentStudioScope, requestId: string, requestVersion?: number): Promise<ContentStudioIntentRecord | null>;
+
+  /**
+   * Records the request's SUPPLIED complete script as the versioned
+   * script chain v1 (the §3 path — recorded, versioned, NO generation,
+   * NO review state; the request's input mode must be 'script').
+   */
+  recordSuppliedScript(input: RecordContentStudioSuppliedScriptInput): Promise<ContentStudioScriptRecord>;
+  /** Appends a SUPPLIED script correction (a NEW immutable version row under the same chain id). */
+  appendSuppliedScriptVersion(input: AppendContentStudioSuppliedScriptVersionInput): Promise<ContentStudioScriptRecord>;
+  /**
+   * Records (or regenerates) the organization's GENERATED script — a
+   * NEW version row BORN 'pending' with the FULL provenance (the
+   * intent lineage + the generator organization identity + the
+   * participating model/capability references); a regeneration
+   * supersedes the prior version transactionally.
+   */
+  recordGeneratedScript(input: RecordContentStudioGeneratedScriptInput): Promise<ContentStudioScriptRecord>;
+  /** Reviews a GENERATED script version: the append-only decision + the guarded review-state advance (one transaction). */
+  reviewScript(input: ReviewContentStudioScriptInput): Promise<ContentStudioScriptReviewResult>;
+  /** Resolves one script version (or the chain's latest when scriptVersion is omitted; the uniform tenant fence). */
+  getScript(scope: ContentStudioScope, scriptId: string, scriptVersion?: number): Promise<ContentStudioScriptRecord>;
+  /** Lists the chain's version rows (oldest first). */
+  listScriptVersions(scope: ContentStudioScope, scriptId: string): Promise<ReadonlyArray<ContentStudioScriptRecord>>;
+  /** Resolves the script chain's latest version for one request version (if any). */
+  getScriptForRequest(scope: ContentStudioScope, requestId: string, requestVersion?: number): Promise<ContentStudioScriptRecord | null>;
+  /** Lists the chain's append-only review decisions (oldest first). */
+  listScriptReviews(scope: ContentStudioScope, scriptId: string): Promise<ReadonlyArray<ContentStudioScriptReviewRecord>>;
+
+  /** Records the request's SUPPLIED question list as the DECLARED question-graph chain v1 (the deterministic linear graph). */
+  recordSuppliedQuestionGraph(input: RecordContentStudioSuppliedQuestionGraphInput): Promise<ContentStudioQuestionGraphRecord>;
+  /** Appends a SUPPLIED question-graph correction (a NEW immutable version row under the same chain id). */
+  appendSuppliedQuestionGraphVersion(input: AppendContentStudioSuppliedQuestionGraphVersionInput): Promise<ContentStudioQuestionGraphRecord>;
+  /** Records (or regenerates) the organization's GENERATED question graph — born 'pending' with the FULL provenance. */
+  recordGeneratedQuestionGraph(input: RecordContentStudioGeneratedQuestionGraphInput): Promise<ContentStudioQuestionGraphRecord>;
+  /** Reviews a GENERATED question-graph version: the append-only decision + the guarded review-state advance (one transaction). */
+  reviewQuestionGraph(input: ReviewContentStudioQuestionGraphInput): Promise<ContentStudioQuestionGraphReviewResult>;
+  /** Resolves one question-graph version (or the chain's latest when graphVersion is omitted; the uniform tenant fence). */
+  getQuestionGraph(scope: ContentStudioScope, graphId: string, graphVersion?: number): Promise<ContentStudioQuestionGraphRecord>;
+  /** Lists the chain's version rows (oldest first). */
+  listQuestionGraphVersions(scope: ContentStudioScope, graphId: string): Promise<ReadonlyArray<ContentStudioQuestionGraphRecord>>;
+  /** Resolves the question-graph chain's latest version for one request version (if any). */
+  getQuestionGraphForRequest(scope: ContentStudioScope, requestId: string, requestVersion?: number): Promise<ContentStudioQuestionGraphRecord | null>;
+  /** Lists the chain's append-only review decisions (oldest first). */
+  listQuestionGraphReviews(scope: ContentStudioScope, graphId: string): Promise<ReadonlyArray<ContentStudioQuestionGraphReviewRecord>>;
+
+  /**
+   * Records one CONVERSATION-GRAPH step (the adaptive-branching hook
+   * surface): the question asked, the recorded answer and the CHOSEN
+   * declared edge — validated against the declared question-graph
+   * version bound to the session's request version. The interviewer
+   * CHOICE MECHANICS are STUDIO-004's; this surface is where every
+   * choice lands as preserved data (§8 "preserving the resulting
+   * conversation graph").
+   */
+  recordConversationStep(input: RecordContentStudioConversationStepInput): Promise<ContentStudioConversationStepRecord>;
+  /** Lists the session's conversation steps (every conversation, ordered by conversation + seq — the resulting conversation graph as data). */
+  listConversationSteps(scope: ContentStudioScope, sessionId: string): Promise<ReadonlyArray<ContentStudioConversationStepRecord>>;
 }
 
 export { createContentStudioModule } from './internal/content-studio-module.ts';
@@ -1359,4 +1913,9 @@ export {
   legalContentStudioSessionTransitions,
   isLegalContentStudioSessionTransition,
   isTerminalContentStudioSessionState,
+  assertValidContentStudioDeclaredQuestionGraph,
+  assertValidContentStudioGeneratorProvenance,
+  assertValidContentStudioReviewDecision,
+  assertValidContentStudioConversationChoice,
+  deriveLinearQuestionGraph,
 } from './internal/validation.ts';

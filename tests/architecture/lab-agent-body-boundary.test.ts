@@ -231,10 +231,10 @@ test('LAB-011 AC-5: 063_lab_agent_body.sql appends the migration tail (062 reser
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 7], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 6], '064_content_studio_runtime.sql');
-  assert.equal(migrations[migrations.length - 5], '065_lab_features.sql');
-  assert.equal(migrations[migrations.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 8], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 7], '064_content_studio_runtime.sql');
+  assert.equal(migrations[migrations.length - 6], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 5], '066_lab_ideas.sql');
   assert.ok(!migrations.includes('062_agent_capability_candidates.sql'), '062 is reserved for the parallel worker (the TL reconciles numbering at merge)');
   // The header cites the spec authority verbatim (the house pattern).
   assert.ok(migrationSql.includes('LAB-011 (Agent Body Runtime Contract)'));
