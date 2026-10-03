@@ -777,6 +777,18 @@ import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
 // precedent — both READ-ONLY, wired here exactly as the operator's
 // pursuit scope is).
 import { createProductMarketingModule } from './modules/product-marketing/public.ts';
+// MKT-072: /commerce-discovery — the Commerce Discovery Mission runtime
+// (see the import block above). The REAL /growth-missions,
+// /product-intelligence, /content-intelligence, /experiment-analysis,
+// /integrations and /platform-health public-contract instances satisfy
+// the module's declared frozen-row dependencies at this wiring point —
+// every consumed contract is READ-ONLY. The experiment launch port (the
+// demand-test arm THROUGH the EXISTING /experiments authority — no
+// second experiment engine), the metrics observation port, the policy
+// context port and the pursuit-scope workspace port are the DISCLOSED
+// off-matrix structural wirings (the MKT-070 /research precedent), all
+// READ-ONLY except the authority-owned experiment creation.
+import { createCommerceDiscoveryModule } from './modules/commerce-discovery/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -2142,6 +2154,57 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     workspaces: productMarketingPursuitScope,
   });
 
+  // MKT-072: /commerce-discovery — the Commerce Discovery Mission runtime.
+  // The disclosed off-matrix ports: the experiment launch port wires the
+  // REAL /experiments public-contract instance (a discovery mission's
+  // demand tests ARE experiments through the authority — createExperiment
+  // + the READ-ONLY getExperiment read-back; the experiments authority
+  // stays sole); the metrics observation port wires the REAL /metrics
+  // instance READ-ONLY; the policy context port wires the REAL /policies
+  // instance READ-ONLY (the ACTIVE network versions on the program's
+  // scope chain — the guardrail evaluations' cited policy context; the
+  // provider-touching enforcement itself lives inside /integrations);
+  // the pursuit-scope port is the SAME workspace → client → agency chain
+  // the Growth Operator and the MKT-070 planner consume.
+  const commerceDiscoveryExperimentLaunches = {
+    createExperiment: experiments.createExperiment.bind(experiments),
+    getExperiment: experiments.getExperiment.bind(experiments),
+  };
+  const commerceDiscoveryMetricObservations = {
+    getMetricObservation: metricsModule.getMetricObservation.bind(metricsModule),
+    listMetricObservationsForClient: metricsModule.listMetricObservationsForClient.bind(metricsModule),
+  };
+  const commerceDiscoveryPolicyContext = {
+    getActivePolicyVersion: policies.getActivePolicyVersion.bind(policies),
+  };
+  const commerceDiscoveryPursuitScope = {
+    resolveWorkspace: async (workspaceId: string) => {
+      const ownership = await workspaces.resolveWorkspaceOwnership(workspaceId);
+      if (ownership === null) return null;
+      return {
+        workspaceId: ownership.scope.workspaceId,
+        clientId: ownership.scope.clientId,
+        agencyId: ownership.scope.agencyId,
+        status: ownership.workspace.status,
+      };
+    },
+  };
+  const commerceDiscovery = createCommerceDiscoveryModule({
+    db,
+    clock,
+    ids,
+    missions: growthMissions,
+    productIntelligence,
+    contentIntelligence,
+    experimentAnalysis,
+    integrations,
+    platformHealth,
+    experimentLaunches: commerceDiscoveryExperimentLaunches,
+    metricObservations: commerceDiscoveryMetricObservations,
+    policyContext: commerceDiscoveryPolicyContext,
+    workspaces: commerceDiscoveryPursuitScope,
+  });
+
   // MKT-046: /sales-continuity — Sales-to-Delivery Continuity (the §8
   // orchestrator). The proposal surface is the Decision Ledger READ-ONLY
   // (resolveDecisionOwnership + getDecision); the playbook and
@@ -2216,7 +2279,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, commerceDiscovery, lab, labCorpus, labAgentBody },
     runtime: { aiProvider },
   };
 }

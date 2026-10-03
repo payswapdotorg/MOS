@@ -400,6 +400,15 @@ import { registerPlatformHealthRoutes } from './platform-health-routes.ts';
 // provider-call or experiment-creation verb exists (the Growth Operator
 // owns the bounded delegation; the planner is the decision layer).
 import { registerProductMarketingRoutes } from './product-marketing-routes.ts';
+// MKT-072: the /commerce-discovery surfaces — the Commerce Discovery
+// Mission runtime family (the versioned bounded-spend declarations + the
+// deterministic selection core + the provenance-cited candidates + the
+// demand tests THROUGH the experiments authority + the learning-loop
+// outcomes over the REAL commerce events + the economic guardrails with
+// the honest blocked/terminal states; owner|admin mutations, member
+// reads, uniform 404 fences, audit emits on every mutation; GET/POST
+// ONLY — no listing/store-mutation verb exists anywhere in this family).
+import { registerCommerceDiscoveryRoutes } from './commerce-discovery-routes.ts';
 export function buildApiRouter(services: AppServices, modules: ApplicationModules): Router {
   const router = new Router();
   registerPlatformRoutes(router, services, modules);
@@ -683,5 +692,6 @@ export function buildApiRouter(services: AppServices, modules: ApplicationModule
   // MKT-070: the /product-marketing surfaces — the deterministic,
   // auditable planning family (see the import block above).
   registerProductMarketingRoutes(router, services, modules);
+  registerCommerceDiscoveryRoutes(router, services, modules);
   return router;
 }

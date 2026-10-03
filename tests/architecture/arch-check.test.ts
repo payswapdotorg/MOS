@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (52 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (53 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 52);
+  assert.equal(modules.length, 53);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -76,6 +76,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (52 modules)', (
       'lab',
       'lab-agent-body',
       'lab-corpus',
+      'commerce-discovery',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -410,6 +411,13 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 53: 52 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-agent-body',
+    // The MKT-072 /commerce-discovery registration (this delivery — the
+    // frozen v1.6 matrix row registered VERBATIM in the live spec files,
+    // the MKT-070 promoted-spec precedent): the fixture provides no such
+    // boundary → the missing-module violation joins the exact set (the
+    // same additive count each sibling registration adds — the enforced
+    // total stays 54: 53 spec-parsed + the single /apps provision).
+    'MISSING_MODULE|src/modules/commerce-discovery',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -496,7 +504,7 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // total violations staying 53.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    53,
+    54,
     'no unexpected violation categories may be reported',
   );
 

@@ -113,7 +113,7 @@ test('LAB-011 AC-1: the module imports NO other module — the /lab family disci
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('lab-agent-body'));
-  assert.equal(result.frozenModules.length, 53);
+  assert.equal(result.frozenModules.length, 54);
 });
 
 test('LAB-011 AC-2: the module owns EXACTLY its four migration-063 tables — no v1.6 authority table, no /ai-runtime table, no /lab table', () => {
