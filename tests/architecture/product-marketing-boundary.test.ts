@@ -467,8 +467,10 @@ test('MKT-070: the spec promotion is COMPLETE (the TL harvest-time registration,
   // (51 → 52, the /lab registration precedent) and one more through
   // the STUDIO-001 /content-studio TL promotion (52 → 53, the /lab
   // registration precedent).
+  // the LAB-003 /lab-features granted worker spec registration
+  // (52 → 53, the MKT-066 platform-health precedent).
   const specModules = parseFrozenModules(join(repoRoot, 'spec', 'architecture.md'));
-  assert.equal(specModules.length, 53);
+  assert.equal(specModules.length, 54);
 });
 
 test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its frozen-row directions (the provision retired)', () => {
@@ -501,10 +503,12 @@ test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its
   // v1.5 'apps' provision — the checker's v1.6 provision retired at
   // the TL harvest, exactly as its own comment directed). The LAB-011
   // provision is likewise RETIRED (the 2026-09-29 TL spec promotion —
-  // /lab-agent-body registers through the promoted spec files) — the
-  // enforced total stays 53: 52 spec-parsed + the single /apps
+  // /lab-agent-body registers through the promoted spec files) and the
+  // LAB-003 delivery appends /lab-features through the granted worker
+  // spec registration (the MKT-066 platform-health precedent) — the
+  // enforced total becomes 54: 53 spec-parsed + the single /apps
   // provision.
-  assert.equal(result.frozenModules.length, 54);
+  assert.equal(result.frozenModules.length, 55);
 });
 
 test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violations; migration 060 is the tail', () => {
@@ -526,9 +530,10 @@ test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 4], '060_product_marketing.sql');
-  assert.equal(numbered[numbered.length - 3], '061_lab_corpus.sql');
-  assert.equal(numbered[numbered.length - 2], '063_lab_agent_body.sql');
+  assert.equal(numbered[numbered.length - 5], '060_product_marketing.sql');
+  assert.equal(numbered[numbered.length - 4], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 3], '063_lab_agent_body.sql');
+  assert.equal(numbered[numbered.length - 1], '065_lab_features.sql');
 });
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-011 + STUDIO-001 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -208,6 +208,30 @@ spec/architecture.md §6 line + the /content-studio registration
 paragraph; the checker provision RETIRED (back to the single /apps
 entry); spec-parsed set 52 → 53; count assertions re-pinned (arch-check
 + content-studio-boundary AC-4 updated to the promoted state).
+
+✅ LAB-003 — Multimodal Content Feature Bundle (external Worker delivery,
+PR #74 merged + the TL station integration (delivery commit d4bcf56)): the `/lab-features` module
+(src/modules/lab-features/ — public.ts + internal/validation.ts +
+feature-store.ts + feature-module.ts), migration `065_lab_features.sql`
+(after the merged STUDIO-001 064; 062 remains reserved for the parallel
+MKT-072 worker), the versioned feature-set definition (27 §5 feature
+keys, per-modality grouping, encoder/model identity, explicit
+unavailable states), reproducible deterministic bundle identity
+(sha256 over canonical JSON of reference identity + feature-set version
++ extractor identity + input digest), source linkage by citation (never
+a join), the optional ephemeral media-access grant (available_permitted
++ reference_gated ONLY; fail-closed otherwise; in-memory handle; no
+binary column), batch extraction (1-100, closed outcome vocabulary,
+SQL-computed summary counts), the /lab-corpus feature_bundle_version
+advance left as /lab-corpus's own guarded seam. Worker battery (its
+worklog): tsc 0 / lint 0 / arch:check 0 / unit / architecture /
+integration green on the pushed tree. TL station battery on
+tl/harvest-lab003 (the merged tree with STUDIO-001): typecheck 0 /
+lint 0 / unit 1340 / architecture 728 / integration 1241/1241 clean
+(zero flakes this run). The granted worker spec
+append (the MKT-066 platform-health precedent — NO checker provision;
+the provision mechanism is structurally for spec-pending modules only):
+spec/architecture.md §6 line + the /lab-features registration paragraph.
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph

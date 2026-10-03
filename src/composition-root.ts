@@ -790,6 +790,48 @@ import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
 // src/modules/content-studio (the /lab family discipline).
 import { createContentStudioModule, CONTENT_STUDIO_INITIAL_FORMATS } from './modules/content-studio/public.ts';
 import type { ContentStudioAgentBodyPort } from './modules/content-studio/public.ts';
+
+// LAB-003: /lab-features — the Multimodal Content Feature Bundle
+// authority (the frozen v1.7 feature-extraction layer over the
+// reference-first corpus: the CLOSED, versioned feature-set
+// definition — contract identity 'lab-features-contract-v1' + the
+// feature-set version 'lab-featureset-v1' — holding the 27 §5
+// feature keys with their per-modality grouping (text/audio/visual/
+// metadata), every feature value carrying its encoder/model identity
+// and either a concrete derived representation or an EXPLICIT
+// unavailable state with its closed reason, NEVER fabricated; the
+// DETERMINISTIC bundle identity — a pure function of (the cited
+// reference identity fields, the feature-set version, the extractor
+// identity+version, the input digest) — with the append-only
+// per-reference bundle version chain; the FULL source linkage
+// carried as recorded citation data (the opaque referenceId, corpus
+// binding, provider, providerContentId, canonicalUrl, the metadata
+// digest and the media-availability state observed at extraction
+// time — never a join); the OPTIONAL ephemeral media access (only
+// available_permitted + a reference_gated posture may open the
+// provider/rights-gated path — everything else fails closed BEFORE
+// any bytes are requested; granted bytes ride an in-memory handle
+// through the extraction call only, NO binary column anywhere); the
+// bounded batch extraction (1-100 citations, exactly ONE closed-
+// vocabulary outcome per item, the run's summary counts SQL-computed
+// from the item outcomes) with the CHECK-fenced closed failure
+// vocabulary. The /lab-corpus reference's feature_bundle_version
+// advance stays the /lab-corpus module's OWN guarded seam (the
+// TL's LAB-004/005 integration — no /lab-corpus table is written
+// here). The frozen row consumes platform ports only (db, clock,
+// ids) plus the module's two REPLACEABLE Lab ports wired HERE: the
+// first-party extractor (honest about what it can and cannot
+// extract — the metadata-grade determinism, the encoder-grade
+// honest unavailable states) + the pending media-fetch port (no
+// provider adapter is wired; the real wiring arrives with the
+// corpus backfills) — the /lab-corpus ingestion-seam precedent, no
+// cross-module imports exist inside src/modules/lab-features (the
+// /lab family discipline).
+import {
+  createLabFeaturesModule,
+  createFirstPartyLabFeatureExtractor,
+  createPendingLabMediaFetchPort,
+} from './modules/lab-features/public.ts';
 // MKT-070: /product-marketing — the Product Marketing Mission Planner
 // authority (the frozen v1.6 matrix row registered by this Work Item:
 // /product-marketing ──→ /growth-missions, /product-intelligence,
@@ -2056,6 +2098,28 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     formats: CONTENT_STUDIO_INITIAL_FORMATS,
   });
 
+  // LAB-003: /lab-features — platform ports + the module's two
+  // REPLACEABLE Lab ports ONLY, both wired HERE (the /lab-corpus
+  // ingestion-seam precedent): the FIRST-PARTY extractor (honest
+  // about what it can and cannot extract — the metadata-grade
+  // deterministic derivations from the recorded citation snapshot,
+  // the encoder-grade features recording their honest unavailable
+  // states until a real encoder is wired) and the PENDING media-
+  // fetch port (no provider adapter is wired — the honest pending
+  // state; the real provider-adapter wiring arrives with the corpus
+  // backfills). The module resolves its own tenant fences; zero
+  // cross-module imports exist inside src/modules/lab-features (the
+  // /lab family discipline) and NO /lab-corpus table is ever written
+  // (the corpus advance seam stays /lab-corpus's own guarded
+  // column — the TL's LAB-004/005 integration).
+  const labFeatures = createLabFeaturesModule({
+    db,
+    clock,
+    ids,
+    extractor: createFirstPartyLabFeatureExtractor(),
+    mediaFetch: createPendingLabMediaFetchPort(),
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2292,7 +2356,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures },
     runtime: { aiProvider },
   };
 }
