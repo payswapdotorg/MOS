@@ -58,11 +58,16 @@ import { InvalidRequestError, NotFoundError } from '../../../platform/errors/err
 import type {
   AdvanceContentStudioSessionInput,
   AppendContentStudioProductionRequestInput,
+  AppendContentStudioSuppliedQuestionGraphVersionInput,
+  AppendContentStudioSuppliedScriptVersionInput,
   ClaimContentStudioProcessingStepsInput,
   CompleteContentStudioProcessingStepInput,
   ContentStudioAgentBodyResolution,
+  ContentStudioConversationStepRecord,
+  ContentStudioDeclaredQuestionGraph,
   ContentStudioFormatDeclaration,
   ContentStudioFormatRecord,
+  ContentStudioIntentRecord,
   ContentStudioModuleApi,
   ContentStudioModuleDeps,
   ContentStudioOrganizationDeclaration,
@@ -70,7 +75,12 @@ import type {
   ContentStudioOutputVersionRecord,
   ContentStudioProductionRequestContent,
   ContentStudioProductionRequestRecord,
+  ContentStudioQuestionGraphRecord,
+  ContentStudioQuestionGraphReviewResult,
+  ContentStudioReviewState,
   ContentStudioScope,
+  ContentStudioScriptRecord,
+  ContentStudioScriptReviewResult,
   ContentStudioSessionEventKind,
   ContentStudioSessionRecord,
   ContentStudioSessionState,
@@ -80,28 +90,49 @@ import type {
   CreateContentStudioProductionRequestInput,
   FailContentStudioProcessingStepInput,
   OpenContentStudioSessionInput,
+  RecordContentStudioConversationStepInput,
+  RecordContentStudioGeneratedQuestionGraphInput,
+  RecordContentStudioGeneratedScriptInput,
+  RecordContentStudioIntentInput,
+  RecordContentStudioSuppliedQuestionGraphInput,
+  RecordContentStudioSuppliedScriptInput,
   RegisterContentStudioFormatInput,
   RequeueContentStudioProcessingStepInput,
   RequestContentStudioTreatmentInput,
+  ReviewContentStudioQuestionGraphInput,
+  ReviewContentStudioScriptInput,
 } from '../public.ts';
 import {
   assertLegalContentStudioSessionTransition,
   assertTerminalReasonForAdvance,
+  assertValidContentStudioDeclaredQuestionGraph,
+  assertValidContentStudioGeneratorProvenance,
+  assertValidContentStudioConversationChoice,
   assertValidContentStudioFormatDeclaration,
   assertValidContentStudioProductionRequestContent,
+  assertValidContentStudioReviewDecision,
   assertValidContentStudioScope,
   assertValidContentStudioTreatmentSpecification,
+  deriveLinearQuestionGraph,
+  isTerminalContentStudioSessionState,
 } from './validation.ts';
 import {
   ContentStudioStore,
+  mapConversationEdgeRow,
   mapEventRow,
   mapFormatRow,
+  mapIntentRow,
   mapOutputRow,
+  mapQuestionGraphReviewRow,
+  mapQuestionGraphRow,
   mapRequestRow,
+  mapScriptReviewRow,
+  mapScriptRow,
   mapSessionRow,
   mapStepRow,
   mapTreatmentRow,
   type FormatRow,
+  type QuestionGraphRow,
 } from './content-studio-store.ts';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -269,6 +300,59 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
     return row.declaration as ContentStudioFormatDeclaration;
   };
 
+  // --- the §8 INTENT-TO-SCRIPT pipeline (STUDIO-003 — the gate + the
+  // record surfaces over the migration-070 tables) ---
+
+  /**
+   * THE GENERATED-INPUT REVIEW GATE (§8 "The generated script is
+   * versioned and reviewable before recording when the format requires
+   * explicit user confirmation" — honored STRUCTURALLY): when the
+   * format's inputRequirements.generatedInputReview is 'required' and
+   * the request's input mode is 'intent' (the generation path), a
+   * materialized generated script/question-graph chain for the EXACT
+   * request version is citable ONLY in its APPROVED latest version —
+   * a pending/rejected/superseded citation is refused with the honest
+   * state. When `materialMustExist` is set (the RECORDING gate — the
+   * interview needs the approved material), an ABSENT chain is refused
+   * too; otherwise (the session-open gate) an absent chain passes (the
+   * §8 in-session generation path: the selected organization may
+   * generate during the session — the recording gate then catches it).
+   */
+  const assertGeneratedInputReviewGate = async (
+    scope: ContentStudioScope,
+    request: ContentStudioProductionRequestRecord,
+    format: ContentStudioFormatDeclaration,
+    options: { readonly materialMustExist: boolean },
+  ): Promise<void> => {
+    if (format.inputRequirements.generatedInputReview !== 'required') {
+      return; // the format does not require explicit user confirmation
+    }
+    if (request.content.input.mode !== 'intent') {
+      return; // the supplied paths are user-authored — their own authority
+    }
+    const scriptRow = await store.findLatestScriptForRequest(scope.clientId, request.requestId, request.requestVersion);
+    const graphRow = scriptRow === null ? await store.findLatestQuestionGraphForRequest(scope.clientId, request.requestId, request.requestVersion) : null;
+    if (scriptRow === null && graphRow === null) {
+      if (options.materialMustExist) {
+        throw new InvalidRequestError(
+          `studio session against format '${format.formatId}@v${format.formatVersion}' requires explicit user confirmation of the generated input — request ${request.requestId}#v${request.requestVersion} has NO generated script/question-graph yet (record + approve the generated material before recording)`,
+        );
+      }
+      return;
+    }
+    const kind = scriptRow !== null ? 'script' : 'question graph';
+    const origin = scriptRow !== null ? scriptRow.origin : graphRow!.origin;
+    const state = scriptRow !== null ? scriptRow.review_state : graphRow!.review_state;
+    if (origin !== 'generated') {
+      return; // a supplied chain on an intent-mode request cannot exist (the mode fence); defensive no-op
+    }
+    if (state !== 'approved') {
+      throw new InvalidRequestError(
+        `studio session against format '${format.formatId}@v${format.formatVersion}' requires explicit user confirmation of the generated input — the latest generated ${kind} for request ${request.requestId}#v${request.requestVersion} is '${state}' (only an APPROVED generated script/question-graph may be cited)`,
+      );
+    }
+  };
+
   // --- the §4 organization compatibility validation (EXPLICIT, never silent) ---
   const validateOrganizationCompatibility = async (
     scope: ContentStudioScope,
@@ -399,6 +483,15 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
     assertLegalContentStudioSessionTransition(session.state, to);
 
     // The runtime special guards (defense in depth over the pure table):
+    if (to === 'recording') {
+      // §8 (STUDIO-003): the generated-input review gate — "reviewable
+      // BEFORE RECORDING when the format requires explicit user
+      // confirmation". The materialized chain for the session's exact
+      // request version must EXIST and its latest version be APPROVED.
+      const request = await requireRequestVersion(scope, session.requestId, session.requestVersion);
+      const format = await requireSessionFormat(scope, session.formatId, session.formatVersion);
+      await assertGeneratedInputReviewGate(scope, request, format, { materialMustExist: true });
+    }
     if (to === 'review') {
       const steps = await store.listSessionSteps(scope.clientId, session.sessionId);
       const revisionSteps = steps.filter((step) => Number(step.revision) === session.revision);
@@ -710,6 +803,14 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
           );
         }
       }
+
+      // §8 (STUDIO-003): the generated-input review gate at session
+      // open — a request against a format that requires confirmation
+      // can cite ONLY an approved generated script/graph: an
+      // already-materialized chain must be approved (an absent chain
+      // passes — the in-session generation path; the recording gate
+      // then catches it).
+      await assertGeneratedInputReviewGate(input.scope, request, format, { materialMustExist: false });
 
       // The §4 organization compatibility validation — explicit, auditable,
       // NEVER a silent replacement.
@@ -1155,6 +1256,19 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
         successorContent.organization,
       );
 
+      // §8 (STUDIO-003): the generated-input review gate on the successor
+      // revision's request binding (a revised request selecting a
+      // confirmation-requiring format with intent-mode input cites only
+      // approved material; a fresh request version carries no chain yet —
+      // the recording gate catches it later).
+      const successorRequestBinding: ContentStudioProductionRequestRecord = {
+        requestId: session.requestId,
+        requestVersion: successorRequestVersion,
+        // The successor record view the gate reads (the binding fields only).
+        content: successorContent,
+      } as ContentStudioProductionRequestRecord;
+      await assertGeneratedInputReviewGate(input.scope, successorRequestBinding, successorFormat, { materialMustExist: false });
+
       const successorRevision = session.revision + 1;
       const result = await deps.db.transaction(async (tx) => {
         const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
@@ -1242,6 +1356,645 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       await requireLatestSession(scope, sessionId);
       const rows = await store.listSessionTreatments(scope.clientId, sessionId);
       return rows.map(mapTreatmentRow);
+    },
+
+    // --- The §8 INTENT-TO-SCRIPT pipeline (STUDIO-003 — the intent
+    // records, the versioned scripts/question graphs, the human review,
+    // the conversation-graph hooks) ---
+
+    async recordIntent(input: RecordContentStudioIntentInput): Promise<ContentStudioIntentRecord> {
+      assertValidContentStudioScope(input.scope);
+      if (input.requestVersion !== undefined && (typeof input.requestVersion !== 'number' || !Number.isSafeInteger(input.requestVersion) || input.requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
+      if (request.content.input.mode !== 'intent') {
+        throw new InvalidRequestError(
+          `studio intent records materialize the INTENT path only — request ${request.requestId}#v${request.requestVersion} carries input mode '${request.content.input.mode}' (the generation path requires mode 'intent')`,
+        );
+      }
+      const existing = await store.findIntentForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+      if (existing !== null) {
+        throw new InvalidRequestError(
+          `request ${request.requestId}#v${request.requestVersion} already carries its intent record (${existing.intent_id}) — intents are immutable; resolve it through getIntentForRequest`,
+        );
+      }
+      const row = await store.insertIntent({
+        intentId: store.newId(),
+        scope: input.scope,
+        requestId: request.requestId,
+        requestVersion: request.requestVersion,
+        objective: request.content.input.intent as string,
+        sourceReferences: request.content.input.sourceArtifactReferences ?? [],
+      });
+      return mapIntentRow(row);
+    },
+
+    async getIntent(scope, intentId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio intent', intentId);
+      const row = await store.findIntent(scope.clientId, intentId);
+      if (row === null) {
+        throw new NotFoundError('studio intent', intentId);
+      }
+      return mapIntentRow(row);
+    },
+
+    async getIntentForRequest(scope, requestId, requestVersion) {
+      assertValidContentStudioScope(scope);
+      if (requestVersion !== undefined && (typeof requestVersion !== 'number' || !Number.isSafeInteger(requestVersion) || requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(scope, requestId, requestVersion);
+      const row = await store.findIntentForRequest(scope.clientId, request.requestId, request.requestVersion);
+      return row === null ? null : mapIntentRow(row);
+    },
+
+    async recordSuppliedScript(input: RecordContentStudioSuppliedScriptInput): Promise<ContentStudioScriptRecord> {
+      assertValidContentStudioScope(input.scope);
+      if (input.requestVersion !== undefined && (typeof input.requestVersion !== 'number' || !Number.isSafeInteger(input.requestVersion) || input.requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
+      if (request.content.input.mode !== 'script') {
+        throw new InvalidRequestError(
+          `studio supplied scripts materialize the SCRIPT path only — request ${request.requestId}#v${request.requestVersion} carries input mode '${request.content.input.mode}' (the supplied path requires mode 'script')`,
+        );
+      }
+      const body = request.content.input.script as Readonly<Record<string, unknown>>;
+      assertBoundedJsonPayload(body, 'the request\'s declared script');
+      const existing = await store.findLatestScriptForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+      if (existing !== null) {
+        throw new InvalidRequestError(
+          `request ${request.requestId}#v${request.requestVersion} already carries its script chain (${existing.script_id}) — corrections append under the SAME chain id (appendSuppliedScriptVersion)`,
+        );
+      }
+      const row = await store.insertScriptVersion({
+        scriptId: store.newId(),
+        scriptVersion: 1,
+        scope: input.scope,
+        requestId: request.requestId,
+        requestVersion: request.requestVersion,
+        origin: 'supplied',
+        body,
+      });
+      return mapScriptRow(row);
+    },
+
+    async appendSuppliedScriptVersion(input: AppendContentStudioSuppliedScriptVersionInput): Promise<ContentStudioScriptRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertUuidShape('studio script chain', input.scriptId);
+      assertBoundedJsonPayload(input.body, 'body');
+      const latest = await store.findLatestScriptVersion(input.scope.clientId, input.scriptId);
+      if (latest === null) {
+        throw new NotFoundError('studio script chain', input.scriptId);
+      }
+      if (latest.origin !== 'supplied') {
+        throw new InvalidRequestError(
+          `studio script chain ${input.scriptId} is '${latest.origin}' — generated chains regenerate through recordGeneratedScript (the generation path)`,
+        );
+      }
+      const row = await store.insertScriptVersion({
+        scriptId: input.scriptId,
+        scriptVersion: Number(latest.script_version) + 1,
+        scope: input.scope,
+        requestId: latest.request_id,
+        requestVersion: Number(latest.request_version),
+        origin: 'supplied',
+        body: input.body,
+      });
+      return mapScriptRow(row);
+    },
+
+    async recordGeneratedScript(input: RecordContentStudioGeneratedScriptInput): Promise<ContentStudioScriptRecord> {
+      assertValidContentStudioScope(input.scope);
+      if (input.requestVersion !== undefined && (typeof input.requestVersion !== 'number' || !Number.isSafeInteger(input.requestVersion) || input.requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      assertValidContentStudioGeneratorProvenance(input.generator);
+      assertBoundedJsonPayload(input.body, 'body');
+      const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
+      if (request.content.input.mode !== 'intent') {
+        throw new InvalidRequestError(
+          `studio generated scripts materialize the INTENT path only — request ${request.requestId}#v${request.requestVersion} carries input mode '${request.content.input.mode}' (the generation path requires mode 'intent')`,
+        );
+      }
+      assertUuidShape('studio intent', input.intentId);
+      const intentRow = await store.findIntent(input.scope.clientId, input.intentId);
+      if (intentRow === null) {
+        throw new NotFoundError('studio intent', input.intentId);
+      }
+      if (intentRow.request_id !== request.requestId || Number(intentRow.request_version) !== request.requestVersion) {
+        throw new InvalidRequestError(
+          `studio intent ${input.intentId} does not belong to request ${request.requestId}#v${request.requestVersion} (found ${intentRow.request_id}#v${Number(intentRow.request_version)}) — the generation lineage must bind the SAME request version`,
+        );
+      }
+      const latest = await store.findLatestScriptForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+      if (latest === null) {
+        // The one-materialization fence (module-side honest error; the DB
+        // trigger backstops): the intent path materializes EITHER a
+        // script chain OR a question-graph chain.
+        const graphExisting = await store.findLatestQuestionGraphForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+        if (graphExisting !== null) {
+          throw new InvalidRequestError(
+            `request ${request.requestId}#v${request.requestVersion} already carries its question-graph chain (${graphExisting.graph_id}) — the production input materializes as EITHER a script chain OR a question-graph chain (the §8 exactly-one input fence)`,
+          );
+        }
+      }
+      const row = await deps.db.transaction(async (tx) => {
+        const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+        let scriptId = txStore.newId();
+        let scriptVersion = 1;
+        if (latest !== null) {
+          scriptId = latest.script_id;
+          scriptVersion = Number(latest.script_version) + 1;
+          // The autonomous supersession of the prior version (the
+          // decision rides the append-only review tail — the
+          // decision-then-advance ordering the DB guard enforces).
+          const priorState = latest.review_state;
+          if (priorState !== null && priorState !== 'superseded') {
+            await txStore.insertScriptReview({
+              reviewId: txStore.newId(),
+              scriptId,
+              scriptVersion: Number(latest.script_version),
+              scope: input.scope,
+              verdict: 'superseded',
+              reviewerKind: 'autonomous',
+              reviewerActor: 'content-studio.generation',
+              note: 'superseded by the regeneration recorded for the same request version',
+            });
+            const advanced = await txStore.advanceScriptReviewState({
+              clientId: input.scope.clientId,
+              scriptId,
+              scriptVersion: Number(latest.script_version),
+              from: priorState as ContentStudioReviewState,
+              to: 'superseded',
+            });
+            if (advanced === null) {
+              throw new InvalidRequestError(`studio script ${scriptId}#v${Number(latest.script_version)} could not be superseded (it moved on) — re-read the chain`);
+            }
+          }
+        }
+        return txStore.insertScriptVersion({
+          scriptId,
+          scriptVersion,
+          scope: input.scope,
+          requestId: request.requestId,
+          requestVersion: request.requestVersion,
+          origin: 'generated',
+          body: input.body,
+          intentId: input.intentId,
+          generator: input.generator,
+        });
+      });
+      return mapScriptRow(row);
+    },
+
+    async reviewScript(input: ReviewContentStudioScriptInput): Promise<ContentStudioScriptReviewResult> {
+      assertValidContentStudioScope(input.scope);
+      assertUuidShape('studio script chain', input.scriptId);
+      if (typeof input.scriptVersion !== 'number' || !Number.isSafeInteger(input.scriptVersion) || input.scriptVersion < 1 || input.scriptVersion > 1000) {
+        throw new InvalidRequestError('scriptVersion must be an integer 1-1000');
+      }
+      assertValidContentStudioReviewDecision(input);
+      const scriptRow = await store.findScriptVersion(input.scope.clientId, input.scriptId, input.scriptVersion);
+      if (scriptRow === null) {
+        throw new NotFoundError('studio script version', `${input.scriptId}#v${input.scriptVersion}`);
+      }
+      if (scriptRow.origin !== 'generated') {
+        throw new InvalidRequestError(
+          `studio script ${input.scriptId}#v${input.scriptVersion} is '${scriptRow.origin}' — reviews target GENERATED script versions only (supplied scripts are user-authored: their own authority)`,
+        );
+      }
+      const currentState = scriptRow.review_state as ContentStudioReviewState;
+      const legal =
+        (currentState === 'pending' && ['approved', 'rejected', 'superseded'].includes(input.verdict)) ||
+        (['approved', 'rejected'].includes(currentState) && input.verdict === 'superseded');
+      if (!legal) {
+        throw new InvalidRequestError(
+          `studio script ${input.scriptId}#v${input.scriptVersion} review verdict '${input.verdict}' is not legal from its current state '${currentState}' (born pending; pending → approved | rejected | superseded; approved | rejected → superseded; no resurrection)`,
+        );
+      }
+      return deps.db.transaction(async (tx) => {
+        const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+        const decisionRow = await txStore.insertScriptReview({
+          reviewId: txStore.newId(),
+          scriptId: input.scriptId,
+          scriptVersion: input.scriptVersion,
+          scope: input.scope,
+          verdict: input.verdict,
+          reviewerKind: input.reviewerKind,
+          reviewerActor: input.reviewerActor,
+          note: input.note ?? null,
+        });
+        const advancedRow = await txStore.advanceScriptReviewState({
+          clientId: input.scope.clientId,
+          scriptId: input.scriptId,
+          scriptVersion: input.scriptVersion,
+          from: currentState,
+          to: input.verdict,
+        });
+        if (advancedRow === null) {
+          throw new InvalidRequestError(`studio script ${input.scriptId}#v${input.scriptVersion} moved on — re-read its review state`);
+        }
+        return { decision: mapScriptReviewRow(decisionRow), script: mapScriptRow(advancedRow) };
+      });
+    },
+
+    async getScript(scope, scriptId, scriptVersion) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio script chain', scriptId);
+      if (scriptVersion !== undefined && (typeof scriptVersion !== 'number' || !Number.isSafeInteger(scriptVersion) || scriptVersion < 1)) {
+        throw new InvalidRequestError('scriptVersion must be a positive integer');
+      }
+      const row =
+        scriptVersion === undefined
+          ? await store.findLatestScriptVersion(scope.clientId, scriptId)
+          : await store.findScriptVersion(scope.clientId, scriptId, scriptVersion);
+      if (row === null) {
+        throw new NotFoundError('studio script version', scriptVersion === undefined ? scriptId : `${scriptId}#v${scriptVersion}`);
+      }
+      return mapScriptRow(row);
+    },
+
+    async listScriptVersions(scope, scriptId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio script chain', scriptId);
+      const rows = await store.listScriptVersions(scope.clientId, scriptId);
+      if (rows.length < 1) {
+        throw new NotFoundError('studio script chain', scriptId);
+      }
+      return rows.map(mapScriptRow);
+    },
+
+    async getScriptForRequest(scope, requestId, requestVersion) {
+      assertValidContentStudioScope(scope);
+      if (requestVersion !== undefined && (typeof requestVersion !== 'number' || !Number.isSafeInteger(requestVersion) || requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(scope, requestId, requestVersion);
+      const row = await store.findLatestScriptForRequest(scope.clientId, request.requestId, request.requestVersion);
+      return row === null ? null : mapScriptRow(row);
+    },
+
+    async listScriptReviews(scope, scriptId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio script chain', scriptId);
+      await store.findLatestScriptVersion(scope.clientId, scriptId).then((row) => {
+        if (row === null) {
+          throw new NotFoundError('studio script chain', scriptId);
+        }
+      });
+      const rows = await store.listScriptReviews(scope.clientId, scriptId);
+      return rows.map(mapScriptReviewRow);
+    },
+
+    async recordSuppliedQuestionGraph(input: RecordContentStudioSuppliedQuestionGraphInput): Promise<ContentStudioQuestionGraphRecord> {
+      assertValidContentStudioScope(input.scope);
+      if (input.requestVersion !== undefined && (typeof input.requestVersion !== 'number' || !Number.isSafeInteger(input.requestVersion) || input.requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
+      if (request.content.input.mode !== 'question_list') {
+        throw new InvalidRequestError(
+          `studio supplied question graphs materialize the QUESTION-LIST path only — request ${request.requestId}#v${request.requestVersion} carries input mode '${request.content.input.mode}' (the supplied path requires mode 'question_list')`,
+        );
+      }
+      const questions = request.content.input.questions as ReadonlyArray<string>;
+      const declaredGraph = deriveLinearQuestionGraph(questions);
+      const existing = await store.findLatestQuestionGraphForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+      if (existing !== null) {
+        throw new InvalidRequestError(
+          `request ${request.requestId}#v${request.requestVersion} already carries its question-graph chain (${existing.graph_id}) — corrections append under the SAME chain id (appendSuppliedQuestionGraphVersion)`,
+        );
+      }
+      const row = await store.insertQuestionGraphVersion({
+        graphId: store.newId(),
+        graphVersion: 1,
+        scope: input.scope,
+        requestId: request.requestId,
+        requestVersion: request.requestVersion,
+        origin: 'supplied',
+        declaredGraph,
+      });
+      return mapQuestionGraphRow(row);
+    },
+
+    async appendSuppliedQuestionGraphVersion(input: AppendContentStudioSuppliedQuestionGraphVersionInput): Promise<ContentStudioQuestionGraphRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertUuidShape('studio question graph chain', input.graphId);
+      assertValidContentStudioDeclaredQuestionGraph(input.declaredGraph);
+      const latest = await store.findLatestQuestionGraphVersion(input.scope.clientId, input.graphId);
+      if (latest === null) {
+        throw new NotFoundError('studio question graph chain', input.graphId);
+      }
+      if (latest.origin !== 'supplied') {
+        throw new InvalidRequestError(
+          `studio question graph chain ${input.graphId} is '${latest.origin}' — generated chains regenerate through recordGeneratedQuestionGraph (the generation path)`,
+        );
+      }
+      const row = await store.insertQuestionGraphVersion({
+        graphId: input.graphId,
+        graphVersion: Number(latest.graph_version) + 1,
+        scope: input.scope,
+        requestId: latest.request_id,
+        requestVersion: Number(latest.request_version),
+        origin: 'supplied',
+        declaredGraph: input.declaredGraph,
+      });
+      return mapQuestionGraphRow(row);
+    },
+
+    async recordGeneratedQuestionGraph(input: RecordContentStudioGeneratedQuestionGraphInput): Promise<ContentStudioQuestionGraphRecord> {
+      assertValidContentStudioScope(input.scope);
+      if (input.requestVersion !== undefined && (typeof input.requestVersion !== 'number' || !Number.isSafeInteger(input.requestVersion) || input.requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      assertValidContentStudioGeneratorProvenance(input.generator);
+      assertValidContentStudioDeclaredQuestionGraph(input.declaredGraph);
+      const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
+      if (request.content.input.mode !== 'intent') {
+        throw new InvalidRequestError(
+          `studio generated question graphs materialize the INTENT path only — request ${request.requestId}#v${request.requestVersion} carries input mode '${request.content.input.mode}' (the generation path requires mode 'intent')`,
+        );
+      }
+      assertUuidShape('studio intent', input.intentId);
+      const intentRow = await store.findIntent(input.scope.clientId, input.intentId);
+      if (intentRow === null) {
+        throw new NotFoundError('studio intent', input.intentId);
+      }
+      if (intentRow.request_id !== request.requestId || Number(intentRow.request_version) !== request.requestVersion) {
+        throw new InvalidRequestError(
+          `studio intent ${input.intentId} does not belong to request ${request.requestId}#v${request.requestVersion} (found ${intentRow.request_id}#v${Number(intentRow.request_version)}) — the generation lineage must bind the SAME request version`,
+        );
+      }
+      const latest = await store.findLatestQuestionGraphForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+      if (latest === null) {
+        const scriptExisting = await store.findLatestScriptForRequest(input.scope.clientId, request.requestId, request.requestVersion);
+        if (scriptExisting !== null) {
+          throw new InvalidRequestError(
+            `request ${request.requestId}#v${request.requestVersion} already carries its script chain (${scriptExisting.script_id}) — the production input materializes as EITHER a script chain OR a question-graph chain (the §8 exactly-one input fence)`,
+          );
+        }
+      }
+      const row = await deps.db.transaction(async (tx) => {
+        const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+        let graphId = txStore.newId();
+        let graphVersion = 1;
+        if (latest !== null) {
+          graphId = latest.graph_id;
+          graphVersion = Number(latest.graph_version) + 1;
+          const priorState = latest.review_state;
+          if (priorState !== null && priorState !== 'superseded') {
+            await txStore.insertQuestionGraphReview({
+              reviewId: txStore.newId(),
+              graphId,
+              graphVersion: Number(latest.graph_version),
+              scope: input.scope,
+              verdict: 'superseded',
+              reviewerKind: 'autonomous',
+              reviewerActor: 'content-studio.generation',
+              note: 'superseded by the regeneration recorded for the same request version',
+            });
+            const advanced = await txStore.advanceQuestionGraphReviewState({
+              clientId: input.scope.clientId,
+              graphId,
+              graphVersion: Number(latest.graph_version),
+              from: priorState as ContentStudioReviewState,
+              to: 'superseded',
+            });
+            if (advanced === null) {
+              throw new InvalidRequestError(`studio question graph ${graphId}#v${Number(latest.graph_version)} could not be superseded (it moved on) — re-read the chain`);
+            }
+          }
+        }
+        return txStore.insertQuestionGraphVersion({
+          graphId,
+          graphVersion,
+          scope: input.scope,
+          requestId: request.requestId,
+          requestVersion: request.requestVersion,
+          origin: 'generated',
+          declaredGraph: input.declaredGraph,
+          intentId: input.intentId,
+          generator: input.generator,
+        });
+      });
+      return mapQuestionGraphRow(row);
+    },
+
+    async reviewQuestionGraph(input: ReviewContentStudioQuestionGraphInput): Promise<ContentStudioQuestionGraphReviewResult> {
+      assertValidContentStudioScope(input.scope);
+      assertUuidShape('studio question graph chain', input.graphId);
+      if (typeof input.graphVersion !== 'number' || !Number.isSafeInteger(input.graphVersion) || input.graphVersion < 1 || input.graphVersion > 1000) {
+        throw new InvalidRequestError('graphVersion must be an integer 1-1000');
+      }
+      assertValidContentStudioReviewDecision(input);
+      const graphRow = await store.findQuestionGraphVersion(input.scope.clientId, input.graphId, input.graphVersion);
+      if (graphRow === null) {
+        throw new NotFoundError('studio question graph version', `${input.graphId}#v${input.graphVersion}`);
+      }
+      if (graphRow.origin !== 'generated') {
+        throw new InvalidRequestError(
+          `studio question graph ${input.graphId}#v${input.graphVersion} is '${graphRow.origin}' — reviews target GENERATED graph versions only (supplied graphs are user-authored: their own authority)`,
+        );
+      }
+      const currentState = graphRow.review_state as ContentStudioReviewState;
+      const legal =
+        (currentState === 'pending' && ['approved', 'rejected', 'superseded'].includes(input.verdict)) ||
+        (['approved', 'rejected'].includes(currentState) && input.verdict === 'superseded');
+      if (!legal) {
+        throw new InvalidRequestError(
+          `studio question graph ${input.graphId}#v${input.graphVersion} review verdict '${input.verdict}' is not legal from its current state '${currentState}' (born pending; pending → approved | rejected | superseded; approved | rejected → superseded; no resurrection)`,
+        );
+      }
+      return deps.db.transaction(async (tx) => {
+        const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+        const decisionRow = await txStore.insertQuestionGraphReview({
+          reviewId: txStore.newId(),
+          graphId: input.graphId,
+          graphVersion: input.graphVersion,
+          scope: input.scope,
+          verdict: input.verdict,
+          reviewerKind: input.reviewerKind,
+          reviewerActor: input.reviewerActor,
+          note: input.note ?? null,
+        });
+        const advancedRow = await txStore.advanceQuestionGraphReviewState({
+          clientId: input.scope.clientId,
+          graphId: input.graphId,
+          graphVersion: input.graphVersion,
+          from: currentState,
+          to: input.verdict,
+        });
+        if (advancedRow === null) {
+          throw new InvalidRequestError(`studio question graph ${input.graphId}#v${input.graphVersion} moved on — re-read its review state`);
+        }
+        return { decision: mapQuestionGraphReviewRow(decisionRow), graph: mapQuestionGraphRow(advancedRow) };
+      });
+    },
+
+    async getQuestionGraph(scope, graphId, graphVersion) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio question graph chain', graphId);
+      if (graphVersion !== undefined && (typeof graphVersion !== 'number' || !Number.isSafeInteger(graphVersion) || graphVersion < 1)) {
+        throw new InvalidRequestError('graphVersion must be a positive integer');
+      }
+      const row =
+        graphVersion === undefined
+          ? await store.findLatestQuestionGraphVersion(scope.clientId, graphId)
+          : await store.findQuestionGraphVersion(scope.clientId, graphId, graphVersion);
+      if (row === null) {
+        throw new NotFoundError('studio question graph version', graphVersion === undefined ? graphId : `${graphId}#v${graphVersion}`);
+      }
+      return mapQuestionGraphRow(row);
+    },
+
+    async listQuestionGraphVersions(scope, graphId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio question graph chain', graphId);
+      const rows = await store.listQuestionGraphVersions(scope.clientId, graphId);
+      if (rows.length < 1) {
+        throw new NotFoundError('studio question graph chain', graphId);
+      }
+      return rows.map(mapQuestionGraphRow);
+    },
+
+    async getQuestionGraphForRequest(scope, requestId, requestVersion) {
+      assertValidContentStudioScope(scope);
+      if (requestVersion !== undefined && (typeof requestVersion !== 'number' || !Number.isSafeInteger(requestVersion) || requestVersion < 1)) {
+        throw new InvalidRequestError('requestVersion must be a positive integer');
+      }
+      const request = await requireRequestVersion(scope, requestId, requestVersion);
+      const row = await store.findLatestQuestionGraphForRequest(scope.clientId, request.requestId, request.requestVersion);
+      return row === null ? null : mapQuestionGraphRow(row);
+    },
+
+    async listQuestionGraphReviews(scope, graphId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio question graph chain', graphId);
+      const latest = await store.findLatestQuestionGraphVersion(scope.clientId, graphId);
+      if (latest === null) {
+        throw new NotFoundError('studio question graph chain', graphId);
+      }
+      const rows = await store.listQuestionGraphReviews(scope.clientId, graphId);
+      return rows.map(mapQuestionGraphReviewRow);
+    },
+
+    async recordConversationStep(input: RecordContentStudioConversationStepInput): Promise<ContentStudioConversationStepRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioConversationChoice(input);
+      assertUuidShape('studio session', input.sessionId);
+      const session = await requireLatestSession(input.scope, input.sessionId);
+      if (isTerminalContentStudioSessionState(session.state)) {
+        throw new InvalidRequestError(
+          `studio session ${input.sessionId}#r${session.revision} is ${session.state} — a terminal revision cannot grow a conversation (the resulting conversation graph is preserved as data)`,
+        );
+      }
+
+      // The declared graph this conversation walks: the question-graph
+      // chain bound to the session's EXACT request version (supplied or
+      // generated — both walk).
+      const graphRow = await store.findLatestQuestionGraphForRequest(input.scope.clientId, session.requestId, session.requestVersion);
+      if (graphRow === null) {
+        throw new InvalidRequestError(
+          `studio session ${input.sessionId}#r${session.revision} has no declared question graph for request ${session.requestId}#v${session.requestVersion} — the conversation walks a declared question/branch graph`,
+        );
+      }
+
+      let conversationId: string;
+      let seq: number;
+      let walkedGraphRow: QuestionGraphRow = graphRow;
+      if (input.conversationId !== undefined && input.conversationId !== null) {
+        assertUuidShape('studio conversation', input.conversationId);
+        const convSteps = await store.listConversationEdges(input.scope.clientId, input.conversationId);
+        if (convSteps.length < 1) {
+          throw new NotFoundError('studio conversation', input.conversationId);
+        }
+        const first = convSteps[0]!;
+        if (first.session_id !== session.sessionId || Number(first.revision) !== session.revision) {
+          throw new InvalidRequestError(
+            `studio conversation ${input.conversationId} belongs to session ${first.session_id}#r${Number(first.revision)} — a conversation is bound to one session revision (open a NEW conversation)`,
+          );
+        }
+        // The conversation's walked graph version is pinned at its first
+        // step (a mid-conversation graph correction never re-aims a
+        // running conversation — a NEW conversation walks the corrected
+        // version).
+        walkedGraphRow =
+          (await store.findQuestionGraphVersion(input.scope.clientId, first.graph_id, Number(first.graph_version))) ?? graphRow;
+        const prior = convSteps[convSteps.length - 1]!;
+        if (prior.chosen_to_question_id === null) {
+          throw new InvalidRequestError(
+            `studio conversation ${input.conversationId} ended at seq ${Number(prior.seq)} (no follow-up was chosen) — a follow-up-less conversation cannot grow (open a NEW conversation)`,
+          );
+        }
+        if (prior.chosen_to_question_id !== input.questionId) {
+          throw new InvalidRequestError(
+            `studio conversation ${input.conversationId} step ${Number(prior.seq) + 1} must ask the prior step's chosen follow-up '${prior.chosen_to_question_id}' (found '${input.questionId}') — the conversation is a connected walk`,
+          );
+        }
+        conversationId = input.conversationId;
+        seq = Number(prior.seq) + 1;
+      } else {
+        conversationId = store.newId();
+        seq = 1;
+        if (graphRow.declared_graph && (graphRow.declared_graph as ContentStudioDeclaredQuestionGraph).entryQuestionId !== input.questionId) {
+          throw new InvalidRequestError(
+            `studio conversation step 1 must ask the declared entry question '${(graphRow.declared_graph as ContentStudioDeclaredQuestionGraph).entryQuestionId}' (found '${input.questionId}')`,
+          );
+        }
+      }
+      if (seq > 1024) {
+        throw new InvalidRequestError('studio conversation steps are bounded at 1024 per conversation — open a NEW conversation');
+      }
+
+      // The deterministic-adjacency validation against the WALKED
+      // declared graph (the module-side mirror of the DB trigger).
+      const declaredGraph = walkedGraphRow.declared_graph as ContentStudioDeclaredQuestionGraph;
+      if (!declaredGraph.nodes.some((node) => node.questionId === input.questionId)) {
+        throw new InvalidRequestError(
+          `studio conversation question '${input.questionId}' is not a declared node of the walked graph ${walkedGraphRow.graph_id}#v${Number(walkedGraphRow.graph_version)}`,
+        );
+      }
+      if (input.chosenToQuestionId !== undefined && input.chosenToQuestionId !== null) {
+        const declared = declaredGraph.edges.some(
+          (edge) =>
+            edge.fromQuestionId === input.questionId &&
+            edge.toQuestionId === input.chosenToQuestionId &&
+            edge.condition === input.chosenCondition,
+        );
+        if (!declared) {
+          throw new InvalidRequestError(
+            `studio conversation chosen follow-up ('${input.questionId}' → '${input.chosenToQuestionId}' under '${String(input.chosenCondition)}') is not a DECLARED edge of the walked graph ${walkedGraphRow.graph_id}#v${Number(walkedGraphRow.graph_version)} — the choice lands only inside the declared question/branch graph`,
+          );
+        }
+      }
+
+      const row = await store.insertConversationEdge({
+        conversationId,
+        sessionId: session.sessionId,
+        revision: session.revision,
+        scope: input.scope,
+        seq,
+        graphId: walkedGraphRow.graph_id,
+        graphVersion: Number(walkedGraphRow.graph_version),
+        questionId: input.questionId,
+        answerReference: input.answerReference,
+        answerKind: input.answerKind,
+        chosenToQuestionId: input.chosenToQuestionId ?? null,
+        chosenCondition: input.chosenCondition ?? null,
+        chooserKind: input.chooserKind,
+      });
+      return mapConversationEdgeRow(row);
+    },
+
+    async listConversationSteps(scope, sessionId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio session', sessionId);
+      await requireLatestSession(scope, sessionId);
+      const rows = await store.listSessionConversationEdges(scope.clientId, sessionId);
+      return rows.map(mapConversationEdgeRow);
     },
   };
 }

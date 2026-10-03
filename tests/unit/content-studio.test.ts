@@ -42,7 +42,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONTENT_STUDIO_ANSWER_KINDS,
+  CONTENT_STUDIO_BRANCH_CONDITIONS,
   CONTENT_STUDIO_CAPTURE_MODALITIES,
+  CONTENT_STUDIO_CHOOSER_KINDS,
   CONTENT_STUDIO_CONSENT_KINDS,
   CONTENT_STUDIO_CONTRACT_VERSION,
   CONTENT_STUDIO_ENTRY_MODES,
@@ -50,6 +53,7 @@ import {
   CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES,
   CONTENT_STUDIO_FORMAT_CONTRACT_VERSION,
   CONTENT_STUDIO_FORMAT_STATUSES,
+  CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES,
   CONTENT_STUDIO_INITIAL_FORMATS,
   CONTENT_STUDIO_INPUT_MODES,
   CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES,
@@ -58,6 +62,12 @@ import {
   CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS,
   CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS,
   CONTENT_STUDIO_PROVENANCE_ELEMENTS,
+  CONTENT_STUDIO_QUESTION_MODALITY_HINTS,
+  CONTENT_STUDIO_REVIEW_STATES,
+  CONTENT_STUDIO_REVIEW_VERDICTS,
+  CONTENT_STUDIO_REVIEWER_KINDS,
+  CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION,
+  CONTENT_STUDIO_SCRIPT_ORIGINS,
   CONTENT_STUDIO_SESSION_EVENT_KINDS,
   CONTENT_STUDIO_SESSION_STATES,
   CONTENT_STUDIO_SESSION_TRANSITIONS,
@@ -67,14 +77,21 @@ import {
   CONTENT_STUDIO_TERMINAL_SESSION_STATES,
   assertLegalContentStudioSessionTransition,
   assertTerminalReasonForAdvance,
+  assertValidContentStudioConversationChoice,
+  assertValidContentStudioDeclaredQuestionGraph,
   assertValidContentStudioFormatDeclaration,
+  assertValidContentStudioGeneratorProvenance,
   assertValidContentStudioOrganizationDeclaration,
   assertValidContentStudioProductionRequestContent,
+  assertValidContentStudioReviewDecision,
   assertValidContentStudioTreatmentSpecification,
+  deriveLinearQuestionGraph,
   isLegalContentStudioSessionTransition,
   isTerminalContentStudioSessionState,
   legalContentStudioSessionTransitions,
+  type ContentStudioDeclaredQuestionGraph,
   type ContentStudioFormatDeclaration,
+  type ContentStudioGeneratorProvenance,
   type ContentStudioOrganizationDeclaration,
   type ContentStudioProductionRequestContent,
 } from '../../src/modules/content-studio/public.ts';
@@ -731,5 +748,201 @@ test('STUDIO-001: the request-content surface exposes NO credential-shaped field
   assert.deepEqual(organizationKeys, ['agentBodyReferences', 'capabilities', 'organizationId', 'organizationVersion']);
   for (const key of organizationKeys) {
     assert.ok(!/credential|secret|apikey|api_key|token|password|provider/i.test(key), `organization field '${key}' must not be a secret/provider-bearing surface`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// (g) THE §8 INTENT-TO-SCRIPT GUARDS (STUDIO-003 — the vocabularies, the
+// declared question/branch graph, the provenance, the review input, the
+// conversation choice, the optional format field).
+// ---------------------------------------------------------------------------
+
+/** A well-formed declared question/branch graph (the branching podcast shape). */
+function validDeclaredGraph(overrides: Partial<ContentStudioDeclaredQuestionGraph> = {}): ContentStudioDeclaredQuestionGraph {
+  return {
+    entryQuestionId: 'q1',
+    nodes: [
+      { questionId: 'q1', text: 'What drew you to this space?', modalityHints: ['voice'] },
+      { questionId: 'q2', text: 'Tell me about the failure that taught you the most.' },
+      { questionId: 'q3', text: 'What is the counterintuitive part?', modalityHints: ['voice', 'voice_text'] },
+    ],
+    edges: [
+      { fromQuestionId: 'q1', toQuestionId: 'q2', condition: 'on_answer_positive' },
+      { fromQuestionId: 'q1', toQuestionId: 'q3', condition: 'on_answer_negative' },
+      { fromQuestionId: 'q2', toQuestionId: 'q3', condition: 'always' },
+    ],
+    ...overrides,
+  };
+}
+
+test('STUDIO-003: THE FROZEN §8 VOCABULARIES — the origins, the review states/verdicts, the reviewer/chooser splits, the branch conditions, the answer kinds, the modality hints and the generated-input review modes are the closed sets', () => {
+  assert.deepEqual(CONTENT_STUDIO_SCRIPT_ORIGINS, ['supplied', 'generated']);
+  assert.deepEqual(CONTENT_STUDIO_REVIEW_STATES, ['pending', 'approved', 'rejected', 'superseded']);
+  assert.deepEqual(CONTENT_STUDIO_REVIEW_VERDICTS, ['approved', 'rejected', 'superseded']);
+  assert.deepEqual(CONTENT_STUDIO_REVIEWER_KINDS, ['human', 'autonomous']);
+  assert.deepEqual(CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES, ['required', 'not_required']);
+  assert.deepEqual(CONTENT_STUDIO_CHOOSER_KINDS, ['interviewer', 'human']);
+  assert.deepEqual(CONTENT_STUDIO_ANSWER_KINDS, ['audio', 'video', 'text']);
+  assert.deepEqual(CONTENT_STUDIO_BRANCH_CONDITIONS, [
+    'always', 'on_answer_positive', 'on_answer_negative', 'on_answer_neutral', 'on_answer_elaborate', 'on_answer_abbreviated',
+  ]);
+  // The question modality hints ARE the §6/§27.6 interviewer representation
+  // vocabulary (one closed set, two declaration surfaces).
+  assert.deepEqual(CONTENT_STUDIO_QUESTION_MODALITY_HINTS, CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS);
+  // The third sub-contract identity (the runtime-v1 and format-v1 stay pinned).
+  assert.equal(CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION, 'content-studio-script-v1');
+  assert.notEqual(CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION, CONTENT_STUDIO_CONTRACT_VERSION);
+  assert.notEqual(CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION);
+});
+
+test('STUDIO-003: a well-formed declared question/branch graph passes (the nodes, the closed modality hints, the declared edges, the entry)', () => {
+  assertValidContentStudioDeclaredQuestionGraph(validDeclaredGraph());
+  // An edge-less single-question graph is legal (the entry-only interview).
+  assertValidContentStudioDeclaredQuestionGraph({
+    entryQuestionId: 'only',
+    nodes: [{ questionId: 'only', text: 'One question.' }],
+    edges: [],
+  });
+});
+
+test('STUDIO-003: THE DECLARED-GRAPH NODE FENCES — duplicate ids, bad id shapes, untrimmed/oversized texts and unknown modality hints are rejected', () => {
+  const cases: ReadonlyArray<[ContentStudioDeclaredQuestionGraph, string]> = [
+    [{ ...validDeclaredGraph(), entryQuestionId: 'qX', nodes: validDeclaredGraph().nodes }, 'entryQuestionId'],
+    [{ ...validDeclaredGraph(), nodes: [...validDeclaredGraph().nodes, { questionId: 'q1', text: 'duplicate id' }] }, 'duplicated'],
+    [{ ...validDeclaredGraph(), nodes: [{ questionId: 'BadId', text: 'x' }], edges: [] as never, entryQuestionId: 'BadId' } as never, 'entryQuestionId'],
+    [{ ...validDeclaredGraph(), nodes: [{ questionId: 'q1', text: '  padded  ' }], edges: [], entryQuestionId: 'q1' } as never, 'trimmed'],
+    [{ ...validDeclaredGraph(), nodes: [{ questionId: 'q1', text: 'x'.repeat(2001) }], edges: [], entryQuestionId: 'q1' }, 'text'],
+    [{ ...validDeclaredGraph(), nodes: [{ questionId: 'q1', text: 'ok', modalityHints: ['hologram'] as never }] as never, edges: [], entryQuestionId: 'q1' } as never, 'modalityHints'],
+    [{ ...validDeclaredGraph(), nodes: [{ questionId: 'q1', text: 'ok', modalityHints: ['voice', 'voice'] }] as never, edges: [], entryQuestionId: 'q1' } as never, 'duplicated'],
+    [{ ...validDeclaredGraph(), nodes: [] as never, edges: [] as never }, 'nodes'],
+  ];
+  for (const [graph, fragment] of cases) {
+    assertInvalid(() => assertValidContentStudioDeclaredQuestionGraph(graph as never), fragment);
+  }
+});
+
+test('STUDIO-003: THE DECLARED-EDGE FENCES + THE DETERMINISTIC ADJACENCY — undeclared endpoints, self-loops, unknown conditions and TWO edges from one node under the SAME condition are rejected', () => {
+  const base = validDeclaredGraph();
+  const cases: ReadonlyArray<[ContentStudioDeclaredQuestionGraph, string]> = [
+    [{ ...base, edges: [...base.edges, { fromQuestionId: 'q1', toQuestionId: 'q9', condition: 'on_answer_neutral' }] }, 'endpoint'],
+    [{ ...base, edges: [{ fromQuestionId: 'q1', toQuestionId: 'q1', condition: 'always' }] }, 'self-loop'],
+    [{ ...base, edges: [...base.edges, { fromQuestionId: 'q3', toQuestionId: 'q2', condition: 'if_answer_positive' as never }] }, 'condition'],
+    [
+      {
+        ...base,
+        edges: [
+          { fromQuestionId: 'q1', toQuestionId: 'q2', condition: 'on_answer_positive' },
+          { fromQuestionId: 'q1', toQuestionId: 'q3', condition: 'on_answer_positive' },
+        ],
+      },
+      'DETERMINISTIC ADJACENCY',
+    ],
+  ];
+  for (const [graph, fragment] of cases) {
+    assertInvalid(() => assertValidContentStudioDeclaredQuestionGraph(graph), fragment);
+  }
+});
+
+test('STUDIO-003: deriveLinearQuestionGraph — the supplied question list materializes as the DETERMINISTIC linear graph (always-edges, ordered ids, the first question as the entry)', () => {
+  const graph = deriveLinearQuestionGraph(['First question?', 'Second question?', 'Third question?']);
+  assert.deepEqual(graph.entryQuestionId, 'q1');
+  assert.deepEqual(graph.nodes.map((node) => node.questionId), ['q1', 'q2', 'q3']);
+  assert.ok(graph.nodes.every((node) => !('modalityHints' in node)));
+  assert.deepEqual(graph.edges, [
+    { fromQuestionId: 'q1', toQuestionId: 'q2', condition: 'always' },
+    { fromQuestionId: 'q2', toQuestionId: 'q3', condition: 'always' },
+  ]);
+  // Pure + deterministic: the same list always derives the same graph.
+  assert.deepEqual(deriveLinearQuestionGraph(['First question?', 'Second question?', 'Third question?']), graph);
+  // The derived graph satisfies the full declared-graph discipline.
+  assertValidContentStudioDeclaredQuestionGraph(graph);
+  // A single-question list is the edge-less entry-only graph.
+  const single = deriveLinearQuestionGraph(['Only question?']);
+  assert.deepEqual(single.edges, []);
+  assertValidContentStudioDeclaredQuestionGraph(single);
+  // The bounded-list discipline rides the request questions fence.
+  assertInvalid(() => deriveLinearQuestionGraph(['']), 'questions');
+  assertInvalid(() => deriveLinearQuestionGraph(['x'.repeat(2001)]), 'questions');
+});
+
+test('STUDIO-003: THE GENERATION PROVENANCE FENCE — the generator organization (the §4 shape, verbatim) + the bounded OPAQUE model references', () => {
+  const generator: ContentStudioGeneratorProvenance = {
+    organization: validOrganization(),
+    modelReferences: ['model:writer-large@v4', 'capability:question-branching@v1'],
+  };
+  assertValidContentStudioGeneratorProvenance(generator);
+  // An empty model-reference list is honest (the organization participated alone).
+  assertValidContentStudioGeneratorProvenance({ organization: validOrganization(), modelReferences: [] });
+  assertInvalid(() => assertValidContentStudioGeneratorProvenance({ organization: validOrganization(), modelReferences: [''] }), 'modelReferences');
+  assertInvalid(
+    () => assertValidContentStudioGeneratorProvenance({ organization: { ...validOrganization(), organizationVersion: 0 }, modelReferences: [] }),
+    'organizationVersion',
+  );
+  assertInvalid(
+    () => assertValidContentStudioGeneratorProvenance({ organization: { ...validOrganization(), agentBodyReferences: ['not-a-reference'] }, modelReferences: [] }),
+    'body-version reference',
+  );
+});
+
+test('STUDIO-003: THE REVIEW-DECISION FENCE — the closed verdict/reviewer vocabularies + the bounded actor/note', () => {
+  const valid = { verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice', note: 'Punchy enough.' } as const;
+  assertValidContentStudioReviewDecision(valid);
+  assertInvalid(() => assertValidContentStudioReviewDecision({ ...valid, verdict: 'pending' as never }), 'verdict');
+  assertInvalid(() => assertValidContentStudioReviewDecision({ ...valid, reviewerKind: 'cyborg' as never }), 'reviewerKind');
+  assertInvalid(() => assertValidContentStudioReviewDecision({ ...valid, reviewerActor: '' }), 'reviewerActor');
+  assertInvalid(() => assertValidContentStudioReviewDecision({ ...valid, reviewerActor: 'x'.repeat(129) }), 'reviewerActor');
+  assertInvalid(() => assertValidContentStudioReviewDecision({ ...valid, note: '  untrimmed  ' }), 'note');
+});
+
+test('STUDIO-003: THE CONVERSATION-CHOICE FENCE — the chosen edge is complete or the conversation ends; the closed answer kinds and chooser split', () => {
+  const valid = {
+    questionId: 'q1',
+    answerReference: 'capture:answer-1',
+    answerKind: 'audio',
+    chosenToQuestionId: 'q2',
+    chosenCondition: 'on_answer_positive',
+    chooserKind: 'interviewer',
+  } as const;
+  assertValidContentStudioConversationChoice(valid);
+  // The conversation-end shape (both omitted).
+  const ended: Parameters<typeof assertValidContentStudioConversationChoice>[0] = {
+    questionId: 'q1',
+    answerReference: 'capture:answer-1',
+    answerKind: 'audio',
+    chooserKind: 'interviewer',
+  };
+  assertValidContentStudioConversationChoice(ended);
+  // The half-chosen edge is rejected (either direction).
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, chosenCondition: undefined } as never), 'together');
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, chosenToQuestionId: undefined } as never), 'together');
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, answerKind: 'smoke-signal' as never }), 'answerKind');
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, chooserKind: 'robot-overlord' as never }), 'chooserKind');
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, questionId: 'Not-An-Id' }), 'questionId');
+  assertInvalid(() => assertValidContentStudioConversationChoice({ ...valid, answerReference: '' }), 'answerReference');
+});
+
+test('STUDIO-003: THE OPTIONAL generatedInputReview FORMAT FIELD — absent means not required; the closed vocabulary is enforced; the initial format declarations stay UNCHANGED (the disclosed zero-drift delivery)', () => {
+  // Absent (the STUDIO-002 shape) passes untouched.
+  assertValidContentStudioFormatDeclaration(validFormat());
+  // 'required' and 'not_required' both pass (the closed vocabulary).
+  assertValidContentStudioFormatDeclaration(
+    validFormat({ inputRequirements: { modes: ['intent', 'script'], sourceArtifacts: 'required', generatedInputReview: 'required' } }),
+  );
+  assertValidContentStudioFormatDeclaration(
+    validFormat({ inputRequirements: { modes: ['intent', 'script'], sourceArtifacts: 'required', generatedInputReview: 'not_required' } }),
+  );
+  // Garbage is rejected.
+  assertInvalid(
+    () =>
+      assertValidContentStudioFormatDeclaration(
+        validFormat({ inputRequirements: { modes: ['intent', 'script'], sourceArtifacts: 'required', generatedInputReview: 'sometimes' as never } }),
+      ),
+    'generatedInputReview',
+  );
+  // THE INITIAL FORMATS stay unchanged: none of the three frozen
+  // declarations carries the field (an already-materialized tenant
+  // registry row never drifts from the wired content).
+  for (const format of CONTENT_STUDIO_INITIAL_FORMATS) {
+    assert.equal(format.inputRequirements.generatedInputReview, undefined, `format '${format.formatId}' stays without generatedInputReview`);
   }
 });

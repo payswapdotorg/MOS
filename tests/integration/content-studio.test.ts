@@ -101,10 +101,12 @@ import {
   createContentStudioModule,
   CONTENT_STUDIO_INITIAL_FORMATS,
   type ContentStudioAgentBodyPort,
+  type ContentStudioDeclaredQuestionGraph,
+  type ContentStudioFormatDeclaration,
+  type ContentStudioGeneratorProvenance,
   type ContentStudioModuleApi,
   type ContentStudioProductionRequestContent,
   type ContentStudioScope,
-  type ContentStudioFormatDeclaration,
 } from '../../src/modules/content-studio/public.ts';
 import { NotFoundError, InvalidRequestError } from '../../src/platform/errors/errors.ts';
 
@@ -1405,4 +1407,821 @@ test('STUDIO-002 (l): the FORMAT-REGISTRY DB BACKSTOPS — born-draft, identity 
     ),
     /check constraint/i,
   );
+});
+
+// ---------------------------------------------------------------------------
+// The STUDIO-003 battery (the intent-to-script pipeline — migration 070).
+// ---------------------------------------------------------------------------
+
+/** A standalone audio-podcast request content (the interviewer surface). */
+function podcastRequest(bodyReference: string, overrides: Partial<ContentStudioProductionRequestContent> = {}): ContentStudioProductionRequestContent {
+  return standaloneRequest(bodyReference, {
+    formatId: 'audio-podcast',
+    formatVersion: 1,
+    organization: { organizationId: 'org-podcast-studio', organizationVersion: 1, agentBodyReferences: [bodyReference], capabilities: [] },
+    input: { mode: 'question_list', questions: ['What drew you to this space?', 'Tell me about the failure that taught you the most.', 'What is the counterintuitive part?'] },
+    output: { requiredOutputs: ['final_media', 'transcript'] },
+    ...overrides,
+  });
+}
+
+/** The branching declared graph the generated material produces (the organization's output). */
+function branchingGraph(): ContentStudioDeclaredQuestionGraph {
+  return {
+    entryQuestionId: 'q1',
+    nodes: [
+      { questionId: 'q1', text: 'What drew you to this space?', modalityHints: ['voice'] },
+      { questionId: 'q2', text: 'Tell me about the failure that taught you the most.' },
+      { questionId: 'q3', text: 'What is the counterintuitive part?', modalityHints: ['voice', 'voice_text'] },
+      { questionId: 'q4', text: 'Where does this go next?' },
+    ],
+    edges: [
+      { fromQuestionId: 'q1', toQuestionId: 'q2', condition: 'on_answer_positive' },
+      { fromQuestionId: 'q1', toQuestionId: 'q3', condition: 'on_answer_negative' },
+      { fromQuestionId: 'q2', toQuestionId: 'q3', condition: 'always' },
+      { fromQuestionId: 'q2', toQuestionId: 'q4', condition: 'on_answer_elaborate' },
+      { fromQuestionId: 'q3', toQuestionId: 'q4', condition: 'always' },
+    ],
+  };
+}
+
+/** The generation provenance (the organization identity + the participating models). */
+function generatorProvenance(bodyReference: string): ContentStudioGeneratorProvenance {
+  return {
+    organization: {
+      organizationId: 'org-podcast-studio',
+      organizationVersion: 1,
+      agentBodyReferences: [bodyReference],
+      capabilities: ['capability:question-branching@v1'],
+    },
+    modelReferences: ['model:writer-large@v4', 'capability:question-branching@v1'],
+  };
+}
+
+test('STUDIO-003 (m): THE SUPPLIED SCRIPT PATH — recorded, versioned, NO generation, NO review (the §3 path)', async () => {
+  const bodyReference = await makeActiveBody(['read', 'transform', 'compose']);
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: standaloneRequest(bodyReference, {
+      input: {
+        mode: 'script',
+        script: { hook: 'The launch video fails at second 3.', beats: ['cold open', 'reaction', 'verdict'] },
+        sourceArtifactReferences: ['asset:01923f7e-8b1d-7abc-9def-0123456789cd'],
+      },
+    }),
+  });
+
+  // The materialization: v1, origin 'supplied', NO provenance, NO review state.
+  const v1 = await studio.recordSuppliedScript({ scope: aliceScope, requestId: request.requestId });
+  assert.equal(v1.scriptVersion, 1);
+  assert.equal(v1.origin, 'supplied');
+  assert.equal(v1.reviewState, null);
+  assert.equal(v1.intentId, null);
+  assert.equal(v1.generatorOrganization, null);
+  assert.equal(v1.generatorModelReferences, null);
+  assert.equal(v1.requestVersion, request.requestVersion);
+  assert.deepEqual(v1.body, { hook: 'The launch video fails at second 3.', beats: ['cold open', 'reaction', 'verdict'] });
+  assert.equal(v1.contractVersion, 'content-studio-script-v1');
+
+  // The resolvers: by chain id and by request linkage.
+  assert.equal((await studio.getScript(aliceScope, v1.scriptId)).scriptVersion, 1);
+  assert.equal((await studio.getScriptForRequest(aliceScope, request.requestId))!.scriptId, v1.scriptId);
+
+  // The append-only correction: v2 under the SAME chain id.
+  const v2 = await studio.appendSuppliedScriptVersion({
+    scope: aliceScope,
+    scriptId: v1.scriptId,
+    body: { hook: 'The launch video fails at second 3.', beats: ['cold open', 'reaction', 'verdict', 'call to action'] },
+  });
+  assert.equal(v2.scriptVersion, 2);
+  assert.equal(v2.scriptId, v1.scriptId);
+  assert.equal(v2.origin, 'supplied');
+  assert.deepEqual((await studio.listScriptVersions(aliceScope, v1.scriptId)).map((row) => row.scriptVersion), [1, 2]);
+
+  // The one-chain-per-request-version fence: a second chain is refused.
+  await assert.rejects(
+    () => studio.recordSuppliedScript({ scope: aliceScope, requestId: request.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /already carries its script chain/.test(error.message),
+  );
+
+  // The mode fence: a question_list request refuses a supplied script.
+  const questionsRequest = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  await assert.rejects(
+    () => studio.recordSuppliedScript({ scope: aliceScope, requestId: questionsRequest.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /SCRIPT path only/.test(error.message),
+  );
+
+  // The session flows unchanged: the supplied script rides the request (no gate).
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+  assert.equal(session.state, 'created');
+});
+
+test('STUDIO-003 (m): THE SUPPLIED QUESTION-LIST PATH — recorded as the DECLARED graph (the deterministic linear derivation), versioned', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+
+  const v1 = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  assert.equal(v1.graphVersion, 1);
+  assert.equal(v1.origin, 'supplied');
+  assert.equal(v1.reviewState, null);
+  assert.equal(v1.declaredGraph.entryQuestionId, 'q1');
+  assert.deepEqual(v1.declaredGraph.nodes.map((node) => node.questionId), ['q1', 'q2', 'q3']);
+  assert.deepEqual(v1.declaredGraph.edges, [
+    { fromQuestionId: 'q1', toQuestionId: 'q2', condition: 'always' },
+    { fromQuestionId: 'q2', toQuestionId: 'q3', condition: 'always' },
+  ]);
+  assert.equal(v1.contractVersion, 'content-studio-script-v1');
+
+  // The correction: the user edits the graph into a REAL branching shape (v2).
+  const v2 = await studio.appendSuppliedQuestionGraphVersion({
+    scope: aliceScope,
+    graphId: v1.graphId,
+    declaredGraph: branchingGraph(),
+  });
+  assert.equal(v2.graphVersion, 2);
+  assert.equal(v2.graphId, v1.graphId);
+  assert.equal(v2.declaredGraph.nodes.length, 4);
+  assert.deepEqual((await studio.listQuestionGraphVersions(aliceScope, v1.graphId)).map((row) => row.graphVersion), [1, 2]);
+
+  // The one-chain fence + the mode fence.
+  await assert.rejects(
+    () => studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /already carries its question-graph chain/.test(error.message),
+  );
+  const scriptRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'script', script: { hook: 'h' } } }),
+  });
+  await assert.rejects(
+    () => studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: scriptRequest.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /QUESTION-LIST path only/.test(error.message),
+  );
+});
+
+test('STUDIO-003 (m): THE INTENT-ONLY + INTENT+SOURCE PATHS — the intent record materializes, the organization generates with FULL provenance, born pending', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+
+  // INTENT-ONLY: no source citations.
+  const intentOnly = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A founder-story audio podcast about resilience.' } }),
+  });
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: intentOnly.requestId });
+  assert.equal(intent.requestVersion, intentOnly.requestVersion);
+  assert.equal(intent.objective, 'A founder-story audio podcast about resilience.');
+  assert.deepEqual(intent.sourceReferences, []);
+  assert.equal((await studio.getIntent(aliceScope, intent.intentId)).intentId, intent.intentId);
+  assert.equal((await studio.getIntentForRequest(aliceScope, intentOnly.requestId))!.intentId, intent.intentId);
+  // Intents are one-per-request-version (immutable).
+  await assert.rejects(
+    () => studio.recordIntent({ scope: aliceScope, requestId: intentOnly.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /already carries its intent record/.test(error.message),
+  );
+
+  // The generated script: born pending with the FULL provenance.
+  const generated = await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: intentOnly.requestId,
+    intentId: intent.intentId,
+    body: { hook: 'The founder who shipped 11 failures.', beats: ['origin', 'the wall', 'the turn'] },
+    generator: generatorProvenance(bodyReference),
+  });
+  assert.equal(generated.scriptVersion, 1);
+  assert.equal(generated.origin, 'generated');
+  assert.equal(generated.reviewState, 'pending');
+  assert.equal(generated.intentId, intent.intentId);
+  assert.equal(generated.generatorOrganization!.organizationId, 'org-podcast-studio');
+  assert.equal(generated.generatorOrganization!.agentBodyReferences[0], bodyReference);
+  assert.deepEqual(generated.generatorModelReferences, ['model:writer-large@v4', 'capability:question-branching@v1']);
+
+  // INTENT + SOURCE: the citations ride the intent record.
+  const withSources = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, {
+      input: {
+        mode: 'intent',
+        intent: 'A reaction-style podcast to the Q3 earnings call.',
+        sourceArtifactReferences: ['asset:01923f7e-8b1d-7abc-9def-0123456789cd', 'asset:01923f7e-8b1d-7abc-9def-0123456789ce'],
+      },
+    }),
+  });
+  const sourcedIntent = await studio.recordIntent({ scope: aliceScope, requestId: withSources.requestId });
+  assert.deepEqual(sourcedIntent.sourceReferences, ['asset:01923f7e-8b1d-7abc-9def-0123456789cd', 'asset:01923f7e-8b1d-7abc-9def-0123456789ce']);
+
+  // The generated QUESTION GRAPH (the intent path may materialize a graph).
+  const generatedGraph = await studio.recordGeneratedQuestionGraph({
+    scope: aliceScope,
+    requestId: withSources.requestId,
+    intentId: sourcedIntent.intentId,
+    declaredGraph: branchingGraph(),
+    generator: generatorProvenance(bodyReference),
+  });
+  assert.equal(generatedGraph.origin, 'generated');
+  assert.equal(generatedGraph.reviewState, 'pending');
+  assert.equal(generatedGraph.intentId, sourcedIntent.intentId);
+  assert.equal(generatedGraph.declaredGraph.nodes.length, 4);
+
+  // The lineage fence: an intent from ANOTHER request version cannot generate.
+  await assert.rejects(
+    () => studio.recordGeneratedScript({
+      scope: aliceScope,
+      requestId: withSources.requestId,
+      intentId: intent.intentId,
+      body: { hook: 'mismatched' },
+      generator: generatorProvenance(bodyReference),
+    }),
+    (error: unknown) => error instanceof InvalidRequestError && /does not belong to request/.test(error.message),
+  );
+
+  // The one-materialization fence: the withSources request already carries
+  // its graph chain — a script chain is refused (and vice versa).
+  await assert.rejects(
+    () => studio.recordGeneratedScript({
+      scope: aliceScope,
+      requestId: withSources.requestId,
+      intentId: sourcedIntent.intentId,
+      body: { hook: 'conflicting' },
+      generator: generatorProvenance(bodyReference),
+    }),
+    (error: unknown) => error instanceof InvalidRequestError && /EITHER a script chain OR a question-graph chain/.test(error.message),
+  );
+  // ... and the DB backstop rejects the direct cross-table injection.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_scripts
+         (script_id, script_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, body, intent_id,
+          generator_organization, generator_model_references, review_state,
+          contract_version, created_at, updated_at)
+       VALUES ($1, 1, $2, $3, NULL, $4, $5, 'generated', '{"hook":"x"}'::jsonb, $6,
+               '{}'::jsonb, '[]'::jsonb, 'pending', 'content-studio-script-v1', now(), now())`,
+      [crypto.randomUUID(), aliceScope.agencyId, aliceScope.clientId, withSources.requestId, withSources.requestVersion, sourcedIntent.intentId],
+    ),
+    (error: unknown) => /EITHER a script chain OR a question-graph chain/.test(String(error)),
+  );
+});
+
+test('STUDIO-003 (n): THE VERSIONING DISCIPLINE — regeneration supersedes the prior version transactionally (the autonomous decision rides the append-only review tail)', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A podcast about the tools trade.' } }),
+  });
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: request.requestId });
+
+  const v1 = await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: request.requestId,
+    intentId: intent.intentId,
+    body: { hook: 'v1 hook' },
+    generator: generatorProvenance(bodyReference),
+  });
+  // The human approves v1.
+  await studio.reviewScript({ scope: aliceScope, scriptId: v1.scriptId, scriptVersion: 1, verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice', note: 'Solid hook.' });
+  assert.equal((await studio.getScript(aliceScope, v1.scriptId, 1)).reviewState, 'approved');
+
+  // The regeneration: v2 born pending; v1 superseded; the autonomous
+  // supersession decision rides the review tail.
+  const v2 = await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: request.requestId,
+    intentId: intent.intentId,
+    body: { hook: 'v2 hook (punchier)' },
+    generator: generatorProvenance(bodyReference),
+  });
+  assert.equal(v2.scriptId, v1.scriptId);
+  assert.equal(v2.scriptVersion, 2);
+  assert.equal(v2.reviewState, 'pending');
+  assert.equal((await studio.getScript(aliceScope, v1.scriptId, 1)).reviewState, 'superseded');
+
+  // The review tail: the human approval + the autonomous supersession.
+  const reviews = await studio.listScriptReviews(aliceScope, v1.scriptId);
+  assert.equal(reviews.length, 2);
+  assert.equal(reviews[0]!.verdict, 'approved');
+  assert.equal(reviews[0]!.reviewerKind, 'human');
+  assert.equal(reviews[0]!.reviewerActor, 'user:alice');
+  assert.equal(reviews[1]!.verdict, 'superseded');
+  assert.equal(reviews[1]!.reviewerKind, 'autonomous');
+  assert.equal(reviews[1]!.reviewerActor, 'content-studio.generation');
+
+  // The full chain reads back: v1 superseded, v2 pending.
+  assert.deepEqual((await studio.listScriptVersions(aliceScope, v1.scriptId)).map((row) => row.reviewState), ['superseded', 'pending']);
+});
+
+test('STUDIO-003 (o): THE EXPLICIT HUMAN-REVIEW OPTION — the closed vocabulary, the honest split, the legal edges and the append-only decision records', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A podcast about craft.' } }),
+  });
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: request.requestId });
+  const graph = await studio.recordGeneratedQuestionGraph({
+    scope: aliceScope,
+    requestId: request.requestId,
+    intentId: intent.intentId,
+    declaredGraph: branchingGraph(),
+    generator: generatorProvenance(bodyReference),
+  });
+
+  // pending → approved (a HUMAN reviewer).
+  const approved = await studio.reviewQuestionGraph({
+    scope: aliceScope,
+    graphId: graph.graphId,
+    graphVersion: 1,
+    verdict: 'approved',
+    reviewerKind: 'human',
+    reviewerActor: 'user:alice',
+    note: 'The branching is tight.',
+  });
+  assert.equal(approved.decision.verdict, 'approved');
+  assert.equal(approved.graph.reviewState, 'approved');
+  assert.equal(approved.decision.reviewerKind, 'human');
+
+  // No resurrection: approved → rejected is illegal.
+  await assert.rejects(
+    () => studio.reviewQuestionGraph({ scope: aliceScope, graphId: graph.graphId, graphVersion: 1, verdict: 'rejected', reviewerKind: 'human', reviewerActor: 'user:alice' }),
+    (error: unknown) => error instanceof InvalidRequestError && /not legal from its current state/.test(error.message),
+  );
+
+  // approved → superseded (a reviewer retiring the version).
+  const superseded = await studio.reviewQuestionGraph({
+    scope: aliceScope,
+    graphId: graph.graphId,
+    graphVersion: 1,
+    verdict: 'superseded',
+    reviewerKind: 'human',
+    reviewerActor: 'user:alice',
+  });
+  assert.equal(superseded.graph.reviewState, 'superseded');
+  assert.equal((await studio.listQuestionGraphReviews(aliceScope, graph.graphId)).length, 2);
+
+  // Supplied material carries no review: reviews target GENERATED only.
+  const suppliedRequest = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  const suppliedGraph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: suppliedRequest.requestId });
+  await assert.rejects(
+    () => studio.reviewQuestionGraph({ scope: aliceScope, graphId: suppliedGraph.graphId, graphVersion: 1, verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice' }),
+    (error: unknown) => error instanceof InvalidRequestError && /target GENERATED/.test(error.message),
+  );
+
+  // The DB backstops: a review decision against a supplied row, a
+  // verdict illegal from the state, and a state advance without a
+  // matching decision record are all rejected at the DB.
+  const graphRow = await db!.query<{ graph_id: string }>(`SELECT graph_id FROM studio_question_graphs WHERE client_id = $1 AND request_id = $2 LIMIT 1`, [aliceScope.clientId, suppliedRequest.requestId]);
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_question_graph_reviews
+         (review_id, graph_id, graph_version, agency_id, client_id, workspace_id,
+          verdict, reviewer_kind, reviewer_actor, note, decided_at, contract_version, created_at)
+       VALUES ($1, $2, 1, $3, $4, NULL, 'approved', 'human', 'user:alice', NULL, now(), 'content-studio-script-v1', now())`,
+      [crypto.randomUUID(), graphRow.rows[0]!.graph_id, aliceScope.agencyId, aliceScope.clientId],
+    ),
+    (error: unknown) => /target GENERATED/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(
+      `UPDATE studio_question_graphs SET review_state = 'approved' WHERE client_id = $1 AND graph_id = $2 AND graph_version = 1`,
+      [aliceScope.clientId, suppliedGraph.graphId],
+    ),
+    (error: unknown) => /is supplied — supplied graphs carry no review state/.test(String(error)),
+  );
+});
+
+test('STUDIO-003 (p): THE FORMAT-REQUIRES-CONFIRMATION GATE — a request against a confirmation-requiring format can cite ONLY an approved generated script/graph; the recording advance is gated structurally', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+
+  // A confirmation-requiring interview format through the PUBLIC seam.
+  const declaration: ContentStudioFormatDeclaration = {
+    ...customFormatDeclaration('confirming-interview', 1),
+    inputRequirements: { ...customFormatDeclaration('confirming-interview', 1).inputRequirements, generatedInputReview: 'required' },
+  };
+  await studio.registerFormat({ scope: aliceScope, declaration });
+  await studio.activateFormat(aliceScope, 'confirming-interview', 1);
+
+  const confirmingRequest = (overrides: Partial<ContentStudioProductionRequestContent> = {}): ContentStudioProductionRequestContent =>
+    standaloneRequest(bodyReference, {
+      formatId: 'confirming-interview',
+      formatVersion: 1,
+      organization: { organizationId: 'org-podcast-studio', organizationVersion: 1, agentBodyReferences: [bodyReference], capabilities: ['capability:thread-layout@v3'] },
+      input: { mode: 'intent', intent: 'A confirmation-gated interview.' },
+      output: { requiredOutputs: ['final_media', 'derived_clips'] },
+      ...overrides,
+    });
+
+  // 1. No material yet: the session MAY open (the in-session generation
+  //    path) — but the RECORDING advance refuses.
+  const requestA = await studio.createProductionRequest({ scope: aliceScope, content: confirmingRequest() });
+  const sessionA = await studio.openSession({ scope: aliceScope, requestId: requestA.requestId });
+  await studio.advanceSession({ scope: aliceScope, sessionId: sessionA.sessionId, to: 'preparing' });
+  await assert.rejects(
+    () => studio.advanceSession({ scope: aliceScope, sessionId: sessionA.sessionId, to: 'recording' }),
+    (error: unknown) => error instanceof InvalidRequestError && /has NO generated script\/question-graph yet/.test(error.message),
+  );
+
+  // 2. Pending material: the recording advance refuses (only APPROVED
+  //    may be cited) AND a NEW session refuses to open.
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: requestA.requestId });
+  await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: requestA.requestId,
+    intentId: intent.intentId,
+    body: { hook: 'pending hook' },
+    generator: generatorProvenance(bodyReference),
+  });
+  await assert.rejects(
+    () => studio.advanceSession({ scope: aliceScope, sessionId: sessionA.sessionId, to: 'recording' }),
+    (error: unknown) => error instanceof InvalidRequestError && /is 'pending'/.test(error.message),
+  );
+  const requestB = await studio.createProductionRequest({ scope: aliceScope, content: confirmingRequest() });
+  const intentB = await studio.recordIntent({ scope: aliceScope, requestId: requestB.requestId });
+  await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: requestB.requestId,
+    intentId: intentB.intentId,
+    body: { hook: 'requestB pending hook' },
+    generator: generatorProvenance(bodyReference),
+  });
+  await assert.rejects(
+    () => studio.openSession({ scope: aliceScope, requestId: requestB.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /is 'pending'/.test(error.message),
+  );
+
+  // 3. Approved: the recording advance passes (sessionA) and the pending
+  //    requestB opens once its material is approved.
+  const script = await studio.getScriptForRequest(aliceScope, requestA.requestId);
+  await studio.reviewScript({ scope: aliceScope, scriptId: script!.scriptId, scriptVersion: 1, verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice' });
+  const recording = await studio.advanceSession({ scope: aliceScope, sessionId: sessionA.sessionId, to: 'recording' });
+  assert.equal(recording.state, 'recording');
+  const scriptB = await studio.getScriptForRequest(aliceScope, requestB.requestId);
+  await studio.reviewScript({ scope: aliceScope, scriptId: scriptB!.scriptId, scriptVersion: 1, verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice' });
+  const sessionB = await studio.openSession({ scope: aliceScope, requestId: requestB.requestId });
+  assert.equal(sessionB.state, 'created');
+
+  // 4. A 'not_required' format (the default — no field): pending material
+  //    NEVER blocks the recording advance (the autonomous path).
+  const plainRequest = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A free-form interview.' } }) });
+  const plainIntent = await studio.recordIntent({ scope: aliceScope, requestId: plainRequest.requestId });
+  await studio.recordGeneratedQuestionGraph({
+    scope: aliceScope,
+    requestId: plainRequest.requestId,
+    intentId: plainIntent.intentId,
+    declaredGraph: branchingGraph(),
+    generator: generatorProvenance(bodyReference),
+  });
+  const plainSession = await studio.openSession({ scope: aliceScope, requestId: plainRequest.requestId });
+  await studio.advanceSession({ scope: aliceScope, sessionId: plainSession.sessionId, to: 'preparing' });
+  const plainRecording = await studio.advanceSession({ scope: aliceScope, sessionId: plainSession.sessionId, to: 'recording' });
+  assert.equal(plainRecording.state, 'recording');
+});
+
+test('STUDIO-003 (q): THE ADAPTIVE-BRANCHING HOOKS — the conversation walks the DECLARED graph; the chosen edges land only on declared edges; the resulting conversation graph is preserved as data', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  const graph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  // Correct the graph into the branching shape (v2).
+  const branching = await studio.appendSuppliedQuestionGraphVersion({ scope: aliceScope, graphId: graph.graphId, declaredGraph: branchingGraph() });
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+
+  // A session without a declared graph cannot grow a conversation.
+  const scriptRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'script', script: { hook: 'h' } } }),
+  });
+  const scriptSession = await studio.openSession({ scope: aliceScope, requestId: scriptRequest.requestId });
+  await assert.rejects(
+    () => studio.recordConversationStep({ scope: aliceScope, sessionId: scriptSession.sessionId, questionId: 'q1', answerReference: 'capture:a1', answerKind: 'audio', chooserKind: 'interviewer' }),
+    (error: unknown) => error instanceof InvalidRequestError && /no declared question graph/.test(error.message),
+  );
+
+  // Step 1 MUST ask the declared entry question.
+  await assert.rejects(
+    () => studio.recordConversationStep({ scope: aliceScope, sessionId: session.sessionId, questionId: 'q2', answerReference: 'capture:a1', answerKind: 'audio', chooserKind: 'interviewer' }),
+    (error: unknown) => error instanceof InvalidRequestError && /entry question/.test(error.message),
+  );
+
+  // The walk: entry → positive branch to q2 → elaborate branch to q4 → end.
+  const step1 = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId: session.sessionId,
+    questionId: 'q1',
+    answerReference: 'capture:answer-001',
+    answerKind: 'audio',
+    chosenToQuestionId: 'q2',
+    chosenCondition: 'on_answer_positive',
+    chooserKind: 'interviewer',
+  });
+  assert.equal(step1.seq, 1);
+  assert.equal(step1.graphVersion, branching.graphVersion);
+  assert.equal(step1.chosenToQuestionId, 'q2');
+  assert.equal(step1.chosenCondition, 'on_answer_positive');
+  assert.equal(step1.chooserKind, 'interviewer');
+  assert.equal(step1.answerKind, 'audio');
+
+  // The chosen edge must be DECLARED: q1 → q3 under on_answer_positive is not.
+  await assert.rejects(
+    () => studio.recordConversationStep({
+      scope: aliceScope,
+      sessionId: session.sessionId,
+      conversationId: step1.conversationId,
+      questionId: 'q2',
+      answerReference: 'capture:answer-002',
+      answerKind: 'audio',
+      chosenToQuestionId: 'q3',
+      chosenCondition: 'on_answer_elaborate',
+      chooserKind: 'interviewer',
+    }),
+    (error: unknown) => error instanceof InvalidRequestError && /not a DECLARED edge/.test(error.message),
+  );
+
+  // The connected-walk fence: the next step must ask the PRIOR chosen target.
+  await assert.rejects(
+    () => studio.recordConversationStep({
+      scope: aliceScope,
+      sessionId: session.sessionId,
+      conversationId: step1.conversationId,
+      questionId: 'q3',
+      answerReference: 'capture:answer-002',
+      answerKind: 'text',
+      chooserKind: 'human',
+    }),
+    (error: unknown) => error instanceof InvalidRequestError && /must ask the prior step's chosen follow-up/.test(error.message),
+  );
+
+  const step2 = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId: session.sessionId,
+    conversationId: step1.conversationId,
+    questionId: 'q2',
+    answerReference: 'capture:answer-002',
+    answerKind: 'audio',
+    chosenToQuestionId: 'q4',
+    chosenCondition: 'on_answer_elaborate',
+    chooserKind: 'interviewer',
+  });
+  assert.equal(step2.seq, 2);
+
+  // The conversation ends: no follow-up chosen (the HUMAN chooser ending it — the honest split).
+  const step3 = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId: session.sessionId,
+    conversationId: step1.conversationId,
+    questionId: 'q4',
+    answerReference: 'capture:answer-003',
+    answerKind: 'video',
+    chooserKind: 'human',
+  });
+  assert.equal(step3.chosenToQuestionId, null);
+  assert.equal(step3.chosenCondition, null);
+  assert.equal(step3.chooserKind, 'human');
+
+  // A follow-up-less conversation cannot grow.
+  await assert.rejects(
+    () => studio.recordConversationStep({
+      scope: aliceScope,
+      sessionId: session.sessionId,
+      conversationId: step1.conversationId,
+      questionId: 'q1',
+      answerReference: 'capture:answer-004',
+      answerKind: 'audio',
+      chooserKind: 'interviewer',
+    }),
+    (error: unknown) => error instanceof InvalidRequestError && /ended at seq/.test(error.message),
+  );
+
+  // The resulting conversation graph preserved as data: 3 steps, one chain.
+  const steps = await studio.listConversationSteps(aliceScope, session.sessionId);
+  assert.equal(steps.length, 3);
+  assert.ok(steps.every((step) => step.conversationId === step1.conversationId));
+  assert.deepEqual(steps.map((step) => step.seq), [1, 2, 3]);
+  assert.deepEqual(steps.map((step) => step.questionId), ['q1', 'q2', 'q4']);
+  assert.deepEqual(steps.map((step) => step.answerReference), ['capture:answer-001', 'capture:answer-002', 'capture:answer-003']);
+
+  // A re-take: a NEW conversation (a new chain) walks the same graph.
+  const retake = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId: session.sessionId,
+    questionId: 'q1',
+    answerReference: 'capture:retake-001',
+    answerKind: 'audio',
+    chosenToQuestionId: 'q3',
+    chosenCondition: 'on_answer_negative',
+    chooserKind: 'interviewer',
+  });
+  assert.notEqual(retake.conversationId, step1.conversationId);
+  assert.equal(retake.seq, 1);
+  const allSteps = await studio.listConversationSteps(aliceScope, session.sessionId);
+  assert.equal(allSteps.length, 4);
+});
+
+test('STUDIO-003 (r): THE TENANT ISOLATION — Bob resolves Alice\'s intents/scripts/graphs/reviews/conversations to the uniform NotFound (no existence oracle)', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A tenant-isolation podcast.' } }),
+  });
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: request.requestId });
+  const generated = await studio.recordGeneratedQuestionGraph({
+    scope: aliceScope,
+    requestId: request.requestId,
+    intentId: intent.intentId,
+    declaredGraph: branchingGraph(),
+    generator: generatorProvenance(bodyReference),
+  });
+
+  // Bob's scope: the uniform NotFound everywhere.
+  await assert.rejects(() => studio.getIntent(bobScope, intent.intentId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getScript(bobScope, '00000000-0000-0000-0000-0000000000aa'), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getQuestionGraph(bobScope, generated.graphId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.listScriptVersions(bobScope, '00000000-0000-0000-0000-0000000000bb'), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.listQuestionGraphReviews(bobScope, generated.graphId), (error: unknown) => error instanceof NotFoundError);
+  // The request-version resolvers are fenced by the REQUEST tenant fence:
+  // Bob's lookups resolve Alice's request to the uniform NotFound (no
+  // existence oracle — the request is the fence).
+  await assert.rejects(() => studio.getScriptForRequest(bobScope, request.requestId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getQuestionGraphForRequest(bobScope, request.requestId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getIntentForRequest(bobScope, request.requestId), (error: unknown) => error instanceof NotFoundError);
+  // Bob cannot materialize against Alice's request (the request itself is
+  // tenant-fenced — the uniform NotFound).
+  await assert.rejects(
+    () => studio.recordIntent({ scope: bobScope, requestId: request.requestId }),
+    (error: unknown) => error instanceof NotFoundError,
+  );
+
+  // The DB scope-consistency triggers reject the cross-tenant injection.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_intents
+         (intent_id, agency_id, client_id, workspace_id, request_id, request_version,
+          objective, source_references, contract_version, created_at)
+       VALUES ($1, $2, $3, NULL, $4, $5, 'cross-tenant intent', '[]'::jsonb, 'content-studio-script-v1', now())`,
+      [crypto.randomUUID(), bobScope.agencyId, bobScope.clientId, request.requestId, request.requestVersion],
+    ),
+    (error: unknown) => /cross-tenant intents are rejected/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_conversation_edges
+         (conversation_id, session_id, revision, agency_id, client_id, workspace_id,
+          seq, graph_id, graph_version, question_id, answer_reference, answer_kind,
+          chosen_to_question_id, chosen_condition, chooser_kind, contract_version, created_at)
+       VALUES ($1, $2, 1, $3, $4, NULL, 1, $5, $6, 'q1', 'capture:x', 'audio',
+               NULL, NULL, 'interviewer', 'content-studio-script-v1', now())`,
+      [crypto.randomUUID(), '00000000-0000-0000-0000-000000000001', bobScope.agencyId, bobScope.clientId, generated.graphId, generated.graphVersion],
+    ),
+    (error: unknown) => /must bind an existing session revision/.test(String(error)),
+  );
+});
+
+test('STUDIO-003 (s): THE DB BACKSTOPS — the six tables are append-only/immutable, the origin-shape fence, the born-pending fence and the decision-backing fence reject direct injection', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A backstops podcast.' } }),
+  });
+  const intent = await studio.recordIntent({ scope: aliceScope, requestId: request.requestId });
+  const generated = await studio.recordGeneratedScript({
+    scope: aliceScope,
+    requestId: request.requestId,
+    intentId: intent.intentId,
+    body: { hook: 'backstops' },
+    generator: generatorProvenance(bodyReference),
+  });
+
+  // The intents are immutable: UPDATE and DELETE rejected.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_intents SET objective = 'rewritten' WHERE intent_id = $1`, [intent.intentId]),
+    (error: unknown) => /intents are immutable/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_intents WHERE intent_id = $1`, [intent.intentId]),
+    (error: unknown) => /intents are immutable/.test(String(error)),
+  );
+
+  // The born-pending fence: a generated script born approved is rejected
+  // (a fresh intent-mode request so the scope fences pass first — the
+  // BEFORE INSERT triggers fire alphabetically: chain-scope, scope, THEN
+  // born-pending).
+  const bornPendingRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'intent', intent: 'A born-pending podcast.' } }),
+  });
+  const bornPendingIntent = await studio.recordIntent({ scope: aliceScope, requestId: bornPendingRequest.requestId });
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_scripts
+         (script_id, script_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, body, intent_id,
+          generator_organization, generator_model_references, review_state,
+          contract_version, created_at, updated_at)
+       VALUES ($1, 1, $2, $3, NULL, $4, $5, 'generated', '{}'::jsonb, $6,
+               '{}'::jsonb, '[]'::jsonb, 'approved', 'content-studio-script-v1', now(), now())`,
+      [crypto.randomUUID(), aliceScope.agencyId, aliceScope.clientId, bornPendingRequest.requestId, bornPendingRequest.requestVersion, bornPendingIntent.intentId],
+    ),
+    (error: unknown) => /BORN PENDING/.test(String(error)),
+  );
+
+  // The origin-shape fence: a SUPPLIED row carrying generation provenance
+  // is rejected (a fresh script-mode request so the mode/one-chain fences
+  // pass and the origin-shape CHECK itself rejects).
+  const shapeRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: standaloneRequest(bodyReference, {
+      input: { mode: 'script', script: { hook: 'shape' }, sourceArtifactReferences: ['asset:01923f7e-8b1d-7abc-9def-0123456789cd'] },
+    }),
+  });
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_scripts
+         (script_id, script_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, body, intent_id,
+          generator_organization, generator_model_references, review_state,
+          contract_version, created_at, updated_at)
+       VALUES ($1, 1, $2, $3, NULL, $4, $5, 'supplied', '{}'::jsonb, $6,
+               '{}'::jsonb, '[]'::jsonb, 'pending', 'content-studio-script-v1', now(), now())`,
+      [crypto.randomUUID(), aliceScope.agencyId, aliceScope.clientId, shapeRequest.requestId, shapeRequest.requestVersion, intent.intentId],
+    ),
+    (error: unknown) => /origin_shape|violates/.test(String(error)),
+  );
+
+  // The script identity/provenance is immutable: only the review state advances.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_scripts SET body = '{"hook":"rewritten"}'::jsonb WHERE script_id = $1 AND script_version = 1`, [generated.scriptId]),
+    (error: unknown) => /identity\/scope\/linkage\/provenance is immutable/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_scripts WHERE script_id = $1`, [generated.scriptId]),
+    (error: unknown) => /cannot be deleted/.test(String(error)),
+  );
+
+  // The decision-backing fence: a review-state advance with NO matching
+  // decision record is rejected.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_scripts SET review_state = 'approved', updated_at = now() WHERE script_id = $1 AND script_version = 1`, [generated.scriptId]),
+    (error: unknown) => /no matching decision record/.test(String(error)),
+  );
+
+  // The mode fence at the DB: a supplied script against an intent-mode request is rejected.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_scripts
+         (script_id, script_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, body,
+          contract_version, created_at, updated_at)
+       VALUES ($1, 1, $2, $3, NULL, $4, $5, 'supplied', '{}'::jsonb,
+               'content-studio-script-v1', now(), now())`,
+      [crypto.randomUUID(), aliceScope.agencyId, aliceScope.clientId, request.requestId, request.requestVersion],
+    ),
+    (error: unknown) => /input mode to match/.test(String(error)),
+  );
+
+  // The review decisions are immutable.
+  await studio.reviewScript({ scope: aliceScope, scriptId: generated.scriptId, scriptVersion: 1, verdict: 'approved', reviewerKind: 'human', reviewerActor: 'user:alice' });
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_script_reviews SET note = 'rewritten' WHERE script_id = $1`, [generated.scriptId]),
+    (error: unknown) => /review decisions are immutable/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_script_reviews WHERE script_id = $1`, [generated.scriptId]),
+    (error: unknown) => /review decisions are immutable/.test(String(error)),
+  );
+
+  // The conversation edges are append-only outright (the supplied-graph
+  // session from the earlier tests proves the walk; this one drives its own).
+  const suppliedRequest = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  const suppliedGraph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: suppliedRequest.requestId });
+  const suppliedSession = await studio.openSession({ scope: aliceScope, requestId: suppliedRequest.requestId });
+  const step = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId: suppliedSession.sessionId,
+    questionId: 'q1',
+    answerReference: 'capture:x',
+    answerKind: 'audio',
+    chooserKind: 'interviewer',
+  });
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_conversation_edges SET answer_reference = 'rewritten' WHERE conversation_id = $1`, [step.conversationId]),
+    (error: unknown) => /conversation edges are append-only/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_conversation_edges WHERE conversation_id = $1`, [step.conversationId]),
+    (error: unknown) => /conversation edges are append-only/.test(String(error)),
+  );
+
+  // The declared-graph CHECK fences: a malformed graph (an entry that is
+  // not a declared node) is rejected at insert on a FRESH request chain.
+  const malformedRequest = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_question_graphs
+         (graph_id, graph_version, agency_id, client_id, workspace_id,
+          request_id, request_version, origin, declared_graph,
+          contract_version, created_at, updated_at)
+       VALUES ($1, 1, $2, $3, NULL, $4, $5, 'supplied',
+               '{"entryQuestionId":"qX","nodes":[{"questionId":"q1","text":"x"}],"edges":[]}'::jsonb,
+               'content-studio-script-v1', now(), now())`,
+      [crypto.randomUUID(), aliceScope.agencyId, aliceScope.clientId, malformedRequest.requestId, malformedRequest.requestVersion],
+    ),
+    (error: unknown) => /violates/.test(String(error)),
+  );
+  void suppliedGraph;
 });

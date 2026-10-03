@@ -278,9 +278,9 @@ test('STUDIO-001 AC-5: 064_content_studio_runtime.sql appends before the LAB-003
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 6], '064_content_studio_runtime.sql');
-  assert.equal(migrations[migrations.length - 5], '065_lab_features.sql');
-  assert.equal(migrations[migrations.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 7], '064_content_studio_runtime.sql');
+  assert.equal(migrations[migrations.length - 6], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 5], '066_lab_ideas.sql');
   assert.ok(!migrations.includes('062_agent_capability_candidates.sql'), '062 is reserved for the parallel worker (the TL reconciles numbering at merge — the LAB-011 disclosure)');
   // The header cites the governing sub-contract + the acceptance
   // verbatim (the house pattern).
@@ -289,4 +289,168 @@ test('STUDIO-001 AC-5: 064_content_studio_runtime.sql appends before the LAB-003
   assert.ok(migrationSql.includes('content-studio-contract-v1.0.md'));
   assert.ok(publicTs.includes('spec/content-studio-contract-v1.0.md'));
   assert.ok(publicTs.includes('studioIsNotPublicationOrExperimentAuthority'));
+});
+
+// ---------------------------------------------------------------------------
+// The STUDIO-003 boundary tests (the intent-to-script pipeline —
+// migration 070 over the STUDIO-001 runtime + the STUDIO-002 framework).
+// ---------------------------------------------------------------------------
+
+test('STUDIO-003 AC-1: the module owns EXACTLY its six migration-070 tables — no v1.6 authority table, no other module\'s table; the ONE additive CHECK rides the SAME-MODULE studio_formats table', () => {
+  const migration070Sql = read(src('platform', 'db', 'migrations', '070_studio_script_question_graph.sql'));
+  const created070 = [...migration070Sql.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z_]+)/g)].map((match) => match[1]!);
+  assert.deepEqual(created070.sort(), [
+    'studio_conversation_edges',
+    'studio_intents',
+    'studio_question_graph_reviews',
+    'studio_question_graphs',
+    'studio_script_reviews',
+    'studio_scripts',
+  ]);
+  // Pure DDL: no INSERT, no DELETE FROM, no UPDATE outside trigger bodies
+  // (the stripped SQL discipline).
+  const stripped = stripSqlComments(migration070Sql).replace(/\$\$[\s\S]*?\$\//g, 'TRIGGERBODY');
+  assert.ok(!/\bINSERT INTO\b/.test(stripped), 'migration 070 writes no rows (pure DDL)');
+  assert.ok(!/\bDELETE FROM\b/.test(stripped), 'migration 070 deletes no rows (pure DDL)');
+  // The ONLY cross-table DDL is the additive CHECK on the same-module
+  // studio_formats table (the §8 generated-input review field fence).
+  const alters = [...migration070Sql.matchAll(/ALTER TABLE ([a-z_]+)/g)].map((match) => match[1]!);
+  assert.deepEqual([...new Set(alters)], ['studio_scripts', 'studio_question_graphs', 'studio_formats']);
+  // No FK into any other module's tables: every REFERENCES target is a
+  // tenant table or a same-module studio_* table.
+  const references = [...migration070Sql.matchAll(/REFERENCES ([a-z_]+)/g)].map((match) => match[1]!);
+  for (const target of references) {
+    assert.ok(
+      ['agencies', 'clients', 'workspaces'].includes(target) || target.startsWith('studio_'),
+      `migration 070 references '${target}' — the FK anchors must be tenant tables + same-module rows only`,
+    );
+  }
+});
+
+test('STUDIO-003 AC-2: the migration-070 fences — the CHECK-fenced closed vocabularies, the origin-shape fence, the guarded review lifecycle (born pending, the decision-then-advance backing), the append-only/immutable triggers and the scope-consistency triggers all exist', () => {
+  const migration070Sql = read(src('platform', 'db', 'migrations', '070_studio_script_question_graph.sql'));
+  // The pinned third sub-contract identity.
+  assert.ok(migration070Sql.includes(`CHECK (contract_version = 'content-studio-script-v1')`), 'the contract version is CHECK-pinned');
+  // The closed vocabularies (the origins, the review states, the verdicts,
+  // the reviewer/chooser splits, the answer kinds, the branch conditions).
+  for (const fence of [
+    `CHECK (origin IN ('supplied', 'generated'))`,
+    `CHECK (review_state IS NULL\n                               OR review_state IN ('pending', 'approved', 'rejected', 'superseded'))`,
+    `CHECK (verdict IN ('approved', 'rejected', 'superseded'))`,
+    `CHECK (reviewer_kind IN ('human', 'autonomous'))`,
+    `CHECK (answer_kind IN ('audio', 'video', 'text'))`,
+    `CHECK (chooser_kind IN ('interviewer', 'human'))`,
+  ]) {
+    assert.ok(migration070Sql.includes(fence), `the closed-vocabulary fence is present: ${fence.slice(0, 60)}...`);
+  }
+  // The deterministic adjacency + the declared-graph helpers.
+  for (const helper of ['studio_graph_nodes_wellformed', 'studio_graph_edges_declared', 'studio_graph_declared_wellformed', 'studio_citations_all_bounded']) {
+    assert.ok(migration070Sql.includes(`FUNCTION ${helper}(`), `the IMMUTABLE helper exists: ${helper}`);
+  }
+  // The guard + append-only + scope triggers (every one of the 13).
+  for (const trigger of [
+    'studio_intents_no_update_trigger', 'studio_intents_no_delete_trigger', 'studio_intent_scope_trigger',
+    'studio_scripts_born_pending_trigger', 'studio_script_guard_trigger', 'studio_scripts_no_delete_trigger',
+    'studio_script_chain_scope_trigger', 'studio_script_scope_trigger',
+    'studio_script_reviews_no_update_trigger', 'studio_script_reviews_no_delete_trigger', 'studio_script_review_scope_trigger',
+    'studio_question_graph_guard_trigger', 'studio_question_graph_review_scope_trigger',
+    'studio_conversation_edges_no_update_trigger', 'studio_conversation_edge_scope_trigger',
+  ]) {
+    assert.ok(migration070Sql.includes(`CREATE TRIGGER ${trigger}\n`), `the trigger exists: ${trigger}`);
+  }
+  // The origin-shape fences (the provenance discipline: every generated
+  // record carries the FULL provenance structurally).
+  assert.equal((migration070Sql.match(/CONSTRAINT studio_scripts_origin_shape/g) ?? []).length, 1);
+  assert.equal((migration070Sql.match(/CONSTRAINT studio_question_graphs_origin_shape/g) ?? []).length, 1);
+  // The decision-then-advance backing + the one-materialization fence.
+  assert.ok(migration070Sql.includes('no matching decision record'), 'the decision-backing fence exists');
+  assert.ok(migration070Sql.includes('EITHER a script chain OR a question-graph chain'), 'the one-materialization fence exists');
+  // The additive format-registry CHECK (the §8 optional field).
+  assert.ok(migration070Sql.includes('studio_formats_generated_review_check'), 'the additive same-module format CHECK exists');
+  // NO binary column anywhere (CRED-001) — the comment-stripped DDL.
+  assert.ok(!/\bbinary\b|\bbytea\b|\bblob\b/i.test(stripSqlComments(migration070Sql)), 'no binary column anywhere');
+});
+
+test('STUDIO-003 AC-2: the module still imports NO other module — the grown source keeps the /lab family discipline (zero cross-module imports; the migration-070 surfaces add no new structural port)', () => {
+  const result = checkArchitecture({
+    codeRoot: repoRoot,
+    specDir: join(repoRoot, 'spec'),
+    skip: ['tests/architecture/fixtures', 'console'],
+  });
+  assert.deepEqual(result.violations, []);
+  assert.ok(result.frozenModules.includes('content-studio'), '/content-studio stays registered (the enforced set is UNCHANGED — 59 with the single /apps provision)');
+  assert.equal(result.frozenModules.length, 59);
+  // The import discipline over the GROWN source (the STUDIO-001 rule):
+  // platform ports + the module's own files only (the relative-import
+  // scan — node: builtins are allowed, as in the STUDIO-001 test).
+  const importMatches = [...stripComments(moduleCode).matchAll(/from '(\.{1,2}\/[^']*)'/g)].map((match) => match[1]!);
+  for (const specifier of importMatches) {
+    assert.ok(
+      specifier.includes('platform/') || specifier.includes('errors/errors.ts') || specifier.includes('public.ts') || specifier.startsWith('./'),
+      `the module may import platform ports + its own files only, found '${specifier}'`,
+    );
+  }
+  // The §8 pipeline adds NO new structural port: the deps stay
+  // db + clock + ids + agentBodies + formats.
+  assert.ok(publicTs.includes('readonly agentBodies: ContentStudioAgentBodyPort;'));
+  assert.ok(publicTs.includes('readonly formats: ReadonlyArray<ContentStudioFormatDeclaration>;'));
+  const depsKeys = [...publicTs.matchAll(/readonly (\w+):/g)].map((match) => match[1]!);
+  assert.ok(!depsKeys.includes('reviewer'), 'no reviewer port (the review decisions are caller-supplied declared data)');
+});
+
+test('STUDIO-003 AC-3: the public API surface carries the intent-to-script pipeline — the §8 record methods on the ONE module API (no second Studio runtime)', () => {
+  const api: ReadonlyArray<string> = [
+    'recordIntent', 'getIntent', 'getIntentForRequest',
+    'recordSuppliedScript', 'appendSuppliedScriptVersion', 'recordGeneratedScript', 'reviewScript',
+    'getScript', 'listScriptVersions', 'getScriptForRequest', 'listScriptReviews',
+    'recordSuppliedQuestionGraph', 'appendSuppliedQuestionGraphVersion', 'recordGeneratedQuestionGraph', 'reviewQuestionGraph',
+    'getQuestionGraph', 'listQuestionGraphVersions', 'getQuestionGraphForRequest', 'listQuestionGraphReviews',
+    'recordConversationStep', 'listConversationSteps',
+  ];
+  for (const method of api) {
+    assert.ok(publicTs.includes(`  ${method}(`), `the module API declares ${method}`);
+  }
+  // The frozen vocabularies the migration-070 CHECK fences pin.
+  for (const constant of [
+    'CONTENT_STUDIO_SCRIPT_ORIGINS', 'CONTENT_STUDIO_REVIEW_STATES', 'CONTENT_STUDIO_REVIEW_VERDICTS',
+    'CONTENT_STUDIO_REVIEWER_KINDS', 'CONTENT_STUDIO_GENERATED_INPUT_REVIEW_MODES', 'CONTENT_STUDIO_BRANCH_CONDITIONS',
+    'CONTENT_STUDIO_ANSWER_KINDS', 'CONTENT_STUDIO_CHOOSER_KINDS', 'CONTENT_STUDIO_QUESTION_MODALITY_HINTS',
+    'CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION',
+  ]) {
+    assert.ok(publicTs.includes(`export const ${constant}`), `the public surface exports ${constant}`);
+  }
+  // The contract citations (the house pattern).
+  assert.ok(publicTs.includes('INTENT-TO-SCRIPT'));
+  assert.ok(publicTs.includes('content-studio-contract-v1.0.md'));
+});
+
+test('STUDIO-003 AC-4: 070_studio_script_question_graph.sql slots into the 068→071 gap in the ordered list (the TL pre-assigned slot; 069 is held by the parallel MKT-073 worker — NOT asserted absent); the header cites the governing contract', () => {
+  const migrations = readdirSync(src('platform', 'db', 'migrations'))
+    .filter((name) => name.endsWith('.sql'))
+    .sort();
+  const last = migrations.length - 1;
+  assert.equal(migrations[last], '071_lab_simulator.sql', '071 stays the tail (the merged LAB-005 delivery)');
+  assert.equal(migrations[last - 1], '070_studio_script_question_graph.sql', '070 slots immediately before 071 (the TL pre-assigned gap)');
+  assert.equal(migrations[last - 2], '068_studio_format_framework.sql', 'the STUDIO-002 framework precedes');
+  // MY slot is asserted WITHOUT asserting 069's absence (the MKT-073
+  // parallel worker holds it — the TL resolves the merge).
+  assert.ok(migrations.includes('070_studio_script_question_graph.sql'));
+  // The header cites the governing sub-contract + the acceptance verbatim.
+  const migration070Sql = read(src('platform', 'db', 'migrations', '070_studio_script_question_graph.sql'));
+  assert.ok(migration070Sql.includes('STUDIO-003 (Intent → Script /'));
+  assert.ok(migration070Sql.includes('provenance of generated material'), 'the migration header cites the acceptance verbatim');
+  assert.ok(migration070Sql.includes('content-studio-contract-v1.0.md'));
+  assert.ok(migration070Sql.includes('§8 "Intent-to-script'));
+});
+
+test('STUDIO-003 AC-5: THE COMPOSITION-ROOT SEAM — the wiring lines are UNCHANGED (the STUDIO-002 precedent: the §8 pipeline rides the same module construction; comment-only disclosure)', () => {
+  // The module construction carries the SAME five dependency lines (the
+  // intent-to-script pipeline adds NO new structural port — db, clock,
+  // ids, agentBodies, formats only).
+  assert.ok(compositionRoot.includes('const contentStudio = createContentStudioModule({'));
+  for (const line of ['db,', 'clock,', 'ids,', 'agentBodies: contentStudioAgentBodies,', 'formats: CONTENT_STUDIO_INITIAL_FORMATS,']) {
+    assert.ok(compositionRoot.includes(line), `the wiring keeps the dependency: ${line.trim()}`);
+  }
+  assert.ok(compositionRoot.includes('contentStudio,'), 'the modules map keeps the entry');
+  assert.ok(compositionRoot.includes('STUDIO-003'), 'the composition-root comment discloses the STUDIO-003 seam');
 });
