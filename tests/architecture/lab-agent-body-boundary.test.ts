@@ -102,10 +102,13 @@ test('LAB-011 AC-1: the module imports NO other module — the /lab family disci
       `the module may import platform ports + its own files only, found '${specifier}'`,
     );
   }
-  // The static checker enforces it with zero violations (53 enforced
+  // The static checker enforces it with zero violations (54 enforced
   // modules: 52 spec-parsed after the 2026-09-29 TL spec promotion +
-  // the single /apps provision — the disclosed lab-agent-body worker
-  // provision RETIRED, the /lab registration precedent).
+  // the single /apps provision + the disclosed content-studio worker
+  // provision appended by the STUDIO-001 sibling delivery — the
+  // LAB-011 worker-delivery precedent, pending the TL spec promotion;
+  // the lab-agent-body provision RETIRED, the /lab registration
+  // precedent).
   const result = checkArchitecture({
     codeRoot: repoRoot,
     specDir: join(repoRoot, 'spec'),
@@ -113,7 +116,7 @@ test('LAB-011 AC-1: the module imports NO other module — the /lab family disci
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('lab-agent-body'));
-  assert.equal(result.frozenModules.length, 53);
+  assert.equal(result.frozenModules.length, 54);
 });
 
 test('LAB-011 AC-2: the module owns EXACTLY its four migration-063 tables — no v1.6 authority table, no /ai-runtime table, no /lab table', () => {
@@ -199,27 +202,30 @@ test('LAB-011 AC-3: the module structure is public.ts + internal/ only (the froz
 test('LAB-011 AC-4: the registration — the composition root wires the REAL /ai-runtime instance as the structural port and registers the module; the TL spec promotion registered it in the spec files (the provision retired)', () => {
   assert.ok(compositionRoot.includes("import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts'"));
   assert.ok(compositionRoot.includes('const labAgentBody = createLabAgentBodyModule({ db, clock, ids, aiRuntime });'));
-  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody },'));
+  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio },'));
   assert.ok(applicationTs.includes("import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts'"));
   assert.ok(applicationTs.includes('readonly labAgentBody: LabAgentBodyModuleApi'));
   // The provision is RETIRED (the 2026-09-29 TL spec promotion — the
-  // LAB-002 precedent): the provision array is back to the single
-  // /apps entry; the module registers through the spec files.
+  // LAB-002 precedent): the module registers through the spec files.
+  // The STUDIO-001 sibling delivery appends its own disclosed worker
+  // provision (the LAB-011 worker-delivery precedent — the array now
+  // carries /apps + /content-studio pending the TL spec promotion).
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null);
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps']);
+  assert.deepEqual(entries, ['apps', 'content-studio']);
   // The spec-parsed set NOW includes the module (the TL promotion —
   // the /lab registration precedent; never a worker edit).
   const specModules = /## 6\. Core domain modules\s*```text([\s\S]*?)```/.exec(read(join(repoRoot, 'spec', 'architecture.md')))![1]!;
   assert.ok(/^\/lab-agent-body$/m.test(specModules), 'the TL spec promotion registered /lab-agent-body in the frozen list');
 });
 
-test('LAB-011 AC-5: 063_lab_agent_body.sql is the migration tail (062 reserved for the parallel worker); the header cites the §14 authority', () => {
+test('LAB-011 AC-5: 063_lab_agent_body.sql appends the migration tail (062 reserved for the parallel worker; 064 appended by the STUDIO-001 sibling delivery — the disclosed re-pin precedent); the header cites the §14 authority', () => {
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 1], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 2], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 1], '064_content_studio_runtime.sql');
   assert.ok(!migrations.includes('062_agent_capability_candidates.sql'), '062 is reserved for the parallel worker (the TL reconciles numbering at merge)');
   // The header cites the spec authority verbatim (the house pattern).
   assert.ok(migrationSql.includes('LAB-011 (Agent Body Runtime Contract)'));

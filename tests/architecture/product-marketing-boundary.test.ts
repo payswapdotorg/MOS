@@ -502,7 +502,7 @@ test('MKT-070: the spec-parsed registration enforces the module with EXACTLY its
   // /lab-agent-body registers through the promoted spec files) — the
   // enforced total stays 53: 52 spec-parsed + the single /apps
   // provision.
-  assert.equal(result.frozenModules.length, 53);
+  assert.equal(result.frozenModules.length, 54);
 });
 
 test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violations; migration 060 is the tail', () => {
@@ -524,9 +524,9 @@ test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 3], '060_product_marketing.sql');
-  assert.equal(numbered[numbered.length - 2], '061_lab_corpus.sql');
-  assert.equal(numbered[numbered.length - 1], '063_lab_agent_body.sql');
+  assert.equal(numbered[numbered.length - 4], '060_product_marketing.sql');
+  assert.equal(numbered[numbered.length - 3], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 2], '063_lab_agent_body.sql');
 });
 
 // ---------------------------------------------------------------------------

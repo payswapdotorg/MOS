@@ -757,6 +757,39 @@ import { createLabCorpusModule } from './modules/lab-corpus/public.ts';
 // the /lab-corpus discipline: no /lab import exists here and no /lab
 // table is written (the migration-063 no-shadowing discipline).
 import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
+// STUDIO-001: /content-studio — the Content Studio Runtime authority
+// (the frozen v1.7 production layer, spec/content-studio-contract-v1.0.md
+// — the governing sub-contract): the MOS-owned AI+Human production
+// session runtime used standalone AND Lab-initiated — the
+// immutable/versioned production request registry (the FULL §3 field
+// set as declared data, the §1/§15 entry-mode fence), the versioned
+// production session revisions with the GUARDED §5 lifecycle (the
+// frozen legal-edge table, append-audited on the event tail; terminal
+// revisions frozen; a retry/treatment opens a NEW linked revision),
+// the DURABLE asynchronous processing substrate (§9: one persisted
+// step row per format-declared stage, the CAS batch-claim with
+// SKIP LOCKED — processing state lives in PostgreSQL, never module
+// memory, so a session survives restarts), the immutable output
+// versions with the treatment parent linkage (§12, lock v1.7 #42)
+// and the structured §13 treatment requests. THE
+// NO-PUBLISHING/NO-EXPERIMENT-AUTHORITY RULE IS STRUCTURAL (lock
+// v1.7 #43): the module creates no publishing, distribution,
+// experiment, evidence, rights, policy, workflow or execution
+// surface — the artifacts are declared data with OPAQUE references
+// under the existing v1.6 Content Asset/Rights authorities. The
+// /lab-agent-body consumption is the narrow READ-ONLY structural
+// port wired HERE (organization compatibility resolution — the
+// growth-operator pursuit-scope off-matrix wrapper precedent: the
+// REAL LabAgentBodyModuleApi instance behind the disclosed adapter;
+// the pawn RUNTIME stays /lab-agent-body, LAB-011 — never a second
+// one). The format consumption is the §2 PLUGGABLE SEAM (the
+// initial reaction/audio-podcast/video-podcast declarations as
+// data; STUDIO-002 owns the full framework — adding a future format
+// is a new declaration through the same seam, never a second
+// runtime). Zero cross-module imports exist inside
+// src/modules/content-studio (the /lab family discipline).
+import { createContentStudioModule, CONTENT_STUDIO_INITIAL_FORMATS } from './modules/content-studio/public.ts';
+import type { ContentStudioAgentBodyPort } from './modules/content-studio/public.ts';
 // MKT-070: /product-marketing — the Product Marketing Mission Planner
 // authority (the frozen v1.6 matrix row registered by this Work Item:
 // /product-marketing ──→ /growth-missions, /product-intelligence,
@@ -1980,6 +2013,49 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // src/modules/lab-agent-body (the /lab family discipline).
   const labAgentBody = createLabAgentBodyModule({ db, clock, ids, aiRuntime });
 
+  // STUDIO-001: /content-studio — platform ports + the two declared
+  // structural consumption surfaces ONLY: (1) the narrow READ-ONLY
+  // /lab-agent-body organization-compatibility port (the DISCLOSED
+  // off-matrix wrapper — the growth-operator pursuit-scope precedent:
+  // the real module instance resolves the opaque body-version
+  // references; a uniform NotFound maps to the unresolvable null so
+  // the compatibility failure stays explicit); (2) the §2 format
+  // seam carrying the initial registry content (the three initial
+  // format declarations as DATA — the pluggable seam STUDIO-002
+  // owns). The module resolves its own tenant fences; zero
+  // cross-module imports exist inside src/modules/content-studio
+  // (the /lab family discipline — the empty-allowance strictest
+  // posture).
+  const contentStudioAgentBodies: ContentStudioAgentBodyPort = {
+    async resolveAgentBody(scope, bodyVersionReference) {
+      try {
+        const body = await labAgentBody.getBodyByReference(
+          { agencyId: scope.agencyId, clientId: scope.clientId, workspaceId: scope.workspaceId ?? null },
+          bodyVersionReference,
+        );
+        return {
+          bodyVersionReference,
+          status: body.status,
+          permissions: body.contract.permissions,
+          safetyConstraints: body.contract.safetyConstraints,
+          capabilities: body.contract.capabilities,
+        };
+      } catch {
+        // The uniform NotFound of the /lab-agent-body registry maps to
+        // the unresolvable null — the compatibility validation lists
+        // it explicitly (never a silent replacement).
+        return null;
+      }
+    },
+  };
+  const contentStudio = createContentStudioModule({
+    db,
+    clock,
+    ids,
+    agentBodies: contentStudioAgentBodies,
+    formats: CONTENT_STUDIO_INITIAL_FORMATS,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2216,7 +2292,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio },
     runtime: { aiProvider },
   };
 }
