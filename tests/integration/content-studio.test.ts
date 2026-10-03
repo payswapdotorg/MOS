@@ -1,17 +1,22 @@
 /**
- * STUDIO-001 integration tests — the /content-studio Content Studio
- * Runtime against a REAL embedded PostgreSQL stack + the REAL
- * /lab-agent-body module instance behind the composition-parity
- * adapter (exactly as the composition root wires it: platform ports +
- * the disclosed READ-ONLY organization-compatibility port + the §2
- * format seam). The step EXECUTION drivers are the test's — the
- * runtime's claim/complete surface is driven externally, exactly as
- * the durable worker infrastructure drives it in production.
+ * STUDIO-001 + STUDIO-002 integration tests — the /content-studio
+ * Content Studio Runtime AND the Pluggable Format Framework against a
+ * REAL embedded PostgreSQL stack + the REAL /lab-agent-body module
+ * instance behind the composition-parity adapter (exactly as the
+ * composition root wires it: platform ports + the disclosed READ-ONLY
+ * organization-compatibility port + the §2 format seam). The step
+ * EXECUTION drivers are the test's — the runtime's claim/complete
+ * surface is driven externally, exactly as the durable worker
+ * infrastructure drives it in production.
  *
- * The Work Item's named acceptance battery (spec/
+ * The Work Items' named acceptance battery (spec/
  * effective-backlog-v1.7.md STUDIO-001: "tenant-scoped versioned
  * production sessions, asynchronous/durable processing, guarded
- * lifecycle, no publishing/experiment authority"):
+ * lifecycle, no publishing/experiment authority"; STUDIO-002: "Build
+ * the format contract and registry. Acceptance: formats declare
+ * input, participant, capture, interviewer, organization, output,
+ * provenance and evaluation contracts; new formats do not require
+ * another Studio runtime."):
  *   (a) THE FULL LIFECYCLE: standalone request → open session (the
  *       REAL organization compatibility validation through the REAL
  *       /lab-agent-body registry) → preparing → processing (the
@@ -50,6 +55,32 @@
  * plus the format-seam pluggability on the real stack (a custom
  * future format through the SAME seam) and the DB append-only
  * backstops (requests/events/outputs/treatments immutable).
+ *
+ * The STUDIO-002 battery (the format registry over the runtime):
+ *   (i) THE PLUGGABILITY PROOF (the core acceptance): a test-only
+ *       CUSTOM format registered through the PUBLIC SEAM
+ *       (registerFormat → activateFormat) drives a FULL session
+ *       end-to-end through the SAME runtime — ZERO runtime changes;
+ *   (j) THE REGISTRY SEMANTICS: registration (draft; duplicates and
+ *       broken version chains rejected), activation (draft-only,
+ *       honest errors for the illegal lifecycle advances), version
+ *       corrections (the append-only chain — v2 binds new sessions),
+ *       retirement (new sessions refuse; RUNNING sessions never
+ *       break — the running session's steps complete, its treatment
+ *       loop opens the successor revision and the new output links
+ *       the prior one) and the composition-wired initial formats
+ *       (materialize-if-absent per scope, born active, never
+ *       resurrected after a tenant's retirement);
+ *   (k) THE COMPATIBILITY RESOLUTION: a production request's selected
+ *       format resolves through the registry — ACTIVE versions only
+ *       (draft/retired refuse with the honest lifecycle state);
+ *       foreign scope resolves to the uniform NotFound (no existence
+ *       oracle — Bob cannot resolve Alice's custom format);
+ *   (l) THE FORMAT-CAPABILITY LINK RECORDS: the normalized
+ *       requiredCapabilities ride the registry row; the DB backstops
+ *       (born-draft, identity immutable, no delete, the
+ *       activation-consistency fence, the chain-scope fence, the link
+ *       scope fence, the link immutability) reject direct injection.
  */
 
 import { test, before, after } from 'node:test';
@@ -784,17 +815,23 @@ test('STUDIO-001: the §2 seam on the real stack — a brand-new future format p
     formatId: 'carousel-thread',
     formatVersion: 1,
     inputRequirements: { modes: ['script'], sourceArtifacts: 'optional' },
-    participantModel: { participants: 2, humanCapture: 'optional' },
+    participantModel: { participants: { min: 2, max: 2 }, humanCapture: 'optional', participationGrants: 'explicit_grant_per_participant' },
     captureRequirements: { modalities: ['screen'] },
-    interviewerRequirements: { interviewer: 'representation', representations: ['voice'] },
+    interviewerRequirements: { interviewer: 'representation', representations: ['voice'], followUps: 'adaptive' },
     organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'compose'] },
-    outputContract: { outputs: ['final_media', 'thread_transcript'] },
-    provenanceConsentRequirements: { consent: ['participant_recording_consent'], provenance: ['question_answer_graph'] },
-    evaluationHooks: { hooks: [{ hookId: 'engagement-hook' }] },
-    processingStages: [{ stageId: 'thread_preparation' }, { stageId: 'output_assembly' }],
+    outputContract: { outputs: ['final_media', 'transcript'] },
+    provenanceConsentRequirements: {
+      consent: ['participant_recording_consent', 'participant_contribution_rights'],
+      provenance: ['question_answer_sequence', 'recording'],
+    },
+    evaluationHooks: { hooks: [{ hookId: 'engagement-hook', firesOn: 'output_recorded' }] },
+    processingStages: [
+      { stageId: 'thread_preparation', availability: { status: 'runtime_driven' } },
+      { stageId: 'output_assembly', availability: { status: 'runtime_driven' } },
+    ],
   };
   const wired = buildStudio(db!, [...CONTENT_STUDIO_INITIAL_FORMATS, futureFormat]);
-  assert.equal(wired.listFormats().length, 4);
+  assert.equal((await wired.listFormats(aliceScope)).length, 4);
 
   const bodyReference = await makeActiveBody();
   const request = await wired.createProductionRequest({
@@ -803,7 +840,7 @@ test('STUDIO-001: the §2 seam on the real stack — a brand-new future format p
       formatId: 'carousel-thread',
       formatVersion: 1,
       input: { mode: 'script', script: { opening: 'Three points, then the punchline.' } },
-      output: { requiredOutputs: ['final_media', 'thread_transcript'] },
+      output: { requiredOutputs: ['final_media', 'transcript'] },
     }),
   });
   const session = await wired.openSession({ scope: aliceScope, requestId: request.requestId });
@@ -817,12 +854,12 @@ test('STUDIO-001: the §2 seam on the real stack — a brand-new future format p
       scope: aliceScope,
       stepId: step.stepId,
       output: step.stageId === 'output_assembly'
-        ? { final_media: 'media:carousel', thread_transcript: 'text:thread' }
+        ? { final_media: 'media:carousel', transcript: 'text:thread' }
         : { intermediate: 'x' },
     });
     if (step.stageId === 'output_assembly') {
       assert.equal(completion.session!.state, 'review');
-      assert.equal(completion.outputVersion!.artifactPackage.thread_transcript, 'text:thread');
+      assert.equal(completion.outputVersion!.artifactPackage.transcript, 'text:thread');
     }
   }
   const completed = await wired.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'completed' });
@@ -934,5 +971,438 @@ test('STUDIO-001: the step-status DB backstop — the durable status edges rejec
   await assert.rejects(
     () => studio.completeProcessingStep({ scope: aliceScope, stepId: queuedStep.stepId, output: { intermediate: 'x' } }),
     /only a running \(claimed\) step may complete/,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// The STUDIO-002 battery — the format registry over the runtime.
+// ---------------------------------------------------------------------------
+
+/** A test-only CUSTOM format declaration registered through the PUBLIC seam (the pluggability proof). */
+function customFormatDeclaration(formatId: string, formatVersion: number): ContentStudioFormatDeclaration {
+  return {
+    formatId,
+    formatVersion,
+    inputRequirements: { modes: ['intent', 'script', 'question_list'], sourceArtifacts: 'optional' },
+    participantModel: { participants: { min: 1, max: 3 }, humanCapture: 'optional', participationGrants: 'explicit_grant_per_participant' },
+    captureRequirements: { modalities: ['screen', 'participant_streams'] },
+    interviewerRequirements: { interviewer: 'representation', representations: ['voice', 'voice_text', 'generated'], followUps: 'adaptive' },
+    organizationRequirements: {
+      minAgentBodies: 1,
+      requiredPermissions: ['read', 'compose'],
+      requiredCapabilities: formatVersion === 1 ? ['capability:thread-layout@v3'] : ['capability:thread-layout@v4'],
+    },
+    outputContract: { outputs: ['final_media', 'derived_clips'] },
+    provenanceConsentRequirements: {
+      consent: ['participant_recording_consent', 'participant_contribution_rights'],
+      provenance: ['question_answer_sequence', 'transform_graph', 'treatment_lineage'],
+    },
+    evaluationHooks: {
+      hooks: [
+        { hookId: 'thread-quality-hook', firesOn: 'output_recorded' },
+        { hookId: 'thread-panel-hook', firesOn: 'stage_completion', stageId: 'panel_capture' },
+      ],
+    },
+    processingStages: [
+      { stageId: 'thread_preparation', availability: { status: 'runtime_driven' } },
+      { stageId: 'panel_capture', availability: { status: 'runtime_driven' } },
+      { stageId: 'output_assembly', availability: { status: 'runtime_driven' } },
+    ],
+  };
+}
+
+test('STUDIO-002 (i): THE PLUGGABILITY PROOF — a test-only CUSTOM format registered through the PUBLIC SEAM drives a FULL session end-to-end through the SAME runtime (ZERO runtime changes)', async () => {
+  // 1. Register the custom format through the public seam: born DRAFT.
+  const draft = await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('qa-roundtable', 1) });
+  assert.equal(draft.status, 'draft');
+  assert.equal(draft.formatId, 'qa-roundtable');
+  assert.equal(draft.declaration.participantModel.participants.max, 3);
+  assert.deepEqual(draft.capabilityLinks, ['capability:thread-layout@v3']);
+
+  // 2. A DRAFT format does NOT resolve for new sessions (active versions only).
+  const bodyReference = await makeActiveBody();
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: standaloneRequest(bodyReference, {
+      formatId: 'qa-roundtable',
+      formatVersion: 1,
+      organization: { organizationId: 'org-roundtable', organizationVersion: 1, agentBodyReferences: [bodyReference], capabilities: ['capability:thread-layout@v3'] },
+      input: { mode: 'intent', intent: 'A punchy three-person QA roundtable.' },
+      output: { requiredOutputs: ['final_media', 'derived_clips'] },
+    }),
+  });
+  await assert.rejects(
+    () => studio.openSession({ scope: aliceScope, requestId: request.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /is draft/.test(error.message),
+  );
+
+  // 3. Activate (draft → active) — the capability links ride the record.
+  const active = await studio.activateFormat(aliceScope, 'qa-roundtable', 1);
+  assert.equal(active.status, 'active');
+  assert.deepEqual(active.capabilityLinks, ['capability:thread-layout@v3']);
+  assert.equal(active.contractVersion, 'content-studio-format-v1');
+
+  // 4. The SAME runtime drives the custom format end-to-end: the plan is
+  //    derived from the DECLARED stages (never runtime code).
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+  assert.equal(session.state, 'created');
+  assert.equal(session.formatId, 'qa-roundtable');
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'processing' });
+  const steps = await studio.listProcessingSteps(aliceScope, session.sessionId);
+  assert.deepEqual(steps.map((step) => step.stageId), ['thread_preparation', 'panel_capture', 'output_assembly']);
+  for (const step of steps) {
+    await studio.claimProcessingSteps({ scope: aliceScope, sessionId: session.sessionId, limit: 1, lockedBy: 'pluggability-driver' });
+    const completion = await studio.completeProcessingStep({
+      scope: aliceScope,
+      stepId: step.stepId,
+      output: step.stageId === 'output_assembly'
+        ? { final_media: 'media:roundtable', derived_clips: 'clip:highlights' }
+        : { intermediate: `artifact:${step.stageId}` },
+    });
+    if (step.stageId === 'output_assembly') {
+      assert.equal(completion.session!.state, 'review');
+      assert.equal(completion.outputVersion!.artifactPackage.final_media, 'media:roundtable');
+    }
+  }
+  const completed = await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'completed' });
+  assert.equal(completed.state, 'completed');
+  // The audit tail recorded the full flow through the same event kinds.
+  const events = await studio.listSessionEvents(aliceScope, session.sessionId);
+  assert.ok(events.some((event) => event.eventKind === 'session_opened'));
+  assert.ok(events.some((event) => event.eventKind === 'processing_plan_recorded'));
+  assert.ok(events.some((event) => event.eventKind === 'output_version_recorded'));
+  // NO second Studio runtime was constructed: the SAME module instance
+  // (the one driving reaction sessions in every other test) served the
+  // custom format — the pluggability is the seam, proven.
+});
+
+test('STUDIO-002 (j): the registry semantics — duplicate registration, broken chains, illegal lifecycle advances and append-only version corrections', async () => {
+  // A duplicate identity/version is rejected (corrections are NEW version rows).
+  const draft = await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('micro-thread', 1) });
+  assert.equal(draft.status, 'draft');
+  await assert.rejects(
+    () => studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('micro-thread', 1) }),
+    /already registered/,
+  );
+
+  // A broken version chain is rejected (registering v3 with only v1 present).
+  await assert.rejects(
+    () => studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('micro-thread', 3) }),
+    /version chain must be continuous/,
+  );
+
+  // Illegal lifecycle advances: activating an already-active format,
+  // retiring an already-retired format, activating a retired format.
+  const activated = await studio.activateFormat(aliceScope, 'micro-thread', 1);
+  assert.equal(activated.status, 'active');
+  await assert.rejects(
+    () => studio.activateFormat(aliceScope, 'micro-thread', 1),
+    /only a DRAFT format version can activate/,
+  );
+  const lifecycleProbe = await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('lifecycle-probe', 1) });
+  await studio.activateFormat(aliceScope, 'lifecycle-probe', 1);
+  const retiredProbe = await studio.retireFormat(aliceScope, 'lifecycle-probe', 1);
+  assert.equal(retiredProbe.status, 'retired');
+  await assert.rejects(
+    () => studio.activateFormat(aliceScope, 'lifecycle-probe', 1),
+    /only a DRAFT format version can activate/,
+  );
+  await assert.rejects(
+    () => studio.retireFormat(aliceScope, 'lifecycle-probe', 1),
+    /only an ACTIVE format version can retire/,
+  );
+  assert.equal(lifecycleProbe.status, 'draft');
+
+  // The append-only version correction: v2 registers as a DRAFT with its own
+  // capability links; activating it makes NEW sessions bind v2 while v1
+  // remains queryable (history never deletes).
+  const v2 = await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('micro-thread', 2) });
+  assert.deepEqual(v2.capabilityLinks, ['capability:thread-layout@v4']);
+  const v2Active = await studio.activateFormat(aliceScope, 'micro-thread', 2);
+  assert.equal(v2Active.status, 'active');
+  assert.equal((await studio.getFormat(aliceScope, 'micro-thread', 1)).status, 'active');
+  assert.equal((await studio.getFormat(aliceScope, 'micro-thread', 2)).status, 'active');
+
+  // The registry listing carries every version row in the scope.
+  const formats = await studio.listFormats(aliceScope);
+  const microThread = formats.filter((format) => format.formatId === 'micro-thread');
+  assert.deepEqual(microThread.map((format) => format.formatVersion), [1, 2]);
+});
+
+test('STUDIO-002 (j): RETIREMENT NEVER BREAKS RUNNING SESSIONS — the running session completes, its treatment loop opens the successor revision and the new output links the prior one; only NEW sessions refuse', async () => {
+  const bodyReference = await makeActiveBody();
+  const request = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: standaloneRequest(bodyReference, {
+      formatId: 'qa-roundtable',
+      formatVersion: 1,
+      organization: { organizationId: 'org-roundtable', organizationVersion: 1, agentBodyReferences: [bodyReference], capabilities: ['capability:thread-layout@v3'] },
+      input: { mode: 'intent', intent: 'The roundtable continues after retirement.' },
+      output: { requiredOutputs: ['final_media', 'derived_clips'] },
+    }),
+  });
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'processing' });
+  const firstSteps = await studio.claimProcessingSteps({ scope: aliceScope, sessionId: session.sessionId, limit: 1, lockedBy: 'retirement-driver' });
+  assert.equal(firstSteps.length, 1);
+  await studio.completeProcessingStep({ scope: aliceScope, stepId: firstSteps[0]!.stepId, output: { intermediate: 'artifact:thread_preparation' } });
+
+  // RETIRE the format MID-SESSION (the running session has one step left).
+  const retired = await studio.retireFormat(aliceScope, 'qa-roundtable', 1);
+  assert.equal(retired.status, 'retired');
+
+  // The RUNNING session keeps driving: the plan derivation already
+  // persisted; the remaining steps complete; the output records; the
+  // session reaches review — the format row is retired, never deleted.
+  const remaining = await studio.claimProcessingSteps({ scope: aliceScope, sessionId: session.sessionId, limit: 2, lockedBy: 'retirement-driver' });
+  assert.equal(remaining.length, 2);
+  let outputVersionId: string | null = null;
+  for (const step of remaining) {
+    const completion = await studio.completeProcessingStep({
+      scope: aliceScope,
+      stepId: step.stepId,
+      output: step.stageId === 'output_assembly'
+        ? { final_media: 'media:roundtable-retired-mid-session', derived_clips: 'clip:highlights' }
+        : { intermediate: 'artifact:panel_capture' },
+    });
+    if (completion.outputVersion !== null) {
+      outputVersionId = completion.outputVersion.outputVersionId;
+      assert.equal(completion.session!.state, 'review');
+    }
+  }
+  assert.ok(outputVersionId !== null);
+
+  // The TREATMENT LOOP also survives the retirement (the successor
+  // revision resolves the session's OWN format under any status).
+  const treatment = await studio.requestTreatment({
+    scope: aliceScope,
+    sessionId: session.sessionId,
+    targetOutputVersionId: outputVersionId!,
+    treatment: { defect: 'Pacing lags in panel two.', desiredChange: 'Tighten the panel cuts.' },
+  });
+  assert.equal(treatment.closedRevision.state, 'treatment_requested');
+  assert.equal(treatment.successorRevision.state, 'created');
+  assert.equal(treatment.successorRevision.priorOutputVersionId, outputVersionId);
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'processing' });
+  const successorSteps = await studio.listProcessingSteps(aliceScope, session.sessionId);
+  const r2Steps = successorSteps.filter((step) => step.revision === 2);
+  assert.deepEqual(r2Steps.map((step) => step.stageId), ['thread_preparation', 'panel_capture', 'output_assembly']);
+  for (const step of r2Steps) {
+    await studio.claimProcessingSteps({ scope: aliceScope, sessionId: session.sessionId, limit: 1, lockedBy: 'retirement-driver' });
+    const completion = await studio.completeProcessingStep({
+      scope: aliceScope,
+      stepId: step.stepId,
+      output: step.stageId === 'output_assembly'
+        ? { final_media: 'media:roundtable-treated', derived_clips: 'clip:highlights-v2' }
+        : { intermediate: `artifact:${step.stageId}` },
+    });
+    if (completion.outputVersion !== null) {
+      // The new output links its predecessor (lock v1.7 #42).
+      assert.equal(completion.outputVersion.parentOutputVersionId, outputVersionId);
+    }
+  }
+  const completed = await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'completed' });
+  assert.equal(completed.state, 'completed');
+
+  // Only NEW sessions refuse the retired format (the honest lifecycle state).
+  const newRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: standaloneRequest(bodyReference, {
+      formatId: 'qa-roundtable',
+      formatVersion: 1,
+      organization: { organizationId: 'org-roundtable', organizationVersion: 1, agentBodyReferences: [bodyReference], capabilities: ['capability:thread-layout@v3'] },
+      input: { mode: 'intent', intent: 'This one should refuse.' },
+      output: { requiredOutputs: ['final_media', 'derived_clips'] },
+    }),
+  });
+  await assert.rejects(
+    () => studio.openSession({ scope: aliceScope, requestId: newRequest.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /is retired/.test(error.message),
+  );
+});
+
+test('STUDIO-002 (j): the composition-wired initial formats — materialize-if-absent per scope, born active, NEVER resurrected after a tenant retirement (the restart simulation)', async () => {
+  // Bob's fresh scope lists the wired initial formats (materialized per scope).
+  const bobFormats = await studio.listFormats(bobScope);
+  assert.deepEqual(bobFormats.map((format) => format.formatId), ['audio-podcast', 'reaction', 'video-podcast']);
+  assert.ok(bobFormats.every((format) => format.status === 'active'));
+  assert.equal(bobFormats[0]!.declaration.participantModel.participationGrants, 'explicit_grant_per_participant');
+  assert.equal(bobFormats[0]!.declaration.interviewerRequirements.representations!.length, 7);
+  assert.equal(bobFormats[1]!.declaration.participantModel.participationGrants, 'single_scope');
+
+  // Bob retires reaction@v1 in HIS scope.
+  const retired = await studio.retireFormat(bobScope, 'reaction', 1);
+  assert.equal(retired.status, 'retired');
+
+  // A SECOND module instance (the restart simulation — the STUDIO-001
+  // durability precedent) does NOT resurrect the retired row: the
+  // wired materialization is INSERT-only-if-absent.
+  const restarted = buildStudio(db!);
+  const bobFormatsAfterRestart = await restarted.listFormats(bobScope);
+  assert.equal(bobFormatsAfterRestart.find((format) => format.formatId === 'reaction')!.status, 'retired');
+  // Alice's scope is untouched by Bob's retirement (per-client registry).
+  const aliceFormats = await restarted.listFormats(aliceScope);
+  assert.equal(aliceFormats.find((format) => format.formatId === 'reaction')!.status, 'active');
+
+  // Bob cannot OPEN a new reaction session after his retirement.
+  const bodyReference = await makeActiveBody(['read', 'transform', 'compose'], bobScope);
+  const bobRequest = await restarted.createProductionRequest({
+    scope: bobScope,
+    content: {
+      entryMode: 'standalone',
+      formatId: 'reaction',
+      formatVersion: 1,
+      organization: {
+        organizationId: 'org-reaction-composer',
+        organizationVersion: 1,
+        agentBodyReferences: [bodyReference],
+        capabilities: [],
+      },
+      input: { mode: 'intent', intent: 'A reaction after retirement.', sourceArtifactReferences: ['asset:01923f7e-8b1d-7abc-9def-0123456789cd'] },
+      output: { requiredOutputs: ['final_media'] },
+      acceptanceCriteria: ['hook lands fast'],
+      budget: { maxCostUnits: 5, maxDurationMs: 600_000 },
+      deadline: '2099-12-01T12:00:00.000Z',
+      delayStoppingPolicy: { retryLimit: 1 },
+      provenanceConsent: { consentReferences: ['consent:participant-recording-1'] },
+    },
+  });
+  await assert.rejects(
+    () => restarted.openSession({ scope: bobScope, requestId: bobRequest.requestId }),
+    (error: unknown) => error instanceof InvalidRequestError && /is retired/.test(error.message),
+  );
+});
+
+test('STUDIO-002 (k): THE TENANT ISOLATION of the registry — Bob resolves Alice\'s CUSTOM format to the uniform NotFound (no existence oracle); Alice\'s rows are invisible in Bob\'s scope', async () => {
+  await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('alice-private-format', 1) });
+  await studio.activateFormat(aliceScope, 'alice-private-format', 1);
+
+  // Bob CANNOT see, list or resolve Alice's custom format.
+  await assert.rejects(
+    () => studio.getFormat(bobScope, 'alice-private-format', 1),
+    (error: unknown) => error instanceof NotFoundError,
+  );
+  const bobFormats = await studio.listFormats(bobScope);
+  assert.ok(!bobFormats.some((format) => format.formatId === 'alice-private-format'), 'the custom format never appears in Bob\'s registry listing');
+  // The initial formats materialize per scope — Bob's registry shows his
+  // own (his reaction stays retired from the earlier test; the custom
+  // format never appears).
+  assert.deepEqual(bobFormats.map((format) => `${format.formatId}:${format.status}`), ['audio-podcast:active', 'reaction:retired', 'video-podcast:active']);
+
+  // Alice's custom format resolves in Alice's scope only.
+  const aliceResolution = await studio.getFormat(aliceScope, 'alice-private-format', 1);
+  assert.equal(aliceResolution.status, 'active');
+});
+
+test('STUDIO-002 (l): the FORMAT-REGISTRY DB BACKSTOPS — born-draft, identity immutable, no delete, activation consistency, the chain-scope fence and the link fences reject direct injection', async () => {
+  const registered = await studio.registerFormat({ scope: aliceScope, declaration: customFormatDeclaration('backstop-format', 1) });
+  const fvid = registered.formatVersionId;
+
+  // BORN DRAFT: a direct INSERT carrying 'active' is rejected.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_formats (format_version_id, format_id, format_version, agency_id, client_id, workspace_id, status, declaration, contract_version, created_at, updated_at)
+       VALUES (gen_random_uuid(), 'backstop-format', 2, $1, $2, NULL, 'active', $3::jsonb, 'content-studio-format-v1', now(), now())`,
+      [aliceScope.agencyId, aliceScope.clientId, JSON.stringify(customFormatDeclaration('backstop-format', 2))],
+    ),
+    /BORN DRAFT/,
+  );
+
+  // IDENTITY IMMUTABLE: a direct declaration mutation is rejected.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_formats SET declaration = declaration || '{"formatVersion": 99}'::jsonb, updated_at = now() WHERE format_version_id = $1`, [fvid]),
+    /immutable — corrections are NEW version rows/,
+  );
+
+  // NO DELETE.
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_formats WHERE format_version_id = $1`, [fvid]),
+    /cannot be deleted/,
+  );
+
+  // ACTIVATION CONSISTENCY: a directly-injected draft (no capability
+  // link records) cannot activate — the trigger verifies the link set
+  // matches the declared requiredCapabilities.
+  const probeDeclaration = customFormatDeclaration('activation-probe', 1);
+  const probeRow = await db!.query<{ format_version_id: string }>(
+    `INSERT INTO studio_formats (format_version_id, format_id, format_version, agency_id, client_id, workspace_id, status, declaration, contract_version, created_at, updated_at)
+     VALUES (gen_random_uuid(), 'activation-probe', 1, $1, $2, NULL, 'draft', $3::jsonb, 'content-studio-format-v1', now(), now()) RETURNING format_version_id`,
+    [aliceScope.agencyId, aliceScope.clientId, JSON.stringify(probeDeclaration)],
+  );
+  const probeId = probeRow.rows[0]!.format_version_id;
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_formats SET status = 'active', updated_at = now() WHERE format_version_id = $1`, [probeId]),
+    /capability link records do not match/,
+  );
+  // Writing the missing link through the module's own registration path
+  // is impossible (the format already exists — a duplicate is rejected);
+  // the DB backstop allows the link INSERT (append-only) and then the
+  // activation passes the consistency fence.
+  await db!.query(
+    `INSERT INTO studio_format_capabilities (format_version_id, capability_kind, capability_reference, agency_id, client_id, workspace_id, contract_version, created_at)
+     VALUES ($1, 'required', $2, $3, $4, NULL, 'content-studio-format-v1', now())`,
+    [probeId, probeDeclaration.organizationRequirements.requiredCapabilities![0]!, aliceScope.agencyId, aliceScope.clientId],
+  );
+  const activatedProbe = await db!.query(`UPDATE studio_formats SET status = 'active', updated_at = now() WHERE format_version_id = $1 RETURNING status`, [probeId]);
+  assert.equal(activatedProbe.rows[0]!.status, 'active');
+
+  // Activating the module-registered row (whose links were written
+  // transactionally at registration) succeeds through the module path.
+  const activated = await studio.activateFormat(aliceScope, 'backstop-format', 1);
+  assert.equal(activated.status, 'active');
+
+  // THE LINK FENCES: a link with a mismatched scope is rejected; links
+  // are immutable (UPDATE and DELETE rejected).
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_format_capabilities (format_version_id, capability_kind, capability_reference, agency_id, client_id, workspace_id, contract_version, created_at)
+       VALUES ($1, 'required', 'capability:injected', gen_random_uuid(), $2, NULL, 'content-studio-format-v1', now())`,
+      [fvid, aliceScope.clientId],
+    ),
+    /parent format row scope/,
+  );
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_format_capabilities SET capability_reference = 'capability:x' WHERE format_version_id = $1`, [fvid]),
+    /immutable/,
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_format_capabilities WHERE format_version_id = $1`, [fvid]),
+    /immutable/,
+  );
+
+  // THE CHAIN-SCOPE FENCE: a cross-tenant version-2 correction is rejected.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_formats (format_version_id, format_id, format_version, agency_id, client_id, workspace_id, status, declaration, contract_version, created_at, updated_at)
+       VALUES (gen_random_uuid(), 'backstop-format', 2, $1, $2, NULL, 'draft', $3::jsonb, 'content-studio-format-v1', now(), now())`,
+      [bobScope.agencyId, bobScope.clientId, JSON.stringify(customFormatDeclaration('backstop-format', 2))],
+    ),
+    /version chain is broken|keep the version chain scope/,
+  );
+
+  // THE CLOSED-VOCABULARY CHECK FENCES: an out-of-vocabulary permission
+  // and an out-of-vocabulary output kind cannot land as registry rows.
+  const badPermissionDeclaration = customFormatDeclaration('closed-vocab-probe', 1);
+  (badPermissionDeclaration as unknown as { organizationRequirements: { requiredPermissions: string[] } }).organizationRequirements.requiredPermissions = ['publish'];
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_formats (format_version_id, format_id, format_version, agency_id, client_id, workspace_id, status, declaration, contract_version, created_at, updated_at)
+       VALUES (gen_random_uuid(), 'closed-vocab-probe', 1, $1, $2, NULL, 'draft', $3::jsonb, 'content-studio-format-v1', now(), now())`,
+      [aliceScope.agencyId, aliceScope.clientId, JSON.stringify(badPermissionDeclaration)],
+    ),
+    /check constraint/i,
+  );
+  const badOutputDeclaration = customFormatDeclaration('closed-vocab-probe', 1);
+  (badOutputDeclaration as unknown as { outputContract: { outputs: string[] } }).outputContract.outputs = ['vibes'];
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_formats (format_version_id, format_id, format_version, agency_id, client_id, workspace_id, status, declaration, contract_version, created_at, updated_at)
+       VALUES (gen_random_uuid(), 'closed-vocab-probe', 1, $1, $2, NULL, 'draft', $3::jsonb, 'content-studio-format-v1', now(), now())`,
+      [aliceScope.agencyId, aliceScope.clientId, JSON.stringify(badOutputDeclaration)],
+    ),
+    /check constraint/i,
   );
 });

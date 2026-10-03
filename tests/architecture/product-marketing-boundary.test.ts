@@ -530,10 +530,10 @@ test('MKT-070: the real codebase enforces the frozen boundaries with ZERO violat
   const numbered = readdirSync(join(repoRoot, 'src', 'platform', 'db', 'migrations'))
     .filter((name) => /^\d+_/.test(name))
     .sort();
-  assert.equal(numbered[numbered.length - 7], '060_product_marketing.sql');
-  assert.equal(numbered[numbered.length - 6], '061_lab_corpus.sql');
-  assert.equal(numbered[numbered.length - 4], '063_lab_agent_body.sql');
-  assert.equal(numbered[numbered.length - 2], '065_lab_features.sql');
+  assert.equal(numbered[numbered.length - 8], '060_product_marketing.sql');
+  assert.equal(numbered[numbered.length - 7], '061_lab_corpus.sql');
+  assert.equal(numbered[numbered.length - 5], '063_lab_agent_body.sql');
+  assert.equal(numbered[numbered.length - 3], '065_lab_features.sql');
 });
 
 // ---------------------------------------------------------------------------

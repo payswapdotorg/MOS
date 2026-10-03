@@ -782,12 +782,16 @@ import { createLabAgentBodyModule } from './modules/lab-agent-body/public.ts';
 // growth-operator pursuit-scope off-matrix wrapper precedent: the
 // REAL LabAgentBodyModuleApi instance behind the disclosed adapter;
 // the pawn RUNTIME stays /lab-agent-body, LAB-011 — never a second
-// one). The format consumption is the §2 PLUGGABLE SEAM (the
-// initial reaction/audio-podcast/video-podcast declarations as
-// data; STUDIO-002 owns the full framework — adding a future format
-// is a new declaration through the same seam, never a second
-// runtime). Zero cross-module imports exist inside
-// src/modules/content-studio (the /lab family discipline).
+// one). The format consumption is the §2 PLUGGABLE SEAM — STUDIO-002
+// landed the FULL framework: the initial reaction/audio-podcast/
+// video-podcast declarations are the FULL nine-surface §2 field sets
+// as data, and the module's migration-068 registry materializes them
+// per CLIENT scope (materialize-if-absent, born active through the
+// guarded draft → active → retired lifecycle) while future formats
+// arrive through the SAME seam or the registerFormat/activateFormat
+// commands — never a second Studio runtime. Zero cross-module imports
+// exist inside src/modules/content-studio (the /lab family
+// discipline).
 import { createContentStudioModule, CONTENT_STUDIO_INITIAL_FORMATS } from './modules/content-studio/public.ts';
 import type { ContentStudioAgentBodyPort } from './modules/content-studio/public.ts';
 

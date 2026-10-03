@@ -1,22 +1,33 @@
 /**
- * STUDIO-001 unit tests — the PURE contract guards + the frozen §5
- * state machine of /content-studio (the LAB-011 unit battery
+ * STUDIO-001 + STUDIO-002 unit tests — the PURE contract guards + the
+ * frozen §5 state machine of /content-studio (the LAB-011 unit battery
  * precedent: pure functions only, no clock, no network, no database).
  *
- * The Work Item's named acceptance proofs (spec/
+ * The Work Items' named acceptance proofs (spec/
  * effective-backlog-v1.7.md STUDIO-001: "tenant-scoped versioned
  * production sessions, asynchronous/durable processing, guarded
- * lifecycle, no publishing/experiment authority" — the pure halves):
+ * lifecycle, no publishing/experiment authority" — the pure halves;
+ * STUDIO-002: "Build the format contract and registry. Acceptance:
+ * formats declare input, participant, capture, interviewer,
+ * organization, output, provenance and evaluation contracts; new
+ * formats do not require another Studio runtime."):
  *   (a) THE GUARDED LIFECYCLE: the frozen §5 legal-edge table over the
  *       verbatim vocabulary — every legal edge enumerated, EVERY
  *       illegal edge rejected (the exhaustive 11×11 from/to proof),
  *       the terminal freeze, the no-self-transition fence;
- *   (b) THE FORMAT SEAM (§2): a valid declaration passes (including a
- *       brand-new CUSTOM format through the seam — the pluggability
- *       proof: adding a future format needs NO runtime change), the
- *       three initial formats are valid + distinct, and the closed
- *       vocabularies (input modes, capture modalities, interviewer
- *       representations) reject unknown entries;
+ *   (b) THE FORMAT SEAM (§2 — STUDIO-002's FULL nine-surface
+ *       declaration discipline): a valid declaration passes
+ *       (including a brand-new CUSTOM format through the seam — the
+ *       pluggability proof: adding a future format needs NO runtime
+ *       change), the three initial formats are valid + distinct +
+ *       carry the complete §2 field sets with their honest
+ *       availability states, and EVERY closed vocabulary (input
+ *       modes, capture modalities, interviewer representations,
+ *       follow-up discipline, participation grants, action-kind
+ *       permissions, §12 artifact kinds, consent kinds, provenance
+ *       elements, hook firing surfaces, availability states)
+ *       rejects unknown entries, malformed shapes and cross-surface
+ *       inconsistencies;
  *   (c) THE REQUEST FENCES (§3/§1/§15): the standalone/lab_initiated
  *       entry-mode fence, the input-mode consistency (exactly one of
  *       script/questions/intent), the budget/deadline/stopping bounds,
@@ -32,11 +43,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONTENT_STUDIO_CAPTURE_MODALITIES,
+  CONTENT_STUDIO_CONSENT_KINDS,
   CONTENT_STUDIO_CONTRACT_VERSION,
   CONTENT_STUDIO_ENTRY_MODES,
+  CONTENT_STUDIO_EVALUATION_HOOK_SURFACES,
+  CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES,
+  CONTENT_STUDIO_FORMAT_CONTRACT_VERSION,
+  CONTENT_STUDIO_FORMAT_STATUSES,
   CONTENT_STUDIO_INITIAL_FORMATS,
   CONTENT_STUDIO_INPUT_MODES,
+  CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES,
   CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS,
+  CONTENT_STUDIO_ORGANIZATION_PERMISSIONS,
+  CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS,
+  CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS,
+  CONTENT_STUDIO_PROVENANCE_ELEMENTS,
   CONTENT_STUDIO_SESSION_EVENT_KINDS,
   CONTENT_STUDIO_SESSION_STATES,
   CONTENT_STUDIO_SESSION_TRANSITIONS,
@@ -85,17 +106,17 @@ function validFormat(overrides: Partial<ContentStudioFormatDeclaration> = {}): C
     formatId: 'reaction',
     formatVersion: 1,
     inputRequirements: { modes: ['intent', 'script'], sourceArtifacts: 'required' },
-    participantModel: { participants: 1, humanCapture: 'required' },
+    participantModel: { participants: { min: 1, max: 1 }, humanCapture: 'required', participationGrants: 'single_scope' },
     captureRequirements: { modalities: ['audio', 'video'] },
     interviewerRequirements: { interviewer: 'none' },
     organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'transform', 'compose'] },
     outputContract: { outputs: ['final_media'] },
-    provenanceConsentRequirements: { consent: ['participant_recording_consent'], provenance: ['source_reference'] },
-    evaluationHooks: { hooks: [{ hookId: 'quality-hook' }] },
+    provenanceConsentRequirements: { consent: ['participant_recording_consent'], provenance: ['source_reference', 'transform_graph'] },
+    evaluationHooks: { hooks: [{ hookId: 'quality-hook', firesOn: 'output_recorded' }] },
     processingStages: [
-      { stageId: 'capture_ingestion', description: 'Ingest the raw capture.' },
-      { stageId: 'organization_treatment' },
-      { stageId: 'output_assembly' },
+      { stageId: 'capture_ingestion', description: 'Ingest the raw capture.', availability: { status: 'runtime_driven' } },
+      { stageId: 'organization_treatment', availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-008' } },
+      { stageId: 'output_assembly', availability: { status: 'runtime_driven' } },
     ],
     ...overrides,
   };
@@ -141,7 +162,30 @@ test('STUDIO-001: the frozen vocabularies are the closed sets (the §5 lifecycle
   ]);
   assert.deepEqual(CONTENT_STUDIO_TERMINAL_SESSION_STATES, ['treatment_requested', 'completed', 'cancelled', 'failed', 'expired']);
   assert.deepEqual(CONTENT_STUDIO_INPUT_MODES, ['script', 'question_list', 'intent']);
-  assert.deepEqual(CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS, ['voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'hybrid']);
+  // STUDIO-002 — the FULL closed §2 vocabularies (the migration-068
+  // CHECK fences pin exactly these sets).
+  assert.deepEqual(CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS, [
+    'voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'multimodal_declared', 'hybrid',
+  ]);
+  assert.deepEqual(CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES, ['adaptive', 'fixed']);
+  assert.deepEqual(CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS, ['single_scope', 'explicit_grant_per_participant']);
+  assert.deepEqual(CONTENT_STUDIO_ORGANIZATION_PERMISSIONS, ['read', 'analyze', 'compose', 'transform', 'communicate', 'simulate']);
+  assert.deepEqual(CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS, [
+    'raw_captures', 'final_media', 'alternate_takes', 'transcript', 'question_answer_graph',
+    'timestamps', 'participant_contributions', 'edit_graph', 'transform_graph', 'composition_layout',
+    'captions_subtitles', 'derived_clips', 'provenance', 'consent_records', 'quality_evaluation_metadata', 'costs_durations',
+  ]);
+  assert.deepEqual(CONTENT_STUDIO_CONSENT_KINDS, [
+    'participant_recording_consent', 'interviewer_representation_disclosure', 'participant_contribution_rights', 'source_artifact_rights',
+  ]);
+  assert.deepEqual(CONTENT_STUDIO_PROVENANCE_ELEMENTS, [
+    'source_reference', 'human_capture', 'interviewer_representation', 'generated_vs_human_distinction',
+    'question_answer_sequence', 'recording', 'transform_graph', 'edit_graph', 'participant_contribution', 'treatment_lineage',
+  ]);
+  assert.deepEqual(CONTENT_STUDIO_EVALUATION_HOOK_SURFACES, ['stage_completion', 'output_recorded']);
+  assert.deepEqual(CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES, ['runtime_driven', 'awaiting_execution_module']);
+  assert.deepEqual(CONTENT_STUDIO_FORMAT_STATUSES, ['draft', 'active', 'retired']);
+  assert.equal(CONTENT_STUDIO_FORMAT_CONTRACT_VERSION, 'content-studio-format-v1');
   assert.deepEqual(CONTENT_STUDIO_CAPTURE_MODALITIES, ['audio', 'video', 'screen', 'participant_streams', 'alternate_takes']);
   assert.deepEqual(CONTENT_STUDIO_STEP_STATUSES, ['queued', 'running', 'succeeded', 'failed']);
   assert.deepEqual(CONTENT_STUDIO_STEP_FAILURE_REASONS, [
@@ -268,30 +312,39 @@ test('STUDIO-001: the transition table is internally consistent with the state v
 });
 
 // ---------------------------------------------------------------------------
-// (b) THE FORMAT SEAM (§2 — the pluggability proof).
+// (b) THE FORMAT SEAM (§2 — the pluggability proof + STUDIO-002's full
+//     nine-surface declaration discipline).
 // ---------------------------------------------------------------------------
 
 test('STUDIO-001: a valid format declaration passes the seam discipline', () => {
   assertValidContentStudioFormatDeclaration(validFormat());
 });
 
-test('STUDIO-001: THE PLUGGABILITY PROOF — a brand-new future format passes through the SAME seam with zero runtime change', () => {
+test('STUDIO-001 + STUDIO-002: THE PLUGGABILITY PROOF — a brand-new future format passes through the SAME seam with zero runtime change (the deepened full-field-set declaration)', () => {
   const futureFormat = validFormat({
     formatId: 'carousel-thread',
     formatVersion: 7,
     inputRequirements: { modes: ['script', 'question_list'], sourceArtifacts: 'optional' },
-    participantModel: { participants: 2, humanCapture: 'optional' },
+    participantModel: { participants: { min: 2, max: 4 }, humanCapture: 'optional', participationGrants: 'explicit_grant_per_participant' },
     captureRequirements: { modalities: ['screen', 'participant_streams', 'alternate_takes'] },
-    interviewerRequirements: { interviewer: 'representation', representations: ['voice', 'hybrid'] },
+    interviewerRequirements: { interviewer: 'representation', representations: ['voice', 'multimodal_declared', 'hybrid'], followUps: 'adaptive' },
     organizationRequirements: { minAgentBodies: 2, requiredPermissions: ['read', 'compose'], requiredCapabilities: ['capability:layout@v9'] },
-    outputContract: { outputs: ['final_media', 'thread_transcript', 'derived_clips'] },
-    provenanceConsentRequirements: { consent: ['participant_recording_consent', 'interviewer_representation_disclosure'], provenance: ['question_answer_graph', 'recording', 'transform_graph'] },
-    evaluationHooks: { hooks: [{ hookId: 'engagement-hook' }, { hookId: 'quality-hook' }] },
+    outputContract: { outputs: ['final_media', 'transcript', 'derived_clips'] },
+    provenanceConsentRequirements: {
+      consent: ['participant_recording_consent', 'interviewer_representation_disclosure', 'participant_contribution_rights'],
+      provenance: ['question_answer_sequence', 'recording', 'transform_graph'],
+    },
+    evaluationHooks: {
+      hooks: [
+        { hookId: 'engagement-hook', firesOn: 'output_recorded' },
+        { hookId: 'panel-flow-hook', firesOn: 'stage_completion', stageId: 'panel_capture' },
+      ],
+    },
     processingStages: [
-      { stageId: 'thread_preparation' },
-      { stageId: 'panel_capture' },
-      { stageId: 'organization_treatment' },
-      { stageId: 'output_assembly' },
+      { stageId: 'thread_preparation', availability: { status: 'runtime_driven' } },
+      { stageId: 'panel_capture', availability: { status: 'runtime_driven' } },
+      { stageId: 'organization_treatment', availability: { status: 'runtime_driven' } },
+      { stageId: 'output_assembly', availability: { status: 'runtime_driven' } },
     ],
   });
   assertValidContentStudioFormatDeclaration(futureFormat);
@@ -299,7 +352,146 @@ test('STUDIO-001: THE PLUGGABILITY PROOF — a brand-new future format passes th
   assert.equal(futureFormat.formatId, 'carousel-thread');
 });
 
-test('STUDIO-001: the initial format registry content — reaction, audio-podcast and video-podcast are valid, distinct, and carry the §2 declared fields', () => {
+test('STUDIO-002: THE NINE §2 DECLARATION SURFACES — each surface is a validated, closed-vocabulary-backed declared-data field on the declaration', () => {
+  // Surface 1 — the format identity/version: the registry's natural key.
+  const badId = validFormat();
+  (badId as unknown as { formatId: string }).formatId = 'Not A Format';
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badId), 'formatId');
+
+  const badVersion = validFormat();
+  (badVersion as unknown as { formatVersion: number }).formatVersion = 0;
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badVersion), 'formatVersion');
+
+  // Surface 2 — the input requirements: closed mode vocabulary + the source fence.
+  const badSource = validFormat();
+  (badSource as unknown as { inputRequirements: { sourceArtifacts: string } }).inputRequirements.sourceArtifacts = 'sometimes';
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badSource), 'sourceArtifacts');
+
+  // Surface 3 — the participant model: the range + the §6/§7 grant pairing.
+  const badRange = validFormat();
+  (badRange as unknown as { participantModel: { participants: { min: number; max: number } } }).participantModel.participants = { min: 3, max: 2 };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badRange), 'min ≤ max');
+
+  const multiPersonWithoutGrants = validFormat({
+    participantModel: { participants: { min: 1, max: 4 }, humanCapture: 'optional', participationGrants: 'single_scope' },
+  });
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(multiPersonWithoutGrants), 'explicit_grant_per_participant');
+
+  const singlePersonWithGrants = validFormat({
+    participantModel: { participants: { min: 1, max: 1 }, humanCapture: 'required', participationGrants: 'explicit_grant_per_participant' },
+  });
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(singlePersonWithGrants), 'single_scope');
+
+  // Surface 4 — the capture requirements: the closed modality vocabulary.
+  const badModality = validFormat();
+  (badModality as unknown as { captureRequirements: { modalities: string[] } }).captureRequirements.modalities = ['smell'];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badModality), 'capture-modality vocabulary');
+
+  // Surface 5 — the interviewer requirements: the closed representation
+  // vocabulary + the §6 follow-up discipline.
+  const badRepresentation = validFormat();
+  (badRepresentation as unknown as { interviewerRequirements: { interviewer: string; representations: string[]; followUps?: string } }).interviewerRequirements = {
+    interviewer: 'representation',
+    representations: ['telepathy'],
+    followUps: 'adaptive',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badRepresentation), 'interviewer-representation vocabulary');
+
+  const representationWithoutFollowUps = validFormat();
+  (representationWithoutFollowUps as unknown as { interviewerRequirements: { interviewer: string; representations: string[]; followUps?: string } }).interviewerRequirements = {
+    interviewer: 'representation',
+    representations: ['voice'],
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(representationWithoutFollowUps), 'followUps');
+
+  const noneWithFollowUps = validFormat();
+  (noneWithFollowUps as unknown as { interviewerRequirements: { interviewer: string; followUps?: string } }).interviewerRequirements = {
+    interviewer: 'none',
+    followUps: 'adaptive',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(noneWithFollowUps), 'followUps must be absent when interviewer is');
+
+  // Surface 6 — the organization compatibility requirements: the closed
+  // §14 action-kind permission vocabulary.
+  const badPermission = validFormat();
+  (badPermission as unknown as { organizationRequirements: { requiredPermissions: string[] } }).organizationRequirements.requiredPermissions = ['publish'];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badPermission), 'closed action-kind vocabulary');
+
+  const emptyPermissions = validFormat();
+  (emptyPermissions as unknown as { organizationRequirements: { requiredPermissions: never[] } }).organizationRequirements.requiredPermissions = [];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(emptyPermissions), 'non-empty subset');
+
+  // Surface 7 — the output artifact contract: the closed §12 artifact-kind vocabulary.
+  const badOutput = validFormat();
+  (badOutput as unknown as { outputContract: { outputs: string[] } }).outputContract.outputs = ['vibes'];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badOutput), 'artifact-kind vocabulary');
+
+  const emptyOutputs = validFormat();
+  (emptyOutputs as unknown as { outputContract: { outputs: never[] } }).outputContract.outputs = [];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(emptyOutputs), 'non-empty subset');
+
+  // Surface 8 — the provenance/consent requirements: the closed
+  // consent-kind + provenance-element vocabularies.
+  const badConsent = validFormat();
+  (badConsent as unknown as { provenanceConsentRequirements: { consent: string[] } }).provenanceConsentRequirements.consent = ['handshake'];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badConsent), 'consent-kind vocabulary');
+
+  const badProvenance = validFormat();
+  (badProvenance as unknown as { provenanceConsentRequirements: { provenance: string[] } }).provenanceConsentRequirements.provenance = ['the_vibe'];
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badProvenance), 'provenance-element vocabulary');
+
+  // Surface 9 — the evaluation hooks: the closed firing-surface
+  // vocabulary + the stageId cross-reference fence.
+  const badFiresOn = validFormat();
+  (badFiresOn as unknown as { evaluationHooks: { hooks: Array<{ hookId: string; firesOn: string }> } }).evaluationHooks.hooks[0]!.firesOn = 'whenever';
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badFiresOn), 'firesOn');
+
+  const stageHookWithoutStage = validFormat();
+  (stageHookWithoutStage as unknown as { evaluationHooks: { hooks: Array<{ hookId: string; firesOn: string }> } }).evaluationHooks.hooks[0]!.firesOn = 'stage_completion';
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(stageHookWithoutStage), 'stageId');
+
+  const stageHookUnknownStage = validFormat();
+  (stageHookUnknownStage as unknown as { evaluationHooks: { hooks: Array<{ hookId: string; firesOn: string; stageId: string }> } }).evaluationHooks.hooks[0] = {
+    hookId: 'quality-hook',
+    firesOn: 'stage_completion',
+    stageId: 'a_stage_that_is_not_declared',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(stageHookUnknownStage), 'does not declare');
+
+  const outputHookWithStage = validFormat();
+  (outputHookWithStage as unknown as { evaluationHooks: { hooks: Array<{ hookId: string; firesOn: string; stageId: string }> } }).evaluationHooks.hooks[0] = {
+    hookId: 'quality-hook',
+    firesOn: 'output_recorded',
+    stageId: 'output_assembly',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(outputHookWithStage), 'must NOT declare stageId');
+});
+
+test('STUDIO-002: the honest availability layer — every stage declares a closed availability state with the required awaitingModule citation', () => {
+  const noAvailability = validFormat();
+  (noAvailability as unknown as { processingStages: Array<{ stageId: string; description?: string; availability?: unknown }> }).processingStages[0] = {
+    stageId: 'capture_ingestion',
+    description: 'Ingest the raw capture.',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(noAvailability), 'availability must be an object');
+
+  const badAvailability = validFormat();
+  (badAvailability as unknown as { processingStages: Array<{ stageId: string; availability: { status: string } }> }).processingStages[0]!.availability = { status: 'probably_fine' };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(badAvailability), 'availability.status must be one of');
+
+  const awaitingWithoutModule = validFormat();
+  (awaitingWithoutModule as unknown as { processingStages: Array<{ stageId: string; availability: { status: string } }> }).processingStages[0]!.availability = { status: 'awaiting_execution_module' };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(awaitingWithoutModule), 'awaitingModule is required');
+
+  const runtimeDrivenWithModule = validFormat();
+  (runtimeDrivenWithModule as unknown as { processingStages: Array<{ stageId: string; availability: { status: string; awaitingModule?: string } }> }).processingStages[2]!.availability = {
+    status: 'runtime_driven',
+    awaitingModule: 'STUDIO-010',
+  };
+  assertInvalid(() => assertValidContentStudioFormatDeclaration(runtimeDrivenWithModule), 'awaitingModule must be absent');
+});
+
+test('STUDIO-001 + STUDIO-002: the initial format registry content — reaction, audio-podcast and video-podcast are valid, distinct, and carry the COMPLETE §2 field sets with honest availability states', () => {
   assert.equal(CONTENT_STUDIO_INITIAL_FORMATS.length, 3);
   assert.deepEqual(
     CONTENT_STUDIO_INITIAL_FORMATS.map((format) => format.formatId),
@@ -307,18 +499,46 @@ test('STUDIO-001: the initial format registry content — reaction, audio-podcas
   );
   for (const format of CONTENT_STUDIO_INITIAL_FORMATS) {
     assertValidContentStudioFormatDeclaration(format);
+    // EVERY initial format declares ALL NINE surfaces with the
+    // availability layer (the promoted full declarations).
+    for (const stage of format.processingStages) {
+      assert.ok(stage.availability !== undefined, `stage '${stage.stageId}' of '${format.formatId}' declares its availability`);
+    }
   }
-  // The podcasts declare interviewer representations; the reaction does not.
+  // The podcasts declare the interviewer construction options (§6 +
+  // §27.6 multimodal_declared + hybrid); the reaction does not.
   const reaction = CONTENT_STUDIO_INITIAL_FORMATS[0]!;
   const audioPodcast = CONTENT_STUDIO_INITIAL_FORMATS[1]!;
   const videoPodcast = CONTENT_STUDIO_INITIAL_FORMATS[2]!;
   assert.equal(reaction.interviewerRequirements.interviewer, 'none');
   assert.equal(audioPodcast.interviewerRequirements.interviewer, 'representation');
   assert.equal(videoPodcast.interviewerRequirements.interviewer, 'representation');
-  assert.ok(audioPodcast.interviewerRequirements.representations!.includes('generated'));
+  assert.deepEqual(audioPodcast.interviewerRequirements.representations, [
+    'voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'multimodal_declared', 'hybrid',
+  ]);
+  assert.equal(audioPodcast.interviewerRequirements.followUps, 'adaptive');
+  // §7 — the podcasts are multi-person-capable with explicit
+  // per-participant grants; the reaction is single-scope.
+  assert.deepEqual(reaction.participantModel.participants, { min: 1, max: 1 });
+  assert.equal(reaction.participantModel.participationGrants, 'single_scope');
+  assert.deepEqual(audioPodcast.participantModel.participants, { min: 1, max: 16 });
+  assert.equal(audioPodcast.participantModel.participationGrants, 'explicit_grant_per_participant');
   // The reaction requires source artifacts; the podcasts accept intent alone.
   assert.equal(reaction.inputRequirements.sourceArtifacts, 'required');
   assert.equal(audioPodcast.inputRequirements.sourceArtifacts, 'optional');
+  // The honest availability gap: the initial formats' capture/interviewer/
+  // treatment stages await their future execution modules (STUDIO-003/004/
+  // 007/008) while the output-assembly stage is runtime-driven today.
+  for (const format of CONTENT_STUDIO_INITIAL_FORMATS) {
+    const assembly = format.processingStages.find((stage) => stage.stageId === 'output_assembly')!;
+    assert.equal(assembly.availability.status, 'runtime_driven');
+    for (const stage of format.processingStages) {
+      if (stage.stageId !== 'output_assembly') {
+        assert.equal(stage.availability.status, 'awaiting_execution_module', `stage '${stage.stageId}' of '${format.formatId}' honestly awaits its execution module`);
+        assert.ok(/^STUDIO-\d{3}$/.test(stage.availability.awaitingModule!), 'the awaiting module cites a Studio Work Item');
+      }
+    }
+  }
 });
 
 test('STUDIO-001: the format-seam fences — unknown vocabularies, zero/oversized stages, duplicate stage ids and malformed shapes are rejected', () => {

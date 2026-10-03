@@ -62,6 +62,7 @@ import type {
   CompleteContentStudioProcessingStepInput,
   ContentStudioAgentBodyResolution,
   ContentStudioFormatDeclaration,
+  ContentStudioFormatRecord,
   ContentStudioModuleApi,
   ContentStudioModuleDeps,
   ContentStudioOrganizationDeclaration,
@@ -79,6 +80,7 @@ import type {
   CreateContentStudioProductionRequestInput,
   FailContentStudioProcessingStepInput,
   OpenContentStudioSessionInput,
+  RegisterContentStudioFormatInput,
   RequeueContentStudioProcessingStepInput,
   RequestContentStudioTreatmentInput,
 } from '../public.ts';
@@ -93,11 +95,13 @@ import {
 import {
   ContentStudioStore,
   mapEventRow,
+  mapFormatRow,
   mapOutputRow,
   mapRequestRow,
   mapSessionRow,
   mapStepRow,
   mapTreatmentRow,
+  type FormatRow,
 } from './content-studio-store.ts';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -126,25 +130,143 @@ function assertBoundedJsonPayload(value: unknown, label: string): void {
 export function createContentStudioModule(deps: ContentStudioModuleDeps): ContentStudioModuleApi {
   const store = new ContentStudioStore(deps.db, deps.clock, deps.ids);
 
-  // --- the §2 format seam registry (validated at construction — a bad
-  // declaration fails loudly, never silently) ---
-  const formatsByIdentity = new Map<string, ContentStudioFormatDeclaration>();
+  // --- the §2 format registry (STUDIO-002 — the wired seam content +
+  // the DB-backed resolution): the composition-root wired declarations
+  // are validated ONCE at construction (a bad declaration fails
+  // loudly, never silently) and held as the WIRED registry content;
+  // the migration-068 registry is the SYSTEM OF RECORD — the wired
+  // content MATERIALIZES per CLIENT scope (materialize-if-absent, born
+  // draft then activated through the guarded lifecycle inside one
+  // transaction — the activation-consistency trigger verifies the
+  // capability links). A tenant's own registry state (a retirement, a
+  // corrected version, a tenant-registered row of the same identity)
+  // is never resurrected or overwritten: materialization is
+  // INSERT-only-if-absent. ---
+  const wiredFormats = new Map<string, ContentStudioFormatDeclaration>();
   for (const format of deps.formats) {
     assertValidContentStudioFormatDeclaration(format);
     const key = `${format.formatId}@v${format.formatVersion}`;
-    if (formatsByIdentity.has(key)) {
+    if (wiredFormats.has(key)) {
       throw new InvalidRequestError(`the wired format registry declares '${key}' more than once`);
     }
-    formatsByIdentity.set(key, format);
+    wiredFormats.set(key, format);
   }
-  const requireFormat = (formatId: string, formatVersion: number): ContentStudioFormatDeclaration => {
-    const format = formatsByIdentity.get(`${formatId}@v${formatVersion}`);
-    if (format === undefined) {
+
+  /** Assembles a format record view with its capability link references. */
+  const formatRecord = (row: FormatRow, links: ReadonlyArray<string>): ContentStudioFormatRecord => mapFormatRow(row, links);
+
+  /** The registry-row resolver (the uniform tenant fence — NotFound for foreign/unknown scope, no existence oracle). */
+  const requireFormatRow = async (scope: ContentStudioScope, formatId: string, formatVersion: number): Promise<FormatRow> => {
+    const row = await store.findFormatVersion(scope.clientId, formatId, formatVersion);
+    if (row === null) {
+      throw new NotFoundError('studio format', `${formatId}@v${formatVersion}`);
+    }
+    return row;
+  };
+
+  /** The registry-key shape fence (the honest error surface over the id/version the caller cited). */
+  const assertFormatVersionShape = (formatId: string, formatVersion: number): void => {
+    if (typeof formatId !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(formatId)) {
+      throw new InvalidRequestError('formatId must be 1-64 chars of [a-z0-9_-]');
+    }
+    if (typeof formatVersion !== 'number' || !Number.isSafeInteger(formatVersion) || formatVersion < 1 || formatVersion > 1000) {
+      throw new InvalidRequestError(`format '${formatId}' formatVersion must be an integer 1-1000`);
+    }
+  };
+
+  /** The links for one registry row (client-fenced). */
+  const linksFor = async (clientId: string, formatVersionId: string): Promise<ReadonlyArray<string>> =>
+    (await store.listFormatCapabilityLinks(clientId, formatVersionId)).map((link) => link.capability_reference);
+
+  /**
+   * THE LAZY MATERIALIZATION (the disclosed design): the wired initial
+   * registry content materializes per CLIENT scope on read
+   * (materialize-if-absent → born draft → links → the guarded
+   * activation, transactionally). Re-running is a no-op once the row
+   * exists — a retired or tenant-corrected row is never resurrected.
+   */
+  const ensureWiredFormat = async (scope: ContentStudioScope, formatId: string, formatVersion: number): Promise<void> => {
+    const wired = wiredFormats.get(`${formatId}@v${formatVersion}`);
+    if (wired === undefined) {
+      return; // not a wired declaration — no materialization (custom formats register through the public seam)
+    }
+    const existing = await store.findFormatVersion(scope.clientId, formatId, formatVersion);
+    if (existing !== null) {
+      return; // materialize-if-absent: never resurrect, never overwrite
+    }
+    await deps.db.transaction(async (tx) => {
+      const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+      const raced = await txStore.findFormatVersion(scope.clientId, formatId, formatVersion);
+      if (raced !== null) {
+        return; // a concurrent materialization won the race — idempotent
+      }
+      const row = await txStore.insertFormatVersion({
+        formatVersionId: txStore.newId(),
+        formatId,
+        formatVersion,
+        scope,
+        declaration: wired,
+      });
+      for (const reference of wired.organizationRequirements.requiredCapabilities ?? []) {
+        await txStore.insertFormatCapabilityLink({
+          formatVersionId: row.format_version_id,
+          scope,
+          capabilityKind: 'required',
+          capabilityReference: reference,
+        });
+      }
+      // The guarded activation (draft → active): the DB trigger
+      // verifies the capability links match the declaration before
+      // the row can go active — the frozen initial formats are born
+      // active through the SAME lifecycle every format takes.
+      await txStore.advanceFormatStatus({ formatVersionId: row.format_version_id, from: 'draft', to: 'active' });
+    });
+  };
+
+  /**
+   * THE COMPATIBILITY RESOLUTION (§2/§3): a production request's
+   * selected format resolves through the registry — ACTIVE versions
+   * only. Foreign/unknown scope resolves to the uniform NotFound (no
+   * existence oracle); a known-but-inactive version resolves to the
+   * honest InvalidRequest citing its lifecycle state.
+   */
+  const requireActiveFormat = async (
+    scope: ContentStudioScope,
+    formatId: string,
+    formatVersion: number,
+  ): Promise<ContentStudioFormatDeclaration> => {
+    await ensureWiredFormat(scope, formatId, formatVersion);
+    const row = await store.findFormatVersion(scope.clientId, formatId, formatVersion);
+    if (row === null) {
+      throw new NotFoundError('studio format', `${formatId}@v${formatVersion}`);
+    }
+    if (row.status !== 'active') {
       throw new InvalidRequestError(
-        `format '${formatId}@v${formatVersion}' is not in the wired format registry (the §2 pluggable seam)`,
+        `studio format ${formatId}@v${formatVersion} is ${row.status} — sessions open against ACTIVE format versions only (the registry lifecycle; corrections are new version rows)`,
       );
     }
-    return format;
+    return row.declaration as ContentStudioFormatDeclaration;
+  };
+
+  /**
+   * The RUNNING-SESSION declaration read (the retirement-never-breaks-
+   * running-sessions discipline): the session bound its format
+   * identity/version as its own recorded data at open — a later
+   * retirement closes NEW resolutions only, so the running session's
+   * declaration stays resolvable under ANY lifecycle status (the
+   * registry never deletes). Foreign/unknown scope still resolves to
+   * the uniform NotFound.
+   */
+  const requireSessionFormat = async (
+    scope: ContentStudioScope,
+    formatId: string,
+    formatVersion: number,
+  ): Promise<ContentStudioFormatDeclaration> => {
+    const row = await store.findFormatVersion(scope.clientId, formatId, formatVersion);
+    if (row === null) {
+      throw new NotFoundError('studio format', `${formatId}@v${formatVersion}`);
+    }
+    return row.declaration as ContentStudioFormatDeclaration;
   };
 
   // --- the §4 organization compatibility validation (EXPLICIT, never silent) ---
@@ -321,7 +443,7 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
     if (to === 'processing') {
       const request = await requireRequestVersion(scope, session.requestId, session.requestVersion);
       void request;
-      const format = requireFormat(session.formatId, session.formatVersion);
+      const format = await requireSessionFormat(scope, session.formatId, session.formatVersion);
       const existing = await store.listSessionSteps(scope.clientId, session.sessionId);
       const revisionSteps = existing.filter((step) => Number(step.revision) === session.revision);
       if (revisionSteps.length > 0) {
@@ -437,10 +559,115 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       return rows.map(mapRequestRow);
     },
 
-    // --- The §2 format seam (the read surface) ---
+    // --- The §2 FORMAT REGISTRY (STUDIO-002 — registration, versioning,
+    // activation, retirement, resolution) ---
 
-    listFormats() {
-      return [...deps.formats];
+    async registerFormat(input: RegisterContentStudioFormatInput): Promise<ContentStudioFormatRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioFormatDeclaration(input.declaration);
+      const { formatId, formatVersion } = input.declaration;
+
+      // The append-only registry discipline: a duplicate identity/version
+      // is rejected (corrections are NEW version rows).
+      const existing = await store.findFormatVersion(input.scope.clientId, formatId, formatVersion);
+      if (existing !== null) {
+        throw new InvalidRequestError(
+          `studio format ${formatId}@v${formatVersion} is already registered in this scope (status '${existing.status}') — corrections are NEW version rows (the append-only registry discipline)`,
+        );
+      }
+      // The version-chain continuity: registering version n > 1 requires
+      // version n-1 in the same scope (the DB chain-scope fence is the
+      // backstop; this is the honest error surface).
+      if (formatVersion > 1) {
+        const predecessor = await store.findFormatVersion(input.scope.clientId, formatId, formatVersion - 1);
+        if (predecessor === null) {
+          throw new InvalidRequestError(
+            `studio format '${formatId}@v${formatVersion}' cannot register: version ${formatVersion - 1} is not in this scope's registry (the version chain must be continuous)`,
+          );
+        }
+      }
+
+      // The registration writes the draft row + its capability link
+      // records (the normalized requiredCapabilities) transactionally.
+      const row = await deps.db.transaction(async (tx) => {
+        const txStore = new ContentStudioStore(tx, deps.clock, deps.ids);
+        const inserted = await txStore.insertFormatVersion({
+          formatVersionId: txStore.newId(),
+          formatId,
+          formatVersion,
+          scope: input.scope,
+          declaration: input.declaration,
+        });
+        for (const reference of input.declaration.organizationRequirements.requiredCapabilities ?? []) {
+          await txStore.insertFormatCapabilityLink({
+            formatVersionId: inserted.format_version_id,
+            scope: input.scope,
+            capabilityKind: 'required',
+            capabilityReference: reference,
+          });
+        }
+        return inserted;
+      });
+      return formatRecord(row, [...(input.declaration.organizationRequirements.requiredCapabilities ?? [])]);
+    },
+
+    async activateFormat(scope, formatId, formatVersion) {
+      assertValidContentStudioScope(scope);
+      assertFormatVersionShape(formatId, formatVersion);
+      const row = await requireFormatRow(scope, formatId, formatVersion);
+      if (row.status !== 'draft') {
+        throw new InvalidRequestError(
+          `studio format ${formatId}@v${formatVersion} is '${row.status}' — only a DRAFT format version can activate (no resurrection; the lifecycle is draft → active → retired)`,
+        );
+      }
+      const advanced = await store.advanceFormatStatus({ formatVersionId: row.format_version_id, from: 'draft', to: 'active' });
+      if (advanced === null) {
+        throw new InvalidRequestError(`studio format ${formatId}@v${formatVersion} could not activate (it is no longer draft)`);
+      }
+      return formatRecord(advanced, await linksFor(scope.clientId, advanced.format_version_id));
+    },
+
+    async retireFormat(scope, formatId, formatVersion) {
+      assertValidContentStudioScope(scope);
+      assertFormatVersionShape(formatId, formatVersion);
+      const row = await requireFormatRow(scope, formatId, formatVersion);
+      if (row.status !== 'active') {
+        throw new InvalidRequestError(
+          `studio format ${formatId}@v${formatVersion} is '${row.status}' — only an ACTIVE format version can retire`,
+        );
+      }
+      const retired = await store.advanceFormatStatus({ formatVersionId: row.format_version_id, from: 'active', to: 'retired' });
+      if (retired === null) {
+        throw new InvalidRequestError(`studio format ${formatId}@v${formatVersion} could not retire (it is no longer active)`);
+      }
+      return formatRecord(retired, await linksFor(scope.clientId, retired.format_version_id));
+    },
+
+    async getFormat(scope, formatId, formatVersion) {
+      assertValidContentStudioScope(scope);
+      assertFormatVersionShape(formatId, formatVersion);
+      await ensureWiredFormat(scope, formatId, formatVersion);
+      const row = await requireFormatRow(scope, formatId, formatVersion);
+      return formatRecord(row, await linksFor(scope.clientId, row.format_version_id));
+    },
+
+    async listFormats(scope) {
+      assertValidContentStudioScope(scope);
+      // The frozen §2 out-of-the-box availability: the wired registry
+      // content materializes-if-absent on listing (a tenant's own
+      // registry state is never resurrected or overwritten).
+      for (const format of deps.formats) {
+        await ensureWiredFormat(scope, format.formatId, format.formatVersion);
+      }
+      const rows = await store.listFormatVersions(scope.clientId);
+      const links = await store.listFormatCapabilityLinks(scope.clientId);
+      const linksByFormatVersionId = new Map<string, string[]>();
+      for (const link of links) {
+        const list = linksByFormatVersionId.get(link.format_version_id) ?? [];
+        list.push(link.capability_reference);
+        linksByFormatVersionId.set(link.format_version_id, list);
+      }
+      return rows.map((row) => mapFormatRow(row, linksByFormatVersionId.get(row.format_version_id) ?? []));
     },
 
     // --- The §5 versioned production sessions ---
@@ -453,8 +680,9 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       const request = await requireRequestVersion(input.scope, input.requestId, input.requestVersion);
       const content = request.content;
 
-      // The §2 seam: the request's format must be registered.
-      const format = requireFormat(content.formatId, content.formatVersion);
+      // The §2 seam: the request's format must be registered AND ACTIVE
+      // (the registry compatibility resolution — active versions only).
+      const format = await requireActiveFormat(input.scope, content.formatId, content.formatVersion);
 
       // The §8 input-requirements fence (the deterministic part the
       // runtime owns): the input mode must be accepted and required
@@ -476,7 +704,7 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       // The output-contract fence: the request's required outputs must
       // be a subset of the format's declared outputs.
       for (const required of content.output.requiredOutputs) {
-        if (!format.outputContract.outputs.includes(required)) {
+        if (!(format.outputContract.outputs as ReadonlyArray<string>).includes(required)) {
           throw new InvalidRequestError(
             `the request requires output '${required}' which format '${format.formatId}@v${format.formatVersion}' does not declare`,
           );
@@ -635,7 +863,7 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
 
       const session = await requireLatestSession(input.scope, stepRow.session_id as string);
       const request = await requireRequestVersion(input.scope, session.requestId, session.requestVersion);
-      const format = requireFormat(session.formatId, session.formatVersion);
+      const format = await requireSessionFormat(input.scope, session.formatId, session.formatVersion);
 
       // THE ORDER-INDEPENDENT PLAN FINALIZATION (§9): this completion
       // finalizes the plan when it leaves the WHOLE declared plan
@@ -911,7 +1139,16 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       } else {
         throw new NotFoundError('studio production request', `${session.requestId}#v${session.requestVersion}`);
       }
-      const successorFormat = requireFormat(successorContent.formatId, successorContent.formatVersion);
+      // The successor's format resolution: the SAME format identity as
+      // the running session resolves under ANY lifecycle status (the
+      // retirement-never-breaks-running-sessions discipline covers the
+      // session's own treatment revisions); a REVISED request selecting a
+      // DIFFERENT format resolves through the ACTIVE-only path (a new
+      // selection is a new compatibility resolution).
+      const successorFormat =
+        successorContent.formatId === session.formatId && successorContent.formatVersion === session.formatVersion
+          ? await requireSessionFormat(input.scope, session.formatId, session.formatVersion)
+          : await requireActiveFormat(input.scope, successorContent.formatId, successorContent.formatVersion);
       const successorValidation = await validateOrganizationCompatibility(
         input.scope,
         successorFormat,

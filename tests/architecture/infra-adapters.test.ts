@@ -1124,6 +1124,19 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // strategy/human-plane/real-test/provider citations are opaque
     // recorded data).
     '067_lab_capabilities.sql',
+    // STUDIO-002 (Pluggable Format Framework) appends the
+    // format-framework migration (068 — the number PRE-ASSIGNED by
+    // the Tech Lead: 066 is held by the in-flight parallel LAB-004
+    // worker; the same disclosed additive re-pin precedent — every
+    // end-anchored tail position shifts once more):
+    // the /content-studio format registry — the versioned FORMAT
+    // REGISTRY records (draft → active → retired, identity immutable,
+    // append-only version corrections, the activation
+    // capability-consistency fence) + the format-capability link
+    // records (the normalized declared requiredCapabilities — OPAQUE
+    // references; NO /lab-capabilities table is created or referenced);
+    // NO v1.6 authority table is created or mutated.
+    '068_studio_format_framework.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

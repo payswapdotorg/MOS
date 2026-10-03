@@ -343,8 +343,8 @@ test('LAB-013 AC: the migration tail — 067_lab_capabilities.sql after the merg
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('067_lab_capabilities.sql'));
-  assert.equal(migrations[migrations.length - 1], '067_lab_capabilities.sql');
-  assert.equal(migrations[migrations.length - 2], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 2], '067_lab_capabilities.sql');
+  assert.equal(migrations[migrations.length - 3], '065_lab_features.sql');
   assert.ok(!migrations.some((name) => name.startsWith('066_')), '066 is HELD by the in-flight parallel LAB-004 worker (the TL pre-assigned 067 to this delivery; the TL reconciles numbering at merge)');
   // The module boundary is complete.
   assert.ok(existsSync(join(moduleDir, 'public.ts')));
