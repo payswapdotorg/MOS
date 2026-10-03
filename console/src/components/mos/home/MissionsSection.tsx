@@ -137,8 +137,10 @@ function MissionsList({ agencyId }: { agencyId: string }) {
           It appears right here, and you can pick it up again any time.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
+          {/* UX-010: ONE primary action in this empty state — Start a mission.
+              Today / Operations stays available as the secondary action. */}
           <StartMissionButton />
-          <OpenTodayOperationsButton />
+          <OpenTodayOperationsButton tone="plain" />
         </div>
       </div>
     );
@@ -156,13 +158,20 @@ function MissionsList({ agencyId }: { agencyId: string }) {
 // Shared by the error and empty states. Deliberately duplicated from
 // HomeScreen's Today / Operations entry (small, and it keeps the delivered
 // file set exactly as directed: four components + the registry).
-function OpenTodayOperationsButton() {
+// UX-010: the tone is a parameter — teal in the error state (where it is the
+// single primary), plain (secondary) in the empty state where "Start a
+// mission" is the one primary.
+function OpenTodayOperationsButton({ tone = "teal" }: { tone?: "teal" | "plain" }) {
   const navigate = useNavigate();
+  const cls =
+    tone === "plain"
+      ? "border-stone-300 bg-white text-stone-700 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-teal-700"
+      : "border-teal-800/25 bg-white text-teal-900 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700";
   return (
     <button
       type="button"
       onClick={() => navigate(TODAY_OPERATIONS.view)}
-      className="inline-flex min-h-[44px] items-center rounded-lg border border-teal-800/25 bg-white px-4 text-sm font-medium text-teal-900 transition-colors hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-700"
+      className={`inline-flex min-h-[44px] items-center rounded-lg border px-4 text-sm font-medium transition-colors ${cls}`}
     >
       {TODAY_OPERATIONS.label}
     </button>

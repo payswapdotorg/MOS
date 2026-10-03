@@ -99,7 +99,7 @@ export function HealthStateQualifier({ state }: { state: string }) {
  */
 export function ConfidenceChip({ confidence }: { confidence: string }) {
   return (
-    <span className="shrink-0 rounded-full border border-stone-300 bg-white px-2.5 py-0.5 font-mono text-[11px] font-medium text-stone-600">
+    <span className="shrink-0 rounded-full border border-stone-300 bg-white px-2.5 py-0.5 text-[11px] font-medium text-stone-600">
       confidence {confidence}
     </span>
   );
@@ -312,16 +312,19 @@ export function BlockHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The healthy/unhealthy first-glance icon pairing for the state chip row. */
+/** The healthy/unhealthy first-glance icon pairing for the state chip row.
+ *  UX-010 state vocabulary: the icon agrees with the chip's tone — teal for
+ *  healthy, amber for the warning family (degraded, quota-limited, human
+ *  review, suspected, unknown), red ONLY for the true blocks (restricted,
+ *  authorization/publishing blocked). */
 export function StateGlanceIcon({ state }: { state: string }) {
   if (state === "healthy") {
     return <CircleCheck className="size-4 shrink-0 text-teal-800" aria-hidden="true" />;
   }
-  const presentation = HEALTH_STATE_PRESENTATION[state];
-  if (presentation === undefined || presentation.suspected) {
-    return <AlertTriangle className="size-4 shrink-0 text-amber-700" aria-hidden="true" />;
+  if (state === "restricted" || state === "authorization_blocked" || state === "publishing_blocked") {
+    return <AlertTriangle className="size-4 shrink-0 text-red-800" aria-hidden="true" />;
   }
-  return <AlertTriangle className="size-4 shrink-0 text-red-800" aria-hidden="true" />;
+  return <AlertTriangle className="size-4 shrink-0 text-amber-700" aria-hidden="true" />;
 }
 
 /** The evidence-citation drill-down affordance label. */

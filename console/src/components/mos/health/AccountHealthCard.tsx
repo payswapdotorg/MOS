@@ -348,6 +348,26 @@ export function AccountHealthCard({
       detailLabel="Evidence basis, recommendations and evaluation history"
       detail={
         <div className="space-y-4">
+          {/* UX-010: the run action + the connection cross-link live in the
+              disclosure layer — the collapsed card is the calm operating
+              picture (state, confidence, uncertainty), the card's single
+              primary is disclosed on expand, exactly as wired before. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <RunEvaluationAction
+              clientId={clientId}
+              account={account}
+              permission={permission}
+              hasEvaluations={latest !== null}
+            />
+            <button
+              type="button"
+              onClick={() => navigate({ kind: "client", clientId, tab: "connections" })}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-teal-700"
+            >
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+              See the connection
+            </button>
+          </div>
           {latest === null ? (
             <p className="text-sm leading-relaxed text-stone-600">
               No evaluation detail to show yet — run the first evaluation to
@@ -399,12 +419,11 @@ export function AccountHealthCard({
             <>
               <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <SocialStatusChip status={account.status} />
-                <span className="font-mono text-[11px] text-stone-400">no evaluations yet</span>
+                <span className="text-[11px] text-stone-400">no evaluations yet</span>
               </p>
               <p className="mt-1.5 rounded-lg border border-dashed border-stone-300 bg-stone-50/60 px-3 py-2 text-sm leading-relaxed text-stone-600">
-                No evaluations yet — run the first evaluation on this connected
-                account to compose its health picture from the records the
-                platform actually exposed.
+                No evaluations yet — expand this card to run the first evaluation and compose its
+                health picture from the records the platform actually exposed.
               </p>
             </>
           ) : (
@@ -416,7 +435,7 @@ export function AccountHealthCard({
                   <HealthStateChip state={latest.state} />
                 </span>
                 <ConfidenceChip confidence={latest.confidence} />
-                <span className="font-mono text-[11px] text-stone-400">
+                <span className="text-[11px] text-stone-400">
                   evaluated {formatWhen(latest.createdAt)}
                 </span>
               </p>
@@ -436,22 +455,6 @@ export function AccountHealthCard({
               evaluation composes.
             </p>
           ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <RunEvaluationAction
-            clientId={clientId}
-            account={account}
-            permission={permission}
-            hasEvaluations={latest !== null}
-          />
-          <button
-            type="button"
-            onClick={() => navigate({ kind: "client", clientId, tab: "connections" })}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-teal-700"
-          >
-            <ArrowRight className="size-3.5" aria-hidden="true" />
-            See the connection
-          </button>
         </div>
       </div>
     </ConnectionCard>

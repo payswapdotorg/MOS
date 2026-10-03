@@ -23,7 +23,7 @@
 // it reads the registry, so sibling adapters compose naturally.
 
 import * as React from "react";
-import { HeartPulse, Link2, RefreshCw, ShieldAlert, Unplug } from "lucide-react";
+import { ChevronDown, HeartPulse, Link2, RefreshCw, ShieldAlert, Unplug } from "lucide-react";
 import {
   useAdapterRegistry,
   useIntegrationConnections,
@@ -53,6 +53,7 @@ import {
   WorkspaceEmptyState,
   formatWhen,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 import {
   ConfirmGate,
   ConnectionCard,
@@ -74,7 +75,17 @@ type PendingRound = {
   platform: string;
 };
 
-export function SocialConnectionsSection({ clientId }: { clientId: string }) {
+export function SocialConnectionsSection({
+  clientId,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  clientId: string;
+  /** Controlled open (the Connections surface's primary action opens this
+   *  section — the UX-010 one-primary-action rule). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const accounts = useSocialAccounts(clientId);
   const registry = useAdapterRegistry();
   const connections = useIntegrationConnections(clientId);
@@ -95,6 +106,27 @@ export function SocialConnectionsSection({ clientId }: { clientId: string }) {
     () => new Map(adapters.map((adapter) => [adapter.adapterKey, adapter])),
     [adapters],
   );
+
+  // The section's LIVE summary line (UX-010): the first view stays calm and
+  // summary-level — loading/empty/error states included, never fabricated.
+  const connectedCount = list.filter((account) => account.status === "connected").length;
+  const summary = accounts.isPending
+    ? "loading the channels…"
+    : accounts.isError
+      ? "could not load the channels — open to retry"
+      : list.length === 0
+        ? "no channels connected yet"
+        : `${list.length} account${list.length === 1 ? "" : "s"} · ${connectedCount} live${
+            list.length - connectedCount > 0
+              ? ` · ${list.length - connectedCount} no longer live`
+              : ""
+          }`;
+  const summaryTone: "neutral" | "healthy" | "warning" =
+    accounts.isError || (list.length > 0 && connectedCount === 0)
+      ? "warning"
+      : list.length > 0 && connectedCount === list.length
+        ? "healthy"
+        : "neutral";
 
   const startRound = async (connectionId: string, adapter: RegisteredAdapterView) => {
     const scopes = requestedScopes
@@ -117,136 +149,142 @@ export function SocialConnectionsSection({ clientId }: { clientId: string }) {
   };
 
   return (
-    <section aria-labelledby="connections-social-heading" className="space-y-3">
-      <div>
-        <h3 id="connections-social-heading" className="font-medium text-stone-800">
-          Social accounts
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
+    <SurfaceSection
+      id="connections-social"
+      label="Channels"
+      title="Social accounts"
+      summary={summary}
+      summaryTone={summaryTone}
+      open={controlledOpen}
+      onOpenChange={onOpenChange}
+    >
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
           The channels this client can publish and read through. Each card shows the live
-          authorization state and the one action that state needs next — connecting runs the
-          platform&apos;s real OAuth round.
+          authorization state and the one action that state needs next — connecting walks the
+          account owner through the provider&apos;s real sign-in and completes only when the provider
+          answers.
         </p>
-      </div>
 
-      {authorizeStart.isError ? (
-        <RouteRefusalNote
-          message={
-            authorizeStart.error instanceof Error
-              ? authorizeStart.error.message
-              : String(authorizeStart.error)
-          }
-        />
-      ) : null}
-
-      {pendingRound ? (
-        <PendingRoundLive round={pendingRound} onSettled={() => setPendingRound(null)} />
-      ) : null}
-
-      {accounts.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : accounts.isError ? (
-        <SectionErrorViewInline
-          error={accounts.error}
-          what="the social accounts"
-          onRetry={() => void accounts.refetch()}
-        />
-      ) : (
-        <>
-          {list.length === 0 ? (
-            <WorkspaceEmptyState
-              missing="No social accounts are connected on this client yet."
-              why="A mission reaches people through connected channels — publishing, reading and analytics all run through a real authorization this client holds with the platform."
-              next="Connect a platform below: pick an adapter with an authorized integration pipe and run its OAuth round. Until then, missions on this client record their plans but cannot act on any channel."
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {list.map((account) => (
-                <SocialAccountCard
-                  key={account.socialAccountId}
-                  clientId={clientId}
-                  account={account}
-                  registryAdapter={registryByPlatform.get(account.platformId) ?? null}
-                />
-              ))}
-            </ul>
-          )}
-
-          {registry.isPending ? (
-            <SectionSkeleton rows={2} />
-          ) : registry.isError ? (
-            <SectionErrorViewInline
-              error={registry.error}
-              what="the adapter registry"
-              onRetry={() => void registry.refetch()}
-            />
-          ) : (
-            <ConnectPlatformSurface
-              adapters={adapters}
-              connections={connectionList}
-              connectionsPending={connections.isPending}
-              connectionsError={connections.isError}
-              onRetryConnections={() => void connections.refetch()}
-              registeredPlatformKeys={new Set(list.map((account) => account.platformId))}
-              onStartRound={(adapter, connectionId) => setConnectTarget({ adapter, connectionId })}
-              busy={authorizeStart.isPending}
-            />
-          )}
-        </>
-      )}
-
-      <ConfirmGate
-        open={connectTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setConnectTarget(null);
-            setRequestedScopes("");
-          }
-        }}
-        title={`Connect ${connectTarget?.adapter.providerLabel ?? ""}`}
-        consequence="This starts the platform's real OAuth round: MOS records the authorization round (a pending grant) and returns the provider's authorize URL. The account owner signs in at the provider — the connection completes only when the provider's callback lands. Nothing is connected until then."
-        confirmLabel="Start the authorization round"
-        confirmTone="default"
-        busy={authorizeStart.isPending}
-        onConfirm={() => {
-          if (connectTarget !== null) {
-            void startRound(connectTarget.connectionId, connectTarget.adapter);
-          }
-        }}
-      >
-        <div className="mt-1">
-          <label
-            htmlFor="connect-requested-scopes"
-            className="text-xs font-medium uppercase tracking-wide text-stone-500"
-          >
-            Requested permissions (optional, the intent recorded on the grant)
-          </label>
-          <input
-            id="connect-requested-scopes"
-            type="text"
-            value={requestedScopes}
-            onChange={(event) => setRequestedScopes(event.target.value)}
-            placeholder="e.g. account:read content:read analytics:read"
-            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 font-mono text-xs text-stone-800 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-teal-700"
+        {authorizeStart.isError ? (
+          <RouteRefusalNote
+            message={
+              authorizeStart.error instanceof Error
+                ? authorizeStart.error.message
+                : String(authorizeStart.error)
+            }
           />
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
-            Space- or comma-separated. The provider&apos;s answer is recorded verbatim and shown
-            against this request as the permission health.
-          </p>
-        </div>
-      </ConfirmGate>
+        ) : null}
 
-      <SourceLine
-        sources={[
-          `GET /api/clients/${clientId.slice(0, 8)}…/social-accounts`,
-          "GET …/social-accounts/:accountId/grants (authorization health; refuses 409 on dead connections)",
-          "GET …/social-accounts/:accountId/grants/:grantId (scope facts)",
-          "GET …/social-accounts/:accountId/events (audit tail)",
-          "POST …/social-accounts/authorize-start | :accountId/reauthorize | :accountId/refresh | :accountId/disconnect",
-          "GET /api/integrations/adapters (capability descriptors)",
-        ]}
-      />
-    </section>
+        {pendingRound ? (
+          <PendingRoundLive round={pendingRound} onSettled={() => setPendingRound(null)} />
+        ) : null}
+
+        {accounts.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : accounts.isError ? (
+          <SectionErrorViewInline
+            error={accounts.error}
+            what="the social accounts"
+            onRetry={() => void accounts.refetch()}
+          />
+        ) : (
+          <>
+            {list.length === 0 ? (
+              <WorkspaceEmptyState
+                missing="No social accounts are connected on this client yet."
+                why="A mission reaches people through connected channels — publishing, reading and analytics all run through a real authorization this client holds with the platform."
+                next="Connect a platform below: pick one whose product connection is authorized, and sign in with the provider. Until then, missions on this client record their plans but cannot act on any channel."
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {list.map((account) => (
+                  <SocialAccountCard
+                    key={account.socialAccountId}
+                    clientId={clientId}
+                    account={account}
+                    registryAdapter={registryByPlatform.get(account.platformId) ?? null}
+                  />
+                ))}
+              </ul>
+            )}
+
+            {registry.isPending ? (
+              <SectionSkeleton rows={2} />
+            ) : registry.isError ? (
+              <SectionErrorViewInline
+                error={registry.error}
+                what="the platform list"
+                onRetry={() => void registry.refetch()}
+              />
+            ) : (
+              <ConnectPlatformSurface
+                adapters={adapters}
+                connections={connectionList}
+                connectionsPending={connections.isPending}
+                connectionsError={connections.isError}
+                onRetryConnections={() => void connections.refetch()}
+                registeredPlatformKeys={new Set(list.map((account) => account.platformId))}
+                onStartRound={(adapter, connectionId) => setConnectTarget({ adapter, connectionId })}
+                busy={authorizeStart.isPending}
+              />
+            )}
+          </>
+        )}
+
+        <ConfirmGate
+          open={connectTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setConnectTarget(null);
+              setRequestedScopes("");
+            }
+          }}
+          title={`Connect ${connectTarget?.adapter.providerLabel ?? ""}`}
+          consequence="This starts the platform's real authorization round: MOS records the round (a pending grant) and returns the provider's sign-in URL. The account owner signs in at the provider — the connection completes only when the provider answers. Nothing is connected until then."
+          confirmLabel="Start the authorization round"
+          confirmTone="default"
+          busy={authorizeStart.isPending}
+          onConfirm={() => {
+            if (connectTarget !== null) {
+              void startRound(connectTarget.connectionId, connectTarget.adapter);
+            }
+          }}
+        >
+          <div className="mt-1">
+            <label
+              htmlFor="connect-requested-scopes"
+              className="text-xs font-medium uppercase tracking-wide text-stone-500"
+            >
+              Requested permissions (optional, the intent recorded on the grant)
+            </label>
+            <input
+              id="connect-requested-scopes"
+              type="text"
+              value={requestedScopes}
+              onChange={(event) => setRequestedScopes(event.target.value)}
+              placeholder="e.g. account:read content:read analytics:read"
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 font-mono text-xs text-stone-800 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-teal-700"
+            />
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+              Space- or comma-separated. The provider&apos;s answer is recorded verbatim and shown
+              against this request as the permission health.
+            </p>
+          </div>
+        </ConfirmGate>
+
+        <SourceLine
+          sources={[
+            `GET /api/clients/${clientId.slice(0, 8)}…/social-accounts`,
+            "GET …/social-accounts/:accountId/grants (authorization health; refuses 409 on dead connections)",
+            "GET …/social-accounts/:accountId/grants/:grantId (scope facts)",
+            "GET …/social-accounts/:accountId/events (audit tail)",
+            "POST …/social-accounts/authorize-start | :accountId/reauthorize | :accountId/refresh | :accountId/disconnect",
+            "GET /api/integrations/adapters (capability descriptors)",
+          ]}
+        />
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -460,7 +498,7 @@ function SocialAccountCard({
             {latestGrant ? <GrantStateChip state={latestGrant.grantState} /> : null}
             {latestGrant?.expiresAt ? (
               <span
-                className={`font-mono text-[11px] ${
+                className={`text-[11px] ${
                   new Date(latestGrant.expiresAt).getTime() < Date.now()
                     ? "text-amber-900"
                     : "text-stone-500"
@@ -497,7 +535,7 @@ function SocialAccountCard({
             </span>
           ) : expired ? (
             <WorkspaceActionButton
-              tone="teal"
+              tone="plain"
               onClick={() => void startReconnect()}
               disabled={reauthorize.isPending}
               ariaLabel={`Reauthorize ${providerLabel}`}
@@ -580,9 +618,23 @@ function SocialAccountCard({
               ...(disconnectReason === "" ? {} : { reason: disconnectReason }),
               revokeAtProvider: false,
             })
-            .then(() => setDisconnectOpen(false));
+            .then(() => setDisconnectOpen(false))
+            .catch(() => {
+              /* UX-010: the refusal renders below — never a fake success,
+               *   never an unhandled rejection. */
+            });
         }}
-      />
+      >
+        {disconnect.isError ? (
+          <RouteRefusalNote
+            message={
+              disconnect.error instanceof Error
+                ? disconnect.error.message
+                : String(disconnect.error)
+            }
+          />
+        ) : null}
+      </ConfirmGate>
     </ConnectionCard>
   );
 }
@@ -640,7 +692,7 @@ function GrantRow({
         <GrantStateChip state={grant.grantState} />
         <span className="font-mono text-[11px] text-stone-500">{grant.grantId.slice(0, 8)}…</span>
         {grant.expiresAt ? (
-          <span className="font-mono text-[11px] text-stone-400">
+          <span className="text-[11px] text-stone-400">
             expires {formatWhen(grant.expiresAt)}
           </span>
         ) : null}
@@ -650,6 +702,10 @@ function GrantRow({
           </span>
         ) : null}
         <span className="ml-auto text-xs text-stone-400">{formatWhen(grant.createdAt)}</span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-4 shrink-0 text-stone-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
       {open ? (
         <div id={`grant-${grant.grantId}-detail`} className="space-y-3 border-t border-stone-100 px-3 py-3">
@@ -784,7 +840,7 @@ function ConnectPlatformSurface({
                 </div>
                 {authorizedPipe ? (
                   <WorkspaceActionButton
-                    tone="teal"
+                    tone="plain"
                     onClick={() => onStartRound(adapter, authorizedPipe.connectionId)}
                     disabled={busy}
                     ariaLabel={`Connect ${adapter.providerLabel} account`}

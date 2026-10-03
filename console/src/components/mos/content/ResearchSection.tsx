@@ -22,7 +22,7 @@
 // authority; this surface records nothing of its own.
 
 import * as React from "react";
-import { Microscope, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { useClient, useResearchSessionDetail, useResearchSessions } from "@/components/mos/hooks";
 import { useAppendClientEvidence } from "@/components/mos/hooks";
 import { useCreateResearchSession } from "@/components/mos/hooks";
@@ -45,6 +45,7 @@ import {
   WorkspaceActionButton,
   WorkspaceEmptyState,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 
 // The frozen source-kind vocabulary (RESEARCH_SOURCE_KINDS, research-v1 —
 // mirrored for the declare form; the route rejects anything else with its
@@ -60,7 +61,17 @@ const SOURCE_KINDS = [
 
 type DraftSource = { kind: string; reference: string; authorization: string };
 
-export function ResearchSection({ clientId }: { clientId: string }) {
+export function ResearchSection({
+  clientId,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  clientId: string;
+  /** Controlled open (the Content surface's primary action opens this
+   *  family — the UX-010 one-primary-action rule). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const client = useClient(clientId);
   const agencyId = client.data?.agencyId ?? null;
   const sessions = useResearchSessions(agencyId);
@@ -77,6 +88,18 @@ export function ResearchSection({ clientId }: { clientId: string }) {
   const runPass = useRunResearchPass(runTarget?.researchSessionId ?? "");
 
   const list = sessions.data ?? [];
+
+  // The family's LIVE summary line (UX-010) — product language, identifiers
+  // stay inside the expanded records.
+  const summary = client.isPending || sessions.isPending
+    ? "loading the research sessions…"
+    : client.isError || sessions.isError
+      ? "could not load the research sessions — open to retry"
+      : list.length === 0
+        ? "no research sessions yet"
+        : `${list.length} session${list.length === 1 ? "" : "s"} recorded`;
+  const summaryTone: "neutral" | "warning" =
+    client.isError || sessions.isError ? "warning" : "neutral";
 
   const submitCreate = () => {
     const validSources = sources
@@ -98,81 +121,85 @@ export function ResearchSection({ clientId }: { clientId: string }) {
   };
 
   return (
-    <section aria-labelledby="content-research-heading" className="space-y-3">
-      <div>
-        <h3 id="content-research-heading" className="flex items-center gap-2 font-medium text-stone-800">
-          <Microscope className="size-4 text-stone-400" aria-hidden="true" />
-          Research
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
+    <SurfaceSection
+      id="content-research"
+      label="Research"
+      title="Research sessions"
+      summary={summary}
+      summaryTone={summaryTone}
+      open={controlledOpen}
+      onOpenChange={onOpenChange}
+    >
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
           The research sessions this client&apos;s agency ran — each one declares its sources up
           front and records the honest pass over them: what was fetched, what was extracted, and
           what failed. A retained fact can be promoted into the client&apos;s evidence ledger,
           where content candidates cite it.
         </p>
-      </div>
 
-      {client.isPending ? (
-        <SectionSkeleton rows={2} />
-      ) : client.isError ? (
-        <SectionErrorViewInline
-          error={client.error}
-          what="the client record (the owning agency of the research sessions)"
-          onRetry={() => void client.refetch()}
-        />
-      ) : sessions.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : sessions.isError ? (
-        <SectionErrorViewInline
-          error={sessions.error}
-          what="the research sessions"
-          onRetry={() => void sessions.refetch()}
-        />
-      ) : (
-        <>
-          {list.length === 0 ? (
-            <WorkspaceEmptyState
-              missing="No research sessions exist for this client's agency yet."
-              why="Research is where content work starts: a session declares the public web sources for a niche and runs the deterministic pass that retains the observed facts — titles, excerpts, structure — with full provenance."
-              next="Start the first session below: declare a topic and one or more public web sources, then run the research pass over them."
-              action={
+        {client.isPending ? (
+          <SectionSkeleton rows={2} />
+        ) : client.isError ? (
+          <SectionErrorViewInline
+            error={client.error}
+            what="the client record (the owning agency of the research sessions)"
+            onRetry={() => void client.refetch()}
+          />
+        ) : sessions.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : sessions.isError ? (
+          <SectionErrorViewInline
+            error={sessions.error}
+            what="the research sessions"
+            onRetry={() => void sessions.refetch()}
+          />
+        ) : (
+          <>
+            {list.length === 0 ? (
+              <WorkspaceEmptyState
+                missing="No research sessions exist for this client's agency yet."
+                why="Research is where content work starts: a session declares the public web sources for a niche and runs the pass that retains the observed facts — titles, excerpts, structure — with full provenance."
+                next="Start the first session below: declare a topic and one or more public web sources, then run the research pass over them."
+                action={
+                  <WorkspaceActionButton
+                    tone="plain"
+                    onClick={() => setCreateOpen(true)}
+                    ariaLabel="Start a research session"
+                  >
+                    Start a research session
+                  </WorkspaceActionButton>
+                }
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {list.map((session) => (
+                  <ResearchSessionCard
+                    key={session.researchSessionId}
+                    session={session}
+                    clientId={clientId}
+                    onRun={() => setRunTarget(session)}
+                    runPending={
+                      runTarget?.researchSessionId === session.researchSessionId && runPass.isPending
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+
+            {list.length > 0 ? (
+              <div>
                 <WorkspaceActionButton
+                  tone="plain"
                   onClick={() => setCreateOpen(true)}
-                  ariaLabel="Start a research session"
+                  ariaLabel="Start another research session"
                 >
-                  Start a research session
+                  Start another research session
                 </WorkspaceActionButton>
-              }
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {list.map((session) => (
-                <ResearchSessionCard
-                  key={session.researchSessionId}
-                  session={session}
-                  clientId={clientId}
-                  onRun={() => setRunTarget(session)}
-                  runPending={
-                    runTarget?.researchSessionId === session.researchSessionId && runPass.isPending
-                  }
-                />
-              ))}
-            </ul>
-          )}
-
-          {list.length > 0 ? (
-            <div>
-              <WorkspaceActionButton
-                tone="plain"
-                onClick={() => setCreateOpen(true)}
-                ariaLabel="Start another research session"
-              >
-                Start another research session
-              </WorkspaceActionButton>
-            </div>
-          ) : null}
-        </>
-      )}
+              </div>
+            ) : null}
+          </>
+        )}
 
       <CreateSessionGate
         open={createOpen}
@@ -200,7 +227,7 @@ export function ResearchSection({ clientId }: { clientId: string }) {
           if (!open) setRunTarget(null);
         }}
         title={`Run the research pass${runTarget ? "" : ""}`}
-        consequence="This runs the platform's real deterministic research pass over the session's CURRENT declared sources: every source is fetched read-only through the page reader, every outcome — extracted facts, empty pages, HTTP errors, transport refusals — is recorded honestly on the run. Nothing is invented and nothing is retried silently."
+        consequence="This runs the platform's real research pass over the session's CURRENT declared sources: every source is fetched read-only through the page reader, every outcome — extracted facts, empty pages, HTTP errors, transport refusals — is recorded honestly on the run. Nothing is invented and nothing is retried silently."
         confirmLabel="Run the pass"
         confirmTone="default"
         busy={runPass.isPending}
@@ -216,17 +243,18 @@ export function ResearchSection({ clientId }: { clientId: string }) {
         }}
       />
 
-      <SourceLine
-        sources={[
-          agencyId === null
-            ? "GET /api/agencies/:agencyId/research-sessions (the agency resolves from the client record)"
-            : `GET /api/agencies/${agencyId.slice(0, 8)}…/research-sessions`,
-          "GET /api/research-sessions/:researchSessionId (the composed read-back, on expand)",
-          "POST …/research-sessions (create) · POST …/research-sessions/:id/runs (the research pass)",
-          "POST /api/clients/:clientId/evidence (a retained fact becomes a citable observation — the research→content bridge)",
-        ]}
-      />
-    </section>
+        <SourceLine
+          sources={[
+            agencyId === null
+              ? "GET /api/agencies/:agencyId/research-sessions (the agency resolves from the client record)"
+              : `GET /api/agencies/${agencyId.slice(0, 8)}…/research-sessions`,
+            "GET /api/research-sessions/:researchSessionId (the composed read-back, on expand)",
+            "POST …/research-sessions (create) · POST …/research-sessions/:id/runs (the research pass)",
+            "POST /api/clients/:clientId/evidence (a retained fact becomes a citable observation — the research→content bridge)",
+          ]}
+        />
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -379,58 +407,62 @@ function ResearchSessionCard({
   return (
     <ContentRecordCard
       id={`research-${session.researchSessionId}`}
-      detailLabel="Declaration, retained facts, insights and runs"
+      detailLabel="Topic, sources, retained facts, insights and runs"
       detail={(open) =>
         open ? (
-          <ResearchSessionDetailBody
-            researchSessionId={session.researchSessionId}
-            clientId={clientId}
-          />
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-mono text-[11px] text-stone-400">
+                research session {session.researchSessionId.slice(0, 12)}…
+              </p>
+              {/* UX-010: the card's single primary action lives in the expanded
+                  detail — the run pass, confirm-gated exactly as before. */}
+              <WorkspaceActionButton
+                tone="teal"
+                onClick={onRun}
+                disabled={runPending}
+                ariaLabel="Run the research pass"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Play className="size-4" aria-hidden="true" />
+                  {runPending ? "Running…" : "Run the research pass"}
+                </span>
+              </WorkspaceActionButton>
+            </div>
+            <ResearchSessionDetailBody
+              researchSessionId={session.researchSessionId}
+              clientId={clientId}
+            />
+          </div>
         ) : null
       }
     >
-      <ResearchSessionSummary session={session} onRun={onRun} runPending={runPending} />
+      <ResearchSessionSummary session={session} />
     </ContentRecordCard>
   );
 }
 
 function ResearchSessionSummary({
   session,
-  onRun,
-  runPending,
 }: {
   session: ResearchSessionView;
-  onRun: () => void;
-  runPending: boolean;
 }) {
-  // The topic line needs the current declaration — the card mounts the
-  // composed detail read lazily ONLY when expanded, so the first screen
-  // shows what the session record itself carries (version, timestamps).
+  // UX-010: the card's first screen speaks product language (no internal
+  // identifier as the primary line); the session id renders inside the
+  // expanded declaration detail. The run action also lives in the expanded
+  // detail — the card's single primary, disclosed on demand.
   return (
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className="font-medium text-stone-800">
-          Research session{" "}
-          <span className="font-mono text-sm text-stone-500">
-            {session.researchSessionId.slice(0, 8)}…
-          </span>
-        </p>
+        <p className="font-medium text-stone-800">Research session</p>
         <p className="mt-0.5 text-sm text-stone-500">
-          declaration version {session.currentVersionSeq} · created{" "}
-          {formatWhen(session.createdAt)} · updated {formatWhen(session.updatedAt)}
+          declaration v{session.currentVersionSeq} · created {formatWhen(session.createdAt)} ·
+          updated {formatWhen(session.updatedAt)}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-stone-400">
-          The declared sources and retained facts render on expand — the topic and focus ride the
-          declaration read-back.
+          Expand to see the topic, the declared sources, the retained facts and the runs — and to
+          run the research pass.
         </p>
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <WorkspaceActionButton tone="teal" onClick={onRun} disabled={runPending} ariaLabel="Run the research pass">
-          <span className="inline-flex items-center gap-1.5">
-            <Play className="size-4" aria-hidden="true" />
-            {runPending ? "Running…" : "Run the research pass"}
-          </span>
-        </WorkspaceActionButton>
       </div>
     </div>
   );

@@ -85,9 +85,6 @@ export function HumanTreatmentExperimentCard({
       >
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-stone-500">
-              experiment {experiment.experimentId.slice(0, 8)}…
-            </span>
             <Chip
               label={experiment.status.replace(/_/g, " ")}
               className={experimentStatusClass(experiment.status)}
