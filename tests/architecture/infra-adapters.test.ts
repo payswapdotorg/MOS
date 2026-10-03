@@ -1102,6 +1102,28 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // reference citation is opaque recorded data; the corpus advance
     // seam stays the /lab-corpus module's own guarded column).
     '065_lab_features.sql',
+    // LAB-013 (Capability Engine + Arena Adapter) appends the
+    // capability migration (067 — the TL pre-assigned number: 066 is
+    // held by the in-flight parallel LAB-004 worker; the same disclosed
+    // additive re-pin precedent — every end-anchored tail position
+    // shifts once more): the /lab-capabilities authority — the NINE
+    // §17 flow-stage tables (the capability gaps with the OPAQUE
+    // strategy citation + the required action shape, the capability
+    // contracts with the REQUIRED quality-evaluator declaration, the
+    // superseding value estimates, the governed Arena requests with the
+    // CALLER-DECLARED provider target as DATA — zero marketplace
+    // vocabulary, the dispatch flows through the existing
+    // /integrations provider contracts at the structural port, the
+    // human/provider results with the EXPLICIT contract-rights record,
+    // the verifications running the DECLARED evaluator with the closed
+    // verdict vocabulary, the versioned capability registry with the
+    // LAB-011 lifecycle + the unverified-never-presented citation
+    // trigger, and the simulation/real-test OPAQUE link records); NO
+    // v1.6 authority table is created or mutated, and NO /lab,
+    // /lab-agent-body or /integrations table is written (the
+    // strategy/human-plane/real-test/provider citations are opaque
+    // recorded data).
+    '067_lab_capabilities.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
