@@ -431,10 +431,10 @@ test('MKT-066: the disclosed spec registration exists — §6 line + authority p
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrations[migrations.length - 7], '058_platform_health.sql');
-  assert.equal(migrations[migrations.length - 6], '059_lab_contracts.sql');
-  assert.equal(migrations[migrations.length - 5], '060_product_marketing.sql');
-  assert.equal(migrations[migrations.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 8], '058_platform_health.sql');
+  assert.equal(migrations[migrations.length - 7], '059_lab_contracts.sql');
+  assert.equal(migrations[migrations.length - 6], '060_product_marketing.sql');
+  assert.equal(migrations[migrations.length - 5], '061_lab_corpus.sql');
   assert.equal(migrations[migrations.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrations[migrations.length - 1], '065_lab_features.sql');
   // The shared files register the module additively.
@@ -468,5 +468,5 @@ test('MKT-066: the real codebase enforces the frozen boundaries with ZERO violat
   // Agent Body Runtime Contract authority — the LAB-002 provision
   // precedent, pending the TL spec promotion — 51 → 52 enforced, 52 → 53
   // total).
-  assert.equal(result.frozenModules.length, 55);
+  assert.equal(result.frozenModules.length, 56);
 });

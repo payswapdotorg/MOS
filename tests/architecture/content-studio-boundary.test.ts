@@ -139,7 +139,7 @@ test('STUDIO-001 AC-1: the module imports NO other module — the /lab family di
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('content-studio'));
-  assert.equal(result.frozenModules.length, 55);
+  assert.equal(result.frozenModules.length, 56);
 });
 
 test('STUDIO-001 AC-2: the module owns EXACTLY its six migration-064 tables — no v1.6 authority table, no /lab-agent-body table, no /ai-runtime table', () => {
@@ -257,7 +257,7 @@ test('STUDIO-001 AC-4: the registration — the composition root wires the REAL 
   assert.ok(compositionRoot.includes('const contentStudio = createContentStudioModule({'));
   assert.ok(compositionRoot.includes('agentBodies: contentStudioAgentBodies,'));
   assert.ok(compositionRoot.includes('formats: CONTENT_STUDIO_INITIAL_FORMATS,'));
-  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures },'));
+  assert.ok(compositionRoot.includes('lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery },'));
   assert.ok(applicationTs.includes("import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts'"));
   assert.ok(applicationTs.includes('readonly contentStudio: ContentStudioModuleApi'));
   // The checker provision RETIRED (the 2026-10-03 TL spec promotion —

@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + STUDIO-001 + MKT-072 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -23,7 +23,7 @@ This SHA is the historical base of the v1.7 architecture branch, not the current
 Remaining:
 ✅ MKT-060 (Wave 0 harvest, PR #64) ✅ MKT-061 (Wave 1 harvest, PR #67)
 ✅ MKT-066 (Wave 0 harvest, PR #64) ✅ MKT-070 (Wave 1 harvest, PR #68 + spec promotion)
-☐ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
+✅ MKT-072 ☐ MKT-073 ☐ MKT-074 ☐ MKT-075
 ✅ UX-005 (Wave 0 harvest, PR #64)
 ✅ UX-007 Platform Health Console Surface (Wave 1 harvest, PR #66 —
    worker delivery 40c4c4cf: console/** only, HealthTab + AccountHealthCard
@@ -232,6 +232,30 @@ lint 0 / unit 1340 / architecture 728 / integration 1241/1241 clean
 append (the MKT-066 platform-health precedent — NO checker provision;
 the provision mechanism is structurally for spec-pending modules only):
 spec/architecture.md §6 line + the /lab-features registration paragraph.
+
+✅ MKT-072 — Commerce Discovery Mission (external Worker delivery, PR #75
+merged + the TL station integration): the `/commerce-discovery` module,
+migration `062_commerce_discovery.sql` (the pre-assigned mid-chain slot —
+the merged-tree truth: 061 → 062 → 063 → 064 → 065), the granted worker
+spec registration (the MKT-070 promoted-spec precedent — §6 line, the
+registration paragraph, the live matrix row VERBATIM:
+/commerce-discovery ──→ /growth-missions, /product-intelligence,
+/content-intelligence, /experiment-analysis, /integrations,
+/platform-health). Discovery missions ride the /growth-missions spine
+READ-ONLY (family gate 'commerce_discovery' — never a second mission
+authority); the deterministic selection core (cd-plan-v1); candidates
+with FK-anchored provenance; demand tests that ARE /experiments records
+through the disclosed off-matrix structural port (the MKT-070 /research
+precedent); the learning loop from REAL commerce order/metric
+observations (never simulated); guardrail evaluations vs declared
+bounded-spend budgets (breach → honest guardrail_blocked with an
+explicit resolution path); NO listing/mutation verb, NO order/inventory
+authority (lock rules 32/33). Station battery on tl/harvest-mkt072 (the
+triple-merged tree): typecheck 0 / lint 0 / unit 1354 / architecture
+742 / integration 1246+2 load-timing flakes isolated-green 27/27 (the
+MKT-056 teardown race — same family as the STUDIO-001 battery). 22-file multi-worker conflict
+resolution to the merged truth (55 spec-parsed / 56 enforced with the
+single /apps provision).
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph

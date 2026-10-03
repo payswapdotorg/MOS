@@ -741,9 +741,9 @@ test('MKT-069 AC-12 static: the disclosed spec registration exists — §6 line 
   const migrationsOnDisk = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 17], '048_product_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 16], '049_commerce_capabilities.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 18], '048_product_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 17], '049_commerce_capabilities.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   // The MKT-056 social-adapter-contract delivery appends 050, the
@@ -752,44 +752,44 @@ test('MKT-069 AC-12 static: the disclosed spec registration exists — §6 line 
   // appends 052 (the same additive
   // precedent — plus the MKT-064 /content-assets delivery appends 053; the
   // merged-tree truth).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 15], '050_social_adapter_contract.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 14], '051_content_rights.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '052_growth_operator.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '053_content_assets.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 16], '050_social_adapter_contract.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 15], '051_content_rights.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 14], '052_growth_operator.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 13], '053_content_assets.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   // The MKT-067 /experiment-analysis sibling delivery appends 054 and
   // the MKT-065 /cross-platform-distribution sibling delivery appends
   // 055 (the PRE-ASSIGNED numbers — the same additive precedent; every
   // tail position shifts once more).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '054_experiment_analysis.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 12], '054_experiment_analysis.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '055_cross_platform_distribution.sql');  // The shared files register the module additively.
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '056_research.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '057_content_intelligence.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 11], '055_cross_platform_distribution.sql');  // The shared files register the module additively.
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 10], '056_research.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 9], '057_content_intelligence.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '058_platform_health.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 8], '058_platform_health.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql
   // and the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '059_lab_contracts.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '060_product_marketing.sql');
-  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 4], '061_lab_corpus.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 7], '059_lab_contracts.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 6], '060_product_marketing.sql');
+  assert.equal(migrationsOnDisk[migrationsOnDisk.length - 5], '061_lab_corpus.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 3], '063_lab_agent_body.sql');
   assert.equal(migrationsOnDisk[migrationsOnDisk.length - 1], '065_lab_features.sql');
   assert.ok(applicationTs.includes('readonly productIntelligence: ProductIntelligenceModuleApi'), 'ApplicationModules.productIntelligence');

@@ -379,6 +379,7 @@ import type { PlatformHealthModuleApi } from '../modules/platform-health/public.
 // second mission authority, NO workflow/execution engine, NO scheduler
 // of any kind).
 import type { ProductMarketingModuleApi } from '../modules/product-marketing/public.ts';
+import type { CommerceDiscoveryModuleApi } from '../modules/commerce-discovery/public.ts';
 import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
 import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts';
@@ -684,6 +685,14 @@ export interface ApplicationModules {
   // with the FK-anchored evidence basis behind every verdict).
   readonly platformHealth: PlatformHealthModuleApi;
   readonly productMarketing: ProductMarketingModuleApi;
+  // MKT-072: the Commerce Discovery Mission authority (the v1.6 commerce
+  // loop runtime: the versioned bounded-spend declarations + the
+  // deterministic selection core + the provenance-cited candidates + the
+  // demand tests THROUGH the experiments authority + the learning-loop
+  // outcomes derived from the REAL commerce events + the economic
+  // guardrails with the honest blocked/terminal states — never a second
+  // mission, order/inventory, experiment or workflow authority).
+  readonly commerceDiscovery: CommerceDiscoveryModuleApi;
   // LAB-001: the Marketing Engineering Lab Contracts and Run Model
   // authority (the v1.7 layer: the seven versioned artifact contracts +
   // the §23 run model + the factuality labels + the no-shadowing

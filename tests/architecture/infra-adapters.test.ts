@@ -1039,6 +1039,21 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // is created or mutated.
     '060_product_marketing.sql',
     '061_lab_corpus.sql',
+    // MKT-072 (Commerce Discovery Mission) appends the commerce-discovery
+    // migration (062 — the PRE-ASSIGNED reserved number, per the LAB-011
+    // disclosure; the disclosed additive re-pin precedent — every
+    // end-anchored tail position from -2 downward shifts once more): the
+    // /commerce-discovery authority — the discovery-program headers + the
+    // append-only version tail (the DECLARED bounded-spend budget fields,
+    // the MKT-054 convention) + the history tail + the provenance-cited
+    // candidates + the demand tests (the FK-anchored experiments-authority
+    // references) + the learning-loop outcomes derived from the REAL
+    // MKT-071 commerce events + the economic-guardrail evaluations with
+    // the honest blocked state; NO mission, content, experiment, metric,
+    // commerce-event, connection, policy or tenant table is created or
+    // mutated, and NO catalog/order/listing table exists anywhere (lock
+    // rules 32/33 — store mutations flow through Integrations).
+    '062_commerce_discovery.sql',
     // LAB-011 (Agent Body Runtime Contract) appends the agent-body
     // migration (063 — the PRE-ASSIGNED next-free number: 062 is
     // reserved for a parallel worker, so this delivery takes 063; the
