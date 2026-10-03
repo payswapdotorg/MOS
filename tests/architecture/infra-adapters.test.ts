@@ -1053,6 +1053,24 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // or mutated, and NO /ai-runtime table is written (the model
     // observations flow through the module's /ai-runtime port).
     '063_lab_agent_body.sql',
+    // LAB-003 (Multimodal Content Feature Bundle) appends the
+    // feature-bundle migration (065 — the TL pre-assigned number:
+    // 062 is reserved for the parallel MKT-072 worker and 064 is
+    // held by the in-flight STUDIO-001 delivery; the same disclosed
+    // additive re-pin precedent — every end-anchored tail position
+    // shifts once more): the /lab-features authority — the versioned
+    // FEATURE-BUNDLE records (one per extraction of one content
+    // reference under one feature-set version, the deterministic
+    // identity digest + the append-only per-reference version chain,
+    // the full recorded-data source linkage, NO binary column —
+    // media bytes ride an in-memory handle through the extraction
+    // call only), the append-oriented batch extraction runs (the
+    // summary counts SQL-computed from the item outcomes) and the
+    // append-only per-item outcome tail; NO v1.6 authority table is
+    // created or mutated, and NO /lab-corpus table is written (the
+    // reference citation is opaque recorded data; the corpus advance
+    // seam stays the /lab-corpus module's own guarded column).
+    '065_lab_features.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
