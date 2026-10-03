@@ -36,6 +36,7 @@ import {
 } from "@/components/mos/mission/workspace-atoms";
 import { SectionErrorViewInline } from "@/components/mos/connections/SocialConnections";
 import { AccountHealthCard } from "./AccountHealthCard";
+import { SourcesDisclosure } from "@/components/mos/surface-section";
 
 export function HealthTab({
   clientId,
@@ -97,7 +98,7 @@ export function HealthTab({
         {health.data?.observabilityDisclosure ? (
           <div className="mt-3 max-w-prose rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3">
             <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
-              The authority&apos;s standing disclosure — on every evaluation view
+              What this health picture can and cannot see
             </p>
             <p className="mt-1 text-sm leading-relaxed text-stone-600">
               {health.data.observabilityDisclosure}
@@ -203,8 +204,8 @@ export function HealthTab({
         </>
       )}
 
-      <div className="rounded-xl border border-stone-200 bg-stone-50/60 px-5 py-4">
-        <p className="text-sm leading-relaxed text-stone-600">
+      <SourcesDisclosure id="health-sources" label="Sources & composition">
+        <p className="leading-relaxed">
           This surface composes the platform-health authority — it holds no health state
           of its own. The states are the authority&apos;s frozen nine-state vocabulary
           (there is deliberately no shadow-ban state or synonym), the confidence is its
@@ -220,7 +221,7 @@ export function HealthTab({
             "GET /api/clients/:clientId/social-accounts (the account cards' live connection facts)",
           ]}
         />
-      </div>
+      </SourcesDisclosure>
     </div>
   );
 }

@@ -21,7 +21,6 @@
 // records (the /evidence ledger read) as the required provenance anchors.
 
 import * as React from "react";
-import { ShieldCheck } from "lucide-react";
 import {
   useClientEvidence,
   useContentRights,
@@ -54,6 +53,7 @@ import {
   WorkspaceActionButton,
   WorkspaceEmptyState,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 
 const EVENT_KINDS = [
   "determination",
@@ -94,68 +94,85 @@ export function RightsSection({ clientId }: { clientId: string }) {
   const [registerOpen, setRegisterOpen] = React.useState(false);
 
   const list = records.data ?? [];
+  const blockedCount = list.filter(
+    (record) => record.state === "blocked" || record.state === "review",
+  ).length;
 
   return (
-    <section id="content-rights-section" aria-labelledby="content-rights-heading" className="space-y-3">
-      <div>
-        <h3 id="content-rights-heading" className="flex items-center gap-2 font-medium text-stone-800">
-          <ShieldCheck className="size-4 text-stone-400" aria-hidden="true" />
-          Rights gates
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
+    <SurfaceSection
+      id="content-rights"
+      label="Rights gates"
+      title="Rights records"
+      summary={
+        records.isPending
+          ? "loading the rights records…"
+          : records.isError
+            ? "could not load the rights records — open to retry"
+            : list.length === 0
+              ? "none registered yet"
+              : `${list.length} record${list.length === 1 ? "" : "s"} · ${
+                  list.length - blockedCount
+                } publish-ready state${list.length - blockedCount === 1 ? "" : "s"}${
+                  blockedCount > 0 ? ` · ${blockedCount} need attention` : ""
+                }`
+      }
+      summaryTone={records.isError || (list.length > 0 && blockedCount === list.length) ? "warning" : "neutral"}
+    >
+      <div id="content-rights-section" className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
           The rights state of every asset this client wants to publish — owned, licensed,
           platform-permitted, cleared, in review or blocked — with the publication gate&apos;s own
           evaluation: what is unmet, in the gate&apos;s words, and the next action that state
           needs. Records are born &lsquo;unknown&apos; and every change is an append-only
           transition; the human clearance is the only review → cleared path.
         </p>
-      </div>
 
-      {records.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : records.isError ? (
-        <SectionErrorViewInline
-          error={records.error}
-          what="the rights records"
-          onRetry={() => void records.refetch()}
-        />
-      ) : (
-        <>
-          {list.length === 0 ? (
-            <WorkspaceEmptyState
-              missing="No rights records exist on this client yet."
-              why="Before anything is published, each asset needs its rights state — the gate refuses absent records fail-closed, and an undetermined state never auto-approves. A record is born 'unknown' and the licence facts ride its determination."
-              next="Register the rights record for an asset: cite the client's evidence as the source provenance (from a candidate's evidence links) and the licence facts when they are known. The publication gate then evaluates it against each destination."
-              action={
+        {records.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : records.isError ? (
+          <SectionErrorViewInline
+            error={records.error}
+            what="the rights records"
+            onRetry={() => void records.refetch()}
+          />
+        ) : (
+          <>
+            {list.length === 0 ? (
+              <WorkspaceEmptyState
+                missing="No rights records exist on this client yet."
+                why="Before anything is published, each asset needs its rights state — the gate refuses absent records fail-closed, and an undetermined state never auto-approves. A record is born 'unknown' and the licence facts ride its determination."
+                next="Register the rights record for an asset: cite the client's evidence as the source provenance (from a candidate's evidence links) and the licence facts when they are known. The publication gate then evaluates it against each destination."
+                action={
+                  <WorkspaceActionButton
+                    tone="plain"
+                    onClick={() => setRegisterOpen(true)}
+                    ariaLabel="Register a rights record"
+                  >
+                    Register a rights record
+                  </WorkspaceActionButton>
+                }
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {list.map((record) => (
+                  <RightsRecordCard key={record.rightsRecordId} clientId={clientId} record={record} />
+                ))}
+              </ul>
+            )}
+
+            {list.length > 0 ? (
+              <div>
                 <WorkspaceActionButton
+                  tone="plain"
                   onClick={() => setRegisterOpen(true)}
-                  ariaLabel="Register a rights record"
+                  ariaLabel="Register another rights record"
                 >
-                  Register a rights record
+                  Register another rights record
                 </WorkspaceActionButton>
-              }
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {list.map((record) => (
-                <RightsRecordCard key={record.rightsRecordId} clientId={clientId} record={record} />
-              ))}
-            </ul>
-          )}
-
-          {list.length > 0 ? (
-            <div>
-              <WorkspaceActionButton
-                tone="plain"
-                onClick={() => setRegisterOpen(true)}
-                ariaLabel="Register another rights record"
-              >
-                Register another rights record
-              </WorkspaceActionButton>
-            </div>
-          ) : null}
-        </>
-      )}
+              </div>
+            ) : null}
+          </>
+        )}
 
       <RegisterRightsGate
         clientId={clientId}
@@ -183,7 +200,8 @@ export function RightsSection({ clientId }: { clientId: string }) {
           "POST …/content-rights/:id/transitions | …/content-rights/:id/permissions (state transitions + destination permissions)",
         ]}
       />
-    </section>
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -218,22 +236,96 @@ function RightsRecordCard({
   return (
     <ContentRecordCard
       id={`rights-card-${record.rightsRecordId}`}
-      detailLabel="Transition history, destination permissions and clearances"
+      detailLabel="Publication gate, transition history, destination permissions and clearances"
       detail={(open) =>
         open ? (
-          <RightsDetailBody detail={detail} />
+          <div className="space-y-4">
+            {/* UX-010: the gate evaluation lives in the disclosure layer — the
+                card's single primary action, exactly as wired before. */}
+            <div className="rounded-lg border border-stone-200 bg-stone-50/60 px-3 py-2.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
+                The publication gate — evaluate before any destination
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-end gap-2">
+                <div className="w-44">
+                  <label
+                    htmlFor={`gate-destination-${record.rightsRecordId}`}
+                    className="text-xs font-medium uppercase tracking-wide text-stone-500"
+                  >
+                    Destination platform
+                  </label>
+                  <input
+                    id={`gate-destination-${record.rightsRecordId}`}
+                    type="text"
+                    value={destination}
+                    onChange={(event) => setDestination(event.target.value)}
+                    placeholder="e.g. youtube"
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-teal-700"
+                  />
+                </div>
+                <WorkspaceActionButton
+                  tone="teal"
+                  onClick={runGate}
+                  disabled={evaluateGate.isPending || destination.trim() === ""}
+                  ariaLabel={`Evaluate the publication gate for ${record.contentAssetRef}`}
+                >
+                  {evaluateGate.isPending ? "Evaluating…" : "Evaluate the gate"}
+                </WorkspaceActionButton>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
+                The gate evaluates the recorded rights and the destination policy — allow,
+                review_required or blocked, with the reason codes in its own words. It never
+                publishes: distribution is a separate authority.
+              </p>
+            </div>
+
+            {gateResult ? <GateOutcomePanel gate={gateResult} onDismiss={() => setGateResult(null)} /> : null}
+
+            <div className="flex flex-wrap gap-2">
+              <WorkspaceActionButton
+                tone="plain"
+                onClick={() => setTransitionOpen(true)}
+                ariaLabel={`Record a state transition for ${record.contentAssetRef}`}
+              >
+                Record a state transition
+              </WorkspaceActionButton>
+              <WorkspaceActionButton
+                tone="plain"
+                onClick={() => setPermissionOpen(true)}
+                ariaLabel={`Record a destination permission for ${record.contentAssetRef}`}
+              >
+                Record a destination permission
+              </WorkspaceActionButton>
+            </div>
+
+            <LabeledRows
+              label="Record reference"
+              record={{
+                contentAssetRef: record.contentAssetRef,
+                rightsRecordId: record.rightsRecordId,
+                version: record.version,
+                sourceEvidenceRef: record.sourceEvidenceRef ?? "—",
+              }}
+            />
+
+            <RightsDetailBody detail={detail} />
+          </div>
         ) : null
       }
     >
-        <div className="space-y-2.5">
+      {/* UX-010: the summary row speaks product language — the asset reference
+          and the record identifiers live in the expanded detail above. */}
+        <div className="space-y-2">
           <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate font-medium text-stone-800">
-                Asset <span className="font-mono text-sm text-stone-500">{record.contentAssetRef}</span>
+                {record.licenceLabel
+                  ? `Licence ${record.licenceLabel}`
+                  : `${record.assetKind === "composite" ? "Composite" : "Source"} asset rights`}
               </p>
               <p className="mt-0.5 text-sm text-stone-500">
                 {record.assetKind}
-                {record.licenceLabel ? ` · ${record.licenceLabel}` : " · no licence label recorded"}
+                {record.licenceLabel ? "" : " · no licence label recorded"}
               </p>
             </div>
             <span className="shrink-0 text-xs text-stone-400">
@@ -249,66 +341,12 @@ function RightsRecordCard({
                 className="border-stone-200 bg-stone-50 text-stone-600"
               />
             ) : null}
-            <span className="font-mono text-[11px] text-stone-400">
-              v{record.version} · evidence:{record.sourceEvidenceRef?.slice(0, 8) ?? "—"}…
-            </span>
           </div>
 
-          <div className="rounded-lg border border-stone-200 bg-stone-50/60 px-3 py-2.5">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
-              The publication gate — evaluate before any destination
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-end gap-2">
-              <div className="w-44">
-                <label
-                  htmlFor={`gate-destination-${record.rightsRecordId}`}
-                  className="text-xs font-medium uppercase tracking-wide text-stone-500"
-                >
-                  Destination platform
-                </label>
-                <input
-                  id={`gate-destination-${record.rightsRecordId}`}
-                  type="text"
-                  value={destination}
-                  onChange={(event) => setDestination(event.target.value)}
-                  placeholder="e.g. youtube"
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-teal-700"
-                />
-              </div>
-              <WorkspaceActionButton
-                tone="teal"
-                onClick={runGate}
-                disabled={evaluateGate.isPending || destination.trim() === ""}
-                ariaLabel={`Evaluate the publication gate for ${record.contentAssetRef}`}
-              >
-                {evaluateGate.isPending ? "Evaluating…" : "Evaluate the gate"}
-              </WorkspaceActionButton>
-            </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
-              The gate evaluates the recorded rights and the destination policy — allow,
-              review_required or blocked, with the reason codes in its own words. It never
-              publishes: distribution is a separate authority.
-            </p>
-          </div>
-
-          {gateResult ? <GateOutcomePanel gate={gateResult} onDismiss={() => setGateResult(null)} /> : null}
-
-          <div className="flex flex-wrap gap-2">
-            <WorkspaceActionButton
-              tone="plain"
-              onClick={() => setTransitionOpen(true)}
-              ariaLabel={`Record a state transition for ${record.contentAssetRef}`}
-            >
-              Record a state transition
-            </WorkspaceActionButton>
-            <WorkspaceActionButton
-              tone="plain"
-              onClick={() => setPermissionOpen(true)}
-              ariaLabel={`Record a destination permission for ${record.contentAssetRef}`}
-            >
-              Record a destination permission
-            </WorkspaceActionButton>
-          </div>
+          <p className="text-xs leading-relaxed text-stone-400">
+            Expand to evaluate the publication gate, record a transition or a destination
+            permission, and read the full history.
+          </p>
         </div>
       <TransitionGate
         clientId={clientId}

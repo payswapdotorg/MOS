@@ -31,6 +31,7 @@ import {
   WorkspaceActionButton,
   formatWhen,
 } from "./workspace-atoms";
+import { SourcesDisclosure } from "@/components/mos/surface-section";
 import { TONE_CHIP_CLASSES, humanizeStatus, shortMissionId, statusTone } from "./status";
 import { LifecyclePanel } from "./LifecyclePanel";
 import { BlockersSection, NowNextSection, ProgressSection, TargetSection } from "./sections-mission";
@@ -165,12 +166,16 @@ export function MissionWorkspaceScreen({ missionId }: { missionId: string }) {
         <BlockersSection detail={detail} />
       </div>
 
-      <SourceLine
-        sources={[
-          "GET /api/growth-missions/:missionId (the mission's own truth — mission, currentVersion, goalMappings, history, terminalDecisionBasis)",
-          "client-scoped compositions resolve their inputs from the mission's goal mappings",
-        ]}
-      />
+      {/* UX-010: the route names live in the disclosure layer, never as the
+          workspace's closing first-screen line. */}
+      <SourcesDisclosure id="mission-sources" label="Sources & composition">
+        <SourceLine
+          sources={[
+            "GET /api/growth-missions/:missionId (the mission's own truth — mission, currentVersion, goalMappings, history, terminalDecisionBasis)",
+            "client-scoped compositions resolve their inputs from the mission's goal mappings",
+          ]}
+        />
+      </SourcesDisclosure>
     </div>
   );
 }

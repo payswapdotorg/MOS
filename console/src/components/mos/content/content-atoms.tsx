@@ -95,14 +95,14 @@ export function RightsStateChip({ state }: { state: string }) {
 }
 
 /** The MKT-064 asset lifecycle vocabulary, verbatim:
- *  draft | materialized | derived. */
+ *  draft | materialized | derived. UX-010: draft is the normal immature
+ *  state (not a warning) — neutral stone; only materialized carries the
+ *  healthy tone. */
 export function AssetLifecycleChip({ state }: { state: string }) {
   const cls =
     state === "materialized"
       ? "border-teal-800/20 bg-teal-50 text-teal-900"
-      : state === "derived"
-        ? "border-stone-300 bg-stone-100 text-stone-700"
-        : "border-amber-700/20 bg-amber-50 text-amber-900";
+      : "border-stone-300 bg-stone-100 text-stone-700";
   return <Chip label={state} className={cls} />;
 }
 
@@ -292,8 +292,14 @@ export function GateOutcomePanel({
       : gate.outcome === "review_required"
         ? "border-amber-700/20 bg-amber-50/70"
         : "border-red-800/20 bg-red-50/70";
+  // UX-010 state vocabulary: the outcome chip carries its own honest weight —
+  // teal allow, amber review required, red blocked (a true gate block).
   const textTone =
-    gate.outcome === "allow" ? "text-teal-900" : "text-amber-900";
+    gate.outcome === "allow"
+      ? "text-teal-900"
+      : gate.outcome === "review_required"
+        ? "text-amber-900"
+        : "text-red-900";
   return (
     <div
       role="status"
@@ -340,7 +346,7 @@ export function GateOutcomePanel({
       ) : null}
       <p className="mt-2 text-xs leading-relaxed text-stone-500">
         {gate.outcome === "allow"
-          ? "The recorded rights and destination policy permit autonomous publication to this destination. Publishing itself is the distribution authority's move (MKT-065) — this gate only evaluated it."
+          ? "The recorded rights and destination policy permit autonomous publication to this destination. Publishing itself is the distribution step\u2019s own move — this gate only evaluated it."
           : gate.outcome === "review_required"
             ? "Next action: the rights record needs a determination or a recorded human clearance before this destination is permitted — record the transition (or the per-platform permission) on the rights record below."
             : "Next action: the missing piece above is unmet — an absent rights record must be registered, a blocked state needs a new determination, and a destination that is not permitted needs the licence scope or the destination changed. The gate never auto-approves."}
@@ -362,11 +368,13 @@ export function GateOutcomePanel({
 
 export function ResearchOutcomeChip({ outcome }: { outcome: string }) {
   const ok = outcome === "facts_extracted";
-  const refused =
-    outcome === "unauthorized_refused" || outcome === "read_refused" || outcome === "read_error";
+  // UX-010 state vocabulary: an honest refusal (unauthorized / read refused)
+  // is a degraded outcome, not a failure — amber; only the true error
+  // family (read_error, fetch_*) renders red.
+  const failed = outcome === "read_error" || outcome.startsWith("fetch_");
   const cls = ok
     ? "border-teal-800/20 bg-teal-50 text-teal-900"
-    : refused || outcome.startsWith("fetch_")
+    : failed
       ? "border-red-800/20 bg-red-50 text-red-900"
       : "border-amber-700/20 bg-amber-50 text-amber-900";
   return <Chip label={outcome.replace(/_/g, " ")} className={cls} />;

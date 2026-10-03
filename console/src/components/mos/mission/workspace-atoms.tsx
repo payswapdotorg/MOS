@@ -148,11 +148,14 @@ export function WorkspaceActionButton({
    *  per-card Connect/Disconnect actions). */
   ariaLabel?: string;
 }) {
+  // UX-010: the plain tone keeps a STRONG focus ring (teal, the house focus
+  // color) — the stone ring was too low-contrast against white to satisfy
+  // the "strong focus/contrast" line of the visual direction.
   const toneClass =
     tone === "amber"
       ? "border-amber-700/30 bg-white text-amber-900 hover:bg-amber-100 focus-visible:ring-amber-700"
       : tone === "plain"
-        ? "border-stone-300 bg-white text-stone-700 hover:bg-stone-100 focus-visible:ring-stone-400"
+        ? "border-stone-300 bg-white text-stone-700 hover:bg-stone-100 focus-visible:ring-teal-700"
         : "border-teal-800/25 bg-white text-teal-900 hover:bg-teal-50 focus-visible:ring-teal-700";
   return (
     <button

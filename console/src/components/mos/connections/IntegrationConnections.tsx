@@ -43,6 +43,7 @@ import {
   WorkspaceEmptyState,
   formatWhen,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 import {
   ConfirmGate,
   ConnectionCard,
@@ -72,56 +73,76 @@ export function IntegrationConnectionsSection({ clientId }: { clientId: string }
     [adapters],
   );
 
+  // The section's LIVE summary line (UX-010) — summary-level product
+  // language; the identifiers and probe details live in the cards' details.
+  const healthyCount = list.filter(
+    (connection) => connection.status === "connected" && connection.health === "healthy",
+  ).length;
+  const summary = connections.isPending
+    ? "loading the product and store connections…"
+    : connections.isError
+      ? "could not load the connections — open to retry"
+      : list.length === 0
+        ? "none registered yet"
+        : `${list.length} connection${list.length === 1 ? "" : "s"} · ${healthyCount} healthy`;
+  const summaryTone: "neutral" | "healthy" | "warning" =
+    connections.isError || (list.length > 0 && healthyCount === 0)
+      ? "warning"
+      : list.length > 0 && healthyCount === list.length
+        ? "healthy"
+        : "neutral";
+
   return (
-    <section aria-labelledby="connections-integrations-heading" className="space-y-3">
-      <div>
-        <h3 id="connections-integrations-heading" className="font-medium text-stone-800">
-          Product, source and store connections
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
-          The integration pipes this client reads products, analytics and commerce events
-          through — each with the capabilities its adapter actually declares and the live
-          probe state.
+    <SurfaceSection
+      id="connections-integrations"
+      label="Product & store pipes"
+      title="Product, source and store connections"
+      summary={summary}
+      summaryTone={summaryTone}
+    >
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
+          The pipes this client reads products, analytics and commerce events through — each with
+          the capabilities its connector actually declares and the live reachability state.
         </p>
-      </div>
 
-      {connections.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : connections.isError ? (
-        <SectionErrorViewInline
-          error={connections.error}
-          what="the integration connections"
-          onRetry={() => void connections.refetch()}
-        />
-      ) : list.length === 0 ? (
-        <WorkspaceEmptyState
-          missing="No product, source or store connections are registered on this client yet."
-          why="Product sources, analytics reads and commerce event ingestion all run through an authorized integration pipe — without one, there is nothing to market or attribute against."
-          next="Register a connection: pick an adapter from the registry and a live credential reference (the opaque handle of material provisioned in the deployment's secret backend), then run the connect probe."
-          action={
-            <WorkspaceActionButton tone="teal" onClick={() => setRegisterOpen(true)}>
-              Register a connection
-            </WorkspaceActionButton>
-          }
-        />
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {list.map((connection) => (
-            <IntegrationConnectionCard
-              key={connection.connectionId}
-              clientId={clientId}
-              connection={connection}
-              adapter={adapterByKey.get(connection.adapterKey) ?? null}
-            />
-          ))}
-        </ul>
-      )}
+        {connections.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : connections.isError ? (
+          <SectionErrorViewInline
+            error={connections.error}
+            what="the integration connections"
+            onRetry={() => void connections.refetch()}
+          />
+        ) : list.length === 0 ? (
+          <WorkspaceEmptyState
+            missing="No product, source or store connections are registered on this client yet."
+            why="Product sources, analytics reads and commerce event ingestion all run through an authorized pipe — without one, there is nothing to market or attribute against."
+            next="Register a connection: pick a connector and a live credential reference (the opaque handle of material provisioned in the deployment's secret store), then run the connect probe."
+            action={
+              <WorkspaceActionButton tone="teal" onClick={() => setRegisterOpen(true)}>
+                Register a connection
+              </WorkspaceActionButton>
+            }
+          />
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {list.map((connection) => (
+              <IntegrationConnectionCard
+                key={connection.connectionId}
+                clientId={clientId}
+                connection={connection}
+                adapter={adapterByKey.get(connection.adapterKey) ?? null}
+              />
+            ))}
+          </ul>
+        )}
 
-      {list.length > 0 ? (
-        <WorkspaceActionButton tone="teal" onClick={() => setRegisterOpen(true)}>
-          Register another connection
-        </WorkspaceActionButton>
-      ) : null}
+        {list.length > 0 ? (
+          <WorkspaceActionButton tone="plain" onClick={() => setRegisterOpen(true)}>
+            Register another connection
+          </WorkspaceActionButton>
+        ) : null}
 
       <ConfirmGate
         open={registerOpen}
@@ -158,7 +179,7 @@ export function IntegrationConnectionsSection({ clientId }: { clientId: string }
               htmlFor="register-adapter"
               className="text-xs font-medium uppercase tracking-wide text-stone-500"
             >
-              Adapter (the registry — real capability surface)
+              Connector (the registry — real capability surface)
             </label>
             <select
               id="register-adapter"
@@ -166,7 +187,7 @@ export function IntegrationConnectionsSection({ clientId }: { clientId: string }
               onChange={(event) => setRegisterAdapterKey(event.target.value)}
               className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 focus-visible:ring-2 focus-visible:ring-teal-700"
             >
-              <option value="">Select an adapter…</option>
+              <option value="">Select a connector…</option>
               {adapters.map((adapter) => (
                 <option key={adapter.adapterKey} value={adapter.adapterKey}>
                   {adapter.providerLabel} ({adapter.adapterKey})
@@ -199,11 +220,21 @@ export function IntegrationConnectionsSection({ clientId }: { clientId: string }
                 </option>
               ))}
             </select>
-            {credentialList.length === 0 ? (
+            {/* UX-010 — no silent capability failure: a failed credential load
+                renders as its own honest state, distinct from "none exist". */}
+            {credentials.isError ? (
+              <div className="mt-1">
+                <SectionErrorViewInline
+                  error={credentials.error}
+                  what="the agency's credential references"
+                  onRetry={() => void credentials.refetch()}
+                />
+              </div>
+            ) : credentialList.length === 0 ? (
               <p className="mt-1 text-xs leading-relaxed text-stone-500">
                 No live credential references on this agency yet — create one through the
                 platform&apos;s credential routes (an opaque handle of material provisioned in
-                the deployment&apos;s secret backend; the console never sees material).
+                the deployment&apos;s secret store; the console never sees material).
               </p>
             ) : null}
           </div>
@@ -235,16 +266,17 @@ export function IntegrationConnectionsSection({ clientId }: { clientId: string }
         </div>
       </ConfirmGate>
 
-      <SourceLine
-        sources={[
-          `GET /api/clients/${clientId.slice(0, 8)}…/connections`,
-          "POST /api/clients/:clientId/connections (register)",
-          "POST …/connections/:connectionId/connect | …/suspend (CAS transitions)",
-          "GET /api/integrations/adapters (capability descriptors)",
-          "GET /api/agencies/:agencyId/credentials (live references)",
-        ]}
-      />
-    </section>
+        <SourceLine
+          sources={[
+            `GET /api/clients/${clientId.slice(0, 8)}…/connections`,
+            "POST /api/clients/:clientId/connections (register)",
+            "POST …/connections/:connectionId/connect | …/suspend (CAS transitions)",
+            "GET /api/integrations/adapters (capability descriptors)",
+            "GET /api/agencies/:agencyId/credentials (live references)",
+          ]}
+        />
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -339,33 +371,40 @@ function IntegrationConnectionCard({
         <div className="min-w-0">
           <p className="truncate font-medium text-stone-800">
             {connection.providerLabel}
-            <span className="ml-2 font-mono text-xs font-normal text-stone-400">
-              {connection.adapterKey}
-            </span>
+            {adapter ? null : (
+              <span className="ml-2 text-xs font-normal text-amber-900">
+                connector no longer registered
+              </span>
+            )}
           </p>
           <p className="mt-0.5 text-sm text-stone-500">
-            pipe {connection.connectionId.slice(0, 8)}… · credential{" "}
-            {connection.credentialReferenceId.slice(0, 8)}…
+            {isLive ? "reads and writes flow through this pipe" : "not live — run the connect probe"}
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-1.5">
             <IntegrationStatusChip status={connection.status} health={connection.health} />
             {connection.lastCheckedAt ? (
-              <span className="font-mono text-[11px] text-stone-500">
-                probed {formatWhen(connection.lastCheckedAt)}
+              <span className="text-[11px] text-stone-500">
+                last checked {formatWhen(connection.lastCheckedAt)}
               </span>
             ) : (
-              <span className="font-mono text-[11px] text-stone-500">never probed</span>
+              <span className="text-[11px] text-stone-500">never checked yet</span>
             )}
           </p>
           {connection.lastError ? (
-            <p className="mt-1.5 break-words text-xs leading-relaxed text-red-900">
+            <p
+              className={`mt-1.5 break-words text-xs leading-relaxed ${
+                connection.status === "error" || connection.health === "unreachable"
+                  ? "text-red-900"
+                  : "text-amber-900"
+              }`}
+            >
               Last error: {connection.lastError}
             </p>
           ) : null}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <WorkspaceActionButton
-            tone={isLive ? "plain" : "teal"}
+            tone="plain"
             onClick={() =>
               void connect.mutateAsync({
                 connectionId: connection.connectionId,
@@ -419,9 +458,19 @@ function IntegrationConnectionCard({
               expectedVersion: connection.version,
               ...(suspendReason === "" ? {} : { reason: suspendReason }),
             })
-            .then(() => setSuspendOpen(false));
+            .then(() => setSuspendOpen(false))
+            .catch(() => {
+              /* UX-010: the refusal renders below — never a fake success,
+               *   never an unhandled rejection. */
+            });
         }}
-      />
+      >
+        {suspend.isError ? (
+          <RouteRefusalNote
+            message={suspend.error instanceof Error ? suspend.error.message : String(suspend.error)}
+          />
+        ) : null}
+      </ConfirmGate>
     </ConnectionCard>
   );
 }

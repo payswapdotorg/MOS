@@ -70,13 +70,19 @@ export function IntegrationStatusChip({
   status: string;
   health: string;
 }) {
+  // UX-010 state vocabulary: teal only for the genuinely healthy live pipe;
+  // amber for suspended AND for the undetermined-health states (connected
+  // with unknown health is warning-grade, not neutral — no silent
+  // capability gap); red only for the true failure/block states.
+  const failure = status === "error" || health === "unreachable";
+  const warning = status === "suspended" || (!failure && health !== "healthy");
   const cls =
     status === "connected" && health === "healthy"
       ? "border-teal-800/20 bg-teal-50 text-teal-900"
-      : status === "suspended"
-        ? "border-amber-700/20 bg-amber-50 text-amber-900"
-        : status === "error" || health === "unreachable"
-          ? "border-red-800/20 bg-red-50 text-red-900"
+      : failure
+        ? "border-red-800/20 bg-red-50 text-red-900"
+        : warning
+          ? "border-amber-700/20 bg-amber-50 text-amber-900"
           : "border-stone-300 bg-stone-100 text-stone-700";
   return <Chip label={`${status} · ${health}`} className={cls} />;
 }
@@ -343,6 +349,8 @@ export function ConfirmGate({
             {busy ? "Working…" : confirmLabel}
           </button>
         </DialogFooter>
+        {/* UX-010: a refusal inside a gate is never silent — the children slot
+            renders the honest RouteRefusalNote under the confirm row. */}
       </DialogContent>
     </Dialog>
   );

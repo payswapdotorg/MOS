@@ -26,7 +26,7 @@
 // routes), never a silent dead end.
 
 import * as React from "react";
-import { ScrollText } from "lucide-react";
+
 import {
   useClientEvidence,
   useContentAssets,
@@ -65,6 +65,7 @@ import {
   WorkspaceActionButton,
   WorkspaceEmptyState,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 
 // The frozen ci-vocab-v1 option sets (mirrored for the record form; the
 // route rejects anything else with its own 422 words — the server stays
@@ -214,77 +215,89 @@ export function CandidatesSection({ clientId }: { clientId: string }) {
   );
 
   return (
-    <section id="content-candidates-section" aria-labelledby="content-candidates-heading" className="space-y-3">
-      <div>
-        <h3 id="content-candidates-heading" className="flex items-center gap-2 font-medium text-stone-800">
-          <ScrollText className="size-4 text-stone-400" aria-hidden="true" />
-          Content candidates
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
-          The observed content this client is considering — each candidate carries its §6
-          observed-feature set and its EVIDENCE links (what was actually observed, where, when).
-          Hypotheses about why a candidate performs are recorded as the SEPARATE derived register
+    <SurfaceSection
+      id="content-candidates"
+      label="Candidates"
+      title="Content candidates"
+      summary={
+        candidates.isPending
+          ? "loading the candidates…"
+          : candidates.isError
+            ? "could not load the candidates — open to retry"
+            : list.length === 0
+              ? "none recorded yet"
+              : `${list.length} candidate${list.length === 1 ? "" : "s"} · ${
+                  list.filter((candidate) => candidate.evidenceIds.length > 0).length
+                } evidence-anchored`
+      }
+      summaryTone={candidates.isError ? "warning" : "neutral"}
+    >
+      <div id="content-candidates-section" className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
+          The observed content this client is considering — each candidate carries its
+          observed-feature set and its evidence links (what was actually observed, where, when).
+          Hypotheses about why a candidate performs are recorded as the separate derived register
           and never merged into the evidence. A candidate with no rights record yet shows the
           honest not-requested state with the real next action.
         </p>
-      </div>
 
-      {candidates.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : candidates.isError ? (
-        <SectionErrorViewInline
-          error={candidates.error}
-          what="the content candidates"
-          onRetry={() => void candidates.refetch()}
-        />
-      ) : (
-        <>
-          {list.length === 0 ? (
-            <WorkspaceEmptyState
-              missing="No content candidates yet — research a niche to start."
-              why="A candidate is the observed-feature record of content that worked somewhere: format, hooks, narrative, performance. Each one cites the client's evidence ledger, so its provenance stays checkable."
-              next="Run research above and record a retained fact as client evidence, then record the candidate from that evidence — or record a candidate directly from any evidence the client already holds."
-              action={
-                <div className="flex flex-wrap gap-2">
-                  <InPageLink targetId="content-research-section">Go to Research above</InPageLink>
-                  <WorkspaceActionButton
-                    onClick={() => setRecordOpen(true)}
-                    ariaLabel="Record a content candidate"
-                  >
-                    Record a candidate
-                  </WorkspaceActionButton>
-                </div>
-              }
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {list.map((candidate) => (
-                <CandidateCard
-                  key={candidate.contentCandidateId}
-                  clientId={clientId}
-                  candidate={candidate}
-                  join={join}
-                  citingHypotheses={hypothesisList.filter((hypothesis) =>
-                    hypothesis.candidateIds.includes(candidate.contentCandidateId),
-                  )}
-                />
-              ))}
-            </ul>
-          )}
+        {candidates.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : candidates.isError ? (
+          <SectionErrorViewInline
+            error={candidates.error}
+            what="the content candidates"
+            onRetry={() => void candidates.refetch()}
+          />
+        ) : (
+          <>
+            {list.length === 0 ? (
+              <WorkspaceEmptyState
+                missing="No content candidates yet — research a niche to start."
+                why="A candidate is the observed-feature record of content that worked somewhere: format, hooks, narrative, performance. Each one cites the client's evidence ledger, so its provenance stays checkable."
+                next="Run research above and record a retained fact as client evidence, then record the candidate from that evidence — or record a candidate directly from any evidence the client already holds."
+                action={
+                  <div className="flex flex-wrap gap-2">
+                    <InPageLink targetId="section-content-research">Go to Research above</InPageLink>
+                    <WorkspaceActionButton
+                      tone="plain"
+                      onClick={() => setRecordOpen(true)}
+                      ariaLabel="Record a content candidate"
+                    >
+                      Record a candidate
+                    </WorkspaceActionButton>
+                  </div>
+                }
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {list.map((candidate) => (
+                  <CandidateCard
+                    key={candidate.contentCandidateId}
+                    clientId={clientId}
+                    candidate={candidate}
+                    join={join}
+                    citingHypotheses={hypothesisList.filter((hypothesis) =>
+                      hypothesis.candidateIds.includes(candidate.contentCandidateId),
+                    )}
+                  />
+                ))}
+              </ul>
+            )}
 
-          {list.length > 0 ? (
-            <div>
-              <WorkspaceActionButton
-                tone="plain"
-                onClick={() => setRecordOpen(true)}
-                ariaLabel="Record another content candidate"
-              >
-                Record another candidate
-              </WorkspaceActionButton>
-            </div>
-          ) : null}
-        </>
-      )}
+            {list.length > 0 ? (
+              <div>
+                <WorkspaceActionButton
+                  tone="plain"
+                  onClick={() => setRecordOpen(true)}
+                  ariaLabel="Record another content candidate"
+                >
+                  Record another candidate
+                </WorkspaceActionButton>
+              </div>
+            ) : null}
+          </>
+        )}
 
       <RecordCandidateGate
         clientId={clientId}
@@ -313,7 +326,8 @@ export function CandidatesSection({ clientId }: { clientId: string }) {
           "POST …/content-intelligence/candidates | hypotheses (record)",
         ]}
       />
-    </section>
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -354,12 +368,22 @@ function CandidateCard({
       detailLabel="Evidence links, observed features, hypotheses and rights linkage"
         detail={(open) =>
           open ? (
-            <CandidateDetailBody
-              clientId={clientId}
-              candidate={candidate}
-              evidenceById={join.evidenceById}
-              citingHypotheses={citingHypotheses}
-            />
+            <div className="space-y-4">
+              {/* UX-010: the honest rights-linkage warning + its next action moved
+                  into the disclosure layer — the summary row keeps the compact
+                  signal (the amber chip below), never a silent gap. */}
+              <CandidateRightsLine
+                linkedAsset={linkedAssets[0] ?? null}
+                linkedRights={linkedRights}
+                evidenceMissing={candidate.evidenceIds.length === 0}
+              />
+              <CandidateDetailBody
+                clientId={clientId}
+                candidate={candidate}
+                evidenceById={join.evidenceById}
+                citingHypotheses={citingHypotheses}
+              />
+            </div>
           ) : null
         }
       >
@@ -396,23 +420,53 @@ function CandidateCard({
             ) : null}
           </div>
 
-          <p className="font-mono text-[11px] leading-relaxed text-stone-400">
-            {candidate.evidenceIds.length} evidence link(s)
-            {firstEvidence
-              ? ` · ${firstEvidence.source.system}${firstEvidence.source.ref ? ` · ${firstEvidence.source.ref}` : ""} · observed ${formatWhen(firstEvidence.observedAt)}`
-              : " · the cited evidence is not in the current ledger"}
+          <p className="text-[11px] leading-relaxed text-stone-400">
+            {candidate.evidenceIds.length} evidence link{candidate.evidenceIds.length === 1 ? "" : "s"}
+            {firstEvidence === undefined && candidate.evidenceIds.length > 0
+              ? " · the cited evidence is not in the current ledger"
+              : ""}
             {candidate.metricObservationIds.length > 0
-              ? ` · ${candidate.metricObservationIds.length} metric anchor(s)`
+              ? ` · ${candidate.metricObservationIds.length} metric anchor${candidate.metricObservationIds.length === 1 ? "" : "s"}`
               : ""}
           </p>
 
-          <CandidateRightsLine
+          <CandidateRightsSummaryChip
             linkedAsset={linkedAssets[0] ?? null}
             linkedRights={linkedRights}
             evidenceMissing={candidate.evidenceIds.length === 0}
           />
         </div>
     </ContentRecordCard>
+  );
+}
+
+/** The compact rights signal at the summary level (UX-010): the honest
+ *  state as one calm chip — the full explanation and next action live in
+ *  the expanded detail (CandidateRightsLine), never a silent gap. */
+function CandidateRightsSummaryChip({
+  linkedAsset,
+  linkedRights,
+  evidenceMissing,
+}: {
+  linkedAsset: ContentAssetVersionView | null;
+  linkedRights: ContentRightsRecordView | null;
+  evidenceMissing: boolean;
+}) {
+  if (evidenceMissing) {
+    return (
+      <Chip label="rights: blocked — no evidence links" className="border-amber-700/20 bg-amber-50 text-amber-900" />
+    );
+  }
+  if (linkedRights !== null) {
+    return <RightsStateChip state={linkedRights.state} />;
+  }
+  if (linkedAsset !== null) {
+    return (
+      <Chip label="rights: no record yet for the registered asset" className="border-amber-700/20 bg-amber-50 text-amber-900" />
+    );
+  }
+  return (
+    <Chip label="rights: nothing requested yet" className="border-stone-300 bg-stone-100 text-stone-700" />
   );
 }
 
@@ -510,7 +564,7 @@ function CandidateDetailBody({
 
       <div>
         <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
-          The §6 observed-feature record (verbatim)
+          The observed-feature record (verbatim)
         </p>
         <LabeledRows
           record={{
