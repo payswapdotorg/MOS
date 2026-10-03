@@ -1,15 +1,22 @@
 /**
  * MarketingOS module: /content-studio
- * Authority: Content Studio Runtime (STUDIO-001 — spec/
- * effective-backlog-v1.7.md STUDIO-001: "Build the MOS-owned
+ * Authority: Content Studio Runtime (STUDIO-001) + the Pluggable
+ * Format Framework (STUDIO-002 — spec/effective-backlog-v1.7.md
+ * STUDIO-002: "Build the format contract and registry.
+ * Acceptance: formats declare input, participant, capture,
+ * interviewer, organization, output, provenance and evaluation
+ * contracts; new formats do not require another Studio runtime.";
+ * dependencies satisfied on main: STUDIO-001 (merged PR #73 — the
+ * /content-studio runtime + migration 064 this framework extends) —
+ * spec/effective-backlog-v1.7.md STUDIO-001: "Build the MOS-owned
  * AI+Human production session runtime used standalone or by the Lab.
  * Acceptance: tenant-scoped versioned production sessions,
  * asynchronous/durable processing, guarded lifecycle, no
- * publishing/experiment authority."; dependencies satisfied on main:
- * LAB-011 (merged PR #70 — the /lab-agent-body Agent Body Runtime
- * Contract, the pawn runtime this module loads organizations through)
- * and the frozen v1.6 Content Asset/Rights boundaries). The governing
- * sub-contract is spec/content-studio-contract-v1.0.md (FROZEN):
+ * publishing/experiment authority."; LAB-011 (merged PR #70 — the
+ * /lab-agent-body Agent Body Runtime Contract, the pawn runtime this
+ * module loads organizations through) and the frozen v1.6 Content
+ * Asset/Rights boundaries). The governing sub-contract is
+ * spec/content-studio-contract-v1.0.md (FROZEN):
  *
  *   §1  "Content Studio is the MOS-owned runtime for producing
  *        AI+Human content. It has two entry modes: 1. Standalone
@@ -22,9 +29,17 @@
  *        organization compatibility requirements; output artifact
  *        contract; provenance/consent requirements; evaluation hooks.
  *        Adding a future format MUST NOT require a second Studio
- *        runtime or a second Lab authority." (STUDIO-002 owns the
- *        full format framework; this module owns the RUNTIME + the
- *        SEAM the formats plug into.)
+ *        runtime or a second Lab authority." (STUDIO-002 — THIS
+ *        delivery — makes every one of the nine §2 declaration
+ *        surfaces real: each field is a validated,
+ *        closed-vocabulary-backed declaration surface on the
+ *        migration-068 registry record, expressed as declared DATA
+ *        (the one-level LAB-011 contract discipline), never runtime
+ *        logic the format cannot inspect; the registry carries the
+ *        /lab-agent-body versioned-registry discipline — draft →
+ *        active → retired, append-only version corrections, identity
+ *        immutable — and registering a future format is a declaration
+ *        through the SAME seam, never a second Studio runtime.)
  *   §3  the immutable/versioned Production Request field set;
  *   §4  organization loading: "The Studio MUST load any Organization
  *        that satisfies the declared Studio compatibility contract"
@@ -35,10 +50,32 @@
  *        guarded and append-audited." + "A completed session remains
  *        immutable. A retry/treatment creates a new session revision
  *        or child production run linked to the prior output.";
+ *   §6  the single-person podcast interviewer representations (the
+ *        construction options the podcast formats declare: "voice;
+ *        voice + text; avatar; prerecorded interviewer content;
+ *        generated interviewer content; hybrid representation" +
+ *        spec/architecture-v1.7-marketing-lab.md §27.6 "another
+ *        declared multimodal interviewer representation" — the
+ *        closed interviewer-representation vocabulary) + "The
+ *        interviewer may adapt questions using previous answers" +
+ *        "Synthetic or prerecorded interviewer material MUST NOT be
+ *        represented as a live human recording when it is not";
+ *   §7  the multi-person podcast participation grants ("Each
+ *        participant joins through an explicit participation grant" —
+ *        the participation-grant model a format's participant model
+ *        declares; the multi-account session surface itself is
+ *        STUDIO-006, never this module);
  *   §9  "Long-running processing is asynchronous/durable rather than
  *        a synchronous web request." (AGENTS.md v1.7: "Long-running
  *        simulation/training and production processing use durable
  *        worker infrastructure, not synchronous requests");
+ *   §12 the output artifact package vocabulary (the "where available"
+ *        kinds the output artifact contract declares: raw captures,
+ *        final media, alternate takes, transcript, question/answer
+ *        graph, timestamps, participant contributions, edit graph,
+ *        transform graph, composition/layout data, captions/subtitles,
+ *        derived clips, provenance, consent records, quality/
+ *        evaluation metadata, costs and processing durations);
  *   §13 the structured treatment request fields ("A rejection is a
  *        Lab decision and is distinct from a Rights/Policy
  *        rejection." — the Lab-side evaluation verdicts are LAB-023,
@@ -91,6 +128,19 @@
 
 /** The versioned identity of the Studio runtime contract (the migration-064 CHECK fence pins it). */
 export const CONTENT_STUDIO_CONTRACT_VERSION = 'content-studio-runtime-v1' as const;
+
+/**
+ * The versioned identity of the format-framework contract (STUDIO-002 —
+ * the migration-068 CHECK fence pins it on every registry row): the
+ * nine §2 declaration surfaces + the honest availability layer. A
+ * SECOND contract identity, not a version bump of the runtime
+ * contract: the six migration-064 runtime tables keep
+ * 'content-studio-runtime-v1' immutable (the STUDIO-001 delivery is
+ * frozen); the migration-068 registry rows carry the format-framework
+ * identity (the /lab-features lab-featureset-v1 precedent of a
+ * versioned sub-contract identity inside one module).
+ */
+export const CONTENT_STUDIO_FORMAT_CONTRACT_VERSION = 'content-studio-format-v1' as const;
 
 import type { Clock } from '../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../platform/ids/ids.ts';
@@ -204,20 +254,190 @@ export type ContentStudioStepFailureReason = (typeof CONTENT_STUDIO_STEP_FAILURE
 export const CONTENT_STUDIO_INPUT_MODES = ['script', 'question_list', 'intent'] as const;
 export type ContentStudioInputMode = (typeof CONTENT_STUDIO_INPUT_MODES)[number];
 
-/** §6 — the interviewer representation forms a one-person podcast may declare (provenance-labeled). */
+/**
+ * §6 + architecture-v1.7 §27.6 — the interviewer representation forms
+ * a one-person podcast may declare (provenance-labeled): the §6 six
+ * (voice; voice + text; avatar; prerecorded interviewer content;
+ * generated interviewer content; hybrid representation) PLUS the
+ * §27.6 "another declared multimodal interviewer representation"
+ * (mapped to the enum member 'multimodal_declared' — the disclosed
+ * spelling of the parent architecture's seventh form).
+ */
 export const CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS = [
   'voice',
   'voice_text',
   'avatar',
   'prerecorded',
   'generated',
+  'multimodal_declared',
   'hybrid',
 ] as const;
 export type ContentStudioInterviewerRepresentation = (typeof CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS)[number];
 
+/**
+ * §6 — the interviewer follow-up discipline a declaring format pins:
+ * 'adaptive' ("The interviewer may adapt questions using previous
+ * answers" — the §8 question/branch graph discipline) or 'fixed' (a
+ * non-adaptive script-driven interviewer).
+ */
+export const CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES = ['adaptive', 'fixed'] as const;
+export type ContentStudioInterviewerFollowUpMode = (typeof CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES)[number];
+
+/**
+ * §7 — the participation grant model a format's participant model
+ * declares: 'single_scope' (the §6 single-person surface — one
+ * authorized account, no per-participant grants) or
+ * 'explicit_grant_per_participant' (the §7 multi-person surface —
+ * every participant joins through an explicit participation grant;
+ * the grant records themselves are STUDIO-006, never this module).
+ */
+export const CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS = ['single_scope', 'explicit_grant_per_participant'] as const;
+export type ContentStudioParticipationGrantModel = (typeof CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS)[number];
+
 /** §2/§9 — the capture modalities a format may declare (modality-specific but format-neutral). */
 export const CONTENT_STUDIO_CAPTURE_MODALITIES = ['audio', 'video', 'screen', 'participant_streams', 'alternate_takes'] as const;
 export type ContentStudioCaptureModality = (typeof CONTENT_STUDIO_CAPTURE_MODALITIES)[number];
+
+/**
+ * §4 (the organization compatibility requirements' permission fence) —
+ * the CLOSED action-kind vocabulary the /lab-agent-body §14 contract
+ * CHECK-fences (migration 063's permissions <@ fence): a format's
+ * requiredPermissions must be a subset of EXACTLY this set, so the
+ * collective-coverage validation at session open is a closed-set
+ * comparison, never an open string match.
+ */
+export const CONTENT_STUDIO_ORGANIZATION_PERMISSIONS = [
+  'read',
+  'analyze',
+  'compose',
+  'transform',
+  'communicate',
+  'simulate',
+] as const;
+export type ContentStudioOrganizationPermission = (typeof CONTENT_STUDIO_ORGANIZATION_PERMISSIONS)[number];
+
+/**
+ * §12 — the output artifact package kinds ("A completed Studio Session
+ * returns an Artifact Package containing, where available: ...") — the
+ * CLOSED vocabulary the output artifact contract declares its outputs
+ * from. Every member is a §12 package kind verbatim (snake_cased):
+ * raw captures; final media; alternate takes; transcript; question/
+ * answer graph; timestamps; participant contributions; edit graph;
+ * transform graph; composition/layout data; captions/subtitles;
+ * derived clips; provenance; consent records; quality/evaluation
+ * metadata; costs and processing durations.
+ */
+export const CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS = [
+  'raw_captures',
+  'final_media',
+  'alternate_takes',
+  'transcript',
+  'question_answer_graph',
+  'timestamps',
+  'participant_contributions',
+  'edit_graph',
+  'transform_graph',
+  'composition_layout',
+  'captions_subtitles',
+  'derived_clips',
+  'provenance',
+  'consent_records',
+  'quality_evaluation_metadata',
+  'costs_durations',
+] as const;
+export type ContentStudioOutputArtifactKind = (typeof CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS)[number];
+
+/**
+ * §6/§7/§16 — the CLOSED consent-kind vocabulary the provenance/
+ * consent requirements declare from (each member grounded in a
+ * contract phrase — the disclosed mapping):
+ * 'participant_recording_consent' (§6 "participant consent");
+ * 'interviewer_representation_disclosure' (§6 "Synthetic or
+ * prerecorded interviewer material MUST NOT be represented as a live
+ * human recording when it is not");
+ * 'participant_contribution_rights' (§7 "output rights metadata" +
+ * §16 "turn a participant contribution into an unrestricted reusable
+ * asset without the necessary rights/consent");
+ * 'source_artifact_rights' (§16 "declared rights/consent context"
+ * for the cited source/reference artifacts — never inferred from
+ * public accessibility).
+ */
+export const CONTENT_STUDIO_CONSENT_KINDS = [
+  'participant_recording_consent',
+  'interviewer_representation_disclosure',
+  'participant_contribution_rights',
+  'source_artifact_rights',
+] as const;
+export type ContentStudioConsentKind = (typeof CONTENT_STUDIO_CONSENT_KINDS)[number];
+
+/**
+ * §6/§11/§12 — the CLOSED provenance-element vocabulary the
+ * provenance/consent requirements declare from (each member grounded
+ * in a contract phrase — the disclosed mapping):
+ * 'source_reference' (§11 "source/reference → human capture →
+ * transformation → assembled output" — the lineage head);
+ * 'human_capture' (§11); 'interviewer_representation' (§6
+ * "interviewer representation provenance");
+ * 'generated_vs_human_distinction' (§6 "generated versus
+ * human-authored distinction"); 'question_answer_sequence' (§6
+ * "question/answer sequence"); 'recording' (§6 "recording
+ * provenance"); 'transform_graph' (§11 "transformation" + §12);
+ * 'edit_graph' (§12); 'participant_contribution' (§7/§12
+ * "participant contributions"); 'treatment_lineage' (§12 "New
+ * treatment produces a new version linked to its predecessor").
+ */
+export const CONTENT_STUDIO_PROVENANCE_ELEMENTS = [
+  'source_reference',
+  'human_capture',
+  'interviewer_representation',
+  'generated_vs_human_distinction',
+  'question_answer_sequence',
+  'recording',
+  'transform_graph',
+  'edit_graph',
+  'participant_contribution',
+  'treatment_lineage',
+] as const;
+export type ContentStudioProvenanceElement = (typeof CONTENT_STUDIO_PROVENANCE_ELEMENTS)[number];
+
+/**
+ * §2 — the CLOSED evaluation-hook firing surfaces: the deterministic
+ * runtime events a format's evaluation hooks may declare attachment
+ * to ('stage_completion' — a declared processing stage's durable step
+ * completed; 'output_recorded' — the output version was recorded).
+ * The hook FIRINGS are DATA on the session event tail; the hook
+ * EVALUATION is the caller's (the Lab verdicts are LAB-023, never
+ * this module) — this surface is the declaration the format can
+ * inspect, never logic it cannot.
+ */
+export const CONTENT_STUDIO_EVALUATION_HOOK_SURFACES = ['stage_completion', 'output_recorded'] as const;
+export type ContentStudioEvaluationHookSurface = (typeof CONTENT_STUDIO_EVALUATION_HOOK_SURFACES)[number];
+
+/**
+ * The honest availability layer (the STUDIO-002 gap disclosure as
+ * DATA): 'runtime_driven' — the CURRENT Studio runtime executes the
+ * stage's contract surface end-to-end through the durable
+ * claim/complete machinery; 'awaiting_execution_module' — the stage's
+ * real execution is owned by a future declared Studio module (cited
+ * by awaitingModule, e.g. 'STUDIO-007'). The runtime does NOT gate
+ * execution on the availability state — it is the format's honest
+ * declaration of what is shipped, never a silent overstatement.
+ */
+export const CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES = ['runtime_driven', 'awaiting_execution_module'] as const;
+export type ContentStudioFormatAvailabilityState = (typeof CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES)[number];
+
+/**
+ * The §2 format-registry lifecycle (the /lab-agent-body
+ * versioned-registry precedent): a format version is registered as
+ * 'draft', activated explicitly ('active' — the only state whose
+ * versions resolve for NEW sessions), then possibly 'retired' (new
+ * resolutions refuse; RUNNING sessions never break — they carry the
+ * bound format identity/version as their own recorded data, and the
+ * registry never deletes). No resurrection: a retired or superseded
+ * version is corrected by a NEW version row.
+ */
+export const CONTENT_STUDIO_FORMAT_STATUSES = ['draft', 'active', 'retired'] as const;
+export type ContentStudioFormatStatus = (typeof CONTENT_STUDIO_FORMAT_STATUSES)[number];
 
 // ---------------------------------------------------------------------------
 // The scope + the platform ports (the composition-root wiring point)
@@ -250,11 +470,15 @@ export interface ContentStudioModuleDeps {
   readonly agentBodies: ContentStudioAgentBodyPort;
   /**
    * The format seam (§2 "The format registry MUST be pluggable"):
-   * the declared formats this runtime validates requests against.
-   * The composition root wires the initial registry content; future
-   * formats arrive through the SAME seam without a second runtime
-   * (STUDIO-002 owns the full framework — this is the seam it plugs
-   * into).
+   * the composition-root wired registry CONTENT — the initial (or
+   * test-wired) FULL §2 declarations the registry materializes
+   * per CLIENT scope (materialize-if-absent, born active through the
+   * guarded lifecycle; a tenant's own registry state is never
+   * resurrected or overwritten). Future formats arrive through the
+   * SAME seam (a new declaration here) OR through the operational
+   * registerFormat/activateFormat commands — both land in the ONE
+   * migration-068 registry, never a second Studio runtime
+   * (STUDIO-002 made this seam the full framework).
    */
   readonly formats: ReadonlyArray<ContentStudioFormatDeclaration>;
 }
@@ -263,77 +487,155 @@ export interface ContentStudioModuleDeps {
 // §2 — the FORMAT SEAM (the pluggable format declaration)
 // ---------------------------------------------------------------------------
 
-/** The input requirements a format declares (validated deterministically at session open). */
+/**
+ * §2 DECLARATION SURFACE 1 of 9 — the format identity/version: the
+ * identity (1-64 chars of [a-z0-9_-]) + the version (1..1000) declared
+ * on ContentStudioFormatDeclaration are the registry's natural key;
+ * the identity is IMMUTABLE across a version chain (the
+ * /lab-agent-body discipline) and the version chain is append-only
+ * (corrections are NEW version rows, never in-place rewrites).
+ */
+/** §2 DECLARATION SURFACE 2 of 9 — the input requirements (validated deterministically at session open). */
 export interface ContentStudioFormatInputRequirements {
-  /** The §8 input modes this format accepts. */
+  /** The §8 input modes this format accepts (a non-empty subset of the closed input-mode vocabulary). */
   readonly modes: ReadonlyArray<ContentStudioInputMode>;
   /** Whether source/reference artifacts are REQUIRED (§3 source/reference artifacts). */
   readonly sourceArtifacts: 'required' | 'optional';
 }
 
-/** The participant model a format declares (§2; the multi-account surface itself is STUDIO-006). */
+/**
+ * §2 DECLARATION SURFACE 3 of 9 — the participant model (§6 the
+ * single-person surface + §7 the multi-person participation grants;
+ * the multi-account session surface itself is STUDIO-006).
+ */
 export interface ContentStudioFormatParticipantModel {
-  /** The number of human participants the format expects (1..16). */
-  readonly participants: number;
+  /**
+   * The §7 participant count bounds: min ≥ 1, max ≤ 16, min ≤ max.
+   * A single-person format pins {1, 1}; a multi-person-capable
+   * format declares the range it supports (the §7 multi-person
+   * surface starts at 2).
+   */
+  readonly participants: { readonly min: number; readonly max: number };
   /** Whether human capture is required for production. */
   readonly humanCapture: 'required' | 'optional';
+  /**
+   * §7 — the participation grant model: exactly
+   * 'explicit_grant_per_participant' when participants.max > 1 (every
+   * participant joins through an explicit participation grant) and
+   * 'single_scope' when participants.max = 1 (the §6 single-person
+   * surface — the validation fences the pairing).
+   */
+  readonly participationGrants: ContentStudioParticipationGrantModel;
 }
 
-/** The capture requirements a format declares (§9 — modality-specific but format-neutral). */
+/** §2 DECLARATION SURFACE 4 of 9 — the capture requirements (§9 — modality-specific but format-neutral). */
 export interface ContentStudioFormatCaptureRequirements {
+  /** The capture modalities this format requires (a non-empty subset of the closed capture-modality vocabulary). */
   readonly modalities: ReadonlyArray<ContentStudioCaptureModality>;
 }
 
-/** The interviewer requirements a format declares (§6 — the representation forms with provenance). */
+/**
+ * §2 DECLARATION SURFACE 5 of 9 — the interviewer requirements (§6 —
+ * the representation construction options with provenance).
+ */
 export interface ContentStudioFormatInterviewerRequirements {
   /** 'none' when the format has no interviewer portion. */
   readonly interviewer: 'none' | 'representation';
-  /** The declared representation forms (REQUIRED when interviewer is 'representation'). */
+  /** The declared representation forms (REQUIRED when interviewer is 'representation'; a non-empty subset of the closed vocabulary). */
   readonly representations?: ReadonlyArray<ContentStudioInterviewerRepresentation>;
+  /** The §6 follow-up discipline (REQUIRED when interviewer is 'representation'). */
+  readonly followUps?: ContentStudioInterviewerFollowUpMode;
 }
 
-/** The organization compatibility requirements a format declares (§4 — what the loaded organization must satisfy). */
+/**
+ * §2 DECLARATION SURFACE 6 of 9 — the organization compatibility
+ * requirements (§4 — what the loaded organization must satisfy).
+ */
 export interface ContentStudioFormatOrganizationRequirements {
   /** The minimum number of Agent Body versions the organization must cite (1..32). */
   readonly minAgentBodies: number;
-  /** The action kinds the organization's bodies must COLLECTIVELY cover (the §14 permission vocabulary). */
-  readonly requiredPermissions: ReadonlyArray<string>;
-  /** The opaque capability references the organization must collectively declare (optional). */
+  /**
+   * The action kinds the organization's bodies must COLLECTIVELY cover
+   * — a subset of the CLOSED §14 action-kind vocabulary (the
+   * migration-063 permissions fence; the closed-set comparison at
+   * session open).
+   */
+  readonly requiredPermissions: ReadonlyArray<ContentStudioOrganizationPermission>;
+  /**
+   * The opaque capability references the organization must
+   * collectively declare (optional; bounded opaque strings — the
+   * capability ENGINE is /lab-capabilities (LAB-013), NEVER this
+   * module; the declared references normalize into the
+   * migration-068 format-capability link records).
+   */
   readonly requiredCapabilities?: ReadonlyArray<string>;
 }
 
-/** The output artifact contract a format declares (§2 — the artifact kinds the format produces). */
+/**
+ * §2 DECLARATION SURFACE 7 of 9 — the output artifact contract (§12 —
+ * the artifact kinds the format produces).
+ */
 export interface ContentStudioFormatOutputContract {
-  /** The artifact kinds this format can produce (the request's output contract must be a subset). */
-  readonly outputs: ReadonlyArray<string>;
+  /** The §12 artifact kinds this format can produce (a non-empty subset of the closed artifact-kind vocabulary; the request's output contract must be a subset). */
+  readonly outputs: ReadonlyArray<ContentStudioOutputArtifactKind>;
 }
 
-/** The provenance/consent requirements a format declares (§2 — declared context, never evaluated here). */
+/**
+ * §2 DECLARATION SURFACE 8 of 9 — the provenance/consent requirements
+ * (declared context, never evaluated here — the Rights/Policy
+ * authorities decide; STUDIO-010 builds the records).
+ */
 export interface ContentStudioFormatProvenanceConsentRequirements {
-  /** The consent kinds the format's production requires (declared data — the Rights authority evaluates). */
-  readonly consent: ReadonlyArray<string>;
-  /** The provenance chain the format's outputs must carry (declared data — STUDIO-010 builds the records). */
-  readonly provenance: ReadonlyArray<string>;
+  /** The consent kinds the format's production requires (a subset of the closed consent-kind vocabulary — declared data, the Rights authority evaluates). */
+  readonly consent: ReadonlyArray<ContentStudioConsentKind>;
+  /** The provenance chain the format's outputs must carry (a subset of the closed provenance-element vocabulary — declared data, STUDIO-010 builds the records). */
+  readonly provenance: ReadonlyArray<ContentStudioProvenanceElement>;
 }
 
-/** The evaluation hooks a format declares (§2 — hook declarations only; the firings are DATA, the evaluation is the caller's). */
+/**
+ * §2 DECLARATION SURFACE 9 of 9 — the evaluation hooks (hook
+ * declarations only; the firings are DATA on the session event tail,
+ * the evaluation is the caller's — the Lab verdicts are LAB-023,
+ * never this module).
+ */
 export interface ContentStudioFormatEvaluationHooks {
-  readonly hooks: ReadonlyArray<{ readonly hookId: string }>;
+  readonly hooks: ReadonlyArray<{
+    /** The hook identity (1-64 chars of [a-z0-9-], unique within the declaration). */
+    readonly hookId: string;
+    /** The closed firing surface the hook attaches to. */
+    readonly firesOn: ContentStudioEvaluationHookSurface;
+    /** The declared stage the hook attaches to (REQUIRED when firesOn is 'stage_completion'; must be a declared processing stage). */
+    readonly stageId?: string;
+  }>;
 }
 
-/** One declared processing stage (the durable §9 step plan a session derives). */
+/**
+ * One declared processing stage (the durable §9 step plan a session
+ * derives) with its HONEST AVAILABILITY state (the STUDIO-002 gap
+ * disclosure as data: what the current runtime executes vs what a
+ * future module owns).
+ */
 export interface ContentStudioProcessingStage {
   readonly stageId: string;
   readonly description?: string;
+  /** The honest availability of this stage's execution (never an execution gate — a disclosure). */
+  readonly availability: {
+    readonly status: ContentStudioFormatAvailabilityState;
+    /** The bounded citation of the owning future module (REQUIRED when status is 'awaiting_execution_module'). */
+    readonly awaitingModule?: string;
+  };
 }
 
 /**
  * §2 — the format declaration: EVERYTHING a format declares, as
- * bounded declared data. The runtime validates requests against the
- * declaration; the format IMPLEMENTATION (capture, interviewers,
- * editing — STUDIO-003..014) drives the durable steps through the
- * claim/complete surface. Adding a future format is a new declaration
- * through this seam — never a second Studio runtime.
+ * bounded declared data — all NINE §2 declaration surfaces, each
+ * closed-vocabulary-backed and one-level-shaped (the LAB-011
+ * contract discipline), never runtime logic the format cannot
+ * inspect. The runtime validates requests against the declaration;
+ * the format IMPLEMENTATION (capture, interviewers, editing —
+ * STUDIO-003..014) drives the durable steps through the
+ * claim/complete surface. Adding a future format is a new
+ * declaration through this seam — never a second Studio runtime.
  */
 export interface ContentStudioFormatDeclaration {
   /** The format identity (1-64 chars of [a-z0-9_-]). */
@@ -354,75 +656,196 @@ export interface ContentStudioFormatDeclaration {
 
 /**
  * The initial format registry content (§2 "Initial formats: reaction;
- * audio podcast; video podcast") — MINIMAL declared DATA through the
- * seam, wired by the composition root. The full format framework is
- * STUDIO-002; the reaction/podcast implementations are
- * STUDIO-011/012/013 — never this module.
+ * audio podcast; video podcast") — the FULL §2 declarations
+ * (STUDIO-002 promoted the STUDIO-001 minimal DATA to the complete
+ * nine-surface field sets), wired by the composition root through the
+ * SAME seam. The registry materializes them per CLIENT scope
+ * (materialize-if-absent, born active through the guarded lifecycle)
+ * on first resolution/listing — a tenant's own registry state (a
+ * retirement, a corrected version) is never resurrected or
+ * overwritten. The reaction/podcast EXECUTION implementations are
+ * STUDIO-011/012/013 — never this module; each stage's honest
+ * availability discloses which future module owns its real execution.
  */
 export const CONTENT_STUDIO_INITIAL_FORMATS: ReadonlyArray<ContentStudioFormatDeclaration> = [
   {
     formatId: 'reaction',
     formatVersion: 1,
     inputRequirements: { modes: ['intent', 'script'], sourceArtifacts: 'required' },
-    participantModel: { participants: 1, humanCapture: 'required' },
+    participantModel: { participants: { min: 1, max: 1 }, humanCapture: 'required', participationGrants: 'single_scope' },
     captureRequirements: { modalities: ['audio', 'video', 'screen'] },
     interviewerRequirements: { interviewer: 'none' },
     organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'transform', 'compose'] },
     outputContract: { outputs: ['final_media'] },
     provenanceConsentRequirements: {
-      consent: ['participant_recording_consent'],
-      provenance: ['source_reference', 'human_capture', 'transform_graph'],
+      consent: ['participant_recording_consent', 'source_artifact_rights'],
+      provenance: ['source_reference', 'human_capture', 'transform_graph', 'treatment_lineage'],
     },
-    evaluationHooks: { hooks: [{ hookId: 'reaction-quality-hook' }] },
+    evaluationHooks: { hooks: [{ hookId: 'reaction-quality-hook', firesOn: 'output_recorded' }] },
     processingStages: [
-      { stageId: 'capture_ingestion', description: 'Ingest the raw human capture as an intermediate artifact.' },
-      { stageId: 'organization_treatment', description: 'The loaded organization composes source + reaction.' },
-      { stageId: 'output_assembly', description: 'Assemble the final media + provenance package.' },
+      {
+        stageId: 'capture_ingestion',
+        description: 'Ingest the raw human capture as an intermediate artifact.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-007' },
+      },
+      {
+        stageId: 'organization_treatment',
+        description: 'The loaded organization composes source + reaction.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-008' },
+      },
+      {
+        stageId: 'output_assembly',
+        description: 'Assemble the final media + provenance package.',
+        availability: { status: 'runtime_driven' },
+      },
     ],
   },
   {
     formatId: 'audio-podcast',
     formatVersion: 1,
     inputRequirements: { modes: ['script', 'question_list', 'intent'], sourceArtifacts: 'optional' },
-    participantModel: { participants: 1, humanCapture: 'required' },
-    captureRequirements: { modalities: ['audio'] },
-    interviewerRequirements: { interviewer: 'representation', representations: ['voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'hybrid'] },
+    participantModel: { participants: { min: 1, max: 16 }, humanCapture: 'required', participationGrants: 'explicit_grant_per_participant' },
+    captureRequirements: { modalities: ['audio', 'participant_streams', 'alternate_takes'] },
+    interviewerRequirements: {
+      interviewer: 'representation',
+      representations: ['voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'multimodal_declared', 'hybrid'],
+      followUps: 'adaptive',
+    },
     organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'compose'] },
     outputContract: { outputs: ['final_media', 'transcript'] },
     provenanceConsentRequirements: {
-      consent: ['participant_recording_consent', 'interviewer_representation_disclosure'],
-      provenance: ['question_answer_graph', 'interviewer_representation', 'recording'],
+      consent: ['participant_recording_consent', 'interviewer_representation_disclosure', 'participant_contribution_rights'],
+      provenance: [
+        'question_answer_sequence',
+        'interviewer_representation',
+        'generated_vs_human_distinction',
+        'recording',
+        'participant_contribution',
+        'transform_graph',
+        'treatment_lineage',
+      ],
     },
-    evaluationHooks: { hooks: [{ hookId: 'podcast-quality-hook' }] },
+    evaluationHooks: {
+      hooks: [
+        { hookId: 'podcast-quality-hook', firesOn: 'output_recorded' },
+        { hookId: 'interview-flow-hook', firesOn: 'stage_completion', stageId: 'interview_capture' },
+      ],
+    },
     processingStages: [
-      { stageId: 'script_preparation', description: 'Prepare the versioned script/question graph from the supplied input.' },
-      { stageId: 'interview_capture', description: 'Run the interview with the declared interviewer representation.' },
-      { stageId: 'organization_treatment', description: 'The loaded organization edits/composes the raw capture.' },
-      { stageId: 'output_assembly', description: 'Assemble the final audio + transcript + provenance package.' },
+      {
+        stageId: 'script_preparation',
+        description: 'Prepare the versioned script/question graph from the supplied input.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-003' },
+      },
+      {
+        stageId: 'interview_capture',
+        description: 'Run the interview with the declared interviewer representation.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-004' },
+      },
+      {
+        stageId: 'organization_treatment',
+        description: 'The loaded organization edits/composes the raw capture.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-008' },
+      },
+      {
+        stageId: 'output_assembly',
+        description: 'Assemble the final audio + transcript + provenance package.',
+        availability: { status: 'runtime_driven' },
+      },
     ],
   },
   {
     formatId: 'video-podcast',
     formatVersion: 1,
     inputRequirements: { modes: ['script', 'question_list', 'intent'], sourceArtifacts: 'optional' },
-    participantModel: { participants: 1, humanCapture: 'required' },
-    captureRequirements: { modalities: ['audio', 'video'] },
-    interviewerRequirements: { interviewer: 'representation', representations: ['voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'hybrid'] },
-    organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'compose', 'transform'] },
-    outputContract: { outputs: ['final_media', 'transcript'] },
-    provenanceConsentRequirements: {
-      consent: ['participant_recording_consent', 'interviewer_representation_disclosure'],
-      provenance: ['question_answer_graph', 'interviewer_representation', 'recording'],
+    participantModel: { participants: { min: 1, max: 16 }, humanCapture: 'required', participationGrants: 'explicit_grant_per_participant' },
+    captureRequirements: { modalities: ['audio', 'video', 'participant_streams', 'alternate_takes'] },
+    interviewerRequirements: {
+      interviewer: 'representation',
+      representations: ['voice', 'voice_text', 'avatar', 'prerecorded', 'generated', 'multimodal_declared', 'hybrid'],
+      followUps: 'adaptive',
     },
-    evaluationHooks: { hooks: [{ hookId: 'podcast-quality-hook' }] },
+    organizationRequirements: { minAgentBodies: 1, requiredPermissions: ['read', 'compose', 'transform'] },
+    outputContract: { outputs: ['final_media', 'transcript', 'captions_subtitles'] },
+    provenanceConsentRequirements: {
+      consent: ['participant_recording_consent', 'interviewer_representation_disclosure', 'participant_contribution_rights'],
+      provenance: [
+        'question_answer_sequence',
+        'interviewer_representation',
+        'generated_vs_human_distinction',
+        'recording',
+        'participant_contribution',
+        'transform_graph',
+        'treatment_lineage',
+      ],
+    },
+    evaluationHooks: {
+      hooks: [
+        { hookId: 'podcast-quality-hook', firesOn: 'output_recorded' },
+        { hookId: 'interview-flow-hook', firesOn: 'stage_completion', stageId: 'interview_capture' },
+      ],
+    },
     processingStages: [
-      { stageId: 'script_preparation', description: 'Prepare the versioned script/question graph from the supplied input.' },
-      { stageId: 'interview_capture', description: 'Run the interview with the declared interviewer representation.' },
-      { stageId: 'organization_treatment', description: 'The loaded organization edits/composes the raw capture.' },
-      { stageId: 'output_assembly', description: 'Assemble the final video + transcript + provenance package.' },
+      {
+        stageId: 'script_preparation',
+        description: 'Prepare the versioned script/question graph from the supplied input.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-003' },
+      },
+      {
+        stageId: 'interview_capture',
+        description: 'Run the interview with the declared interviewer representation.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-004' },
+      },
+      {
+        stageId: 'organization_treatment',
+        description: 'The loaded organization edits/composes the raw capture.',
+        availability: { status: 'awaiting_execution_module', awaitingModule: 'STUDIO-008' },
+      },
+      {
+        stageId: 'output_assembly',
+        description: 'Assemble the final video + transcript + captions + provenance package.',
+        availability: { status: 'runtime_driven' },
+      },
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// §2 — THE FORMAT REGISTRY (STUDIO-002 — the versioned registry records)
+// ---------------------------------------------------------------------------
+
+/**
+ * The public record view of one versioned format registry row
+ * (migration 068's studio_formats): the format identity/version, the
+ * CLIENT scope (the optional workspace anchor), the draft → active →
+ * retired lifecycle status, the FULL §2 declaration as declared data
+ * and the normalized capability link references (the
+ * studio_format_capabilities link records). Identity and declaration
+ * are immutable after insert; corrections are NEW version rows; the
+ * registry never deletes — retirement only closes NEW resolutions.
+ */
+export interface ContentStudioFormatRecord {
+  /** The server-generated opaque row identifier (the capability links' FK anchor). */
+  readonly formatVersionId: string;
+  readonly formatId: string;
+  readonly formatVersion: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  readonly status: ContentStudioFormatStatus;
+  readonly declaration: ContentStudioFormatDeclaration;
+  /** The declared capability link references (the normalized requiredCapabilities — exactly the link records). */
+  readonly capabilityLinks: ReadonlyArray<string>;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** The registration input: a FULL §2 declaration, validated then inserted as a DRAFT version row. */
+export interface RegisterContentStudioFormatInput {
+  readonly scope: ContentStudioScope;
+  readonly declaration: ContentStudioFormatDeclaration;
+}
 
 // ---------------------------------------------------------------------------
 // §4 — the ORGANIZATION SEAM (the submitted organization declaration)
@@ -845,9 +1268,44 @@ export interface ContentStudioModuleApi {
   getProductionRequestVersion(scope: ContentStudioScope, requestId: string, requestVersion: number): Promise<ContentStudioProductionRequestRecord>;
   listProductionRequests(scope: ContentStudioScope): Promise<ReadonlyArray<ContentStudioProductionRequestRecord>>;
 
-  // --- The §2 format seam (the read surface) ---
+  // --- The §2 FORMAT REGISTRY (STUDIO-002 — the versioned registry + the pluggable seam) ---
 
-  listFormats(): ReadonlyArray<ContentStudioFormatDeclaration>;
+  /**
+   * Registers a format version: validates the FULL §2 declaration
+   * (the nine closed-vocabulary-backed surfaces) and inserts the
+   * registry row as DRAFT (+ its format-capability link records,
+   * transactionally). The version chain is append-only: registering
+   * version n > 1 requires version n-1 in the same scope (the
+   * /lab-agent-body correction discipline); a duplicate identity/
+   * version is rejected — corrections are NEW version rows. THE
+   * PLUGGABILITY SEAM: registering a future format here requires ZERO
+   * changes to the Studio runtime (the deepened STUDIO-001 proof).
+   */
+  registerFormat(input: RegisterContentStudioFormatInput): Promise<ContentStudioFormatRecord>;
+  /** Activates a DRAFT format version (draft → active — the only state whose versions resolve for NEW sessions). */
+  activateFormat(scope: ContentStudioScope, formatId: string, formatVersion: number): Promise<ContentStudioFormatRecord>;
+  /**
+   * Retires an ACTIVE format version (active → retired): NEW session
+   * resolutions refuse; RUNNING sessions never break (they carry the
+   * bound format identity/version as their own recorded data, and the
+   * registry never deletes — no resurrection, corrections are new
+   * version rows).
+   */
+  retireFormat(scope: ContentStudioScope, formatId: string, formatVersion: number): Promise<ContentStudioFormatRecord>;
+  /**
+   * Resolves one registry record (any status; the uniform NotFound for
+   * foreign/unknown scope — no existence oracle). The composition-root
+   * wired initial formats materialize-if-absent on read.
+   */
+  getFormat(scope: ContentStudioScope, formatId: string, formatVersion: number): Promise<ContentStudioFormatRecord>;
+  /**
+   * Lists the tenant's registry records (every version row, any
+   * status). The composition-root wired initial formats
+   * materialize-if-absent on read (the frozen §2 out-of-the-box
+   * availability); a tenant's own registry state is never
+   * resurrected or overwritten.
+   */
+  listFormats(scope: ContentStudioScope): Promise<ReadonlyArray<ContentStudioFormatRecord>>;
 
   // --- The §5 versioned production sessions ---
 

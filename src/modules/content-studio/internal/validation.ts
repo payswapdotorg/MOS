@@ -44,9 +44,17 @@ import type {
 } from '../public.ts';
 import {
   CONTENT_STUDIO_CAPTURE_MODALITIES,
+  CONTENT_STUDIO_CONSENT_KINDS,
   CONTENT_STUDIO_ENTRY_MODES,
+  CONTENT_STUDIO_EVALUATION_HOOK_SURFACES,
+  CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES,
   CONTENT_STUDIO_INPUT_MODES,
+  CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES,
   CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS,
+  CONTENT_STUDIO_ORGANIZATION_PERMISSIONS,
+  CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS,
+  CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS,
+  CONTENT_STUDIO_PROVENANCE_ELEMENTS,
   CONTENT_STUDIO_SESSION_STATES,
   CONTENT_STUDIO_TERMINAL_SESSION_STATES,
 } from '../public.ts';
@@ -181,9 +189,13 @@ export function assertLegalContentStudioSessionTransition(from: ContentStudioSes
 }
 
 // ---------------------------------------------------------------------------
-// 2. THE §2 FORMAT SEAM (the declaration discipline)
+// 2. THE §2 FORMAT SEAM (the full nine-surface declaration discipline —
+//    STUDIO-002: every surface is closed-vocabulary-backed declared
+//    data; the migration-068 CHECK fences are the DB backstop of
+//    exactly these rules)
 // ---------------------------------------------------------------------------
 
+/** §2 surface 2 — the input requirements (closed input-mode vocabulary + the source-artifact fence). */
 function assertFormatInputRequirements(format: ContentStudioFormatDeclaration): void {
   const requirements = format.inputRequirements;
   if (!isPlainObject(requirements)) {
@@ -207,19 +219,49 @@ function assertFormatInputRequirements(format: ContentStudioFormatDeclaration): 
   }
 }
 
+/** §2 surface 3 — the participant model (the §6/§7 range + grant pairing). */
 function assertFormatParticipantModel(format: ContentStudioFormatDeclaration): void {
   const model = format.participantModel;
   if (!isPlainObject(model)) {
     throw new InvalidRequestError(`format '${format.formatId}' participantModel must be an object`);
   }
-  if (typeof model.participants !== 'number' || !Number.isSafeInteger(model.participants) || model.participants < 1 || model.participants > 16) {
-    throw new InvalidRequestError(`format '${format.formatId}' participantModel.participants must be an integer 1-16`);
+  if (!isPlainObject(model.participants)) {
+    throw new InvalidRequestError(`format '${format.formatId}' participantModel.participants must be { min, max }`);
+  }
+  const { min, max } = model.participants as { min?: unknown; max?: unknown };
+  if (typeof min !== 'number' || !Number.isSafeInteger(min) || min < 1 || min > 16) {
+    throw new InvalidRequestError(`format '${format.formatId}' participantModel.participants.min must be an integer 1-16`);
+  }
+  if (typeof max !== 'number' || !Number.isSafeInteger(max) || max < 1 || max > 16) {
+    throw new InvalidRequestError(`format '${format.formatId}' participantModel.participants.max must be an integer 1-16`);
+  }
+  if (min > max) {
+    throw new InvalidRequestError(`format '${format.formatId}' participantModel.participants requires min ≤ max`);
   }
   if (model.humanCapture !== 'required' && model.humanCapture !== 'optional') {
     throw new InvalidRequestError(`format '${format.formatId}' participantModel.humanCapture must be 'required' or 'optional'`);
   }
+  if (!CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS.includes(model.participationGrants as never)) {
+    throw new InvalidRequestError(
+      `format '${format.formatId}' participantModel.participationGrants must be one of ${CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS.join(', ')}`,
+    );
+  }
+  // The §6/§7 pairing fence: a multi-person-capable format (max > 1)
+  // MUST declare the §7 explicit per-participant grants; a
+  // single-person format (max = 1) MUST declare the §6 single scope.
+  if (max > 1 && model.participationGrants !== 'explicit_grant_per_participant') {
+    throw new InvalidRequestError(
+      `format '${format.formatId}' participantModel: a format supporting ${max} participants must declare participationGrants 'explicit_grant_per_participant' (§7 — every participant joins through an explicit participation grant)`,
+    );
+  }
+  if (max === 1 && model.participationGrants !== 'single_scope') {
+    throw new InvalidRequestError(
+      `format '${format.formatId}' participantModel: a single-person format (max = 1) must declare participationGrants 'single_scope' (§6)`,
+    );
+  }
 }
 
+/** §2 surface 4 — the capture requirements (closed capture-modality vocabulary). */
 function assertFormatCaptureRequirements(format: ContentStudioFormatDeclaration): void {
   const requirements = format.captureRequirements;
   if (!isPlainObject(requirements)) {
@@ -240,6 +282,7 @@ function assertFormatCaptureRequirements(format: ContentStudioFormatDeclaration)
   }
 }
 
+/** §2 surface 5 — the interviewer requirements (closed representation vocabulary + the §6 follow-up discipline). */
 function assertFormatInterviewerRequirements(format: ContentStudioFormatDeclaration): void {
   const requirements = format.interviewerRequirements;
   if (!isPlainObject(requirements)) {
@@ -262,11 +305,22 @@ function assertFormatInterviewerRequirements(format: ContentStudioFormatDeclarat
       }
       seen.add(representation);
     }
-  } else if (requirements.representations !== undefined) {
-    throw new InvalidRequestError(`format '${format.formatId}' interviewerRequirements.representations must be absent when interviewer is 'none'`);
+    if (!CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES.includes(requirements.followUps as never)) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' interviewerRequirements.followUps must be one of ${CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES.join(', ')} when interviewer is 'representation'`,
+      );
+    }
+  } else {
+    if (requirements.representations !== undefined) {
+      throw new InvalidRequestError(`format '${format.formatId}' interviewerRequirements.representations must be absent when interviewer is 'none'`);
+    }
+    if (requirements.followUps !== undefined) {
+      throw new InvalidRequestError(`format '${format.formatId}' interviewerRequirements.followUps must be absent when interviewer is 'none'`);
+    }
   }
 }
 
+/** §2 surface 6 — the organization compatibility requirements (the closed §14 permission set). */
 function assertFormatOrganizationRequirements(format: ContentStudioFormatDeclaration): void {
   const requirements = format.organizationRequirements;
   if (!isPlainObject(requirements)) {
@@ -275,12 +329,19 @@ function assertFormatOrganizationRequirements(format: ContentStudioFormatDeclara
   if (typeof requirements.minAgentBodies !== 'number' || !Number.isSafeInteger(requirements.minAgentBodies) || requirements.minAgentBodies < 1 || requirements.minAgentBodies > 32) {
     throw new InvalidRequestError(`format '${format.formatId}' organizationRequirements.minAgentBodies must be an integer 1-32`);
   }
-  assertBoundedStringArray(
-    requirements.requiredPermissions as unknown,
-    16,
-    64,
-    `format '${format.formatId}' organizationRequirements.requiredPermissions`,
-  );
+  if (!Array.isArray(requirements.requiredPermissions) || requirements.requiredPermissions.length < 1 || requirements.requiredPermissions.length > CONTENT_STUDIO_ORGANIZATION_PERMISSIONS.length) {
+    throw new InvalidRequestError(`format '${format.formatId}' organizationRequirements.requiredPermissions must be a non-empty subset of the closed action-kind vocabulary`);
+  }
+  const seen = new Set<string>();
+  for (const permission of requirements.requiredPermissions) {
+    if (!CONTENT_STUDIO_ORGANIZATION_PERMISSIONS.includes(permission as never)) {
+      throw new InvalidRequestError(`format '${format.formatId}' organizationRequirements.requiredPermissions entry '${String(permission)}' is not in the closed action-kind vocabulary (read, analyze, compose, transform, communicate, simulate)`);
+    }
+    if (seen.has(permission)) {
+      throw new InvalidRequestError(`format '${format.formatId}' organizationRequirements.requiredPermissions entry '${String(permission)}' is duplicated`);
+    }
+    seen.add(permission);
+  }
   if (requirements.requiredCapabilities !== undefined && requirements.requiredCapabilities !== null) {
     assertBoundedStringArray(
       requirements.requiredCapabilities as unknown,
@@ -291,23 +352,66 @@ function assertFormatOrganizationRequirements(format: ContentStudioFormatDeclara
   }
 }
 
+/** §2 surface 7 — the output artifact contract (the closed §12 artifact-kind vocabulary). */
 function assertFormatOutputContract(format: ContentStudioFormatDeclaration): void {
   const contract = format.outputContract;
   if (!isPlainObject(contract)) {
     throw new InvalidRequestError(`format '${format.formatId}' outputContract must be an object`);
   }
-  assertBoundedStringArray(contract.outputs, 16, 64, `format '${format.formatId}' outputContract.outputs`);
+  if (!Array.isArray(contract.outputs) || contract.outputs.length < 1 || contract.outputs.length > CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS.length) {
+    throw new InvalidRequestError(`format '${format.formatId}' outputContract.outputs must be a non-empty subset of the closed §12 artifact-kind vocabulary`);
+  }
+  const seen = new Set<string>();
+  for (const output of contract.outputs) {
+    if (!CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS.includes(output as never)) {
+      throw new InvalidRequestError(`format '${format.formatId}' outputContract.outputs entry '${String(output)}' is not in the closed §12 artifact-kind vocabulary`);
+    }
+    if (seen.has(output)) {
+      throw new InvalidRequestError(`format '${format.formatId}' outputContract.outputs entry '${String(output)}' is duplicated`);
+    }
+    seen.add(output);
+  }
 }
 
+/** §2 surface 8 — the provenance/consent requirements (the closed consent/provenance vocabularies). */
 function assertFormatProvenanceConsent(format: ContentStudioFormatDeclaration): void {
   const requirements = format.provenanceConsentRequirements;
   if (!isPlainObject(requirements)) {
     throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements must be an object`);
   }
-  assertBoundedStringArray(requirements.consent, 16, 128, `format '${format.formatId}' provenanceConsentRequirements.consent`);
-  assertBoundedStringArray(requirements.provenance, 16, 128, `format '${format.formatId}' provenanceConsentRequirements.provenance`);
+  if (!Array.isArray(requirements.consent) || requirements.consent.length > CONTENT_STUDIO_CONSENT_KINDS.length) {
+    throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.consent must be a subset of the closed consent-kind vocabulary`);
+  }
+  const consentSeen = new Set<string>();
+  for (const kind of requirements.consent) {
+    if (!CONTENT_STUDIO_CONSENT_KINDS.includes(kind as never)) {
+      throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.consent entry '${String(kind)}' is not in the closed consent-kind vocabulary`);
+    }
+    if (consentSeen.has(kind)) {
+      throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.consent entry '${String(kind)}' is duplicated`);
+    }
+    consentSeen.add(kind);
+  }
+  if (!Array.isArray(requirements.provenance) || requirements.provenance.length > CONTENT_STUDIO_PROVENANCE_ELEMENTS.length) {
+    throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.provenance must be a subset of the closed provenance-element vocabulary`);
+  }
+  const provenanceSeen = new Set<string>();
+  for (const element of requirements.provenance) {
+    if (!CONTENT_STUDIO_PROVENANCE_ELEMENTS.includes(element as never)) {
+      throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.provenance entry '${String(element)}' is not in the closed provenance-element vocabulary`);
+    }
+    if (provenanceSeen.has(element)) {
+      throw new InvalidRequestError(`format '${format.formatId}' provenanceConsentRequirements.provenance entry '${String(element)}' is duplicated`);
+    }
+    provenanceSeen.add(element);
+  }
 }
 
+/**
+ * §2 surface 9 — the evaluation hooks (the closed firing-surface
+ * vocabulary; the stageId cross-reference fence runs in the main
+ * guard once the stages are known).
+ */
 function assertFormatEvaluationHooks(format: ContentStudioFormatDeclaration): void {
   const hooks = format.evaluationHooks;
   if (!isPlainObject(hooks)) {
@@ -321,6 +425,18 @@ function assertFormatEvaluationHooks(format: ContentStudioFormatDeclaration): vo
     if (!isPlainObject(hook) || typeof hook.hookId !== 'string' || !ID_PATTERN.test(hook.hookId)) {
       throw new InvalidRequestError(`format '${format.formatId}' evaluationHooks.hooks entries must be { hookId: 1-64 chars of [a-z0-9-] }`);
     }
+    if (!CONTENT_STUDIO_EVALUATION_HOOK_SURFACES.includes(hook.firesOn as never)) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' evaluationHooks.hooks entry '${hook.hookId}' firesOn must be one of ${CONTENT_STUDIO_EVALUATION_HOOK_SURFACES.join(', ')}`,
+      );
+    }
+    if (hook.firesOn === 'stage_completion') {
+      if (typeof hook.stageId !== 'string' || !ID_PATTERN.test(hook.stageId)) {
+        throw new InvalidRequestError(`format '${format.formatId}' evaluationHooks.hooks entry '${hook.hookId}' must declare stageId (a declared stage id) when firesOn is 'stage_completion'`);
+      }
+    } else if (hook.stageId !== undefined) {
+      throw new InvalidRequestError(`format '${format.formatId}' evaluationHooks.hooks entry '${hook.hookId}' must NOT declare stageId when firesOn is '${hook.firesOn}'`);
+    }
     if (seen.has(hook.hookId)) {
       throw new InvalidRequestError(`format '${format.formatId}' evaluationHooks.hooks hookId '${hook.hookId}' is duplicated`);
     }
@@ -328,6 +444,11 @@ function assertFormatEvaluationHooks(format: ContentStudioFormatDeclaration): vo
   }
 }
 
+/**
+ * The processing stages (the §9 durable plan derivation surface) with
+ * the HONEST AVAILABILITY layer (the STUDIO-002 gap disclosure:
+ * closed status vocabulary + the required awaitingModule citation).
+ */
 function assertFormatProcessingStages(format: ContentStudioFormatDeclaration): void {
   const stages = format.processingStages;
   if (!Array.isArray(stages) || stages.length < 1 || stages.length > 16) {
@@ -341,6 +462,28 @@ function assertFormatProcessingStages(format: ContentStudioFormatDeclaration): v
     if (stage.description !== undefined && stage.description !== null && !boundedTrimmedString(stage.description, 0, 512)) {
       throw new InvalidRequestError(`format '${format.formatId}' processingStages[${index}].description must be a trimmed string of 0-512 chars`);
     }
+    const availability = (stage as { availability?: unknown }).availability;
+    if (!isPlainObject(availability)) {
+      throw new InvalidRequestError(`format '${format.formatId}' processingStages[${index}].availability must be an object (the honest availability declaration)`);
+    }
+    const status = (availability as { status?: unknown }).status;
+    if (!CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES.includes(status as never)) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' processingStages[${index}].availability.status must be one of ${CONTENT_STUDIO_FORMAT_AVAILABILITY_STATES.join(', ')}`,
+      );
+    }
+    const awaitingModule = (availability as { awaitingModule?: unknown }).awaitingModule;
+    if (status === 'awaiting_execution_module') {
+      if (typeof awaitingModule !== 'string' || !/^[A-Z0-9-]{3,32}$/.test(awaitingModule)) {
+        throw new InvalidRequestError(
+          `format '${format.formatId}' processingStages[${index}].availability.awaitingModule is required (3-32 chars of [A-Z0-9-]) when the stage awaits an execution module`,
+        );
+      }
+    } else if (awaitingModule !== undefined) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' processingStages[${index}].availability.awaitingModule must be absent when the status is 'runtime_driven'`,
+      );
+    }
     if (seen.has(stage.stageId)) {
       throw new InvalidRequestError(`format '${format.formatId}' processingStages stageId '${stage.stageId}' is duplicated`);
     }
@@ -351,7 +494,10 @@ function assertFormatProcessingStages(format: ContentStudioFormatDeclaration): v
 /**
  * The §2 format-declaration discipline: every plugged format must
  * pass this guard (the composition root validates the wired registry
- * at construction; a bad declaration fails loudly, never silently).
+ * content at construction; registerFormat validates every
+ * operational registration; a bad declaration fails loudly, never
+ * silently). All NINE surfaces validated + the cross-surface fences
+ * (the hook stageId must be a declared stage).
  */
 export function assertValidContentStudioFormatDeclaration(format: ContentStudioFormatDeclaration): void {
   if (!isPlainObject(format)) {
@@ -372,6 +518,17 @@ export function assertValidContentStudioFormatDeclaration(format: ContentStudioF
   assertFormatProvenanceConsent(format);
   assertFormatEvaluationHooks(format);
   assertFormatProcessingStages(format);
+
+  // The cross-surface fence: a stage_completion hook must attach to a
+  // DECLARED stage id (the format can inspect its own hook bindings).
+  const stageIds = new Set<string>(format.processingStages.map((stage) => stage.stageId));
+  for (const hook of format.evaluationHooks.hooks) {
+    if (hook.firesOn === 'stage_completion' && !stageIds.has(hook.stageId as string)) {
+      throw new InvalidRequestError(
+        `format '${format.formatId}' evaluationHooks.hooks entry '${hook.hookId}' attaches to stage '${String(hook.stageId)}' which the declaration does not declare`,
+      );
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
