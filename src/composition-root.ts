@@ -864,6 +864,44 @@ import { createProductMarketingModule } from './modules/product-marketing/public
 // off-matrix structural wirings (the MKT-070 /research precedent), all
 // READ-ONLY except the authority-owned experiment creation.
 import { createCommerceDiscoveryModule } from './modules/commerce-discovery/public.ts';
+// LAB-013: /lab-capabilities — the Capability Engine + Arena Adapter
+// authority (the frozen v1.7 §16/§17 surface: the versioned capability
+// registry carrying the FULL §16 declared field set — input/output
+// schemas (the disclosed one-level subset), constraints, the declared
+// QUALITY EVALUATOR (identity + version + the evaluation contract
+// shape), cost, latency, provenance (the closed origin vocabulary),
+// implementation/version, the OPTIONAL simulator/real implementation
+// references (null = honestly unavailable), human/provider
+// requirements — with the LAB-011 draft → active → retired lifecycle,
+// append-only version corrections and opaque version references; the
+// NINE-stage §17 acquisition flow capability_gap → capability_contract
+// → value_estimate → governed_arena_request → human_or_provider_result
+// → verification → capability_version → simulation → real_test — one
+// append-only record per stage, each carrying its actor from the closed
+// autonomous/human vocabulary and its closed state; verification runs
+// the DECLARED evaluator and a capability version without a PASSING
+// linked verification can never be presented as verified — the verified
+// state is the linked evidence, never an asserted boolean). NO SECOND
+// MARKETPLACE AUTHORITY (the core acceptance, structural): Arena is an
+// EXTERNAL provider behind the EXISTING /integrations provider
+// contracts — the module holds ZERO marketplace vocabulary and ZERO
+// provider-selection logic (the provider target is caller-declared
+// DATA), and the Arena dispatch flows through the DECLARED NARROW
+// STRUCTURAL PORT (listRegisteredAdapters + executeMutation ONLY — the
+// LAB-011 /ai-runtime port precedent) satisfied structurally by the
+// REAL /integrations instance wired HERE, so the fail-closed policy/
+// credential/capability gates stay in /integrations, the sole provider
+// authority. The human-plane boundary stays canonical (the
+// Human Agent/Job/Task/Execution plane is cited OPAQUELY, never
+// re-modeled; human availability is never a prerequisite for the
+// ordinary autonomous path). The frozen row consumes platform ports
+// only (db, clock, ids) plus the module's two replaceable ports wired
+// HERE (the Arena structural port over the real /integrations instance
+// + the first-party quality evaluator); zero cross-module imports exist
+// inside src/modules/lab-capabilities (the /lab family discipline —
+// the empty-allowance strictest posture, no matrix row required).
+import { createLabCapabilitiesModule, createFirstPartyLabCapabilityEvaluator } from './modules/lab-capabilities/public.ts';
+import type { LabCapabilitiesArenaPort } from './modules/lab-capabilities/public.ts';
 
 import type { ApplicationModules } from './api/application.ts';
 
@@ -2132,6 +2170,35 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     mediaFetch: createPendingLabMediaFetchPort(),
   });
 
+  // LAB-013: /lab-capabilities — platform ports + the module's two
+  // declared structural ports ONLY, both wired HERE (the LAB-011
+  // /ai-runtime structural-port precedent): (1) the ARENA PORT — the
+  // disclosed off-matrix wrapper over the REAL /integrations instance
+  // (listRegisteredAdapters + executeMutation satisfy the port
+  // structurally; the fail-closed policy/credential/capability gates
+  // stay in /integrations, the sole provider authority — Arena is one
+  // external provider key behind those contracts, NEVER a second
+  // marketplace authority); (2) the first-party QUALITY EVALUATOR (the
+  // honest deterministic shape evaluation against the declared output
+  // schema + the declared evaluation contract — richer evaluator
+  // backends arrive as future port implementations at this seam, never
+  // silent reinterpretation). The module resolves its own tenant
+  // fences; zero cross-module imports exist inside
+  // src/modules/lab-capabilities (the /lab family discipline) and NO
+  // /lab, /lab-agent-body or /integrations table is ever written (the
+  // strategy/human-plane/real-test citations are opaque recorded data).
+  const labCapabilitiesArena: LabCapabilitiesArenaPort = {
+    listRegisteredAdapters: () => integrations.listRegisteredAdapters(),
+    executeMutation: (input, provenance) => integrations.executeMutation(input, provenance),
+  };
+  const labCapabilities = createLabCapabilitiesModule({
+    db,
+    clock,
+    ids,
+    arena: labCapabilitiesArena,
+    evaluator: createFirstPartyLabCapabilityEvaluator(),
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2419,7 +2486,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities },
     runtime: { aiProvider },
   };
 }

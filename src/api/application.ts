@@ -385,6 +385,7 @@ import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
 import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts';
 import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts';
 import type { LabFeaturesModuleApi } from '../modules/lab-features/public.ts';
+import type { LabCapabilitiesModuleApi } from '../modules/lab-capabilities/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -745,4 +746,23 @@ export interface ApplicationModules {
   // corpus advance integration; the /lab-corpus feature_bundle_
   // version advance stays the /lab-corpus module's own seam).
   readonly labFeatures: LabFeaturesModuleApi;
+
+  // LAB-013: the Capability Engine + Arena Adapter authority (the
+  // v1.7 §16/§17 surface: the versioned capability registry carrying
+  // the full §16 declared field set with the LAB-011 draft → active →
+  // retired lifecycle, append-only version corrections and opaque
+  // version references; the NINE-stage §17 acquisition flow gap →
+  // contract → value estimate → governed Arena request → human/provider
+  // result → verification → capability version → simulation → real
+  // test — one append-only record per stage with its actor and closed
+  // state; verification runs the DECLARED quality evaluator and an
+  // unverified capability version is never presented as verified —
+  // Arena stays an EXTERNAL provider behind the existing
+  // /integrations provider contracts through the composition-root-wired
+  // structural port, NEVER a second marketplace authority; consumed BY
+  // REFERENCE by the LAB-019 transform definitions, the LAB-020
+  // transform pawns, the LAB-021 human production task packages and
+  // the LAB-024 delay-economics consumers through the opaque
+  // capability-version reference string).
+  readonly labCapabilities: LabCapabilitiesModuleApi;
 }
