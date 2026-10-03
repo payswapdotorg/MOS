@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + LAB-013 + STUDIO-001 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -318,6 +318,34 @@ the mid-turn-death doctrine (the worker's chat transcript content
 never persisted server-side after its final turn died; the delivery
 branch faf7614 and the final-report-style worklog disclosures are the
 attestation).
+
+✅ STUDIO-002 — Pluggable Format Framework (external Worker
+delivery, PR #78 merged, main ca885e1): the /content-studio
+extension (public.ts +614 — the nine §2 declaration surfaces with
+their closed vocabularies + the format-framework contract identity
+'content-studio-format-v1' + the versioned FORMAT REGISTRY surface
+registerFormat/activateFormat/retireFormat/getFormat/listFormats —
+pluggability without runtime/composition change), migration
+068_studio_format_framework.sql (489 lines, 36 fences — born-draft +
+lifecycle guard + activation capability-consistency + chain-scope +
+no-delete triggers, CHECK-fenced closed vocabularies over the declared
+jsonb through IMMUTABLE SQL helpers, the format-capability link
+records as OPAQUE references — NO /lab-capabilities table referenced),
+the three initial formats promoted to full declarations over the
+STUDIO-001 runtime (additive — the runtime version remains
+STUDIO-001's), module/store/validation extensions, the 161-line
+runbook, +792 test lines (integration 510 / unit 282). Station
+battery on tl/harvest-studio002 (the double-appended tree with
+LAB-013's 067): typecheck 0 / lint 0 / unit 1367 / architecture 753
+(after the stacked-shift re-pin resolution — both LAB-013 and
+STUDIO-002 made textually-identical +1 tail re-pins that git
+auto-merged; the merged tree needs +2; 366 position pins
+re-resolved across 20 sibling boundary files) / integration
+1263/1263 zero flakes. The worker's mid-turn-death recovery:
+nudge sent after the near-end death (worklog survived at 5600B with
+the 20/20 fence battery done); the resumed turn completed
+verification, pushed studio/002-worker-delivery (2409cac) and
+posted the completion report.
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
