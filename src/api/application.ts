@@ -382,6 +382,7 @@ import type { ProductMarketingModuleApi } from '../modules/product-marketing/pub
 import type { LabModuleApi } from '../modules/lab/public.ts';
 import type { LabCorpusModuleApi } from '../modules/lab-corpus/public.ts';
 import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts';
+import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts';
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -707,4 +708,18 @@ export interface ApplicationModules {
   // the LAB-016/018 evaluation consumers through the opaque
   // body-version reference string).
   readonly labAgentBody: LabAgentBodyModuleApi;
+  // STUDIO-001: the Content Studio Runtime authority (the v1.7
+  // production layer, spec/content-studio-contract-v1.0.md — the
+  // governing sub-contract): the MOS-owned AI+Human production
+  // session runtime used standalone AND Lab-initiated — the
+  // immutable/versioned production requests, the versioned session
+  // revisions with the guarded §5 lifecycle, the durable §9
+  // processing substrate, the immutable output versions with the
+  // treatment parent linkage and the structured §13 treatment
+  // requests. NO publishing/experiment authority (lock v1.7 #43 —
+  // structural): real publication follows the existing v1.6
+  // authorities; consumed BY REFERENCE by the later Studio modules
+  // (STUDIO-002..014) and the LAB-022 Lab→Studio production bridge
+  // through the public session/step/output contracts).
+  readonly contentStudio: ContentStudioModuleApi;
 }

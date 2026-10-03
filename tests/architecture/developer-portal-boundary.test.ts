@@ -309,7 +309,7 @@ test('MKT-049 AC-8 static: the arch-check provision is unchanged — the spec-pa
   const provision = stripComments(checkerTs).match(/v15CompositionModules[^=]*=\s*\[([^\]]*)\]/);
   assert.ok(provision !== null, 'the provision list is present');
   const entries = [...provision[1]!.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]!);
-  assert.deepEqual(entries, ['apps'], 'the provision carries the single MKT-047 /apps entry — the LAB-011 /lab-agent-body provision retired at the TL spec promotion (the /lab registration precedent)');
+  assert.deepEqual(entries, ['apps', 'content-studio'], 'the provision carries the MKT-047 /apps entry + the STUDIO-001 /content-studio disclosed worker provision (the LAB-011 worker-delivery precedent — the LAB-011 provision itself retired at the TL spec promotion, the /lab registration precedent)');
   // The full checker still passes with zero violations.
   const result = checkArchitecture({
     codeRoot: repoRoot,
