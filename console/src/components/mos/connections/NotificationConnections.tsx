@@ -28,6 +28,7 @@ import {
   WorkspaceEmptyState,
   formatWhen,
 } from "@/components/mos/mission/workspace-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 import { SectionErrorViewInline } from "./SocialConnections";
 
 export function NotificationConnectionsSection({ clientId }: { clientId: string }) {
@@ -43,77 +44,88 @@ export function NotificationConnectionsSection({ clientId }: { clientId: string 
   const read = list.filter((item) => item.readAt !== null);
 
   return (
-    <section aria-labelledby="connections-notifications-heading" className="space-y-3">
-      <div>
-        <h3 id="connections-notifications-heading" className="font-medium text-stone-800">
-          Notification delivery
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
-          How this client&apos;s notifications are actually being delivered — the in-app inbox
-          state and each delivery&apos;s channel receipts.
+    <SurfaceSection
+      id="connections-notifications"
+      label="Notifications"
+      title="Notification delivery"
+      summary={
+        notifications.isPending
+          ? "loading the inbox…"
+          : notifications.isError
+            ? "could not load the inbox — open to retry"
+            : list.length === 0
+              ? "nothing delivered yet"
+              : `${list.length} delivered · ${read.length} read`
+      }
+      summaryTone={notifications.isError ? "warning" : "neutral"}
+    >
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
+          How this client&apos;s notifications are actually being delivered — the in-app inbox state
+          and each delivery&apos;s channel receipts.
         </p>
-      </div>
 
-      {notifications.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : notifications.isError ? (
-        <SectionErrorViewInline
-          error={notifications.error}
-          what="the notification inbox"
-          onRetry={() => void notifications.refetch()}
-        />
-      ) : list.length === 0 ? (
-        <WorkspaceEmptyState
-          missing="No notifications have been delivered on this client yet."
-          why="Notifications are the plane that surfaces attention, approvals and anomalies — mission blockers, terminal states and policy refusals all arrive through it. An empty plane means nothing has needed attention yet."
-          next="Nothing to connect: the in-app channel is always on (it is part of the platform itself), and additional channels — like email — are registered through the deployment's own configuration, not through the console. Deliveries land here as work runs."
-        />
-      ) : (
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4">
-          <p className="font-medium text-stone-800">Channel health</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <Chip
-              label={`in-app · ${delivered.length} delivered`}
-              className="border-teal-800/20 bg-teal-50 text-teal-900"
-            />
-            <Chip
-              label={`${read.length} read`}
-              className="border-stone-200 bg-stone-50 text-stone-600"
-            />
-            <Chip
-              label={`${list.length} notification${list.length === 1 ? "" : "s"} in the inbox`}
-              className="border-stone-300 bg-white text-stone-700"
-            />
+        {notifications.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : notifications.isError ? (
+          <SectionErrorViewInline
+            error={notifications.error}
+            what="the notification inbox"
+            onRetry={() => void notifications.refetch()}
+          />
+        ) : list.length === 0 ? (
+          <WorkspaceEmptyState
+            missing="No notifications have been delivered on this client yet."
+            why="Notifications are the plane that surfaces attention, approvals and anomalies — mission blockers, terminal states and policy refusals all arrive through it. An empty plane means nothing has needed attention yet."
+            next="Nothing to connect: the in-app channel is always on (it is part of the platform itself), and additional channels — like email — are registered through the deployment's own configuration, not through the console. Deliveries land here as work runs."
+          />
+        ) : (
+          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4">
+            <p className="font-medium text-stone-800">Channel health</p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Chip
+                label={`in-app · ${delivered.length} delivered`}
+                className="border-teal-800/20 bg-teal-50 text-teal-900"
+              />
+              <Chip
+                label={`${read.length} read`}
+                className="border-stone-200 bg-stone-50 text-stone-600"
+              />
+              <Chip
+                label={`${list.length} notification${list.length === 1 ? "" : "s"} in the inbox`}
+                className="border-stone-300 bg-white text-stone-700"
+              />
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-stone-500">
+              The in-app channel is part of the platform (always on). Email and future channels
+              register through the deployment&apos;s configuration — each delivery&apos;s receipts
+              open below, with the channel&apos;s own outcome and policy decision.
+            </p>
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-stone-500">
-            The in-app channel is part of the platform (always on). Email and future channels
-            register through the deployment&apos;s configuration — each delivery&apos;s receipts
-            open below, with the channel&apos;s own outcome and policy decision.
-          </p>
-        </div>
-      )}
+        )}
 
-      {list.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {list.slice(0, 6).map((item) => (
-            <NotificationRow key={item.inboxItemId} clientId={clientId} item={item} />
-          ))}
-          {list.length > 6 ? (
-            <li className="text-xs text-stone-500">
-              … {list.length - 6} earlier notification{list.length - 6 === 1 ? "" : "s"} in the
-              inbox.
-            </li>
-          ) : null}
-        </ul>
-      ) : null}
+        {list.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {list.slice(0, 6).map((item) => (
+              <NotificationRow key={item.inboxItemId} clientId={clientId} item={item} />
+            ))}
+            {list.length > 6 ? (
+              <li className="text-xs text-stone-500">
+                … {list.length - 6} earlier notification{list.length - 6 === 1 ? "" : "s"} in the
+                inbox.
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
 
-      <SourceLine
-        sources={[
-          `GET /api/clients/${clientId.slice(0, 8)}…/notifications`,
-          "GET …/notifications/:notificationId (the receipt tail, on expand)",
-        ]}
-      />
-    </section>
+        <SourceLine
+          sources={[
+            `GET /api/clients/${clientId.slice(0, 8)}…/notifications`,
+            "GET …/notifications/:notificationId (the receipt tail, on expand)",
+          ]}
+        />
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -222,9 +234,9 @@ function ReceiptList({ receipts }: { receipts: NotificationReceiptView[] }) {
               className={
                 receipt.outcome === "delivered"
                   ? "border-teal-800/20 bg-teal-50 text-teal-900"
-                  : receipt.outcome === "refused"
+                  : receipt.outcome === "refused" || receipt.outcome === "failed"
                     ? "border-red-800/20 bg-red-50 text-red-900"
-                    : "border-stone-200 bg-stone-50 text-stone-600"
+                    : "border-amber-700/20 bg-amber-50 text-amber-900"
               }
             />
             {receipt.reason ? (

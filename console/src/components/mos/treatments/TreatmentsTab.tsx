@@ -44,6 +44,8 @@ import {
 } from "@/components/mos/mission/status";
 import type { GrowthMissionView } from "@/lib/mos-api";
 import { HumanTreatmentExperimentCard } from "./HumanTreatmentExperimentCard";
+import { ChevronDown } from "lucide-react";
+import { SourcesDisclosure } from "@/components/mos/surface-section";
 
 export function TreatmentsTab({ clientId }: { clientId: string }) {
   const navigate = useMosSession((state) => state.navigate);
@@ -145,8 +147,8 @@ export function TreatmentsTab({ clientId }: { clientId: string }) {
 
       <MissionStatesSection clientId={clientId} agencyId={client.data?.agencyId ?? null} />
 
-      <div className="rounded-xl border border-stone-200 bg-stone-50/60 px-5 py-4">
-        <p className="text-sm leading-relaxed text-stone-600">
+      <SourcesDisclosure id="treatments-sources" label="Sources, composition & the honest gap">
+        <p className="leading-relaxed">
           This surface composes three existing authorities and holds no state of its own:
           the experiment records and their MKT-067 allocation/analysis tails, and the
           growth-missions lifecycle records for the missions that reference this client
@@ -176,7 +178,7 @@ export function TreatmentsTab({ clientId }: { clientId: string }) {
             "GET /api/agencies/:agencyId/growth-missions + GET /api/growth-missions/:missionId (the client's missions through their goal mappings — the blocked/paused/terminal vocabulary)",
           ]}
         />
-      </div>
+      </SourcesDisclosure>
     </div>
   );
 }
@@ -240,7 +242,11 @@ function MissionStatesSection({
   );
 }
 
-/** One mission row — links to this client (or renders nothing, honestly). */
+/** One mission row — links to this client (or renders nothing, honestly).
+ *  UX-010: the row is a calm summary (status chip + the plain-language
+ *  meaning + updated); the recorded reason, the provenance line, the
+ *  human-blocker note and the workspace action are progressively disclosed
+ *  on expand — everything still renders, nothing is dropped. */
 function ClientMissionRow({
   mission,
   clientId,
@@ -250,6 +256,7 @@ function ClientMissionRow({
 }) {
   const navigate = useMosSession((state) => state.navigate);
   const detail = useGrowthMissionDetail(mission.missionId);
+  const [open, setOpen] = React.useState(false);
   if (detail.isError) {
     // The mission list served the record but its composed read failed —
     // render the honest error for THIS mission only, never dropped.
@@ -293,53 +300,75 @@ function ClientMissionRow({
 
   return (
     <li
-      className={`rounded-xl border px-4 py-3 ${
-        isHumanBlocked ? "border-red-800/25 bg-red-50/60" : "border-stone-200 bg-white"
+      className={`overflow-hidden rounded-xl border ${
+        // UX-010 state vocabulary: the blocked family is the amber warning
+        // register (status.ts's own mapping) — red stays reserved for the
+        // failed-after-bounded-recovery terminal failure.
+        isHumanBlocked ? "border-amber-700/25 bg-amber-50/50" : "border-stone-200 bg-white"
       }`}
     >
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="font-mono text-xs text-stone-500">
-          mission {mission.missionId.slice(0, 8)}…
-        </span>
-        <Chip label={humanizeStatus(status)} className={TONE_CHIP_CLASSES[tone]} />
-        <span className="ml-auto text-xs text-stone-400">
-          updated {formatWhen(mission.updatedAt)}
-        </span>
-      </div>
-      <p className="mt-1.5 text-sm leading-relaxed text-stone-700">
-        {STATUS_MEANING[status] ?? `The mission is in the ${humanizeStatus(status)} state.`}
-      </p>
-      {statusEvent?.reason ? (
-        <p
-          className={`mt-1.5 text-sm leading-relaxed ${isHumanBlocked ? "text-red-900/90" : "text-stone-600"}`}
-        >
-          <span className="font-medium">Reason recorded:</span> {statusEvent.reason}
-        </p>
-      ) : null}
-      {isHumanBlocked ? (
-        <p className="mt-1.5 text-sm leading-relaxed text-red-900/80">
-          This is the one human blocker the architecture allows: a genuinely mandatory
-          rights, policy or capability review the system cannot perform itself. It is
-          recorded explicitly — never a hidden failure — and the mission record stays
-          readable as business history.
-        </p>
-      ) : null}
-      <p className="mt-1.5 font-mono text-[11px] text-stone-400">
-        recorded by {provenanceString(statusEvent?.provenance, "actor") ?? "the server"} ·
-        objective: {detail.data.currentVersion.objective}
-      </p>
-      <div className="mt-2">
-        <WorkspaceActionButton
-          tone="plain"
-          onClick={() => navigate({ kind: "mission", missionId: mission.missionId })}
-          ariaLabel={`Open the mission workspace for mission ${mission.missionId.slice(0, 8)}`}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            Open the mission workspace
-            <ArrowRight className="size-4" aria-hidden="true" />
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={`treatments-mission-${mission.missionId}-detail`}
+        onClick={() => setOpen((value) => !value)}
+        className="flex min-h-[64px] w-full items-start justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-teal-700"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
+            <Chip label={humanizeStatus(status)} className={TONE_CHIP_CLASSES[tone]} />
+            <span className="text-xs text-stone-400">updated {formatWhen(mission.updatedAt)}</span>
           </span>
-        </WorkspaceActionButton>
-      </div>
+          <span className="mt-1 block text-sm leading-relaxed text-stone-700">
+            {STATUS_MEANING[status] ?? `The mission is in the ${humanizeStatus(status)} state.`}
+          </span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`mt-1 size-5 shrink-0 text-stone-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open ? (
+        <div
+          id={`treatments-mission-${mission.missionId}-detail`}
+          className="space-y-2 border-t border-stone-100 bg-stone-50/40 px-4 py-4"
+        >
+          <p className="font-mono text-[11px] text-stone-400">
+            mission {mission.missionId.slice(0, 12)}…
+          </p>
+          {statusEvent?.reason ? (
+            <p
+              className={`text-sm leading-relaxed ${isHumanBlocked ? "text-amber-900/90" : "text-stone-600"}`}
+            >
+              <span className="font-medium">Reason recorded:</span> {statusEvent.reason}
+            </p>
+          ) : null}
+          {isHumanBlocked ? (
+            <p className="text-sm leading-relaxed text-amber-900/80">
+              This is the one human blocker the architecture allows: a genuinely mandatory
+              rights, policy or capability review the system cannot perform itself. It is
+              recorded explicitly — never a hidden failure — and the mission record stays
+              readable as business history.
+            </p>
+          ) : null}
+          <p className="font-mono text-[11px] text-stone-400">
+            recorded by {provenanceString(statusEvent?.provenance, "actor") ?? "the server"} ·
+            objective: {detail.data.currentVersion.objective}
+          </p>
+          <div className="pt-1">
+            <WorkspaceActionButton
+              tone="plain"
+              onClick={() => navigate({ kind: "mission", missionId: mission.missionId })}
+              ariaLabel={`Open the mission workspace for mission ${mission.missionId.slice(0, 8)}`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                Open the mission workspace
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </span>
+            </WorkspaceActionButton>
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }

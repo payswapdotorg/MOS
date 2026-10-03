@@ -35,6 +35,7 @@ import {
   useWorkspaces,
 } from "./hooks";
 import { useMosSession, type ClientWorkspaceTab } from "./session-store";
+import { SurfaceSection, SourcesDisclosure } from "./surface-section";
 import {
   AssumptionDisclosure,
   CountChips,
@@ -95,8 +96,7 @@ export function ClientWorkspaceScreen({
             "client read failed — see below"
           ) : (
             <>
-              <span className="font-mono text-xs">{client.data?.clientId}</span> · status{" "}
-              {client.data?.status} · {(workspaces.data ?? []).length} workspace
+              status {client.data?.status} · {(workspaces.data ?? []).length} workspace
               {(workspaces.data ?? []).length === 1 ? "" : "s"}
             </>
           )}
@@ -224,157 +224,35 @@ function OverviewTab({ clientId }: { clientId: string }) {
   const experiments = view.experiments?.experiments ?? [];
   const recommendations = view.recommendations?.items ?? [];
   const approvals = view.approvals?.items ?? [];
+
+  // UX-010 — the overview's FIRST view is calm and summary-level: one live
+  // summary strip over the decision room's own counts, the actionable
+  // approvals card (when one exists), and the full picture behind a
+  // collapsed disclosure. The route source line lives in the disclosure
+  // layer, never as the first line of the screen.
   return (
     <div className="space-y-4">
-      <p className="font-mono text-xs text-muted-foreground">
-        source: GET /api/reporting/decision-room/:clientId · generated {formatWhen(view.generatedAt)}
-      </p>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">What happened — goals</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <CountChips counts={view.whatHappened?.goalStatusCounts ?? {}} labelSingular="goals" />
-            {goals.length === 0 ? (
-              <EmptyState title="No goals yet" hint="Goals appear here once created for this client." />
-            ) : (
-              <ScrollList label="Goals" className="space-y-1.5">
-                {goals.map((goal) => (
-                  <div key={goal.goalId} className="rounded-md border p-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={goal.status} />
-                      {goal.timeHorizon ? (
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {formatHorizon(goal.timeHorizon)}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-sm">{goal.objective}</p>
-                  </div>
-                ))}
-              </ScrollList>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">What happened — workflows</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <CountChips counts={view.whatHappened?.instanceStatusCounts ?? {}} labelSingular="instances" />
-            {workflows.length === 0 ? (
-              <EmptyState title="No workflows yet" />
-            ) : (
-              <ScrollList label="Workflows" className="space-y-1.5">
-                {workflows.map((workflow) => (
-                  <div key={workflow.workflowId} className="rounded-md border p-2">
-                    <p className="text-sm font-medium">{workflow.name}</p>
-                    <CountChips counts={workflow.instanceCounts} />
-                  </div>
-                ))}
-              </ScrollList>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Why — learnings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <CountChips counts={view.why?.learningStatusCounts ?? {}} labelSingular="learnings" />
-            {learnings.length === 0 ? (
-              <EmptyState title="No learnings yet" />
-            ) : (
-              <ScrollList label="Learnings" className="space-y-1.5">
-                {learnings.map((learning) => (
-                  <div key={learning.learningId} className="rounded-md border p-2">
-                    <StatusBadge status={learning.status} />
-                    <p className="mt-1 text-sm">{learning.statement}</p>
-                  </div>
-                ))}
-              </ScrollList>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Evidence quality</CardTitle>
-            <CardDescription className="font-mono text-xs">{view.evidenceQuality?.window ?? "—"}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-2xl font-semibold tabular-nums">
-              {view.evidenceQuality?.totalRecords ?? 0} records
-            </p>
-            {evidenceByClass.length === 0 ? (
-              <EmptyState title="No evidence records yet" />
-            ) : (
-              evidenceByClass.map((posture) => (
-                <div key={posture.class} className="flex flex-wrap items-center gap-2 rounded-md border p-2">
-                  <span className="font-mono text-xs">{posture.class}</span>
-                  <span className="text-sm tabular-nums">{posture.total}</span>
-                  <CountChips counts={posture.gradeCounts} />
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Experiments</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <CountChips counts={view.experiments?.experimentStatusCounts ?? {}} labelSingular="experiments" />
-            {experiments.length === 0 ? (
-              <EmptyState title="No experiments yet" />
-            ) : (
-              <ScrollList label="Experiments" className="space-y-1.5">
-                {experiments.map((experiment) => (
-                  <div key={experiment.experimentId} className="rounded-md border p-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={experiment.status} />
-                      <span className="font-mono text-xs text-muted-foreground">{experiment.resultState}</span>
-                    </div>
-                    <p className="mt-1 text-sm">{experiment.hypothesis}</p>
-                    <p className="text-xs text-muted-foreground">
-                      target {experiment.decisionTarget} · {experiment.designType} · metric{" "}
-                      {experiment.primaryMetricName}
-                    </p>
-                  </div>
-                ))}
-              </ScrollList>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Recommendations</CardTitle>
-            <CardDescription className="font-mono text-xs">{view.recommendations?.basis ?? "—"}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recommendations.length === 0 ? (
-              <EmptyState title="No recommendations derived" />
-            ) : (
-              <ScrollList label="Recommendations" className="space-y-1.5">
-                {recommendations.map((item, index) => (
-                  <div key={index} className="rounded-md border p-2">
-                    <Badge variant="outline" className="font-mono text-xs">
-                      {String(item["kind"])}
-                    </Badge>
-                    <p className="mt-1 text-sm">
-                      {typeof item["statement"] === "string" ? item["statement"] : String(item["hypothesis"] ?? "")}
-                    </p>
-                  </div>
-                ))}
-              </ScrollList>
-            )}
-          </CardContent>
-        </Card>
+      <div className="rounded-xl border border-stone-200 bg-white px-5 py-4">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
+          Where this client stands
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Badge variant="secondary">{goals.length} goal{goals.length === 1 ? "" : "s"}</Badge>
+          <Badge variant="secondary">{workflows.length} workflow{workflows.length === 1 ? "" : "s"}</Badge>
+          <Badge variant="secondary">{learnings.length} learning{learnings.length === 1 ? "" : "s"}</Badge>
+          <Badge variant="secondary">
+            {view.evidenceQuality?.totalRecords ?? 0} evidence record
+            {(view.evidenceQuality?.totalRecords ?? 0) === 1 ? "" : "s"}
+          </Badge>
+          <Badge variant="secondary">{experiments.length} experiment{experiments.length === 1 ? "" : "s"}</Badge>
+          <Badge variant="secondary">
+            {recommendations.length} recommendation{recommendations.length === 1 ? "" : "s"}
+          </Badge>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Open “The full picture” below for what happened, why, the evidence quality and the
+          experiment picture — each block carries its own honest empty state.
+        </p>
       </div>
 
       {approvals.length > 0 ? (
@@ -392,6 +270,182 @@ function OverviewTab({ clientId }: { clientId: string }) {
           </CardContent>
         </Card>
       ) : null}
+
+      <SurfaceSection
+        id="overview-full-picture"
+        label="The full picture"
+        title="What happened, why, and the experiment picture"
+        summary={
+          goals.length === 0 && workflows.length === 0 && learnings.length === 0
+            ? "nothing recorded yet — every block keeps its honest empty state"
+            : `${goals.length} goal${goals.length === 1 ? "" : "s"} · ${workflows.length} workflow${
+                workflows.length === 1 ? "" : "s"
+              } · ${learnings.length} learning${learnings.length === 1 ? "" : "s"} · ${
+                experiments.length
+              } experiment${experiments.length === 1 ? "" : "s"}`
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">What happened — goals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <CountChips counts={view.whatHappened?.goalStatusCounts ?? {}} labelSingular="goals" />
+                {goals.length === 0 ? (
+                  <EmptyState title="No goals yet" hint="Goals appear here once created for this client." />
+                ) : (
+                  <ScrollList label="Goals" className="space-y-1.5">
+                    {goals.map((goal) => (
+                      <div key={goal.goalId} className="rounded-md border p-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge status={goal.status} />
+                          {goal.timeHorizon ? (
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {formatHorizon(goal.timeHorizon)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm">{goal.objective}</p>
+                      </div>
+                    ))}
+                  </ScrollList>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">What happened — workflows</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <CountChips counts={view.whatHappened?.instanceStatusCounts ?? {}} labelSingular="instances" />
+                {workflows.length === 0 ? (
+                  <EmptyState title="No workflows yet" />
+                ) : (
+                  <ScrollList label="Workflows" className="space-y-1.5">
+                    {workflows.map((workflow) => (
+                      <div key={workflow.workflowId} className="rounded-md border p-2">
+                        <p className="text-sm font-medium">{workflow.name}</p>
+                        <CountChips counts={workflow.instanceCounts} />
+                      </div>
+                    ))}
+                  </ScrollList>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Why — learnings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <CountChips counts={view.why?.learningStatusCounts ?? {}} labelSingular="learnings" />
+                {learnings.length === 0 ? (
+                  <EmptyState title="No learnings yet" />
+                ) : (
+                  <ScrollList label="Learnings" className="space-y-1.5">
+                    {learnings.map((learning) => (
+                      <div key={learning.learningId} className="rounded-md border p-2">
+                        <StatusBadge status={learning.status} />
+                        <p className="mt-1 text-sm">{learning.statement}</p>
+                      </div>
+                    ))}
+                  </ScrollList>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Evidence quality</CardTitle>
+                <CardDescription className="font-mono text-xs">{view.evidenceQuality?.window ?? "—"}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-2xl font-semibold tabular-nums">
+                  {view.evidenceQuality?.totalRecords ?? 0} records
+                </p>
+                {evidenceByClass.length === 0 ? (
+                  <EmptyState title="No evidence records yet" />
+                ) : (
+                  evidenceByClass.map((posture) => (
+                    <div key={posture.class} className="flex flex-wrap items-center gap-2 rounded-md border p-2">
+                      <span className="font-mono text-xs">{posture.class}</span>
+                      <span className="text-sm tabular-nums">{posture.total}</span>
+                      <CountChips counts={posture.gradeCounts} />
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Experiments</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <CountChips counts={view.experiments?.experimentStatusCounts ?? {}} labelSingular="experiments" />
+                {experiments.length === 0 ? (
+                  <EmptyState title="No experiments yet" />
+                ) : (
+                  <ScrollList label="Experiments" className="space-y-1.5">
+                    {experiments.map((experiment) => (
+                      <div key={experiment.experimentId} className="rounded-md border p-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge status={experiment.status} />
+                          <span className="font-mono text-xs text-muted-foreground">{experiment.resultState}</span>
+                        </div>
+                        <p className="mt-1 text-sm">{experiment.hypothesis}</p>
+                        <p className="text-xs text-muted-foreground">
+                          target {experiment.decisionTarget} · {experiment.designType} · metric{" "}
+                          {experiment.primaryMetricName}
+                        </p>
+                      </div>
+                    ))}
+                  </ScrollList>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Recommendations</CardTitle>
+                <CardDescription className="font-mono text-xs">{view.recommendations?.basis ?? "—"}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recommendations.length === 0 ? (
+                  <EmptyState title="No recommendations derived" />
+                ) : (
+                  <ScrollList label="Recommendations" className="space-y-1.5">
+                    {recommendations.map((item, index) => (
+                      <div key={index} className="rounded-md border p-2">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {String(item["kind"])}
+                        </Badge>
+                        <p className="mt-1 text-sm">
+                          {typeof item["statement"] === "string" ? item["statement"] : String(item["hypothesis"] ?? "")}
+                        </p>
+                      </div>
+                    ))}
+                  </ScrollList>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </SurfaceSection>
+
+      <SourcesDisclosure id="overview-sources" label="Sources & composition">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          This overview composes the platform&apos;s decision-room read for the client — it holds
+          no state of its own; every block renders exactly what the read returned, and an
+          absent block keeps its honest empty state.
+        </p>
+        <p className="mt-2 font-mono text-xs text-muted-foreground">
+          source: GET /api/reporting/decision-room/:clientId · generated {formatWhen(view.generatedAt)}
+        </p>
+      </SourcesDisclosure>
     </div>
   );
 }

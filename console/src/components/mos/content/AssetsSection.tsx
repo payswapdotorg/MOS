@@ -25,7 +25,6 @@
 // is, its lifecycle state, its next action.
 
 import * as React from "react";
-import { Boxes } from "lucide-react";
 import { toast } from "sonner";
 import {
   useClientEvidence,
@@ -57,6 +56,7 @@ import {
   TextField,
   formatWhen,
 } from "./content-atoms";
+import { SurfaceSection } from "@/components/mos/surface-section";
 import {
   SectionErrorView as SectionErrorViewInline,
   WorkspaceActionButton,
@@ -92,65 +92,82 @@ export function AssetsSection({ clientId }: { clientId: string }) {
 
   const versionList = assets.data ?? [];
   const transformationList = transformations.data ?? [];
+  const draftCount = versionList.filter((version) => version.lifecycleState === "draft").length;
 
   return (
-    <section id="content-assets-section" aria-labelledby="content-assets-heading" className="space-y-3">
-      <div>
-        <h3 id="content-assets-heading" className="flex items-center gap-2 font-medium text-stone-800">
-          <Boxes className="size-4 text-stone-400" aria-hidden="true" />
-          Assets &amp; transformations
-        </h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
+    <SurfaceSection
+      id="content-assets"
+      label="Assets"
+      title="Assets & transformations"
+      summary={
+        assets.isPending
+          ? "loading the asset versions…"
+          : assets.isError
+            ? "could not load the asset versions — open to retry"
+            : versionList.length === 0
+              ? "no asset versions yet"
+              : `${versionList.length} version${versionList.length === 1 ? "" : "s"} · ${
+                  versionList.length - draftCount
+                } ready${draftCount > 0 ? ` · ${draftCount} awaiting material` : ""}${
+                  transformationList.length > 0
+                    ? ` · ${transformationList.length} transformation${transformationList.length === 1 ? "" : "s"}`
+                    : ""
+                }`
+      }
+      summaryTone={assets.isError ? "warning" : "neutral"}
+    >
+      <div id="content-assets-section" className="space-y-3">
+        <p className="text-sm leading-relaxed text-stone-600">
           The versioned material this client can publish — each asset version is born draft,
           materializes from the operator&apos;s own bytes, and becomes derived output through
           recorded transformations. Every derived asset renders its lineage: the frozen
           ingredient versions and the rights-lineage links recorded when it was derived.
         </p>
-      </div>
 
-      {assets.isPending ? (
-        <SectionSkeleton rows={3} />
-      ) : assets.isError ? (
-        <SectionErrorViewInline
-          error={assets.error}
-          what="the content assets"
-          onRetry={() => void assets.refetch()}
-        />
-      ) : (
-        <>
-          {versionList.length === 0 ? (
-            <WorkspaceEmptyState
-              missing="No content assets are recorded on this client yet."
-              why="An asset version is the material itself — a post, a video, a product shot — anchored on a real evidence record and versioned immutably. Transformations consume materialized versions and produce derived output with mandatory lineage."
-              next="Register the first asset version: cite the client's evidence (a candidate's evidence link is the natural anchor), then materialize it with the operator's own file and transform it into channel-ready pieces."
-              action={
+        {assets.isPending ? (
+          <SectionSkeleton rows={3} />
+        ) : assets.isError ? (
+          <SectionErrorViewInline
+            error={assets.error}
+            what="the content assets"
+            onRetry={() => void assets.refetch()}
+          />
+        ) : (
+          <>
+            {versionList.length === 0 ? (
+              <WorkspaceEmptyState
+                missing="No content assets are recorded on this client yet."
+                why="An asset version is the material itself — a post, a video, a product shot — anchored on a real evidence record and versioned immutably. Transformations consume materialized versions and produce derived output with mandatory lineage."
+                next="Register the first asset version: cite the client's evidence (a candidate's evidence link is the natural anchor), then materialize it with the operator's own file and transform it into channel-ready pieces."
+                action={
+                  <WorkspaceActionButton
+                    tone="plain"
+                    onClick={() => setRegisterOpen(true)}
+                    ariaLabel="Register an asset version"
+                  >
+                    Register an asset version
+                  </WorkspaceActionButton>
+                }
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {versionList.map((version) => (
+                  <AssetVersionCard key={version.versionId} clientId={clientId} version={version} />
+                ))}
+              </ul>
+            )}
+
+            {versionList.length > 0 ? (
+              <div>
                 <WorkspaceActionButton
+                  tone="plain"
                   onClick={() => setRegisterOpen(true)}
-                  ariaLabel="Register an asset version"
+                  ariaLabel="Register another asset version"
                 >
-                  Register an asset version
+                  Register another asset version
                 </WorkspaceActionButton>
-              }
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {versionList.map((version) => (
-                <AssetVersionCard key={version.versionId} clientId={clientId} version={version} />
-              ))}
-            </ul>
-          )}
-
-          {versionList.length > 0 ? (
-            <div>
-              <WorkspaceActionButton
-                tone="plain"
-                onClick={() => setRegisterOpen(true)}
-                ariaLabel="Register another asset version"
-              >
-                Register another asset version
-              </WorkspaceActionButton>
-            </div>
-          ) : null}
+              </div>
+            ) : null}
 
           <div className="pt-2">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
@@ -244,7 +261,8 @@ export function AssetsSection({ clientId }: { clientId: string }) {
           "POST …/content-assets (register) · …/:versionId/materialize · …/transformations (request) · …/transformations/:id/execute",
         ]}
       />
-    </section>
+      </div>
+    </SurfaceSection>
   );
 }
 
@@ -292,10 +310,47 @@ function AssetVersionCard({
   return (
     <ContentRecordCard
       id={`asset-${version.versionId}`}
-      detailLabel="Version history, lifecycle events and quality observations"
+      detailLabel="Materialize, version history, lifecycle events and quality observations"
         detail={(open) =>
           open ? (
-            <AssetVersionDetailBody clientId={clientId} versionId={version.versionId} />
+            <div className="space-y-4">
+              <LabeledRows
+                label="Version reference"
+                record={{
+                  assetRef: version.assetRef,
+                  versionId: version.versionId,
+                  sourceEvidenceRef: version.sourceEvidenceRef ?? "derived — the recorded transformation is the provenance",
+                }}
+              />
+              {version.lifecycleState === "draft" ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* UX-010: the card's single primary action lives in the
+                      expanded detail — the materialization, exactly as wired
+                      before (own file, ≤8 MB, nothing fabricated). */}
+                  <input
+                    ref={fileInputRef}
+                    id={`materialize-file-${version.versionId}`}
+                    type="file"
+                    accept="*/*"
+                    onChange={onFilePicked}
+                    className="hidden"
+                  />
+                  <WorkspaceActionButton
+                    tone="teal"
+                    onClick={pickAndMaterialize}
+                    disabled={materialize.isPending}
+                    ariaLabel={`Materialize ${version.displayName ?? version.assetRef}`}
+                  >
+                    {materialize.isPending ? "Storing…" : "Materialize with a file"}
+                  </WorkspaceActionButton>
+                  <span className="text-xs leading-relaxed text-stone-500">
+                    The operator&apos;s own file (≤8 MB) — the object store keeps the real bytes;
+                    nothing is fabricated.
+                  </span>
+                </div>
+              ) : null}
+              <AssetVersionDetailBody clientId={clientId} versionId={version.versionId} />
+            </div>
           ) : null
         }
       >
@@ -316,49 +371,17 @@ function AssetVersionCard({
 
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <AssetLifecycleChip state={version.lifecycleState} />
-            <span className="font-mono text-[11px] text-stone-400">
-              ref {version.assetRef}
-            </span>
             {version.objectSize !== undefined ? (
-              <span className="font-mono text-[11px] text-stone-400">
-                · {(version.objectSize / 1024).toFixed(1)} KB stored
+              <span className="text-[11px] text-stone-400">
+                {(version.objectSize / 1024).toFixed(1)} KB stored
               </span>
             ) : null}
           </div>
 
-          {version.sourceEvidenceRef !== null ? (
-            <p className="font-mono text-[11px] text-stone-400">
-              source evidence:{version.sourceEvidenceRef.slice(0, 8)}…
-            </p>
-          ) : (
-            <p className="font-mono text-[11px] text-stone-400">
-              derived output — no evidence anchor; the recorded transformation IS the provenance
-            </p>
-          )}
-
           {version.lifecycleState === "draft" ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileInputRef}
-                id={`materialize-file-${version.versionId}`}
-                type="file"
-                accept="*/*"
-                onChange={onFilePicked}
-                className="hidden"
-              />
-              <WorkspaceActionButton
-                tone="teal"
-                onClick={pickAndMaterialize}
-                disabled={materialize.isPending}
-                ariaLabel={`Materialize ${version.displayName ?? version.assetRef}`}
-              >
-                {materialize.isPending ? "Storing…" : "Materialize with a file"}
-              </WorkspaceActionButton>
-              <span className="text-xs leading-relaxed text-stone-500">
-                The operator&apos;s own file (≤8 MB) — the object store keeps the real bytes;
-                nothing is fabricated.
-              </span>
-            </div>
+            <p className="text-xs leading-relaxed text-stone-400">
+              Expand to materialize this version with the operator&apos;s own file.
+            </p>
           ) : null}
         </div>
     </ContentRecordCard>
@@ -548,7 +571,7 @@ function TransformationRow({
           {transformation.status === "requested" ? (
             <div className="flex flex-wrap items-center gap-2">
               <WorkspaceActionButton
-                tone="teal"
+                tone="plain"
                 onClick={() => {
                   void execute
                     .mutateAsync({
