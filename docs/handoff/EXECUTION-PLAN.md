@@ -43,6 +43,7 @@ The latest repository state records these v1.7 items as delivered:
 - ✅ LAB-002
 - ✅ LAB-003
 - ✅ LAB-004
+- ✅ LAB-005
 - ✅ LAB-011
 - ✅ LAB-013
 - ✅ STUDIO-001

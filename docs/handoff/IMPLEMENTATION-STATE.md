@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-005 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -379,6 +379,40 @@ latency-deadline timing flakes isolated-green 17/17). Recovery saga:
 turn died twice; the EXECUTE NOW nudge ran the implementation; the
 push token lost to worker context compaction was re-supplied by the
 TL (used once, never stored).
+
+✅ LAB-005 — Social Simulator Kernel (external Worker delivery, PR #80
+merged, main f3eb7ef): the /lab-simulator module — the v1.7 §8/§9
+configurable platform world model: the WORLD-MODEL CONFIGURATION
+records (versioned, immutable once instantiated: the declared
+population size/distributions, the preference/topic space shape, the
+fatigue parameters, the ranking exposure curve parameters, the
+trend/temporal parameters — every knob DECLARED DATA with its
+version, never ambient globals, CHECK-fenced closed vocabularies);
+DETERMINISTIC SEEDED REPLAY (the core acceptance, structural): the
+simulator core is a PURE function of (seed, configuration, the
+interaction history) — the same inputs always produce the same
+trajectory; the RNG is the declared seeded generator (identity +
+version recorded); the reproducibility test proves a replay run
+reproduces the original trajectory step-for-step; STOCHASTIC
+ENSEMBLES for uncertainty estimation (the §13 discipline: sampled
+seeds/configurations over the space, agreement/disagreement recorded
+across the ensemble — a single run is never ground truth); the
+INTERACTION LOOP (candidate generation from opaque-cited content →
+the configurable exposure/ranking abstraction → the stochastic
+stateful user-interaction sampling (view/skip/engage/share with
+fatigue/preference dynamics) → the observable feedback per step,
+bounded by the run's declared step budget); the OBSERVABLE/HIDDEN
+SPLIT (the core acceptance): only observable state is exposed; hidden
+provider moderation/ranking internals are NEVER materialized as
+factual claims — every ranking-behavior parameter is a DECLARED
+world-model assumption, labeled as such. Migration 071 (071_
+lab_simulator.sql — extends the 068 tail; 069/070 held by the
+in-flight MKT-073/STUDIO-003 workers), 14 unit + 8 architecture + 9
+integration tests, the runbook, the registration seams (57→58
+spec-parsed / 58→59 enforced). Station battery (the first
+zero-conflict merge — the worker based on the fully-reconciled main
+87ee744): typecheck 0 / lint 0 / unit 1394/1394 / architecture
+767/767 / integration 1289/1289 ZERO flakes.
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph
