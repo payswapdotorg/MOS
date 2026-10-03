@@ -258,7 +258,7 @@ test('LAB-004 AC: the module imports NO other module — the /lab family discipl
   });
   assert.deepEqual(result.violations, []);
   assert.ok(result.frozenModules.includes('lab-ideas'));
-  assert.equal(result.frozenModules.length, 58);
+  assert.equal(result.frozenModules.length, 59);
 });
 
 test('LAB-004 AC: the registration — the granted worker spec append + the composition-root wiring + the ApplicationModules entry', () => {
@@ -283,7 +283,7 @@ test('LAB-004 AC: the registration — the granted worker spec append + the comp
   assert.ok(compositionRoot.includes('const labIdeas = createLabIdeasModule({'), 'the composition root wires the module');
   assert.ok(compositionRoot.includes('decomposer: createFirstPartyLabIdeaDecomposer(),'), 'the first-party decomposer is the wired port');
   assert.ok(compositionRoot.includes('generator: createFirstPartyLabIdeaGenerator(),'), 'the first-party structural generator is the wired port');
-  assert.ok(compositionRoot.includes('labFeatures, commerceDiscovery, labCapabilities, labIdeas }'), 'the modules map carries the entry');
+  assert.ok(compositionRoot.includes('labFeatures, commerceDiscovery, labCapabilities, labIdeas, labSimulator }'), 'the modules map carries the entry');
   // ApplicationModules.
   assert.ok(applicationTs.includes("from '../modules/lab-ideas/public.ts'"), 'application.ts imports the public contract');
   assert.ok(applicationTs.includes('readonly labIdeas: LabIdeasModuleApi;'), 'ApplicationModules carries the entry');
@@ -294,10 +294,10 @@ test('LAB-004 AC: the migration tail — 066_lab_ideas.sql is the tail after the
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('066_lab_ideas.sql'));
-  assert.equal(migrations[migrations.length - 3], '066_lab_ideas.sql');
-  assert.equal(migrations[migrations.length - 4], '065_lab_features.sql');
-  assert.equal(migrations[migrations.length - 6], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 8], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 4], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 5], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 7], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 9], '061_lab_corpus.sql');
   assert.ok(migrations.includes('062_commerce_discovery.sql'), '062 is taken by the merged MKT-072 sibling delivery (the merged-tree truth)');
   assert.ok(migrations.some((name) => name.startsWith('064_')), '064 is taken by the merged STUDIO-001 sibling delivery');
   // The module boundary is complete.

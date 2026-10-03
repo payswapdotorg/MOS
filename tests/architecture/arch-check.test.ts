@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (57 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (58 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 57);
+  assert.equal(modules.length, 58);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -79,6 +79,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (57 modules)', (
       'lab-ideas',
       'lab-corpus',
       'lab-features',
+      'lab-simulator',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -450,6 +451,14 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // — the enforced total becomes 57: 56 spec-parsed + the single
     // /apps provision).
     'MISSING_MODULE|src/modules/lab-ideas',
+    // The LAB-005 /lab-simulator registration (the v1.7 Social
+    // Simulator Kernel authority — the granted worker spec append,
+    // the LAB-003/LAB-004 platform-health/worker-append registration
+    // precedent) makes the fixture's missing lab-simulator boundary a
+    // MISSING_MODULE violation (the same additive count each sibling
+    // promotion adds — the enforced total becomes 59: 58 spec-parsed
+    // + the single /apps provision).
+    'MISSING_MODULE|src/modules/lab-simulator',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -552,10 +561,14 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // it directly, so the enforced total becomes 58 — 57 spec-parsed
   // (the LAB-013 /lab-capabilities + LAB-004 /lab-ideas registrations) +
   // the single /apps provision — with the total violations becoming
-  // 58.
+  // 58. The LAB-005 delivery appends /lab-simulator through the granted
+  // worker spec registration (the LAB-003/LAB-004 precedent): the
+  // spec-parsed set enforces it directly, so the enforced total becomes
+  // 59 — 58 spec-parsed (the LAB-005 /lab-simulator registration) + the
+  // single /apps provision — with the total violations becoming 59.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    58,
+    59,
     'no unexpected violation categories may be reported',
   );
 

@@ -398,3 +398,88 @@ Stage Summary:
 - Gates on the delivery tree: tsc 0 errors / lint 0 problems / arch:check 0 violations (57 enforced modules — 56 spec-parsed including /lab-ideas via the granted spec append + the single /apps provision; 674 files) / unit 1367/1367 (base 1354 + 13 new) / architecture 750/750 (base 742 + 8 new) / integration 1265/1265 all green (tree base 1248 = the brief's 1246 + the 2 known MKT-056 flakes, both passing this run; + 17 new).
 - Honest disclosures: the evidence filter is observed_source ONLY (the strictest reading of §6 — derived ≠ observed); decompositions produce observed nodes only, every derived_abstraction arrives through a derive operation; the clustering space is observed + derived (generated/combined never cluster); novelty is measured against OBSERVED same-kind nodes only (1 − max Jaccard over the descriptor token sets, disclosed in the runbook); the generator's open-ended mutate/analogy/invert ship the honest PENDING refusal (nothing recorded) until a real generator is wired through the same port; the /lab-corpus feature_bundle_version advance stays the /lab-corpus module's own seam (this module writes NO /lab-corpus or /lab-features table — the citation is by-reference recorded data); 067 stays reserved for the parallel LAB-013 worker (the TL reconciles at merge).
 - HEAD: see the branch lab/004-worker-delivery (the delivery commit 'LAB-004: the Idea Graph').
+
+---
+Task ID: LAB-005 (Worker-A)
+Agent: LAB-005 Worker (Social Simulator Kernel)
+Task: Implement LAB-005 — the /lab-simulator module + migration 071 + runbook on branch lab/005-worker-delivery from frozen main 87ee744.
+
+Work Log:
+- Cloned repo at base SHA 87ee744; created branch lab/005-worker-delivery.
+- Read AGENTS.md, docs/handoff/WORKER-CONTRACT.md, spec/effective-backlog-v1.7.md LAB-005,
+  spec/architecture-v1.7-marketing-lab.md §8 (Social World Model), §9 (User/creator dynamics),
+  §10 (Time Machine run-record fields), §11, §12, §13 (Uncertainty + simulator ensembles), §22, §23.
+- Studied the precedents: src/modules/lab (LAB-001 run model + LabSeedSet), src/modules/lab-features
+  (LAB-003), src/modules/lab-ideas (LAB-004 — module/store/validation/migration patterns),
+  migration 066 (CHECK fences, append-only triggers, scope-consistency triggers),
+  composition-root registration seam, tests/architecture/arch-check.test.ts (57 spec-parsed /
+  58 enforced counts), sibling boundary-test re-pin diff of the LAB-004 delivery (commit 6a8e024),
+  docs/runbooks/LAB-004.md format, tests/integration/helpers/harness.ts + pg.ts.
+- npm install + embedded-postgres approve + rebuild done.
+
+Design decisions (frozen for this delivery):
+- Module: src/modules/lab-simulator/ (public.ts + internal/{validation.ts, rng.ts, world-core.ts,
+  simulator-module.ts, simulator-store.ts}).
+- Migration 071_lab_simulator.sql (TL pre-assigned; 069/070 held by parallel workers B/C):
+  lab_simulator_world_configs (versioned immutable world-model configurations),
+  lab_simulator_seeds (recorded seed+configuration pairs),
+  lab_simulator_runs (born running, single completion advance, deterministic-replay flag),
+  lab_simulator_run_steps (append-only trajectory steps),
+  lab_simulator_ensembles + lab_simulator_ensemble_members (family of runs over sampled
+  seeds/configs + agreement/disagreement), lab_simulator_observable_snapshots
+  (the observable/hidden split — ONLY observable state per step).
+- DETERMINISTIC CORE: pure function of (seed, configuration, interaction history); RNG =
+  declared seeded generator (splitmix64-based 'lab-sim-rng-v1'); replay runs cite the original
+  run's seed+config and reproduce the trajectory step-for-step; ensembles sample NEW seeds.
+- NO INVENTED HIDDEN PROVIDER STATE: the world model declares OBSERVABLE surfaces only;
+  ranking-behavior parameters are DECLARED world-model configuration (explicit modeling
+  assumptions), labeled as such, never presented as the provider's actual algorithm.
+- Citations: opaque recorded data (content-universe citations to /lab-features bundles /
+  /lab-ideas nodes by reference); FK anchors ONLY tenant tables + same-module rows.
+- Contract identity 'lab-simulator-contract-v1'; world-model config version 'lab-worldmodel-v1';
+  simulator version 'lab-sim-engine-v1' (the frozen deterministic loop formula versions).
+
+---
+Task ID: LAB-005 (Worker-A) — implementation phase
+Agent: LAB-005 Worker (Social Simulator Kernel)
+Task: The module + migration + registration + tests + runbook (the delivery delta).
+
+Work Log:
+- src/modules/lab-simulator/public.ts — the frozen public surface: the contract/world-model/engine/RNG version constants, the modeling-basis label + the ranking disclosure, the factuality label, the closed citation-kind/RNG-label/outcome-metric vocabularies, the world-knob interface (the full §8 coverage in 11 sections), the universe-citation + publish-action shapes, the 7 record families, the module API (13 methods) + the exported pure functions (RNG, engine, guards, digests).
+- internal/rng.ts — splitmix64 + FNV-1a64 label mixing + the derived-seed function (FIXED during test: the FNV prime literal had an extra hex zero — 0x1000000001b3 vs the correct 0x100000001b3; the standard test vectors now pin it).
+- internal/validation.ts — the pure guards (scope, master seed u64, the knob fences over all 11 sections, the universe fences with the recorded-client tenant gate, the publishing-plan fences enforcing the DECLARED API/publishing constraints, the run/ensemble input fences with the §13 floor) + the canonical JSON (DEEP sorted) + the 5 digest derivations.
+- internal/world-core.ts — the pure engine: the fixed 8-phase loop (sessions → trends → competition → publish → candidates → exposure/exploration → interactions → aggregates + the observable projection) with the deterministic digest chains; bounded by the step budget; the observable projection built from a closed literal shape (the observable/hidden split at the construction site).
+- internal/simulator-store.ts — the migration-071 persistence: the row mappers + the insert/find/list operations + the SQL-computed completion advances (the run totals from the step rows; the ensemble agreement via the CTE pair — majority side of the mean).
+- internal/simulator-module.ts — the orchestration: the gates → the pure engine → the atomic write (born running → steps + snapshots → the single completion advance); THE REPLAY (copies the original's seed+config+plan+universe, verifies every step digest + observable digest BEFORE any row, lands with replayVerified); THE ENSEMBLE (the deterministic member-seed derivation over the declared config space, the whole family in one transaction).
+- migration 071_lab_simulator.sql — 7 tables, CHECK-fenced vocabularies, the NULL-SAFE replay fence (FIXED during test: a bare `= true` comparison passes a CHECK on NULL — the IS TRUE form now rejects the unverified replay row), the append-only triggers, the 5 scope-consistency triggers, the composite config FK.
+- Registration: composition-root.ts (import block + wiring + the modules-map tail ', labSimulator'), application.ts (the ApplicationModules entry), spec/architecture.md §6 (the granted append: the list line after /lab-capabilities + the registration paragraph at the section end — the placement divergence DISCLOSED), arch-check.test.ts (58 spec-parsed + the spot-check entry + the MISSING_MODULE entry + the structure total 59).
+- Sibling re-pins: the 24-file pass (438 end-anchored migration-tail shifts −N → −(N+1); the counts 57→58 / 58→59; the 9 map adjacency strings + ', labSimulator'; infra-adapters 071 append; the first-party-apps −25 window; the cross-platform introspection 58→59).
+- Tests: 14 unit + 8 boundary + 9 integration (incl. THE REPLAY PROOF: step-for-step step-digest + observable-digest equality, the trajectory digest equality, the totals equality, the stochastic-different-seed control; the ensemble deterministic-sampling re-derivation; the §22 tenant battery; the DB backstops).
+- docs/runbooks/LAB-005.md — the runbook (the surface table, the disclosed formulas, the judgment calls).
+
+Stage Summary:
+- Gates so far: tsc 0 errors; lint 0 problems; arch:check 0 violations (59 enforced, 688 files); unit 1394/1394 (base 1380 + 14); architecture 767/767 (base 759 + 8); integration battery running (the completion report carries the final table).
+- The delta stays inside the assigned surfaces: src/modules/lab-simulator/**, migration 071, the runbook, the registration seam (composition-root + application.ts + arch-check + the granted spec append), the sibling re-pins, worklog. NO sibling-worker surface touched.
+
+---
+Task ID: LAB-005 (Worker-A) — final gates + delivery
+Agent: LAB-005 Worker (Social Simulator Kernel)
+Task: The verification battery + the delivery branch.
+
+Work Log:
+- Final gates on the delivery tree: tsc 0 errors; lint 0 problems; arch:check 0 violations
+  (59 enforced modules = 58 spec-parsed incl. /lab-simulator + the single /apps provision;
+  691 files); unit 1394/1394 (base 1380 + 14 new); architecture 767/767 (base 759 + 8 new);
+  integration 1289/1289 all green across the FULL serialized 113-file battery on the real
+  embedded PostgreSQL (the tree baseline 1280 = the brief's 1278 + the 2 documented
+  lab-agent-body latency-deadline timing flakes, both passing this run, isolated-green
+  17/17 in-file; the known MKT-056 social-adapter pair passing; + 9 new LAB-005 tests).
+  Migration 071 applies cleanly after 068 in every per-file boot (the canonical tail on
+  this tree: ...065 → 066 → 067 → 068 → 071; 069/070 held by the parallel workers).
+- Committed on lab/005-worker-delivery; pushed to the MOS origin.
+
+Stage Summary:
+- LAB-005 delivered: the /lab-simulator module (6 files), migration 071 (7 tables),
+  3 test batteries (14 unit + 8 boundary + 9 integration incl. THE REPLAY PROOF),
+  the registration seam, the granted spec append, the 24-file sibling re-pin pass,
+  the runbook, this worklog.

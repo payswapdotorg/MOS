@@ -944,6 +944,41 @@ import {
 } from './modules/lab-ideas/public.ts';
 import type { LabCapabilitiesArenaPort } from './modules/lab-capabilities/public.ts';
 
+// LAB-005: /lab-simulator — the Social Simulator Kernel authority (the
+// frozen v1.7 world-model layer: the configurable platform world model
+// with deterministic seeded replay plus stochastic ensembles and NO
+// invented hidden provider state — spec/architecture-v1.7-marketing-
+// lab.md §8 "Social World Model" and §9 "User and creator dynamics"
+// are THE frozen contract: the world-model CONFIGURATION records
+// (versioned, immutable once instantiated — the closed vocabulary of
+// declared knobs: the topic space shape, the population segments with
+// their topic affinities, the fatigue parameters, the ranking/
+// exposure curve parameters — THE DECLARED MODELING ASSUMPTION, never
+// a provider fact — the trend/temporal parameters, the freshness
+// half-life, the novelty bias, the creator competition, the account
+// state, the business/product conversion behavior and the observable
+// platform + API/publishing constraints enforced on every publishing
+// plan), the SEED records (the recorded seed + configuration pair that
+// reproduces a trajectory exactly — the declared splitmix64 RNG with
+// its derived-seed lineage), the RUN records (born running with the
+// single completion advance, carrying the seed + configuration
+// citation + the deterministic-replay flag + the factuality label
+// 'simulated_model_output'), the STEP/TRAJECTORY records (candidates
+// surfaced → exposure decisions → user interactions with their
+// stochastic outcomes — every step append-only with its deterministic
+// step digest), the ENSEMBLE records (a family of runs over sampled
+// seeds/configurations — the §13 agreement/disagreement discipline; a
+// single run is never ground truth) and the OBSERVABLE-STATE snapshot
+// records (the observable/hidden split: ONLY what the simulated agent
+// could observe; hidden provider internals are never materialized as
+// factual claims). The frozen row consumes platform ports only (db,
+// clock, ids) — the /lab family empty-allowance posture; NO matrix row
+// required; zero cross-module imports exist inside
+// src/modules/lab-simulator (the content-universe citations to
+// /lab-features bundles and /lab-ideas nodes are OPAQUE recorded data
+// — never a join, never an FK).
+import { createLabSimulatorModule } from './modules/lab-simulator/public.ts';
+
 import type { ApplicationModules } from './api/application.ts';
 
 export interface AppOptions {
@@ -2265,6 +2300,21 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     generator: createFirstPartyLabIdeaGenerator(),
   });
 
+  // LAB-005: /lab-simulator — platform ports ONLY (db, clock, ids —
+  // the /lab family empty-allowance posture, no matrix row required).
+  // The module owns its whole deterministic path internally (the pure
+  // splitmix64 engine + the pure contract guards); there is NO
+  // replaceable port to wire and NO cross-module import inside
+  // src/modules/lab-simulator (the content-universe citations to
+  // /lab-features bundles and /lab-ideas nodes stay OPAQUE recorded
+  // data — by reference only; NO /lab, /lab-features or /lab-ideas
+  // table is ever read or written).
+  const labSimulator = createLabSimulatorModule({
+    db,
+    clock,
+    ids,
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2552,7 +2602,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labCapabilities, labIdeas, labSimulator },
     runtime: { aiProvider },
   };
 }
