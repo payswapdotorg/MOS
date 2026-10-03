@@ -122,6 +122,21 @@ export function checkArchitecture(options: CheckOptions): ArchCheckResult {
     // the /lab registration precedent), so the spec-parsed list enforces
     // it directly; the provision array is back to the single MKT-047
     // /apps entry.)
+    // STUDIO-001 (2026-10): the /content-studio v1.7 provision — the
+    // Content Studio Runtime authority (spec/content-studio-contract-v1.0.md,
+    // the governing sub-contract; spec/architecture-v1.7-marketing-lab.md
+    // §27.5/§29/§30; architecture-lock-v1.7 #38-#44). Workers may not edit
+    // spec/, so the enforced-set registration is THIS disclosed provision
+    // (the LAB-002/LAB-011 worker-delivery precedent) registering the module
+    // with the STRICTEST posture — a frozen boundary directory, a required
+    // public.ts, and an EMPTY dependency-matrix allowance (structural ports
+    // only, wired at the composition root; every cross-module import inside
+    // src/modules/content-studio is a FORBIDDEN_MODULE_DEPENDENCY violation).
+    // NO existing rule is relaxed; this only ADDS a strictly-enforced
+    // boundary pending the TL spec promotion (one spec/architecture.md §6
+    // line — at which point this provision should be REMOVED, the /lab
+    // registration precedent).
+    'content-studio',
   ];
   const frozenModules = [
     ...specModules,

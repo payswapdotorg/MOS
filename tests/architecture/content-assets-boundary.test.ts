@@ -499,28 +499,28 @@ test('MKT-064: the disclosed spec registration exists (the §6 line + sentence, 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 6], '057_content_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 2], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 1], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 7], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 3], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 2], '063_lab_agent_body.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 5], '058_platform_health.sql');
-  assert.equal(listEntries[listEntries.length - 2], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 1], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 6], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 3], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 2], '063_lab_agent_body.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(listEntries[listEntries.length - 4], '059_lab_contracts.sql');
-  assert.equal(listEntries[listEntries.length - 3], '060_product_marketing.sql');
-  assert.equal(listEntries[listEntries.length - 7], '056_research.sql');
-  assert.equal(listEntries[listEntries.length - 8], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 9], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 10], '053_content_assets.sql');
-  assert.equal(listEntries[listEntries.length - 12], '051_content_rights.sql');
-  assert.equal(listEntries[listEntries.length - 2], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 1], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 5], '059_lab_contracts.sql');
+  assert.equal(listEntries[listEntries.length - 4], '060_product_marketing.sql');
+  assert.equal(listEntries[listEntries.length - 8], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 9], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 10], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 11], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 13], '051_content_rights.sql');
+  assert.equal(listEntries[listEntries.length - 3], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 2], '063_lab_agent_body.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '053_content_assets.sql')));

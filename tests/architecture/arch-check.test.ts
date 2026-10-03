@@ -410,6 +410,16 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total stays 53: 52 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-agent-body',
+    // The STUDIO-001 disclosed provision (tools/arch-check/checker.ts —
+    // the v1.7 Content Studio Runtime authority, spec/
+    // content-studio-contract-v1.0.md, pending the Architect/Tech-Lead
+    // spec promotion — the LAB-011 worker-delivery precedent): the
+    // fixture provides no content-studio boundary → the missing-module
+    // violation joins the exact set (the same additive count each
+    // sibling promotion adds — the enforced total becomes 54: 52
+    // spec-parsed + the /apps provision + the disclosed content-studio
+    // worker provision).
+    'MISSING_MODULE|src/modules/content-studio',
   ].sort();
 
   assert.deepEqual(actual, expected);
@@ -493,10 +503,15 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // registers through the promoted spec/architecture.md §6, so the
   // spec-parsed set enforces it directly and the enforced total stays
   // 53 — 52 spec-parsed + the single /apps provision — with the
-  // total violations staying 53.
+  // total violations staying 53. The STUDIO-001 disclosed provision
+  // (the /content-studio v1.7 Content Studio Runtime authority — the
+  // LAB-011 worker-delivery precedent, pending the TL spec promotion)
+  // appends /content-studio: the enforced total becomes 54 and the
+  // structure-violation total 53 → 54 (the same additive promotion
+  // precedent).
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    53,
+    54,
     'no unexpected violation categories may be reported',
   );
 

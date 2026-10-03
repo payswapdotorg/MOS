@@ -1053,6 +1053,22 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // or mutated, and NO /ai-runtime table is written (the model
     // observations flow through the module's /ai-runtime port).
     '063_lab_agent_body.sql',
+    // STUDIO-001 (Content Studio Runtime) appends the Studio migration
+    // (064 — the next-free number on frozen main; 062 remains reserved
+    // for the parallel worker per the LAB-011 disclosure; the disclosed
+    // additive re-pin precedent — every end-anchored tail position
+    // shifts once more): the /content-studio authority — the
+    // immutable/versioned production requests, the versioned session
+    // revisions with the GUARDED §5 lifecycle (the frozen legal-edge
+    // table in the session guard trigger; terminal revisions frozen),
+    // the append-only audit event tail, the DURABLE §9 processing
+    // steps (the CAS claim substrate), the immutable output versions
+    // with the treatment parent linkage and the structured §13
+    // treatment requests; NO publishing/distribution/experiment/
+    // evidence/rights/policy/workflow/execution table is created or
+    // mutated, and NO /lab-agent-body table is written (the bodies are
+    // opaque references resolved through the module's structural port).
+    '064_content_studio_runtime.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {
