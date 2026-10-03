@@ -832,6 +832,42 @@ import {
   createFirstPartyLabFeatureExtractor,
   createPendingLabMediaFetchPort,
 } from './modules/lab-features/public.ts';
+// LAB-004: /lab-ideas — the Idea Graph authority (the frozen v1.7
+// conceptual-primitive layer: the closed, versioned primitive
+// vocabulary — the ten §6 kinds idea/problem/claim/hook/narrative/
+// visual_treatment/audio_treatment/packaging/cta/timing_context
+// under 'lab-ideaset-v1' — the closed 8-relation edge vocabulary,
+// THE observed/derived/generated/combined origin-class separation
+// fenced to the creation path (a decomposition of one cited
+// /lab-features feature bundle produces observed_source nodes ONLY,
+// cited BY REFERENCE through the opaque bundle citation — never a
+// join; the derive/recombine/mutate/analogy/invert/fill_gap
+// operations produce the derived_abstraction/generated_mutation/
+// combined_strategy nodes with their RECORDED lineage — DATA, never
+// resemblance — and their creation-time novelty score against the
+// OBSERVED graph under the frozen 'lab-idea-novelty-v1' formula),
+// the deterministic retrieval (bounded, cursor-paginated,
+// SQL-computed, the MANDATORY explicit origin-class filter — no
+// generated idea is ever treated as source evidence), the versioned
+// deterministic clustering ('lab-idea-clustering-v1' — append-only
+// assignment records carrying the version, one run per client
+// version, re-clustering is a new version) and the first-class
+// append-only operation records. The frozen row consumes platform
+// ports only (db, clock, ids) plus the module's two REPLACEABLE Lab
+// ports wired HERE: the first-party decomposer (honest — derives
+// only the primitives the cited feature values honestly support,
+// asserts no semantic edges) and the first-party structural
+// generator (deterministic structural derive/recombine/fill_gap;
+// the open-ended mutate/analogy/invert ship the honest pending
+// refusal until a real generator is wired) — the LAB-003
+// extractor-port precedent, no cross-module imports exist inside
+// src/modules/lab-ideas (the /lab family discipline; NO /lab-
+// features or /lab-corpus table is ever written).
+import {
+  createLabIdeasModule,
+  createFirstPartyLabIdeaDecomposer,
+  createFirstPartyLabIdeaGenerator,
+} from './modules/lab-ideas/public.ts';
 // MKT-070: /product-marketing — the Product Marketing Mission Planner
 // authority (the frozen v1.6 matrix row registered by this Work Item:
 // /product-marketing ──→ /growth-missions, /product-intelligence,
@@ -2132,6 +2168,31 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     mediaFetch: createPendingLabMediaFetchPort(),
   });
 
+  // LAB-004: /lab-ideas — platform ports + the module's two
+  // REPLACEABLE Lab ports ONLY, both wired HERE (the LAB-003
+  // extractor-port precedent): the FIRST-PARTY decomposer (honest
+  // — derives only the primitives the cited bundle's feature
+  // values honestly support: the metadata-grade timing_context +
+  // packaging derivations light up; the encoder-grade semantic
+  // features honestly derive nothing until a real encoder is
+  // wired; asserts no semantic edges) and the FIRST-PARTY
+  // structural generator (the deterministic structural
+  // derive/recombine/fill_gap compositions — explicitly labeled,
+  // never semantic invention; the open-ended mutate/analogy/
+  // invert ship the honest pending refusal until a real generator
+  // is wired). The module resolves its own tenant fences; zero
+  // cross-module imports exist inside src/modules/lab-ideas (the
+  // /lab family discipline) and NO /lab-features or /lab-corpus
+  // table is ever written (the bundle citation stays OPAQUE
+  // recorded data — by reference only).
+  const labIdeas = createLabIdeasModule({
+    db,
+    clock,
+    ids,
+    decomposer: createFirstPartyLabIdeaDecomposer(),
+    generator: createFirstPartyLabIdeaGenerator(),
+  });
+
   // MKT-069: /product-intelligence — the Product Intelligence authority
   // (see the import block above). The REAL HttpPageReader (GET-only, over
   // the platform HttpCallPort) and the REAL /integrations + /ai-runtime
@@ -2419,7 +2480,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
         metrics,
       },
     },
-    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery },
+    modules: { users, auth, agencies, clients, workspaces, credentials, audit, goals, playbooks, workflows, executions, evidence, metrics: metricsModule, experiments, learnings, aiRuntime, fieldAgents, jobs, agents, policies, integrations, extensions, domainPacks, creatorOperations, reporting, deployments, operatingGraph, decisions, apps, appInstalls, profitIntelligence, salesContinuity, aiOperator, clientMemory, appMarketplace, appMetering, firstPartyApps, growthMissions, socialAccounts, notificationDelivery, productIntelligence, growthOperator, contentRights, contentAssets, experimentAnalysis, crossPlatformDistribution, research, contentIntelligence, platformHealth, productMarketing, lab, labCorpus, labAgentBody, contentStudio, labFeatures, commerceDiscovery, labIdeas },
     runtime: { aiProvider },
   };
 }

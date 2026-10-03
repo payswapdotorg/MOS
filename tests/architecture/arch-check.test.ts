@@ -23,9 +23,9 @@ import { checkArchitecture, parseFrozenMatrix, parseFrozenModules } from '../../
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const specDir = path.join(repoRoot, 'spec');
 
-test('frozen module set is parsed from spec/architecture.md §6 (55 modules)', () => {
+test('frozen module set is parsed from spec/architecture.md §6 (56 modules)', () => {
   const modules = parseFrozenModules(path.join(specDir, 'architecture.md'));
-  assert.equal(modules.length, 55);
+  assert.equal(modules.length, 56);
   // Spot-check the full frozen set from the architecture document (the
   // MKT-045 delivery appends /ai-operator — the §7 registration; the
   // MKT-046 delivery appends /sales-continuity — the §8 registration; the
@@ -77,6 +77,7 @@ test('frozen module set is parsed from spec/architecture.md §6 (55 modules)', (
       'lab-agent-body',
       'lab-corpus',
       'lab-features',
+      'lab-ideas',
       'reporting', 'research', 'sales-continuity', 'social-accounts', 'users', 'workflows', 'workspaces',
     ].sort(),
   );
@@ -426,6 +427,14 @@ test('negative fixture: forbidden imports and dependency directions are rejected
     // promotion adds — the enforced total becomes 54: 53 spec-parsed
     // + the single /apps provision).
     'MISSING_MODULE|src/modules/lab-features',
+    // The LAB-004 /lab-ideas §6 registration (the v1.7 Idea Graph
+    // authority — the granted worker spec append, the LAB-003
+    // platform-health/worker-append registration precedent) makes
+    // the fixture's missing lab-ideas boundary a MISSING_MODULE
+    // violation (the same additive count each sibling promotion adds
+    // — the enforced total becomes 57: 56 spec-parsed + the single
+    // /apps provision).
+    'MISSING_MODULE|src/modules/lab-ideas',
     // The MKT-072 /commerce-discovery registration (the frozen v1.6 matrix
     // row registered VERBATIM in the live spec files — the MKT-070 promoted-
     // spec precedent; the granted worker spec registration):
@@ -526,10 +535,14 @@ test('negative fixture: structure violations are rejected (unknown module dir, m
   // provision mechanism is structurally for spec-pending modules
   // only): the spec-parsed set enforces it directly, so the enforced
   // total becomes 54 — 53 spec-parsed + the single /apps provision
-  // — with the total violations becoming 54.
+  // — with the total violations becoming 54. The LAB-004 delivery
+  // appends /lab-ideas through the granted worker spec registration
+  // (the LAB-003 precedent): the spec-parsed set enforces it
+  // directly, so the enforced total becomes 57 — 56 spec-parsed + the
+  // single /apps provision — with the total violations becoming 57.
   assert.equal(
     [...byRule.values()].reduce((sum, count) => sum + count, 0),
-    56,
+    57,
     'no unexpected violation categories may be reported',
   );
 

@@ -1102,6 +1102,18 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // reference citation is opaque recorded data; the corpus advance
     // seam stays the /lab-corpus module's own guarded column).
     '065_lab_features.sql',
+    // LAB-004 (Idea Graph) appends the idea-graph migration (066 —
+    // the TL pre-assigned number, the tail after the merged 065; the
+    // same additive precedent): the versioned idea-decomposition
+    // records, the primitive nodes with the closed primitive-kind +
+    // origin-class vocabularies and THE observed/derived/generated/
+    // combined separation fences, the relation edges, the first-class
+    // operation records with the kind→origin pairing, the versioned
+    // clustering runs with the append-only assignments; NO v1.6
+    // authority table is created or mutated, and NO /lab-features or
+    // /lab-corpus table is written (the bundle citation is opaque
+    // recorded data — the /lab family by-reference discipline).
+    '066_lab_ideas.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

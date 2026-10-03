@@ -445,7 +445,7 @@ test('MKT-065: the real codebase enforces the frozen boundaries — zero violati
   // Agent Body Runtime Contract authority — the LAB-002 provision
   // precedent, pending the TL spec promotion — 51 → 52 enforced, 52 → 53
   // total).
-  assert.equal(result.frozenModules.length, 56);
+  assert.equal(result.frozenModules.length, 57);
 });
 
 // ---------------------------------------------------------------------------
@@ -473,30 +473,33 @@ test('MKT-065: the disclosed spec registration exists (the §6 line + sentence, 
   // The MKT-062 sibling delivery appends 056_research.sql and
   // 057_content_intelligence.sql (the PRE-ASSIGNED numbers — every tail
   // position shifts once more; the same additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 9], '057_content_intelligence.sql');
-  assert.equal(listEntries[listEntries.length - 5], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 3], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 1], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 10], '057_content_intelligence.sql');
+  assert.equal(listEntries[listEntries.length - 6], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 4], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 2], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 1], '066_lab_ideas.sql');
   // The MKT-066 sibling delivery appends 058_platform_health.sql (the
   // PRE-ASSIGNED number — every tail position shifts once more; the same
   // additive re-pin precedent).
-  assert.equal(listEntries[listEntries.length - 8], '058_platform_health.sql');
-  assert.equal(listEntries[listEntries.length - 5], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 3], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 1], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 9], '058_platform_health.sql');
+  assert.equal(listEntries[listEntries.length - 6], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 4], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 2], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 1], '066_lab_ideas.sql');
   // The LAB-001 /lab contracts delivery appends 059_lab_contracts.sql and
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(listEntries[listEntries.length - 7], '059_lab_contracts.sql');
-  assert.equal(listEntries[listEntries.length - 6], '060_product_marketing.sql');
-  assert.equal(listEntries[listEntries.length - 10], '056_research.sql');
-  assert.equal(listEntries[listEntries.length - 11], '055_cross_platform_distribution.sql');
-  assert.equal(listEntries[listEntries.length - 12], '054_experiment_analysis.sql');
-  assert.equal(listEntries[listEntries.length - 13], '053_content_assets.sql');
-  assert.equal(listEntries[listEntries.length - 5], '061_lab_corpus.sql');
-  assert.equal(listEntries[listEntries.length - 3], '063_lab_agent_body.sql');
-  assert.equal(listEntries[listEntries.length - 1], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 8], '059_lab_contracts.sql');
+  assert.equal(listEntries[listEntries.length - 7], '060_product_marketing.sql');
+  assert.equal(listEntries[listEntries.length - 11], '056_research.sql');
+  assert.equal(listEntries[listEntries.length - 12], '055_cross_platform_distribution.sql');
+  assert.equal(listEntries[listEntries.length - 13], '054_experiment_analysis.sql');
+  assert.equal(listEntries[listEntries.length - 14], '053_content_assets.sql');
+  assert.equal(listEntries[listEntries.length - 6], '061_lab_corpus.sql');
+  assert.equal(listEntries[listEntries.length - 4], '063_lab_agent_body.sql');
+  assert.equal(listEntries[listEntries.length - 2], '065_lab_features.sql');
+  assert.equal(listEntries[listEntries.length - 1], '066_lab_ideas.sql');
 
   // The migration file exists.
   assert.ok(existsSync(src('platform', 'db', 'migrations', '055_cross_platform_distribution.sql')));
@@ -518,12 +521,15 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   // The arch-check promotion: the MKT-062 sibling delivery appends
   // /research + /content-intelligence, the MKT-066 sibling delivery
   // appends /platform-health, the LAB-002 TL promotion registers
-  // /lab-corpus, the LAB-011 TL promotion registers /lab-agent-body
-  // and the STUDIO-001 TL promotion registers /content-studio
+  // /lab-corpus, the LAB-011 TL promotion registers /lab-agent-body,
+  // the STUDIO-001 TL promotion registers /content-studio, the
+  // LAB-003 granted worker append registers /lab-features, the
+  // MKT-072 granted worker registration appends /commerce-discovery
+  // and the LAB-004 granted worker append registers /lab-ideas
   // (the /lab registration precedent) — the same additive promotion
   // precedent.
   const archCheckTest = read(join(repoRoot, 'tests', 'architecture', 'arch-check.test.ts'));
-  assert.ok(archCheckTest.includes('(55 modules)'));
+  assert.ok(archCheckTest.includes('(56 modules)'));
   assert.ok(archCheckTest.includes("'cross-platform-distribution'"));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/cross-platform-distribution'));
   assert.ok(archCheckTest.includes("'research'"));
@@ -531,8 +537,8 @@ test('MKT-065: the composition wiring is complete (the application surface, the 
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/research'));
   assert.ok(archCheckTest.includes('MISSING_MODULE|src/modules/content-intelligence'));
   assert.ok(
-    /\n\s*56,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
-    'the structure-violation total is promoted 50 → 51 → 52 → 53 → 54 → 55 → 56 (the LAB-001 /lab + the MKT-070 /product-marketing + the LAB-011 /lab-agent-body + the STUDIO-001 /content-studio + the LAB-003 /lab-features registrations — the same additive promotion precedent)',
+    /\n\s*57,\s*\n\s*'no unexpected violation categories may be reported'/.test(archCheckTest),
+    'the structure-violation total is promoted 50 → 51 → 52 → 53 → 54 → 55 → 56 → 57 (the LAB-001 /lab + the MKT-070 /product-marketing + the LAB-011 /lab-agent-body + the STUDIO-001 /content-studio + the LAB-003 /lab-features + the LAB-004 /lab-ideas registrations — the same additive promotion precedent)',
   );
 });
 
