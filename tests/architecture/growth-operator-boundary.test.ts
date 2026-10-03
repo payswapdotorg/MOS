@@ -574,10 +574,10 @@ test('MKT-054: the disclosed spec registration exists — §6 line + sentence, t
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
-  assert.equal(migrations[migrations.length - 14], '052_growth_operator.sql');
-  assert.equal(migrations[migrations.length - 5], '061_lab_corpus.sql');
-  assert.equal(migrations[migrations.length - 3], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 1], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 15], '052_growth_operator.sql');
+  assert.equal(migrations[migrations.length - 6], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 4], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 2], '065_lab_features.sql');
 });
 
 // ---------------------------------------------------------------------------

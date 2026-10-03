@@ -39,6 +39,8 @@ import type { Clock } from '../../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../../platform/ids/ids.ts';
 import type {
   ContentStudioFormatDeclaration,
+  ContentStudioFormatRecord,
+  ContentStudioFormatStatus,
   ContentStudioOrganizationDeclaration,
   ContentStudioOrganizationValidation,
   ContentStudioOutputVersionRecord,
@@ -56,7 +58,7 @@ import type {
   ContentStudioTreatmentRequestRecord,
   ContentStudioTreatmentSpecification,
 } from '../public.ts';
-import { CONTENT_STUDIO_CONTRACT_VERSION } from '../public.ts';
+import { CONTENT_STUDIO_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION } from '../public.ts';
 
 // ---------------------------------------------------------------------------
 // Row shapes (snake_case as returned by PostgreSQL)
@@ -158,6 +160,34 @@ interface TreatmentRow extends DbRow {
   workspace_id: string | null;
   specification: unknown;
   successor_revision: number | string;
+  contract_version: string;
+  created_at: Date;
+}
+
+// The STUDIO-002 format registry rows (migration 068's studio_formats
+// + studio_format_capabilities).
+
+export interface FormatRow extends DbRow {
+  format_version_id: string;
+  format_id: string;
+  format_version: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  status: string;
+  declaration: unknown;
+  contract_version: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface FormatCapabilityLinkRow extends DbRow {
+  format_version_id: string;
+  capability_kind: string;
+  capability_reference: string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
   contract_version: string;
   created_at: Date;
 }
@@ -299,6 +329,24 @@ export function mapTreatmentRow(r: TreatmentRow): ContentStudioTreatmentRequestR
   };
 }
 
+/** Maps one migration-068 registry row to its record view (WITHOUT the capability links — the caller assembles them). */
+export function mapFormatRow(r: FormatRow, capabilityLinks: ReadonlyArray<string>): ContentStudioFormatRecord {
+  return {
+    formatVersionId: r.format_version_id,
+    formatId: r.format_id,
+    formatVersion: Number(r.format_version),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    status: r.status as ContentStudioFormatStatus,
+    declaration: r.declaration as ContentStudioFormatDeclaration,
+    capabilityLinks,
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+    updatedAt: toIso(r.updated_at),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // The store
 // ---------------------------------------------------------------------------
@@ -377,6 +425,29 @@ export interface InsertTreatmentRequestInput {
   readonly scope: ContentStudioScope;
   readonly specification: ContentStudioTreatmentSpecification;
   readonly successorRevision: number;
+}
+
+// The STUDIO-002 format-registry inputs (migration 068).
+
+export interface InsertFormatVersionInput {
+  readonly formatVersionId: string;
+  readonly formatId: string;
+  readonly formatVersion: number;
+  readonly scope: ContentStudioScope;
+  readonly declaration: ContentStudioFormatDeclaration;
+}
+
+export interface InsertFormatCapabilityLinkInput {
+  readonly formatVersionId: string;
+  readonly scope: ContentStudioScope;
+  readonly capabilityKind: 'required';
+  readonly capabilityReference: string;
+}
+
+export interface AdvanceFormatStatusInput {
+  readonly formatVersionId: string;
+  readonly from: ContentStudioFormatStatus;
+  readonly to: ContentStudioFormatStatus;
 }
 
 export class ContentStudioStore {
@@ -808,5 +879,99 @@ export class ContentStudioStore {
       [clientId, sessionId],
     );
     return r.rows;
+  }
+
+  // --- the §2 format registry (STUDIO-002 — migration 068) ---
+
+  /** Inserts one registry version row BORN DRAFT (the DB born-draft fence backstops this). */
+  async insertFormatVersion(input: InsertFormatVersionInput): Promise<FormatRow> {
+    const r = await this.db.query<FormatRow>(
+      `INSERT INTO studio_formats
+         (format_version_id, format_id, format_version, agency_id, client_id, workspace_id,
+          status, declaration, contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7::jsonb, $8, $9::timestamptz, $9::timestamptz)
+       RETURNING *`,
+      [
+        input.formatVersionId,
+        input.formatId,
+        input.formatVersion,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        JSON.stringify(input.declaration),
+        CONTENT_STUDIO_FORMAT_CONTRACT_VERSION,
+        this.nowIso(),
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  /** Inserts one append-only format-capability link record (the normalized declared requiredCapabilities). */
+  async insertFormatCapabilityLink(input: InsertFormatCapabilityLinkInput): Promise<FormatCapabilityLinkRow> {
+    const r = await this.db.query<FormatCapabilityLinkRow>(
+      `INSERT INTO studio_format_capabilities
+         (format_version_id, capability_kind, capability_reference,
+          agency_id, client_id, workspace_id, contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz)
+       RETURNING *`,
+      [
+        input.formatVersionId,
+        input.capabilityKind,
+        input.capabilityReference,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        CONTENT_STUDIO_FORMAT_CONTRACT_VERSION,
+        this.nowIso(),
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findFormatVersion(clientId: string, formatId: string, formatVersion: number): Promise<FormatRow | null> {
+    const r = await this.db.query<FormatRow>(
+      `SELECT * FROM studio_formats
+        WHERE client_id = $1 AND format_id = $2 AND format_version = $3`,
+      [clientId, formatId, formatVersion],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async listFormatVersions(clientId: string): Promise<ReadonlyArray<FormatRow>> {
+    const r = await this.db.query<FormatRow>(
+      `SELECT * FROM studio_formats
+        WHERE client_id = $1
+        ORDER BY format_id ASC, format_version ASC`,
+      [clientId],
+    );
+    return r.rows;
+  }
+
+  async listFormatCapabilityLinks(clientId: string, formatVersionId?: string): Promise<ReadonlyArray<FormatCapabilityLinkRow>> {
+    const r = await this.db.query<FormatCapabilityLinkRow>(
+      `SELECT * FROM studio_format_capabilities
+        WHERE client_id = $1 AND ($2::uuid IS NULL OR format_version_id = $2::uuid)
+        ORDER BY format_version_id ASC, capability_reference ASC`,
+      [clientId, formatVersionId ?? null],
+    );
+    return r.rows;
+  }
+
+  /**
+   * The guarded lifecycle advance (draft → active → retired): a CAS
+   * update over the exact from-status — the DB guard trigger is the
+   * authority (the legal-edge table + the identity freeze + the
+   * activation capability-consistency check); the CAS is the honest
+   * concurrency surface. Returns null when the row moved on.
+   */
+  async advanceFormatStatus(input: AdvanceFormatStatusInput): Promise<FormatRow | null> {
+    const r = await this.db.query<FormatRow>(
+      `UPDATE studio_formats
+          SET status = $1, updated_at = $2::timestamptz
+        WHERE format_version_id = $3 AND status = $4
+        RETURNING *`,
+      [input.to, this.nowIso(), input.formatVersionId, input.from],
+    );
+    return r.rows[0] ?? null;
   }
 }
