@@ -386,6 +386,8 @@ import type { LabAgentBodyModuleApi } from '../modules/lab-agent-body/public.ts'
 import type { ContentStudioModuleApi } from '../modules/content-studio/public.ts';
 import type { LabFeaturesModuleApi } from '../modules/lab-features/public.ts';
 import type { LabCapabilitiesModuleApi } from '../modules/lab-capabilities/public.ts';
+import type { LabIdeasModuleApi } from '../modules/lab-ideas/public.ts';
+
 import type { UsersModuleApi } from '../modules/users/public.ts';
 import type { WorkflowsModuleApi } from '../modules/workflows/public.ts';
 import type { WorkspacesModuleApi } from '../modules/workspaces/public.ts';
@@ -765,4 +767,22 @@ export interface ApplicationModules {
   // the LAB-024 delay-economics consumers through the opaque
   // capability-version reference string).
   readonly labCapabilities: LabCapabilitiesModuleApi;
+  // LAB-004: the Idea Graph authority (the v1.7 conceptual-primitive
+  // layer over the cited /lab-features feature bundles: the closed,
+  // versioned primitive vocabulary (the ten §6 kinds), the closed
+  // edge-relation vocabulary, THE observed/derived/generated/combined
+  // origin-class separation fenced to the creation path (a
+  // decomposition of one cited bundle produces observed nodes only;
+  // the derive/recombine/mutate/analogy/invert/fill_gap operations
+  // produce the derived/generated/combined nodes with their RECORDED
+  // lineage — DATA, never resemblance), the deterministic retrieval
+  // (bounded, cursor-paginated, SQL-computed — the mandatory
+  // explicit origin-class filter for evidence-consuming surfaces),
+  // the versioned deterministic clustering, the frozen novelty
+  // measurement against OBSERVED nodes only, and the first-class
+  // append-only operation records behind the replaceable decomposer
+  // + generator ports — consumed BY REFERENCE by the LAB-005
+  // simulator, the LAB-019 transform graph and the later Lab
+  // layers; NO generated idea is ever treated as source evidence).
+  readonly labIdeas: LabIdeasModuleApi;
 }

@@ -431,12 +431,13 @@ test('MKT-066: the disclosed spec registration exists — §6 line + authority p
   // the MKT-070 /product-marketing sibling delivery appends
   // 060_product_marketing.sql (every tail position shifts once more; the
   // same additive re-pin precedent — the disclosed MKT-066 re-pin).
-  assert.equal(migrations[migrations.length - 10], '058_platform_health.sql');
-  assert.equal(migrations[migrations.length - 9], '059_lab_contracts.sql');
-  assert.equal(migrations[migrations.length - 8], '060_product_marketing.sql');
-  assert.equal(migrations[migrations.length - 7], '061_lab_corpus.sql');
-  assert.equal(migrations[migrations.length - 5], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 3], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 11], '058_platform_health.sql');
+  assert.equal(migrations[migrations.length - 10], '059_lab_contracts.sql');
+  assert.equal(migrations[migrations.length - 9], '060_product_marketing.sql');
+  assert.equal(migrations[migrations.length - 8], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 6], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 4], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 3], '066_lab_ideas.sql');
   // The shared files register the module additively.
   assert.ok(applicationTs.includes('readonly platformHealth: PlatformHealthModuleApi'), 'ApplicationModules.platformHealth');
   assert.ok(applicationTs.includes("from '../modules/platform-health/public.ts'"), 'the module public entry import');
@@ -468,5 +469,5 @@ test('MKT-066: the real codebase enforces the frozen boundaries with ZERO violat
   // Agent Body Runtime Contract authority — the LAB-002 provision
   // precedent, pending the TL spec promotion — 51 → 52 enforced, 52 → 53
   // total).
-  assert.equal(result.frozenModules.length, 57);
+  assert.equal(result.frozenModules.length, 58);
 });
