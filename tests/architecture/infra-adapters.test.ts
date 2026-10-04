@@ -1177,6 +1177,23 @@ test('MKT-005: migrations 005/006 exist with exactly the expected numbering (no 
     // written (the content-universe citations are opaque recorded
     // data — the /lab family by-reference discipline).
     '071_lab_simulator.sql',
+    // STUDIO-007 (Audio/Video Capture) appends the capture
+    // migration (073 — the TL pre-assigned tail number; 072 is
+    // held by the in-flight parallel LAB-006 worker and the TL
+    // resolves the merge; the same additive precedent — every
+    // end-anchored tail position shifts once more): the capture
+    // sessions (the recording contexts with their walked-graph
+    // pins + interviewer representations) and the append-only
+    // raw takes (the durable platform-object artifact references,
+    // the alternate chains, the structural participant/source
+    // provenance, the born-processing async ingest state machine);
+    // NO v1.6 authority table is created or mutated, NO
+    // /content-assets or /content-rights table is written (a raw
+    // take is an INTERMEDIATE production artifact — lock v1.7
+    // #36), and no bytea column anywhere (the bytes live in the
+    // platform object store behind the recorded content-addressed
+    // references).
+    '073_studio_av_capture.sql',
   ]);
   // The object-store fs/memory/s3 adapter dirs each hold exactly one implementation.
   for (const dir of ['cache', 'locking', 'objects', 'secrets']) {

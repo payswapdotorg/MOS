@@ -34,10 +34,12 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { DbRow, DbTransaction } from '../../../platform/db/contract.ts';
+import type { DbRow, DbTransaction, QueryParam } from '../../../platform/db/contract.ts';
 import type { Clock } from '../../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../../platform/ids/ids.ts';
 import type {
+  ContentStudioCaptureSessionRecord,
+  ContentStudioCaptureTakeRecord,
   ContentStudioDeclaredQuestionGraph,
   ContentStudioConversationStepRecord,
   ContentStudioFormatDeclaration,
@@ -70,7 +72,7 @@ import type {
   ContentStudioTreatmentRequestRecord,
   ContentStudioTreatmentSpecification,
 } from '../public.ts';
-import { CONTENT_STUDIO_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION, CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION } from '../public.ts';
+import { CONTENT_STUDIO_CONTRACT_VERSION, CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION, CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION } from '../public.ts';
 
 // ---------------------------------------------------------------------------
 // Row shapes (snake_case as returned by PostgreSQL)
@@ -309,6 +311,57 @@ interface ConversationEdgeRow extends DbRow {
   chooser_kind: string;
   contract_version: string;
   created_at: Date;
+}
+
+interface CaptureSessionRow extends DbRow {
+  capture_session_id: string;
+  session_id: string;
+  revision: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  capture_mode: string;
+  graph_id: string | null;
+  graph_version: number | string | null;
+  interviewer_representation: string | null;
+  contract_version: string;
+  created_at: Date;
+}
+
+interface CaptureTakeRow extends DbRow {
+  take_id: string;
+  take_reference: string;
+  capture_session_id: string;
+  session_id: string;
+  revision: number | string;
+  agency_id: string;
+  client_id: string;
+  workspace_id: string | null;
+  graph_id: string | null;
+  graph_version: number | string | null;
+  question_id: string | null;
+  modality: string;
+  alternate_of_take_id: string | null;
+  input_kind: string;
+  device_label: string;
+  source_metadata: unknown;
+  participant_reference: string;
+  participant_grant_reference: string | null;
+  consent_references: unknown;
+  interviewer_representation: string | null;
+  object_key: string;
+  object_digest: string;
+  object_size: number | string;
+  content_type: string;
+  ingest_state: string;
+  ingest_analysis: unknown;
+  ingest_failure_reason: string | null;
+  ingest_failure_detail: string | null;
+  ingest_duration_ms: number | string | null;
+  ingest_completed_at: Date | null;
+  contract_version: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 // ---------------------------------------------------------------------------
@@ -580,6 +633,63 @@ export function mapConversationEdgeRow(r: ConversationEdgeRow): ContentStudioCon
     chooserKind: r.chooser_kind as ContentStudioConversationStepRecord['chooserKind'],
     contractVersion: r.contract_version,
     createdAt: toIso(r.created_at),
+  };
+}
+
+export function mapCaptureSessionRow(r: CaptureSessionRow): ContentStudioCaptureSessionRecord {
+  return {
+    captureSessionId: r.capture_session_id,
+    sessionId: r.session_id,
+    revision: Number(r.revision),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    captureMode: r.capture_mode as ContentStudioCaptureSessionRecord['captureMode'],
+    graphId: r.graph_id,
+    graphVersion: r.graph_version === null ? null : Number(r.graph_version),
+    interviewerRepresentation:
+      r.interviewer_representation === null ? null : (r.interviewer_representation as ContentStudioCaptureSessionRecord['interviewerRepresentation']),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+  };
+}
+
+export function mapCaptureTakeRow(r: CaptureTakeRow): ContentStudioCaptureTakeRecord {
+  return {
+    takeId: r.take_id,
+    takeReference: r.take_reference,
+    captureSessionId: r.capture_session_id,
+    sessionId: r.session_id,
+    revision: Number(r.revision),
+    agencyId: r.agency_id,
+    clientId: r.client_id,
+    workspaceId: r.workspace_id,
+    graphId: r.graph_id,
+    graphVersion: r.graph_version === null ? null : Number(r.graph_version),
+    questionId: r.question_id,
+    modality: r.modality as ContentStudioCaptureTakeRecord['modality'],
+    alternateOfTakeId: r.alternate_of_take_id,
+    inputKind: r.input_kind as ContentStudioCaptureTakeRecord['inputKind'],
+    deviceLabel: r.device_label,
+    sourceMetadata: r.source_metadata as Readonly<Record<string, unknown>>,
+    participantReference: r.participant_reference,
+    participantGrantReference: r.participant_grant_reference,
+    consentReferences: r.consent_references as ReadonlyArray<string>,
+    interviewerRepresentation:
+      r.interviewer_representation === null ? null : (r.interviewer_representation as ContentStudioCaptureTakeRecord['interviewerRepresentation']),
+    objectKey: r.object_key,
+    objectDigest: r.object_digest,
+    objectSize: Number(r.object_size),
+    contentType: r.content_type,
+    ingestState: r.ingest_state as ContentStudioCaptureTakeRecord['ingestState'],
+    ingestAnalysis: r.ingest_analysis === null ? null : (r.ingest_analysis as Readonly<Record<string, unknown>>),
+    ingestFailureReason: r.ingest_failure_reason === null ? null : (r.ingest_failure_reason as ContentStudioCaptureTakeRecord['ingestFailureReason']),
+    ingestFailureDetail: r.ingest_failure_detail,
+    ingestDurationMs: r.ingest_duration_ms === null ? null : Number(r.ingest_duration_ms),
+    ingestCompletedAt: r.ingest_completed_at === null ? null : toIso(r.ingest_completed_at),
+    contractVersion: r.contract_version,
+    createdAt: toIso(r.created_at),
+    updatedAt: toIso(r.updated_at),
   };
 }
 
@@ -1655,4 +1765,224 @@ export class ContentStudioStore {
     const current = r.rows[0]?.max_seq;
     return current === null || current === undefined ? 0 : Number(current);
   }
+
+  // ---------------------------------------------------------------------------
+  // The migration-073 capture tables (STUDIO-007 — the audio/video
+  // capture layer): the capture sessions + the append-only raw takes.
+  // ---------------------------------------------------------------------------
+
+  async insertCaptureSession(input: InsertCaptureSessionInput): Promise<CaptureSessionRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<CaptureSessionRow>(
+      `INSERT INTO studio_capture_sessions
+         (capture_session_id, session_id, revision, agency_id, client_id, workspace_id,
+          capture_mode, graph_id, graph_version, interviewer_representation,
+          contract_version, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz)
+       RETURNING *`,
+      [
+        input.captureSessionId,
+        input.sessionId,
+        input.revision,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.captureMode,
+        input.graphId,
+        input.graphVersion,
+        input.interviewerRepresentation ?? null,
+        CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findCaptureSession(clientId: string, captureSessionId: string): Promise<CaptureSessionRow | null> {
+    const r = await this.db.query<CaptureSessionRow>(
+      `SELECT * FROM studio_capture_sessions
+        WHERE client_id = $1 AND capture_session_id = $2`,
+      [clientId, captureSessionId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async listCaptureSessions(clientId: string, sessionId: string): Promise<ReadonlyArray<CaptureSessionRow>> {
+    const r = await this.db.query<CaptureSessionRow>(
+      `SELECT * FROM studio_capture_sessions
+        WHERE client_id = $1 AND session_id = $2
+        ORDER BY created_at ASC, capture_session_id ASC`,
+      [clientId, sessionId],
+    );
+    return r.rows;
+  }
+
+  async insertCaptureTake(input: InsertCaptureTakeInput): Promise<CaptureTakeRow> {
+    const now = this.nowIso();
+    const r = await this.db.query<CaptureTakeRow>(
+      `INSERT INTO studio_capture_takes
+         (take_id, take_reference, capture_session_id, session_id, revision,
+          agency_id, client_id, workspace_id, graph_id, graph_version, question_id,
+          modality, alternate_of_take_id, input_kind, device_label, source_metadata,
+          participant_reference, participant_grant_reference, consent_references,
+          interviewer_representation, object_key, object_digest, object_size, content_type,
+          ingest_state, contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+               $16::jsonb, $17, $18, $19::jsonb, $20, $21, $22, $23, $24,
+               'processing', $25, $26::timestamptz, $26::timestamptz)
+       RETURNING *`,
+      [
+        input.takeId,
+        input.takeReference,
+        input.captureSessionId,
+        input.sessionId,
+        input.revision,
+        input.scope.agencyId,
+        input.scope.clientId,
+        input.scope.workspaceId ?? null,
+        input.graphId,
+        input.graphVersion,
+        input.questionId,
+        input.modality,
+        input.alternateOfTakeId ?? null,
+        input.inputKind,
+        input.deviceLabel,
+        JSON.stringify(input.sourceMetadata),
+        input.participantReference,
+        input.participantGrantReference ?? null,
+        JSON.stringify(input.consentReferences),
+        input.interviewerRepresentation ?? null,
+        input.objectKey,
+        input.objectDigest,
+        input.objectSize,
+        input.contentType,
+        CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION,
+        now,
+      ],
+    );
+    return r.rows[0]!;
+  }
+
+  async findCaptureTake(clientId: string, takeId: string): Promise<CaptureTakeRow | null> {
+    const r = await this.db.query<CaptureTakeRow>(
+      `SELECT * FROM studio_capture_takes
+        WHERE client_id = $1 AND take_id = $2`,
+      [clientId, takeId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async findCaptureTakeByReference(clientId: string, takeReference: string): Promise<CaptureTakeRow | null> {
+    const r = await this.db.query<CaptureTakeRow>(
+      `SELECT * FROM studio_capture_takes
+        WHERE client_id = $1 AND take_reference = $2`,
+      [clientId, takeReference],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async listCaptureTakes(clientId: string, query: {
+    readonly sessionId: string;
+    readonly captureSessionId?: string | null;
+    readonly questionId?: string | null;
+    readonly modality?: string | null;
+    readonly alternateOfTakeId?: string | null;
+  }): Promise<ReadonlyArray<CaptureTakeRow>> {
+    const filters: string[] = ['client_id = $1', 'session_id = $2'];
+    const params: QueryParam[] = [clientId, query.sessionId];
+    if (query.captureSessionId !== undefined && query.captureSessionId !== null) {
+      params.push(query.captureSessionId);
+      filters.push(`capture_session_id = $${params.length}`);
+    }
+    if (query.questionId !== undefined && query.questionId !== null) {
+      params.push(query.questionId);
+      filters.push(`question_id = $${params.length}`);
+    }
+    if (query.modality !== undefined && query.modality !== null) {
+      params.push(query.modality);
+      filters.push(`modality = $${params.length}`);
+    }
+    if (query.alternateOfTakeId !== undefined && query.alternateOfTakeId !== null) {
+      params.push(query.alternateOfTakeId);
+      filters.push(`alternate_of_take_id = $${params.length}`);
+    }
+    const r = await this.db.query<CaptureTakeRow>(
+      `SELECT * FROM studio_capture_takes
+        WHERE ${filters.join(' AND ')}
+        ORDER BY created_at ASC, take_id ASC`,
+      params,
+    );
+    return r.rows;
+  }
+
+  async advanceCaptureTakeIngest(input: {
+    readonly clientId: string;
+    readonly takeId: string;
+    readonly to: 'stored' | 'failed';
+    readonly analysis: Readonly<Record<string, unknown>> | null;
+    readonly failureReason: string | null;
+    readonly failureDetail: string | null;
+    readonly durationMs: number | null;
+  }): Promise<CaptureTakeRow | null> {
+    const now = this.nowIso();
+    const r = await this.db.query<CaptureTakeRow>(
+      `UPDATE studio_capture_takes
+          SET ingest_state = $3,
+              ingest_analysis = $4::jsonb,
+              ingest_failure_reason = $5,
+              ingest_failure_detail = $6,
+              ingest_duration_ms = $7,
+              ingest_completed_at = $8::timestamptz,
+              updated_at = $8::timestamptz
+        WHERE client_id = $1 AND take_id = $2 AND ingest_state = 'processing'
+        RETURNING *`,
+      [
+        input.clientId,
+        input.takeId,
+        input.to,
+        input.analysis === null ? null : JSON.stringify(input.analysis),
+        input.failureReason,
+        input.failureDetail,
+        input.durationMs,
+        now,
+      ],
+    );
+    return r.rows[0] ?? null;
+  }
+}
+
+export interface InsertCaptureSessionInput {
+  readonly captureSessionId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly scope: ContentStudioScope;
+  readonly captureMode: 'graph_walk' | 'session_direct';
+  readonly graphId: string | null;
+  readonly graphVersion: number | null;
+  readonly interviewerRepresentation?: string | null;
+}
+
+export interface InsertCaptureTakeInput {
+  readonly takeId: string;
+  readonly takeReference: string;
+  readonly captureSessionId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly scope: ContentStudioScope;
+  readonly graphId: string | null;
+  readonly graphVersion: number | null;
+  readonly questionId: string | null;
+  readonly modality: 'audio' | 'video' | 'screen';
+  readonly alternateOfTakeId?: string | null;
+  readonly inputKind: string;
+  readonly deviceLabel: string;
+  readonly sourceMetadata: Readonly<Record<string, unknown>>;
+  readonly participantReference: string;
+  readonly participantGrantReference?: string | null;
+  readonly consentReferences: ReadonlyArray<string>;
+  readonly interviewerRepresentation?: string | null;
+  readonly objectKey: string;
+  readonly objectDigest: string;
+  readonly objectSize: number;
+  readonly contentType: string;
 }

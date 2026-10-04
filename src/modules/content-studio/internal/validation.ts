@@ -32,24 +32,36 @@
  *      question/branch graph (the deterministic adjacency), the
  *      supplied-list linear derivation, the generation provenance, the
  *      review-decision input and the conversation-step choice.
+ *   7. THE §9 CAPTURE GUARDS (STUDIO-007) — the capture-session input
+ *      (the closed mode + interviewer-representation vocabularies),
+ *      the raw-take input (the closed modality/input-kind vocabularies,
+ *      the bounded inline payload, the STRUCTURAL participant/source
+ *      provenance — the participant identity, the optional grant, the
+ *      REQUIRED consent references, the device/input metadata), the
+ *      ingest completion/failure fences and the bounded take query.
  */
 
 import { InvalidRequestError } from '../../../platform/errors/errors.ts';
 import type {
   ContentStudioAnswerKind,
   ContentStudioBranchCondition,
+  ContentStudioCaptureInputKind,
+  ContentStudioCaptureSessionMode,
   ContentStudioChooserKind,
   ContentStudioDeclaredQuestionGraph,
   ContentStudioEntryMode,
   ContentStudioFormatDeclaration,
   ContentStudioGeneratorProvenance,
   ContentStudioInputMode,
+  ContentStudioInterviewerRepresentation,
   ContentStudioOrganizationDeclaration,
   ContentStudioProductionRequestContent,
   ContentStudioQuestionModalityHint,
   ContentStudioReviewVerdict,
   ContentStudioReviewerKind,
   ContentStudioSessionState,
+  ContentStudioStepFailureReason,
+  ContentStudioTakeModality,
   ContentStudioTerminalReason,
   ContentStudioTerminalSessionState,
   ContentStudioTreatmentSpecification,
@@ -57,7 +69,9 @@ import type {
 import {
   CONTENT_STUDIO_ANSWER_KINDS,
   CONTENT_STUDIO_BRANCH_CONDITIONS,
+  CONTENT_STUDIO_CAPTURE_INPUT_KINDS,
   CONTENT_STUDIO_CAPTURE_MODALITIES,
+  CONTENT_STUDIO_CAPTURE_SESSION_MODES,
   CONTENT_STUDIO_CONSENT_KINDS,
   CONTENT_STUDIO_CHOOSER_KINDS,
   CONTENT_STUDIO_ENTRY_MODES,
@@ -67,6 +81,7 @@ import {
   CONTENT_STUDIO_INPUT_MODES,
   CONTENT_STUDIO_INTERVIEWER_FOLLOW_UP_MODES,
   CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS,
+  CONTENT_STUDIO_MAX_TAKE_BYTES,
   CONTENT_STUDIO_ORGANIZATION_PERMISSIONS,
   CONTENT_STUDIO_OUTPUT_ARTIFACT_KINDS,
   CONTENT_STUDIO_PARTICIPATION_GRANT_MODELS,
@@ -75,6 +90,8 @@ import {
   CONTENT_STUDIO_REVIEW_VERDICTS,
   CONTENT_STUDIO_REVIEWER_KINDS,
   CONTENT_STUDIO_SESSION_STATES,
+  CONTENT_STUDIO_STEP_FAILURE_REASONS,
+  CONTENT_STUDIO_TAKE_MODALITIES,
   CONTENT_STUDIO_TERMINAL_SESSION_STATES,
 } from '../public.ts';
 
@@ -1023,5 +1040,166 @@ export function assertValidContentStudioConversationChoice(input: {
   }
   if (!CONTENT_STUDIO_CHOOSER_KINDS.includes(input.chooserKind)) {
     throw new InvalidRequestError(`chooserKind must be one of ${CONTENT_STUDIO_CHOOSER_KINDS.join(', ')} (the honest interviewer/human choice split)`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 7. THE §9 CAPTURE GUARDS (STUDIO-007 — the audio/video capture layer)
+// ---------------------------------------------------------------------------
+
+/** The MIME-type shape the take payload's declared content type carries (the /content-assets contentType discipline). */
+const CONTENT_TYPE_MIME_PATTERN = /^[a-z0-9!#$&^_.+-]{1,32}\/[a-z0-9!#$&^_.+-]{1,64}$/;
+
+/**
+ * The §9 CAPTURE-SESSION input fence: the capture mode from the closed
+ * two-member vocabulary + the optional interviewer representation from
+ * the closed §6 seven-member vocabulary (the format-appropriateness —
+ * required for interviewer formats, forbidden for 'none' formats — is
+ * a cross-record rule the module orchestration enforces against the
+ * session's format).
+ */
+export function assertValidContentStudioCaptureSessionInput(input: {
+  readonly captureMode: ContentStudioCaptureSessionMode;
+  readonly interviewerRepresentation?: ContentStudioInterviewerRepresentation;
+}): void {
+  if (!CONTENT_STUDIO_CAPTURE_SESSION_MODES.includes(input.captureMode)) {
+    throw new InvalidRequestError(`captureMode must be one of ${CONTENT_STUDIO_CAPTURE_SESSION_MODES.join(', ')} (graph_walk pins the walked question graph; session_direct records against the session)`);
+  }
+  if (input.interviewerRepresentation !== undefined && input.interviewerRepresentation !== null) {
+    if (!CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS.includes(input.interviewerRepresentation)) {
+      throw new InvalidRequestError(`interviewerRepresentation must be one of ${CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS.join(', ')} (the §6 vocabulary)`);
+    }
+  }
+}
+
+/**
+ * The §9 RAW-TAKE input fence: the closed modality + input-kind
+ * vocabularies, the bounded inline take payload, the MIME-shaped
+ * content type, the bounded device label, the bounded declared source
+ * metadata object, the STRUCTURAL participant/source provenance (the
+ * participant identity reference, the optional participation-grant
+ * reference, the REQUIRED 1-16 consent references — never empty) and
+ * the alternate/ node-pin shapes. The format-approved modality, the
+ * grant requirement, the walked-graph node membership and the
+ * alternate scope are cross-record rules the module orchestration
+ * enforces (the format declaration + the capture session's pin).
+ */
+export function assertValidContentStudioCaptureTakeInput(input: {
+  readonly modality: ContentStudioTakeModality;
+  readonly questionId?: string;
+  readonly alternateOfTakeId?: string;
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
+  readonly inputKind: ContentStudioCaptureInputKind;
+  readonly deviceLabel: string;
+  readonly sourceMetadata: Readonly<Record<string, unknown>>;
+  readonly participantReference: string;
+  readonly participantGrantReference?: string;
+  readonly consentReferences: ReadonlyArray<string>;
+}): void {
+  if (!CONTENT_STUDIO_TAKE_MODALITIES.includes(input.modality)) {
+    throw new InvalidRequestError(`modality must be one of ${CONTENT_STUDIO_TAKE_MODALITIES.join(', ')} (the closed §9 media-capture vocabulary — which modalities a format APPROVES is its declared capture requirement)`);
+  }
+  if (input.questionId !== undefined && input.questionId !== null) {
+    if (typeof input.questionId !== 'string' || !QUESTION_ID_PATTERN.test(input.questionId)) {
+      throw new InvalidRequestError('questionId must be 1-64 chars of [a-z0-9_-] (a declared walked-graph node identity)');
+    }
+  }
+  if (input.alternateOfTakeId !== undefined && input.alternateOfTakeId !== null) {
+    if (typeof input.alternateOfTakeId !== 'string' || !UUID_PATTERN.test(input.alternateOfTakeId)) {
+      throw new InvalidRequestError('alternateOfTakeId must be a canonical UUID (the take this one alternates)');
+    }
+  }
+  if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength === 0) {
+    throw new InvalidRequestError('bytes must be a non-empty Uint8Array payload (the raw take)');
+  }
+  if (input.bytes.byteLength > CONTENT_STUDIO_MAX_TAKE_BYTES) {
+    throw new InvalidRequestError(`bytes exceeds the maximum take payload size (${CONTENT_STUDIO_MAX_TAKE_BYTES} bytes — the bounded inline-object contract of the capture surface)`);
+  }
+  if (typeof input.contentType !== 'string' || !CONTENT_TYPE_MIME_PATTERN.test(input.contentType)) {
+    throw new InvalidRequestError(`contentType must be a bounded MIME-type-shaped string (e.g. 'video/mp4'), found '${String(input.contentType)}'`);
+  }
+  if (!CONTENT_STUDIO_CAPTURE_INPUT_KINDS.includes(input.inputKind)) {
+    throw new InvalidRequestError(`inputKind must be one of ${CONTENT_STUDIO_CAPTURE_INPUT_KINDS.join(', ')} (the declared recording-input surface)`);
+  }
+  if (typeof input.deviceLabel !== 'string' || !boundedTrimmedString(input.deviceLabel, 1, 256)) {
+    throw new InvalidRequestError('deviceLabel must be a trimmed string of 1-256 chars (the client-reported source device/input label)');
+  }
+  assertBoundedJson(input.sourceMetadata, 'sourceMetadata');
+  if (typeof input.participantReference !== 'string' || !boundedTrimmedString(input.participantReference, 1, 256)) {
+    throw new InvalidRequestError('participantReference must be a trimmed string of 1-256 chars (the OPAQUE participant identity reference — §7 provenance is structural)');
+  }
+  if (input.participantGrantReference !== undefined && input.participantGrantReference !== null) {
+    if (typeof input.participantGrantReference !== 'string' || !boundedTrimmedString(input.participantGrantReference, 1, 256)) {
+      throw new InvalidRequestError('participantGrantReference must be a trimmed string of 1-256 chars (the §7 explicit participation-grant reference)');
+    }
+  }
+  assertBoundedStringArray(input.consentReferences, 16, 512, 'consentReferences');
+  if (input.consentReferences.length < 1) {
+    throw new InvalidRequestError('consentReferences must carry at least one reference (the recording-consent provenance is STRUCTURAL, never optional — §6/§7)');
+  }
+}
+
+/** The §9 take-ingest COMPLETION fence: the bounded analysis payload + the non-negative duration. */
+export function assertValidContentStudioCaptureIngestCompletion(input: {
+  readonly analysis?: Readonly<Record<string, unknown>>;
+  readonly durationMs?: number;
+}): void {
+  if (input.analysis !== undefined) {
+    // Present means an OBJECT (null is not "no analysis" — omit the field).
+    assertBoundedJson(input.analysis, 'analysis');
+  }
+  if (input.durationMs !== undefined && input.durationMs !== null) {
+    if (typeof input.durationMs !== 'number' || !Number.isInteger(input.durationMs) || input.durationMs < 0 || input.durationMs > 2_147_483_647) {
+      throw new InvalidRequestError('durationMs must be a non-negative integer of milliseconds (the honest §17 ingest duration)');
+    }
+  }
+}
+
+/** The §9 take-ingest FAILURE fence: the §17 closed-vocabulary reason + the bounded detail + the non-negative duration. */
+export function assertValidContentStudioCaptureIngestFailure(input: {
+  readonly failureReason: ContentStudioStepFailureReason;
+  readonly failureDetail?: string;
+  readonly durationMs?: number;
+}): void {
+  if (!CONTENT_STUDIO_STEP_FAILURE_REASONS.includes(input.failureReason)) {
+    throw new InvalidRequestError(`failureReason must be one of ${CONTENT_STUDIO_STEP_FAILURE_REASONS.join(', ')} (the frozen §17 failure vocabulary)`);
+  }
+  if (input.failureDetail !== undefined && input.failureDetail !== null) {
+    if (typeof input.failureDetail !== 'string' || !boundedTrimmedString(input.failureDetail, 1, 2000)) {
+      throw new InvalidRequestError('failureDetail must be a trimmed string of 1-2000 chars (the honest §17 failure record)');
+    }
+  }
+  if (input.durationMs !== undefined) {
+    assertValidContentStudioCaptureIngestCompletion({ durationMs: input.durationMs });
+  }
+}
+
+/** The §9 capture-take QUERY fence: the optional closed-vocabulary/modality/uuid filters. */
+export function assertValidContentStudioCaptureTakesQuery(input: {
+  readonly captureSessionId?: string;
+  readonly questionId?: string;
+  readonly modality?: ContentStudioTakeModality;
+  readonly alternateOfTakeId?: string;
+}): void {
+  if (input.captureSessionId !== undefined && input.captureSessionId !== null) {
+    if (typeof input.captureSessionId !== 'string' || !UUID_PATTERN.test(input.captureSessionId)) {
+      throw new InvalidRequestError('captureSessionId must be a canonical UUID (the capture-session filter)');
+    }
+  }
+  if (input.questionId !== undefined && input.questionId !== null) {
+    if (typeof input.questionId !== 'string' || !QUESTION_ID_PATTERN.test(input.questionId)) {
+      throw new InvalidRequestError('questionId must be 1-64 chars of [a-z0-9_-] (the walked-graph node filter)');
+    }
+  }
+  if (input.modality !== undefined && input.modality !== null) {
+    if (!CONTENT_STUDIO_TAKE_MODALITIES.includes(input.modality)) {
+      throw new InvalidRequestError(`modality must be one of ${CONTENT_STUDIO_TAKE_MODALITIES.join(', ')}`);
+    }
+  }
+  if (input.alternateOfTakeId !== undefined && input.alternateOfTakeId !== null) {
+    if (typeof input.alternateOfTakeId !== 'string' || !UUID_PATTERN.test(input.alternateOfTakeId)) {
+      throw new InvalidRequestError('alternateOfTakeId must be a canonical UUID (the alternate-chain filter)');
+    }
   }
 }

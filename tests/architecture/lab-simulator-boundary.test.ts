@@ -300,17 +300,18 @@ test('LAB-005 AC: the registration — the granted worker spec append + the comp
   assert.ok(applicationTs.includes('readonly labSimulator: LabSimulatorModuleApi;'), 'ApplicationModules carries the entry');
 });
 
-test('LAB-005 AC: the migration tail — 071_lab_simulator.sql in its TL-pre-assigned slot (069 is held by the in-flight parallel MKT-073 worker; 070 is TAKEN by the merged STUDIO-003 sibling delivery — the disclosed additive re-pin)', () => {
+test('LAB-005 AC: the migration tail — 071_lab_simulator.sql in its TL-pre-assigned slot (069 is held by the in-flight parallel MKT-073 worker; 070 is TAKEN by the merged STUDIO-003 sibling delivery; 073 is appended by the STUDIO-007 audio/video capture delivery — the disclosed additive re-pin)', () => {
   const migrations = readdirSync(src('platform', 'db', 'migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('071_lab_simulator.sql'));
-  assert.equal(migrations[migrations.length - 1], '071_lab_simulator.sql');
-  assert.equal(migrations[migrations.length - 3], '068_studio_format_framework.sql');
-  assert.equal(migrations[migrations.length - 5], '066_lab_ideas.sql');
-  assert.equal(migrations[migrations.length - 6], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 2], '071_lab_simulator.sql');
+  assert.equal(migrations[migrations.length - 4], '068_studio_format_framework.sql');
+  assert.equal(migrations[migrations.length - 6], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 7], '065_lab_features.sql');
   assert.ok(!migrations.some((name) => name.startsWith('069_')), '069 stays reserved for the in-flight parallel MKT-073 worker');
   assert.ok(migrations.some((name) => name.startsWith('070_')), '070 is taken by the STUDIO-003 intent-to-script delivery (the additive re-pin — the TL pre-assigned slot)');
+  assert.ok(migrations.some((name) => name.startsWith('073_')), '073 is taken by the STUDIO-007 audio/video capture delivery (the new tail — the same additive precedent)');
   // The module boundary is complete.
   assert.ok(existsSync(join(moduleDir, 'public.ts')));
   for (const file of moduleFiles) {
