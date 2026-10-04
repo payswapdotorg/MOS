@@ -93,6 +93,8 @@ import {
 import { PgDb } from '../../src/platform/db/adapters/postgres/pg-db.ts';
 import { SystemClock, FakeClock } from '../../src/platform/clock/clock.ts';
 import { CryptoIdGenerator } from '../../src/platform/ids/ids.ts';
+import { FsObjectStore } from '../../src/platform/objects/adapters/fs/fs-object-store.ts';
+import type { ObjectStore } from '../../src/platform/objects/contract.ts';
 import { createUsersModule } from '../../src/modules/users/public.ts';
 import { createAgenciesModule } from '../../src/modules/agencies/public.ts';
 import { createClientsModule } from '../../src/modules/clients/public.ts';
@@ -114,6 +116,10 @@ let stack: IntegrationStack | null = null;
 let db: PgDb | null = null;
 let studio: ContentStudioModuleApi = null as unknown as ContentStudioModuleApi;
 let agentBody: ReturnType<typeof createLabAgentBodyModule> = null as unknown as ReturnType<typeof createLabAgentBodyModule>;
+// STUDIO-007: the REAL platform ObjectStore over the harness's temp
+// object-store dir (the composition-parity storage port — the same
+// instance shape the composition root wires for /content-studio).
+let objects: ObjectStore = null as unknown as ObjectStore;
 
 // The tenant fixtures: Alice's agency + client, Bob's agency + client.
 const aliceScope: { agencyId: string; clientId: string } = { agencyId: '', clientId: '' };
@@ -149,6 +155,7 @@ function buildStudio(dbInstance: PgDb, formats: ReadonlyArray<ContentStudioForma
     ids: new CryptoIdGenerator(),
     agentBodies: compositionParityAgentBodies(agentBody),
     formats,
+    objects,
   });
 }
 
@@ -174,6 +181,9 @@ before(async () => {
       appendModelObservation: async () => {},
     },
   });
+  // STUDIO-007: the REAL platform object store over the harness temp
+  // dir (durable across module instances — the restart simulation).
+  objects = new FsObjectStore(stack.env.objectStoreDir);
   studio = buildStudio(db);
 
   const aliceUser = await users.createUser({ email: 'alice@contentstudio.test', displayName: 'Alice' });
@@ -467,6 +477,7 @@ test('STUDIO-001: the expiry path — the deadline gate opens only after the clo
     ids: new CryptoIdGenerator(),
     agentBodies: compositionParityAgentBodies(agentBody),
     formats: CONTENT_STUDIO_INITIAL_FORMATS,
+    objects,
   });
   const content = standaloneRequest(bodyReference, { deadline: '2026-06-01T00:00:00.000Z' });
   const request = await clocked.createProductionRequest({ scope: aliceScope, content });
@@ -2224,4 +2235,586 @@ test('STUDIO-003 (s): THE DB BACKSTOPS — the six tables are append-only/immuta
     (error: unknown) => /violates/.test(String(error)),
   );
   void suppliedGraph;
+});
+
+// ---------------------------------------------------------------------------
+// The STUDIO-007 integration battery (§9 — the audio/video capture layer):
+// capture sessions → raw takes → durable artifacts → alternates →
+// provenance → the async ingest contract, against the REAL platform
+// ObjectStore + the REAL migration-073 fences.
+// ---------------------------------------------------------------------------
+
+/** Drives a fresh session for the request to the 'recording' state (§5 — the capture state). */
+async function driveToRecording(requestId: string, scope: ContentStudioScope = aliceScope): Promise<{ sessionId: string; revision: number }> {
+  const session = await studio.openSession({ scope, requestId });
+  await studio.advanceSession({ scope, sessionId: session.sessionId, to: 'preparing' });
+  const recording = await studio.advanceSession({ scope, sessionId: session.sessionId, to: 'recording' });
+  assert.equal(recording.state, 'recording');
+  return { sessionId: session.sessionId, revision: recording.revision };
+}
+
+/** A fresh reaction (session_direct) recording context with one capture session opened. */
+async function reactionCaptureSession(overrides: { scope?: ContentStudioScope } = {}): Promise<{ sessionId: string; captureSessionId: string }> {
+  const scope = overrides.scope ?? aliceScope;
+  const bodyReference = await makeActiveBody(['read', 'transform', 'compose'], scope);
+  const request = await studio.createProductionRequest({ scope, content: standaloneRequest(bodyReference) });
+  const { sessionId } = await driveToRecording(request.requestId, scope);
+  const capture = await studio.openCaptureSession({ scope, sessionId, captureMode: 'session_direct' });
+  assert.equal(capture.captureMode, 'session_direct');
+  assert.equal(capture.graphId, null);
+  assert.equal(capture.interviewerRepresentation, null);
+  return { sessionId, captureSessionId: capture.captureSessionId };
+}
+
+/** A well-formed raw-take input against an opened capture session. */
+function takeInput(captureSessionId: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    scope: aliceScope,
+    captureSessionId,
+    modality: 'video',
+    bytes: new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x00, 0x01, 0x02, 0x03, 0x04]),
+    contentType: 'video/webm',
+    inputKind: 'camera',
+    deviceLabel: 'FaceTime HD Camera',
+    sourceMetadata: { width: 1280, height: 720, fps: 30, browser: 'chrome' },
+    participantReference: 'user:alice-participant-1',
+    consentReferences: ['consent:participant-recording-1', 'consent:source-artifact-rights-1'],
+    ...overrides,
+  };
+}
+
+test('STUDIO-007 (t): THE GRAPH-WALK CAPTURE SESSION — pins the walked declared graph (adaptive-interviewer-aware); the recording-state gate; the interviewer-representation fence', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  const graph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+
+  // The recording-state gate: a capture session opens ONLY inside 'recording'.
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' }),
+    (error: unknown) => error instanceof InvalidRequestError && /only inside the 'recording' state/.test(error.message),
+  );
+
+  // Inside recording: the interviewer-representation fence — the audio-podcast
+  // format REQUIRES one; an undeclared one is refused.
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'recording' });
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk' }),
+    (error: unknown) => error instanceof InvalidRequestError && /requires an interviewer representation/.test(error.message),
+  );
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'hologram' as never }),
+    (error: unknown) => error instanceof InvalidRequestError && /must be one of voice, voice_text, avatar/.test(error.message),
+  );
+
+  // The walk pin: the capture session pins the LATEST declared graph version
+  // bound to the session's request version.
+  const capture = await studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+  assert.equal(capture.captureMode, 'graph_walk');
+  assert.equal(capture.graphId, graph.graphId);
+  assert.equal(capture.graphVersion, graph.graphVersion);
+  assert.equal(capture.interviewerRepresentation, 'voice');
+  assert.equal(capture.contractVersion, 'content-studio-capture-v1');
+  assert.equal(capture.revision, session.revision);
+  assert.equal((await studio.getCaptureSession(aliceScope, session.sessionId, capture.captureSessionId)).captureSessionId, capture.captureSessionId);
+  assert.equal((await studio.listCaptureSessions(aliceScope, session.sessionId)).length, 1);
+
+  // A graph_walk capture session WITHOUT a declared graph is refused (the
+  // adaptive-interviewer graph drives the capture steps).
+  const scriptRequest = await studio.createProductionRequest({
+    scope: aliceScope,
+    content: podcastRequest(bodyReference, { input: { mode: 'script', script: { hook: 'h' } } }),
+  });
+  const scriptRecording = await driveToRecording(scriptRequest.requestId);
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId: scriptRecording.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' }),
+    (error: unknown) => error instanceof InvalidRequestError && /no declared question graph/.test(error.message),
+  );
+
+  // A graph correction (v2) never re-aims the opened capture session — a NEW
+  // capture session walks the corrected version (the conversation-pin discipline).
+  const corrected = await studio.appendSuppliedQuestionGraphVersion({ scope: aliceScope, graphId: graph.graphId, declaredGraph: branchingGraph() });
+  const recapture = await studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+  assert.equal(recapture.graphVersion, corrected.graphVersion);
+  const pinned = await studio.getCaptureSession(aliceScope, session.sessionId, capture.captureSessionId);
+  assert.equal(pinned.graphVersion, graph.graphVersion, 'the opened capture session stays pinned to its walked version');
+});
+
+test('STUDIO-007 (u): THE DURABLE RAW-TAKE LANDING — the bytes land through the REAL platform ObjectStore (content-addressed, retrievable byte-for-byte); the take row carries the platform-anchored reference and is born processing', async () => {
+  const { sessionId, captureSessionId } = await reactionCaptureSession();
+  const bytes = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]);
+  const take = await studio.recordCaptureTake(takeInput(captureSessionId, {
+    modality: 'screen',
+    bytes,
+    contentType: 'video/webm',
+    inputKind: 'screen_capture',
+  }) as never);
+
+  assert.equal(take.ingestState, 'processing', 'the take is born processing (the async-ingest contract)');
+  assert.match(take.takeReference, /^studio-take:[0-9a-f-]{36}$/);
+  assert.equal(take.objectSize, bytes.byteLength);
+  assert.match(take.objectKey, /^[0-9a-f]{64}$/, 'the content-addressed platform object key');
+  assert.equal(take.objectDigest, take.objectKey, 'the digest IS the content address');
+  assert.equal(take.contentType, 'video/webm');
+  assert.equal(take.captureSessionId, captureSessionId);
+  assert.equal(take.sessionId, sessionId);
+
+  // THE DURABLE ARTIFACT: the object exists in the REAL platform store and
+  // reads back byte-for-byte (the storage/access port round-trip).
+  const retrieved = await objects.get(take.objectKey);
+  assert.notEqual(retrieved, null);
+  assert.deepEqual(retrieved!.bytes, bytes);
+  assert.ok(await objects.exists(take.objectKey));
+
+  // Idempotent content addressing: the same bytes converge to the same key.
+  const again = await studio.recordCaptureTake(takeInput(captureSessionId, { bytes, deviceLabel: 'Second take same bytes' }) as never);
+  assert.equal(again.objectKey, take.objectKey);
+
+  // The resolvers: by id and by the OPAQUE take reference.
+  assert.equal((await studio.getCaptureTake(aliceScope, sessionId, take.takeId)).takeId, take.takeId);
+  assert.equal((await studio.getCaptureTakeByReference(aliceScope, take.takeReference)).takeId, take.takeId);
+  await assert.rejects(
+    () => studio.getCaptureTakeByReference(aliceScope, 'studio-take:not-a-uuid'),
+    (error: unknown) => error instanceof NotFoundError,
+  );
+});
+
+test('STUDIO-007 (v): THE ALTERNATE CHAIN — retakes are NEW takes citing the take they alternate (never overwrites); the alternate scope fence; the append-only DB backstops', async () => {
+  const { sessionId, captureSessionId } = await reactionCaptureSession();
+  const first = await studio.recordCaptureTake(takeInput(captureSessionId) as never);
+  const alternate = await studio.recordCaptureTake(takeInput(captureSessionId, { alternateOfTakeId: first.takeId, bytes: new Uint8Array([9, 9, 9, 9]) }) as never);
+  assert.equal(alternate.alternateOfTakeId, first.takeId);
+  assert.notEqual(alternate.takeId, first.takeId);
+  assert.equal(alternate.objectKey !== first.objectKey, true, 'a different take of different bytes lands a different content address');
+
+  // BOTH takes are preserved (the alternates acceptance): the query returns
+  // the full chain for the capture moment.
+  const chain = await studio.listCaptureTakes({ scope: aliceScope, sessionId });
+  assert.equal(chain.length, 2);
+  const alternatesOfFirst = await studio.listCaptureTakes({ scope: aliceScope, sessionId, alternateOfTakeId: first.takeId });
+  assert.deepEqual(alternatesOfFirst.map((row) => row.takeId), [alternate.takeId]);
+
+  // The alternate scope fence: a take of a DIFFERENT capture moment (a
+  // different modality) cannot cite it.
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(captureSessionId, { alternateOfTakeId: first.takeId, modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /retakes of the SAME capture moment/.test(error.message),
+  );
+
+  // The DB backstops: takes are never rewritten, never deleted.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_capture_takes SET device_label = 'rewritten' WHERE take_id = $1`, [first.takeId]),
+    (error: unknown) => /immutable/.test(String(error)),
+  );
+  await assert.rejects(
+    () => db!.query(`DELETE FROM studio_capture_takes WHERE take_id = $1`, [first.takeId]),
+    (error: unknown) => /cannot be deleted/.test(String(error)),
+  );
+  // The capture sessions are immutable recording contexts.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_capture_sessions SET capture_mode = 'graph_walk' WHERE capture_session_id = $1`, [captureSessionId]),
+    (error: unknown) => /append-only/.test(String(error)),
+  );
+});
+
+test('STUDIO-007 (w): THE STRUCTURAL PROVENANCE — every take carries the participant identity, the grant, the consent references, the device/input metadata and the interviewer representation of its recording context', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  const { sessionId } = await driveToRecording(request.requestId);
+  const capture = await studio.openCaptureSession({ scope: aliceScope, sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'avatar' });
+
+  const take = await studio.recordCaptureTake(takeInput(capture.captureSessionId, {
+    modality: 'audio',
+    contentType: 'audio/webm',
+    inputKind: 'microphone_and_camera',
+    deviceLabel: 'Studio USB mic + webcam',
+    sourceMetadata: { sample_rate_hz: 48_000, channels: 2, browser: 'safari' },
+    participantReference: 'user:founder-guest-1',
+    participantGrantReference: 'grant:podcast-episode-7/guest-1',
+    consentReferences: ['consent:participant-recording-1', 'consent:contribution-rights-1', 'consent:representation-disclosure-1'],
+    questionId: 'q1',
+  }) as never);
+
+  // THE FULL PROVENANCE SET on the record (structural, never optional).
+  assert.equal(take.participantReference, 'user:founder-guest-1');
+  assert.equal(take.participantGrantReference, 'grant:podcast-episode-7/guest-1');
+  assert.deepEqual(take.consentReferences, ['consent:participant-recording-1', 'consent:contribution-rights-1', 'consent:representation-disclosure-1']);
+  assert.equal(take.inputKind, 'microphone_and_camera');
+  assert.equal(take.deviceLabel, 'Studio USB mic + webcam');
+  assert.deepEqual(take.sourceMetadata, { sample_rate_hz: 48_000, channels: 2, browser: 'safari' });
+  assert.equal(take.interviewerRepresentation, 'avatar', 'the recording context representation rides every take');
+  assert.equal(take.questionId, 'q1');
+  assert.equal(take.graphId, capture.graphId);
+  assert.equal(take.graphVersion, capture.graphVersion);
+  assert.equal(take.modality, 'audio');
+
+  // The retrieval surface: the node-filtered + modality-filtered queries.
+  const byNode = await studio.listCaptureTakes({ scope: aliceScope, sessionId, captureSessionId: capture.captureSessionId, questionId: 'q1', modality: 'audio' });
+  assert.equal(byNode.length, 1);
+  assert.equal(byNode[0]!.takeId, take.takeId);
+  assert.equal((await studio.listCaptureTakes({ scope: aliceScope, sessionId, questionId: 'qzz' })).length, 0);
+});
+
+test('STUDIO-007 (x): THE ASYNC INGEST CONTRACT — born processing; complete → stored with the analysis payload + duration; fail → failed with the §17 reason; the terminal freeze; the honest retry is a NEW take', async () => {
+  const { sessionId, captureSessionId } = await reactionCaptureSession();
+  const takeA = await studio.recordCaptureTake(takeInput(captureSessionId) as never);
+  const takeB = await studio.recordCaptureTake(takeInput(captureSessionId, { bytes: new Uint8Array([7, 7, 7]) }) as never);
+
+  // The ingest verb returned FAST — after the durable landing only; the
+  // takes sit 'processing' until the async completion.
+  assert.equal(takeA.ingestState, 'processing');
+  assert.equal(takeA.ingestCompletedAt, null);
+  assert.equal(takeA.ingestAnalysis, null);
+
+  const stored = await studio.completeCaptureTakeIngest({
+    scope: aliceScope,
+    sessionId,
+    takeId: takeA.takeId,
+    analysis: { probe: 'webm/opus', loudness_lufs: -14.2 },
+    durationMs: 1_420,
+  });
+  assert.equal(stored.ingestState, 'stored');
+  assert.deepEqual(stored.ingestAnalysis, { probe: 'webm/opus', loudness_lufs: -14.2 });
+  assert.equal(stored.ingestDurationMs, 1_420);
+  assert.notEqual(stored.ingestCompletedAt, null);
+  assert.equal(stored.ingestFailureReason, null);
+
+  // The terminal freeze: a stored take cannot re-complete, cannot fail.
+  await assert.rejects(
+    () => studio.completeCaptureTakeIngest({ scope: aliceScope, sessionId, takeId: takeA.takeId }),
+    (error: unknown) => error instanceof InvalidRequestError && /frozen/.test(error.message),
+  );
+  await assert.rejects(
+    () => studio.failCaptureTakeIngest({ scope: aliceScope, sessionId, takeId: takeA.takeId, failureReason: 'provider_failure' }),
+    (error: unknown) => error instanceof InvalidRequestError && /frozen/.test(error.message),
+  );
+
+  const failed = await studio.failCaptureTakeIngest({
+    scope: aliceScope,
+    sessionId,
+    takeId: takeB.takeId,
+    failureReason: 'quality_failure',
+    failureDetail: 'The probe could not read the container.',
+    durationMs: 90,
+  });
+  assert.equal(failed.ingestState, 'failed');
+  assert.equal(failed.ingestFailureReason, 'quality_failure');
+  assert.equal(failed.ingestFailureDetail, 'The probe could not read the container.');
+  assert.notEqual(failed.ingestCompletedAt, null);
+
+  // The honest retry: a NEW take row, the alternate of the failed one.
+  const retry = await studio.recordCaptureTake(takeInput(captureSessionId, { alternateOfTakeId: takeB.takeId, bytes: new Uint8Array([8, 8, 8, 8]) }) as never);
+  assert.equal(retry.alternateOfTakeId, takeB.takeId);
+  assert.equal(retry.ingestState, 'processing');
+
+  // The status surface exposes the §17 cost/delay information.
+  const takes = await studio.listCaptureTakes({ scope: aliceScope, sessionId });
+  assert.deepEqual(takes.map((row) => row.ingestState).sort(), ['failed', 'processing', 'stored']);
+});
+
+test('STUDIO-007 (y): THE WALKED-GRAPH PIN ↔ THE CONVERSATION — the adaptive walk cites the takes by their opaque references; the Q/A graph + the takes reconstruct the full recording', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  const graph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  const corrected = await studio.appendSuppliedQuestionGraphVersion({ scope: aliceScope, graphId: graph.graphId, declaredGraph: branchingGraph() });
+  const { sessionId } = await driveToRecording(request.requestId);
+  const capture = await studio.openCaptureSession({ scope: aliceScope, sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+  assert.equal(capture.graphVersion, corrected.graphVersion);
+
+  // A take against an UNDECLARED node is refused (the walked-graph pin).
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'qzz', modality: 'audio', contentType: 'audio/webm', participantGrantReference: 'grant:episode/voice-host' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /not a declared node/.test(error.message),
+  );
+  // A graph_walk take without its node pin is refused.
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(capture.captureSessionId, { modality: 'audio', contentType: 'audio/webm', participantGrantReference: 'grant:episode/voice-host' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /node pin/.test(error.message),
+  );
+
+  // The graph-driven capture steps: a take per answered node; the conversation
+  // step cites the take's opaque reference as its answer.
+  const q1Take = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/voice-host' }) as never);
+  const step1 = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId,
+    questionId: 'q1',
+    answerReference: q1Take.takeReference,
+    answerKind: 'audio',
+    chosenToQuestionId: 'q2',
+    chosenCondition: 'on_answer_positive',
+    chooserKind: 'interviewer',
+  });
+  assert.equal(step1.graphId, capture.graphId);
+  assert.equal(step1.graphVersion, capture.graphVersion);
+
+  // An alternate take for the SAME node, then the walk continues citing the alternate.
+  const q2Take = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q2', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/voice-host' }) as never);
+  const q2Retake = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q2', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/voice-host', alternateOfTakeId: q2Take.takeId, bytes: new Uint8Array([3, 3, 3]) }) as never);
+  const step2 = await studio.recordConversationStep({
+    scope: aliceScope,
+    sessionId,
+    conversationId: step1.conversationId,
+    questionId: 'q2',
+    answerReference: q2Retake.takeReference,
+    answerKind: 'audio',
+    chosenToQuestionId: 'q4',
+    chosenCondition: 'on_answer_elaborate',
+    chooserKind: 'interviewer',
+  });
+  assert.equal(step2.seq, 2);
+
+  // THE RECONSTRUCTION: conversation steps → take references → takes with
+  // their node pins + alternates + provenance (the full recording as data).
+  const steps = await studio.listConversationSteps(aliceScope, sessionId);
+  assert.deepEqual(steps.map((step) => step.questionId), ['q1', 'q2']);
+  for (const step of steps) {
+    const take = await studio.getCaptureTakeByReference(aliceScope, step.answerReference);
+    assert.equal(take.questionId, step.questionId, 'the cited take answers exactly the asked node');
+    assert.equal(take.graphVersion, capture.graphVersion, 'the cited take walks the pinned graph version');
+  }
+  const q2Takes = await studio.listCaptureTakes({ scope: aliceScope, sessionId, captureSessionId: capture.captureSessionId, questionId: 'q2' });
+  assert.equal(q2Takes.length, 2, 'the alternate is preserved alongside the original');
+});
+
+test('STUDIO-007 (z): THE TENANT ISOLATION — Bob resolves Alice\'s capture sessions/takes to the uniform NotFound (no existence oracle); the DB scope triggers reject cross-tenant injection', async () => {
+  const { sessionId, captureSessionId } = await reactionCaptureSession();
+  const take = await studio.recordCaptureTake(takeInput(captureSessionId) as never);
+
+  // The uniform NotFound on every read surface.
+  await assert.rejects(() => studio.getCaptureSession(bobScope, sessionId, captureSessionId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.listCaptureSessions(bobScope, sessionId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getCaptureTake(bobScope, sessionId, take.takeId), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.getCaptureTakeByReference(bobScope, take.takeReference), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(() => studio.listCaptureTakes({ scope: bobScope, sessionId }), (error: unknown) => error instanceof NotFoundError);
+  await assert.rejects(
+    () => studio.completeCaptureTakeIngest({ scope: bobScope, sessionId, takeId: take.takeId }),
+    (error: unknown) => error instanceof NotFoundError,
+  );
+  // Bob's take against Alice's capture session is the uniform NotFound.
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(captureSessionId, { scope: bobScope }) as never),
+    (error: unknown) => error instanceof NotFoundError,
+  );
+
+  // The DB scope-consistency backstop: a cross-tenant capture-session row is rejected.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_capture_sessions
+         (capture_session_id, session_id, revision, agency_id, client_id, workspace_id,
+          capture_mode, contract_version, created_at)
+       VALUES ($1, $2, 1, $3, $4, NULL, 'session_direct', 'content-studio-capture-v1', now())`,
+      [crypto.randomUUID(), sessionId, bobScope.agencyId, bobScope.clientId],
+    ),
+    (error: unknown) => /client must match its session client|violates/.test(String(error)),
+  );
+});
+
+test('STUDIO-007 (aa): THE FORMAT-DRIVEN FENCES — the approved capture is format-scoped: the audio podcast refuses video/screen takes and requires the §7 grant; reaction refuses an interviewer representation', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference) });
+  await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  const { sessionId } = await driveToRecording(request.requestId);
+  const capture = await studio.openCaptureSession({ scope: aliceScope, sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+
+  // THE APPROVED-MODALITY FENCE: audio-podcast declares audio (+
+  // participant_streams/alternate_takes) — a video take is unrepresentable.
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /not declared by format/.test(error.message),
+  );
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1', modality: 'screen', inputKind: 'screen_capture' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /not declared by format/.test(error.message),
+  );
+
+  // THE §7 GRANT FENCE: audio-podcast declares explicit per-participant
+  // grants — a take without its grant reference is refused.
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone' }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /explicit per-participant grants/.test(error.message),
+  );
+  const granted = await studio.recordCaptureTake(takeInput(capture.captureSessionId, {
+    questionId: 'q1',
+    modality: 'audio',
+    contentType: 'audio/webm',
+    inputKind: 'microphone',
+    participantGrantReference: 'grant:episode-1/host',
+  }) as never);
+  assert.equal(granted.modality, 'audio');
+
+  // The reaction shape: interviewer 'none' — a recording context with a
+  // representation is refused.
+  const reactionBody = await makeActiveBody();
+  const reactionRequest = await studio.createProductionRequest({ scope: aliceScope, content: standaloneRequest(reactionBody) });
+  const reactionRecording = await driveToRecording(reactionRequest.requestId);
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId: reactionRecording.sessionId, captureMode: 'session_direct', interviewerRepresentation: 'voice' }),
+    (error: unknown) => error instanceof InvalidRequestError && /interviewer 'none'/.test(error.message),
+  );
+});
+
+test('STUDIO-007 (bb): THE DB BACKSTOPS — the born-processing fence, the guarded ingest edges, the identity immutability, the recording-state fence and the capture-session/node-pin/alternate scope triggers', async () => {
+  const { sessionId, captureSessionId } = await reactionCaptureSession();
+  const take = await studio.recordCaptureTake(takeInput(captureSessionId) as never);
+  void take;
+
+  // The born-processing fence: a take injected as 'stored' is rejected.
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_capture_takes
+         (take_id, take_reference, capture_session_id, session_id, revision,
+          agency_id, client_id, workspace_id, modality, input_kind, device_label,
+          source_metadata, participant_reference, consent_references,
+          object_key, object_digest, object_size, content_type,
+          ingest_state, contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 1, $5, $6, NULL, 'video', 'camera', 'Injected',
+               '{}'::jsonb, 'user:injected', '["consent:x"]'::jsonb,
+               $7, $7, 4, 'video/mp4',
+               'stored', 'content-studio-capture-v1', now(), now())`,
+      [
+        crypto.randomUUID(),
+        `studio-take:${crypto.randomUUID()}`,
+        captureSessionId,
+        sessionId,
+        aliceScope.agencyId,
+        aliceScope.clientId,
+        'a'.repeat(64),
+      ],
+    ),
+    (error: unknown) => /BORN 'processing'|born ''processing''|born .processing./i.test(String(error)),
+  );
+
+  // The guarded ingest edges at the DB: stored → processing is illegal.
+  const storedTake = await studio.recordCaptureTake(takeInput(captureSessionId, { bytes: new Uint8Array([5, 5]) }) as never);
+  await studio.completeCaptureTakeIngest({ scope: aliceScope, sessionId, takeId: storedTake.takeId, durationMs: 10 });
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_capture_takes SET ingest_state = 'processing' WHERE take_id = $1`, [storedTake.takeId]),
+    (error: unknown) => /ingest transition .* is not legal/.test(String(error)),
+  );
+  // A terminal take's completion payload cannot be rewritten.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_capture_takes SET ingest_duration_ms = 999 WHERE take_id = $1`, [storedTake.takeId]),
+    (error: unknown) => /ingest record is frozen|identity\/scope\/linkage\/provenance|is not legal/i.test(String(error)),
+  );
+  // A processing take cannot carry its completion payload ahead of the advance.
+  await assert.rejects(
+    () => db!.query(`UPDATE studio_capture_takes SET ingest_duration_ms = 999 WHERE take_id = $1`, [take.takeId]),
+    (error: unknown) => /completion payload rides the ingest-state advance only/.test(String(error)),
+  );
+
+  // The recording-state fence: after the session advances to processing, no
+  // capture session opens and no take records.
+  await studio.advanceSession({ scope: aliceScope, sessionId, to: 'processing' });
+  await assert.rejects(
+    () => studio.openCaptureSession({ scope: aliceScope, sessionId, captureMode: 'session_direct' }),
+    (error: unknown) => error instanceof InvalidRequestError && /only inside the 'recording' state/.test(error.message),
+  );
+  await assert.rejects(
+    () => studio.recordCaptureTake(takeInput(captureSessionId, { bytes: new Uint8Array([6]) }) as never),
+    (error: unknown) => error instanceof InvalidRequestError && /only inside the 'recording' state/.test(error.message),
+  );
+
+  // The take scope trigger: a take bound to a session_direct capture session
+  // with a node pin is rejected at the DB.
+  const secondReaction = await reactionCaptureSession();
+  await assert.rejects(
+    () => db!.query(
+      `INSERT INTO studio_capture_takes
+         (take_id, take_reference, capture_session_id, session_id, revision,
+          agency_id, client_id, workspace_id, graph_id, graph_version, question_id,
+          modality, input_kind, device_label, source_metadata, participant_reference,
+          consent_references, object_key, object_digest, object_size, content_type,
+          ingest_state, contract_version, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 1, $5, $6, NULL, $7, 1, 'q1',
+               'video', 'camera', 'Injected', '{}'::jsonb, 'user:injected',
+               '["consent:x"]'::jsonb, $8, $8, 4, 'video/mp4',
+               'processing', 'content-studio-capture-v1', now(), now())`,
+      [
+        crypto.randomUUID(),
+        `studio-take:${crypto.randomUUID()}`,
+        secondReaction.captureSessionId,
+        secondReaction.sessionId,
+        aliceScope.agencyId,
+        aliceScope.clientId,
+        crypto.randomUUID(),
+        'b'.repeat(64),
+      ],
+    ),
+    (error: unknown) => /session_direct capture session carries no walked-graph node pin/.test(String(error)),
+  );
+});
+
+test('STUDIO-007 (cc): THE FULL END-TO-END CAPTURE PATH — request → graph-driven capture steps → takes/alternates → durable artifacts → provenance retrieval → the durable processing plan → review → completed', async () => {
+  const bodyReference = await makeActiveBody(['read', 'compose']);
+  const request = await studio.createProductionRequest({ scope: aliceScope, content: podcastRequest(bodyReference, { output: { requiredOutputs: ['final_media', 'transcript'] } }) });
+  const graph = await studio.recordSuppliedQuestionGraph({ scope: aliceScope, requestId: request.requestId });
+  const session = await studio.openSession({ scope: aliceScope, requestId: request.requestId });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'preparing' });
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'recording' });
+
+  // The capture: a graph-walk capture session + takes per walked node + an alternate.
+  const capture = await studio.openCaptureSession({ scope: aliceScope, sessionId: session.sessionId, captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+  assert.equal(capture.graphVersion, graph.graphVersion);
+  const q1 = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/full-1' }) as never);
+  const q1Retake = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q1', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/full-1', alternateOfTakeId: q1.takeId, bytes: new Uint8Array([1, 2, 3, 4, 5]) }) as never);
+  const q2 = await studio.recordCaptureTake(takeInput(capture.captureSessionId, { questionId: 'q2', modality: 'audio', contentType: 'audio/webm', inputKind: 'microphone', participantGrantReference: 'grant:episode/full-1', bytes: new Uint8Array([9, 8, 7]) }) as never);
+
+  // The async ingest completions (the durable analysis after the fast landing).
+  await studio.completeCaptureTakeIngest({ scope: aliceScope, sessionId: session.sessionId, takeId: q1Retake.takeId, analysis: { probe: 'webm/opus' }, durationMs: 800 });
+  await studio.completeCaptureTakeIngest({ scope: aliceScope, sessionId: session.sessionId, takeId: q2.takeId, durationMs: 640 });
+
+  // The conversation cites the chosen takes.
+  const walk1 = await studio.recordConversationStep({ scope: aliceScope, sessionId: session.sessionId, questionId: 'q1', answerReference: q1Retake.takeReference, answerKind: 'audio', chosenToQuestionId: 'q2', chosenCondition: 'always', chooserKind: 'interviewer' });
+  await studio.recordConversationStep({ scope: aliceScope, sessionId: session.sessionId, conversationId: walk1.conversationId, questionId: 'q2', answerReference: q2.takeReference, answerKind: 'audio', chooserKind: 'human' });
+
+  // recording → processing: the durable step plan is born (the async records).
+  await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'processing' });
+  const steps = await studio.listProcessingSteps(aliceScope, session.sessionId);
+  assert.ok(steps.length >= 1, 'the durable processing plan is recorded');
+
+  // The processing steps complete (the capture_ingestion stage cites the takes).
+  const outputs: Array<{ outputVersionId: string }> = [];
+  for (let round = 0; round < 8; round += 1) {
+    const claimed = await studio.claimProcessingSteps({ scope: aliceScope, sessionId: session.sessionId, limit: 4, lockedBy: 'capture-driver' });
+    if (claimed.length === 0) break;
+    for (const step of claimed) {
+      const isFinalStage = step.stageIndex === 4;
+      const result = await studio.completeProcessingStep({
+        scope: aliceScope,
+        stepId: step.stepId,
+        output: isFinalStage
+          ? { final_media: 'media:episode-full-1', transcript: 'text:episode-full-1' }
+          : step.stageId === 'capture_ingestion'
+            ? { takes: [q1Retake.takeReference, q2.takeReference], raw_captures: 3, alternates: 1 }
+            : { intermediate: `artifact:${step.stageId}` },
+        costUnits: 0.5,
+        durationMs: 900,
+      });
+      if (result.outputVersion !== null) outputs.push({ outputVersionId: result.outputVersion.outputVersionId });
+    }
+  }
+  // The final-stage completion records the output version AND advances
+  // processing → review in the same transaction (the STUDIO-001 runtime).
+  assert.ok(outputs.length >= 1, 'the output version is recorded');
+  const afterSteps = await studio.getSession(aliceScope, session.sessionId);
+  assert.equal(afterSteps.state, 'review', 'the session auto-advanced to review when the plan fully succeeded');
+
+  // review → completed.
+  const completed = await studio.advanceSession({ scope: aliceScope, sessionId: session.sessionId, to: 'completed' });
+  assert.equal(completed.state, 'completed');
+
+  // THE PROVENANCE RETRIEVAL after completion: the raw takes + alternates +
+  // participant/source provenance are preserved as data.
+  const finalTakes = await studio.listCaptureTakes({ scope: aliceScope, sessionId: session.sessionId });
+  assert.equal(finalTakes.length, 3);
+  assert.deepEqual(finalTakes.map((row) => row.questionId), ['q1', 'q1', 'q2']);
+  assert.ok(finalTakes.every((row) => row.participantGrantReference === 'grant:episode/full-1'));
+  assert.ok(finalTakes.every((row) => row.objectKey.match(/^[0-9a-f]{64}$/)));
+  assert.deepEqual(finalTakes.map((row) => row.ingestState).sort(), ['processing', 'stored', 'stored']);
+  for (const row of finalTakes) {
+    assert.notEqual(await objects.get(row.objectKey), null, `the durable artifact for take ${row.takeId} is retrievable`);
+  }
 });

@@ -78,6 +78,11 @@ import {
   assertLegalContentStudioSessionTransition,
   assertTerminalReasonForAdvance,
   assertValidContentStudioConversationChoice,
+  assertValidContentStudioCaptureIngestCompletion,
+  assertValidContentStudioCaptureIngestFailure,
+  assertValidContentStudioCaptureSessionInput,
+  assertValidContentStudioCaptureTakeInput,
+  assertValidContentStudioCaptureTakesQuery,
   assertValidContentStudioDeclaredQuestionGraph,
   assertValidContentStudioFormatDeclaration,
   assertValidContentStudioGeneratorProvenance,
@@ -85,10 +90,19 @@ import {
   assertValidContentStudioProductionRequestContent,
   assertValidContentStudioReviewDecision,
   assertValidContentStudioTreatmentSpecification,
+  CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION,
+  CONTENT_STUDIO_CAPTURE_INPUT_KINDS,
+  CONTENT_STUDIO_CAPTURE_SESSION_MODES,
+  CONTENT_STUDIO_MAX_TAKE_BYTES,
+  CONTENT_STUDIO_TAKE_INGEST_STATES,
+  CONTENT_STUDIO_TAKE_MODALITIES,
+  CONTENT_STUDIO_TAKE_REF_PATTERN,
   deriveLinearQuestionGraph,
   isLegalContentStudioSessionTransition,
   isTerminalContentStudioSessionState,
   legalContentStudioSessionTransitions,
+  mintContentStudioTakeReference,
+  parseContentStudioTakeReference,
   type ContentStudioDeclaredQuestionGraph,
   type ContentStudioFormatDeclaration,
   type ContentStudioGeneratorProvenance,
@@ -145,6 +159,23 @@ function validOrganization(overrides: Partial<ContentStudioOrganizationDeclarati
     organizationVersion: 3,
     agentBodyReferences: [BODY_REFERENCE],
     capabilities: ['capability:clip-selection@v2'],
+    ...overrides,
+  };
+}
+
+/** The STUDIO-007 raw-take input fixture (the §9 provenance field set). */
+function validTakeInput(
+  overrides: Partial<Parameters<typeof assertValidContentStudioCaptureTakeInput>[0]> = {},
+): Parameters<typeof assertValidContentStudioCaptureTakeInput>[0] {
+  return {
+    modality: 'audio',
+    bytes: new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x01, 0x02, 0x03]),
+    contentType: 'audio/webm',
+    inputKind: 'microphone',
+    deviceLabel: 'Blue Yeti (default input)',
+    sourceMetadata: { sample_rate_hz: 48_000, channels: 1, browser: 'chrome' },
+    participantReference: 'user:01923f7e-8b1d-7abc-9def-0123456789bb',
+    consentReferences: ['consent:participant-recording-1', 'consent:contribution-rights-1'],
     ...overrides,
   };
 }
@@ -945,4 +976,250 @@ test('STUDIO-003: THE OPTIONAL generatedInputReview FORMAT FIELD — absent mean
   for (const format of CONTENT_STUDIO_INITIAL_FORMATS) {
     assert.equal(format.inputRequirements.generatedInputReview, undefined, `format '${format.formatId}' stays without generatedInputReview`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// The STUDIO-007 unit battery (§9 — the audio/video capture layer): the
+// PURE capture guards + vocabularies + the take-reference grammar.
+// ---------------------------------------------------------------------------
+
+test('STUDIO-007: THE FROZEN §9 CAPTURE VOCABULARIES — the capture modes, the take modalities (the closed §9 media-capture subset ⊂ the format capture modalities), the ingest states and the input kinds are the closed sets; the FOURTH sub-contract identity', () => {
+  assert.deepEqual(CONTENT_STUDIO_CAPTURE_SESSION_MODES, ['graph_walk', 'session_direct']);
+  assert.deepEqual(CONTENT_STUDIO_TAKE_MODALITIES, ['audio', 'video', 'screen']);
+  assert.deepEqual(CONTENT_STUDIO_TAKE_INGEST_STATES, ['processing', 'stored', 'failed']);
+  assert.deepEqual(CONTENT_STUDIO_CAPTURE_INPUT_KINDS, ['microphone', 'camera', 'microphone_and_camera', 'screen_capture', 'uploaded_file']);
+  // The take modalities are a closed SUBSET of the §9 format capture
+  // modalities (participant_streams/alternate_takes are STRUCTURAL
+  // requirements a format declares, not the modality of one take).
+  for (const modality of CONTENT_STUDIO_TAKE_MODALITIES) {
+    assert.ok(
+      (CONTENT_STUDIO_CAPTURE_MODALITIES as readonly string[]).includes(modality),
+      `take modality '${modality}' is a declared format capture modality`,
+    );
+  }
+  assert.ok(!(CONTENT_STUDIO_TAKE_MODALITIES as readonly string[]).includes('participant_streams'));
+  assert.ok(!(CONTENT_STUDIO_TAKE_MODALITIES as readonly string[]).includes('alternate_takes'));
+  // The fourth sub-contract identity (runtime-v1, format-v1, script-v1 stay pinned).
+  assert.equal(CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION, 'content-studio-capture-v1');
+  assert.notEqual(CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION, CONTENT_STUDIO_CONTRACT_VERSION);
+  assert.notEqual(CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION, CONTENT_STUDIO_FORMAT_CONTRACT_VERSION);
+  assert.notEqual(CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION, CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION);
+});
+
+test('STUDIO-007: THE TAKE-REFERENCE GRAMMAR — mint/parse round-trip over the canonical uuid; malformed references parse to null', () => {
+  const takeId = '01923f7e-8b1d-7abc-9def-0123456789cd';
+  const reference = mintContentStudioTakeReference(takeId);
+  assert.equal(reference, 'studio-take:01923f7e-8b1d-7abc-9def-0123456789cd');
+  assert.equal(parseContentStudioTakeReference(reference), takeId);
+  assert.ok(CONTENT_STUDIO_TAKE_REF_PATTERN.test(reference));
+  // Malformed shapes parse to null (the uniform refusal — never a partial parse).
+  for (const malformed of ['', 'studio-take:', 'studio-take:not-a-uuid', 'ca:01923f7e-8b1d-7abc-9def-0123456789cd', 'studio-take:01923F7E-8B1D-7ABC-9DEF-0123456789CD']) {
+    assert.equal(parseContentStudioTakeReference(malformed), null, `malformed reference '${malformed}' parses to null`);
+    assert.ok(!CONTENT_STUDIO_TAKE_REF_PATTERN.test(malformed));
+  }
+});
+
+test('STUDIO-007: THE CAPTURE-SESSION INPUT FENCE — the closed mode + interviewer-representation vocabularies', () => {
+  assertValidContentStudioCaptureSessionInput({ captureMode: 'graph_walk' });
+  assertValidContentStudioCaptureSessionInput({ captureMode: 'session_direct' });
+  assertValidContentStudioCaptureSessionInput({ captureMode: 'graph_walk', interviewerRepresentation: 'voice' });
+  assertValidContentStudioCaptureSessionInput({ captureMode: 'session_direct', interviewerRepresentation: 'hybrid' });
+  assertInvalid(() => assertValidContentStudioCaptureSessionInput({ captureMode: 'telepathy' as never }), 'captureMode');
+  assertInvalid(() => assertValidContentStudioCaptureSessionInput({ captureMode: 'graph_walk', interviewerRepresentation: 'hologram' as never }), 'interviewerRepresentation');
+});
+
+test('STUDIO-007: A WELL-FORMED RAW-TAKE INPUT PASSES — the closed vocabularies, the bounded payload, the structural provenance', () => {
+  assertValidContentStudioCaptureTakeInput(validTakeInput());
+  // Every modality + input kind passes (the format-approval fence is the
+  // module's cross-record rule, not the pure shape).
+  for (const modality of CONTENT_STUDIO_TAKE_MODALITIES) {
+    assertValidContentStudioCaptureTakeInput(validTakeInput({ modality }));
+  }
+  for (const inputKind of CONTENT_STUDIO_CAPTURE_INPUT_KINDS) {
+    assertValidContentStudioCaptureTakeInput(validTakeInput({ inputKind }));
+  }
+  // A node pin + an alternate chain ride along.
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ questionId: 'q1', alternateOfTakeId: '01923f7e-8b1d-7abc-9def-0123456789cd' }));
+});
+
+test('STUDIO-007: THE TAKE-PAYLOAD FENCE — the bytes must be a non-empty bounded Uint8Array (the inline-object contract)', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ bytes: new Uint8Array(0) })), 'bytes');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ bytes: 'base64-would-be-a-mistake' as unknown as Uint8Array })), 'bytes');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ bytes: new Uint8Array(CONTENT_STUDIO_MAX_TAKE_BYTES + 1) })), 'bytes exceeds the maximum');
+  // Exactly the ceiling passes (the bound is inclusive).
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ bytes: new Uint8Array(CONTENT_STUDIO_MAX_TAKE_BYTES) }));
+  assert.equal(CONTENT_STUDIO_MAX_TAKE_BYTES, 8 * 1024 * 1024);
+});
+
+test('STUDIO-007: THE CONTENT-TYPE FENCE — the bounded MIME-type shape', () => {
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ contentType: 'video/mp4' }));
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ contentType: 'audio/webm' }));
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ contentType: 'mp4' })), 'contentType');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ contentType: 'video/ mp4' })), 'contentType');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ contentType: '' })), 'contentType');
+});
+
+test('STUDIO-007: THE MODALITY + INPUT-KIND FENCES — unknown members of either closed vocabulary are rejected', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ modality: 'hologram' as never })), 'modality');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ modality: 'participant_streams' as never })), 'modality');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ inputKind: 'telepathy' as never })), 'inputKind');
+});
+
+test('STUDIO-007: THE NODE-PIN + ALTERNATE SHAPES — the question-id grammar + the canonical uuid alternate reference', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ questionId: 'Not-An-Id' })), 'questionId');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ questionId: '' })), 'questionId');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ alternateOfTakeId: 'not-a-uuid' })), 'alternateOfTakeId');
+});
+
+test('STUDIO-007: THE SOURCE DEVICE/INPUT METADATA FENCE — the bounded device label + the bounded declared metadata object', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ deviceLabel: '' })), 'deviceLabel');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ deviceLabel: '  untrimmed  ' })), 'deviceLabel');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ deviceLabel: 'x'.repeat(257) })), 'deviceLabel');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ sourceMetadata: ['not', 'an', 'object'] as unknown as Readonly<Record<string, unknown>> })), 'sourceMetadata');
+  assertInvalid(
+    () => assertValidContentStudioCaptureTakeInput(validTakeInput({ sourceMetadata: { junk: 'x'.repeat(70_000) } })),
+    'sourceMetadata',
+  );
+});
+
+test('STUDIO-007: THE PARTICIPANT PROVENANCE FENCE — the bounded participant identity + the optional grant reference', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ participantReference: '' })), 'participantReference');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ participantReference: '  padded  ' })), 'participantReference');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ participantReference: 'x'.repeat(257) })), 'participantReference');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ participantGrantReference: '' })), 'participantGrantReference');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ participantGrantReference: 'x'.repeat(257) })), 'participantGrantReference');
+  // The grant is OPTIONAL at the pure-shape layer (the §7 requirement is
+  // the module's format-driven cross-record rule).
+  assertValidContentStudioCaptureTakeInput(validTakeInput());
+});
+
+test('STUDIO-007: THE CONSENT FENCE — the recording-consent provenance is STRUCTURAL: at least one reference, bounded, never empty, never duplicated', () => {
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: [] })), 'consentReferences');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: [''] })), 'consentReferences');
+  assertInvalid(() => assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: ['x'.repeat(513)] })), 'consentReferences');
+  assertInvalid(
+    () => assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: ['consent:recording-1', 'consent:recording-1'] })),
+    'duplicated',
+  );
+  assertInvalid(
+    () => assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: Array.from({ length: 17 }, (_, i) => `consent:ref-${i}`) })),
+    'consentReferences',
+  );
+  // Sixteen distinct references pass (the bounded ceiling).
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ consentReferences: Array.from({ length: 16 }, (_, i) => `consent:ref-${i}`) }));
+});
+
+test('STUDIO-007: THE INGEST-COMPLETION FENCE — the bounded analysis object + the non-negative integer duration', () => {
+  assertValidContentStudioCaptureIngestCompletion({});
+  assertValidContentStudioCaptureIngestCompletion({ analysis: { probe: 'ok', duration_seconds: 12 } });
+  assertValidContentStudioCaptureIngestCompletion({ durationMs: 1_250 });
+  assertValidContentStudioCaptureIngestCompletion({ analysis: { ok: true }, durationMs: 0 });
+  assertInvalid(() => assertValidContentStudioCaptureIngestCompletion({ analysis: null as never }), 'analysis');
+  assertInvalid(() => assertValidContentStudioCaptureIngestCompletion({ analysis: { junk: 'x'.repeat(70_000) } }), 'analysis');
+  assertInvalid(() => assertValidContentStudioCaptureIngestCompletion({ durationMs: -1 }), 'durationMs');
+  assertInvalid(() => assertValidContentStudioCaptureIngestCompletion({ durationMs: 1.5 }), 'durationMs');
+  assertInvalid(() => assertValidContentStudioCaptureIngestCompletion({ durationMs: Number.MAX_SAFE_INTEGER + 1 }), 'durationMs');
+});
+
+test('STUDIO-007: THE INGEST-FAILURE FENCE — the frozen §17 failure vocabulary + the bounded detail + the duration', () => {
+  const valid = { failureReason: 'provider_failure', failureDetail: 'The object store rejected the payload.', durationMs: 90 } as const;
+  assertValidContentStudioCaptureIngestFailure(valid);
+  for (const reason of CONTENT_STUDIO_STEP_FAILURE_REASONS) {
+    assertValidContentStudioCaptureIngestFailure({ failureReason: reason });
+  }
+  assertInvalid(() => assertValidContentStudioCaptureIngestFailure({ ...valid, failureReason: 'vibes_were_off' as never }), 'failureReason');
+  assertInvalid(() => assertValidContentStudioCaptureIngestFailure({ ...valid, failureDetail: '' }), 'failureDetail');
+  assertInvalid(() => assertValidContentStudioCaptureIngestFailure({ ...valid, failureDetail: 'x'.repeat(2001) }), 'failureDetail');
+  assertInvalid(() => assertValidContentStudioCaptureIngestFailure({ ...valid, durationMs: -3 }), 'durationMs');
+});
+
+test('STUDIO-007: THE TAKE-QUERY FENCE — the optional uuid/question-id/modality filters', () => {
+  assertValidContentStudioCaptureTakesQuery({});
+  assertValidContentStudioCaptureTakesQuery({ captureSessionId: '01923f7e-8b1d-7abc-9def-0123456789cd', questionId: 'q3', modality: 'audio', alternateOfTakeId: '01923f7e-8b1d-7abc-9def-0123456789ce' });
+  assertInvalid(() => assertValidContentStudioCaptureTakesQuery({ captureSessionId: 'nope' }), 'captureSessionId');
+  assertInvalid(() => assertValidContentStudioCaptureTakesQuery({ questionId: 'Not-An-Id' }), 'questionId');
+  assertInvalid(() => assertValidContentStudioCaptureTakesQuery({ modality: 'smell' as never }), 'modality');
+  assertInvalid(() => assertValidContentStudioCaptureTakesQuery({ alternateOfTakeId: 'nope' }), 'alternateOfTakeId');
+});
+
+test('STUDIO-007: THE FORMAT CAPTURE REQUIREMENTS STAY UNCHANGED — the three frozen initial declarations carry their STUDIO-002 modalities verbatim (the zero-drift delivery)', () => {
+  const byFormat = new Map(CONTENT_STUDIO_INITIAL_FORMATS.map((format) => [format.formatId, format]));
+  assert.deepEqual(byFormat.get('reaction')!.captureRequirements.modalities, ['audio', 'video', 'screen']);
+  assert.deepEqual(byFormat.get('audio-podcast')!.captureRequirements.modalities, ['audio', 'participant_streams', 'alternate_takes']);
+  assert.deepEqual(byFormat.get('video-podcast')!.captureRequirements.modalities, ['audio', 'video', 'participant_streams', 'alternate_takes']);
+  // The participant models the §7 grant fence reads.
+  assert.equal(byFormat.get('reaction')!.participantModel.participationGrants, 'single_scope');
+  assert.equal(byFormat.get('audio-podcast')!.participantModel.participationGrants, 'explicit_grant_per_participant');
+  assert.equal(byFormat.get('video-podcast')!.participantModel.participationGrants, 'explicit_grant_per_participant');
+  // The interviewer requirements the recording context reads.
+  assert.equal(byFormat.get('reaction')!.interviewerRequirements.interviewer, 'none');
+  assert.equal(byFormat.get('audio-podcast')!.interviewerRequirements.interviewer, 'representation');
+  assert.ok(byFormat.get('audio-podcast')!.interviewerRequirements.representations!.includes('voice'));
+});
+
+test('STUDIO-007: THE APPROVED-CAPTURE SUBSET IS HONEST — the reaction format approves all three take modalities; the audio podcast approves ONLY audio (video/screen takes are unrepresentable for it); every initial format approves at least one take modality', () => {
+  const takeModalities = CONTENT_STUDIO_TAKE_MODALITIES as readonly string[];
+  for (const format of CONTENT_STUDIO_INITIAL_FORMATS) {
+    const approved = format.captureRequirements.modalities.filter((modality) => takeModalities.includes(modality));
+    assert.ok(approved.length >= 1, `format '${format.formatId}' approves at least one take modality (found: ${approved.join(', ')})`);
+    for (const modality of takeModalities) {
+      const isApproved = (format.captureRequirements.modalities as readonly string[]).includes(modality);
+      if (format.formatId === 'audio-podcast' && modality !== 'audio') {
+        assert.equal(isApproved, false, `the audio podcast does not approve '${modality}' takes`);
+      }
+      if (format.formatId === 'reaction' || format.formatId === 'video-podcast') {
+        assert.ok(isApproved || modality === 'screen', `format '${format.formatId}' approves the media modalities it declares`);
+      }
+    }
+  }
+});
+
+test('STUDIO-007: THE CAPTURE-SESSION REPRESENTATION SHAPES — absent, present-and-declared and the explicit-null refusal discipline (the recording context is format-guarded, never shape-free)', () => {
+  // Absent (the reaction recording context) passes.
+  assertValidContentStudioCaptureSessionInput({ captureMode: 'session_direct' });
+  // Each of the seven §6 representations passes the vocabulary fence.
+  for (const representation of CONTENT_STUDIO_INTERVIEWER_REPRESENTATIONS) {
+    assertValidContentStudioCaptureSessionInput({ captureMode: 'graph_walk', interviewerRepresentation: representation });
+  }
+  // An untrimmed/garbage representation is rejected.
+  assertInvalid(() => assertValidContentStudioCaptureSessionInput({ captureMode: 'graph_walk', interviewerRepresentation: '' as never }), 'interviewerRepresentation');
+});
+
+test('STUDIO-007: THE TAKE-REFERENCE MINT IS PURE + DETERMINISTIC — the same canonical id always mints the same reference; distinct ids mint distinct references', () => {
+  const takeId = '01923f7e-8b1d-7abc-9def-0123456789cd';
+  assert.equal(mintContentStudioTakeReference(takeId), mintContentStudioTakeReference(takeId));
+  assert.notEqual(mintContentStudioTakeReference(takeId), mintContentStudioTakeReference('01923f7e-8b1d-7abc-9def-0123456789ce'));
+  // The reference is round-trip stable under the exported grammar pair.
+  assert.equal(parseContentStudioTakeReference(mintContentStudioTakeReference(takeId)), takeId);
+});
+
+test('STUDIO-007: THE INGEST-STATE MACHINE IS BORN-PROCESSING-ONLY — the vocabulary carries exactly one born state and two terminal states (the honest retry is a NEW take)', () => {
+  assert.equal(CONTENT_STUDIO_TAKE_INGEST_STATES[0], 'processing', 'processing is the born state (the async-ingest contract)');
+  assert.ok((CONTENT_STUDIO_TAKE_INGEST_STATES as readonly string[]).includes('stored'));
+  assert.ok((CONTENT_STUDIO_TAKE_INGEST_STATES as readonly string[]).includes('failed'));
+  assert.equal(CONTENT_STUDIO_TAKE_INGEST_STATES.length, 3, 'the closed ingest-state vocabulary has exactly three members');
+  // The take modalities are exactly the three single-media capture kinds.
+  assert.equal(CONTENT_STUDIO_TAKE_MODALITIES.length, 3);
+  // The input kinds are exactly the five declared recording-input surfaces.
+  assert.equal(CONTENT_STUDIO_CAPTURE_INPUT_KINDS.length, 5);
+});
+
+test('STUDIO-007: THE SOURCE-METADATA OBJECT MAY BE EMPTY — the bounded declared-data surface ({} is honest: no additional metadata claimed)', () => {
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ sourceMetadata: {} }));
+  // A single declared key passes.
+  assertValidContentStudioCaptureTakeInput(validTakeInput({ sourceMetadata: { sample_rate_hz: 44_100 } }));
+});
+
+test('STUDIO-007: THE QUERY FILTERS ARE INDEPENDENTLY VALID — each optional filter alone passes; every combination is the bounded cross-product', () => {
+  assertValidContentStudioCaptureTakesQuery({ captureSessionId: '01923f7e-8b1d-7abc-9def-0123456789cd' });
+  assertValidContentStudioCaptureTakesQuery({ questionId: 'entry_question' });
+  assertValidContentStudioCaptureTakesQuery({ modality: 'screen' });
+  assertValidContentStudioCaptureTakesQuery({ alternateOfTakeId: '01923f7e-8b1d-7abc-9def-0123456789ce' });
+  // All four together pass.
+  assertValidContentStudioCaptureTakesQuery({
+    captureSessionId: '01923f7e-8b1d-7abc-9def-0123456789cd',
+    questionId: 'q1',
+    modality: 'audio',
+    alternateOfTakeId: '01923f7e-8b1d-7abc-9def-0123456789ce',
+  });
 });

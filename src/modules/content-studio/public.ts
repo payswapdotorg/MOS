@@ -65,10 +65,31 @@
  *        the participation-grant model a format's participant model
  *        declares; the multi-account session surface itself is
  *        STUDIO-006, never this module);
- *   §9  "Long-running processing is asynchronous/durable rather than
- *        a synchronous web request." (AGENTS.md v1.7: "Long-running
- *        simulation/training and production processing use durable
- *        worker infrastructure, not synchronous requests");
+ *   §9  "Capture is modality-specific but format-neutral. The
+ *        runtime may capture: audio; video; screen/source material;
+ *        multiple participant streams; alternate takes. Raw captures
+ *        are production artifacts and are not assumed to be final
+ *        content. Capture implementations must use approved
+ *        storage/access ports and preserve provenance. Long-running
+ *        processing is asynchronous/durable rather than a synchronous
+ *        web request." (STUDIO-007 — THIS delivery — makes the §9
+ *        capture surface real: the capture-session records (the
+ *        recording context opened against a 'recording'-state session
+ *        revision, ADAPTIVE-INTERVIEWER-AWARE through the STUDIO-003
+ *        walked-graph pin), the append-only RAW TAKE records (every
+ *        take a durable artifact landed through the platform
+ *        ObjectStore port — content-addressed platform-anchored
+ *        references, NEVER module-local blob storage, NEVER a
+ *        /content-assets registration: the raw take is an INTERMEDIATE
+ *        production artifact per lock v1.7 #36 and §16), the
+ *        ALTERNATE chains (retakes are new takes citing the take they
+ *        alternate, never overwrites), the STRUCTURAL participant/
+ *        source provenance (participant identity + grant + consent
+ *        references, device/input metadata, interviewer
+ *        representation, recording context) and the async ingest
+ *        state machine (born 'processing', the guarded stored/failed
+ *        terminal advances — no long-running synchronous processing
+ *        anywhere in the ingest path));
  *   §12 the output artifact package vocabulary (the "where available"
  *        kinds the output artifact contract declares: raw captures,
  *        final media, alternate takes, transcript, question/answer
@@ -155,9 +176,25 @@ export const CONTENT_STUDIO_FORMAT_CONTRACT_VERSION = 'content-studio-format-v1'
  */
 export const CONTENT_STUDIO_SCRIPT_CONTRACT_VERSION = 'content-studio-script-v1' as const;
 
+/**
+ * The versioned identity of the audio/video capture contract
+ * (STUDIO-007 — the migration-073 CHECK fence pins it on every capture
+ * session/take row): the §9 capture records — the CAPTURE SESSION
+ * records (the recording context, the walked-graph pin) and the RAW
+ * TAKE records (the durable artifact references, the alternate chains,
+ * the structural participant/source provenance, the async ingest
+ * state machine). A FOURTH contract identity inside the one module
+ * (the STUDIO-002 sub-contract precedent): the migration-064 runtime
+ * tables, the migration-068 registry rows and the migration-070
+ * script/graph rows keep their identities immutable; the migration-073
+ * rows carry this one.
+ */
+export const CONTENT_STUDIO_CAPTURE_CONTRACT_VERSION = 'content-studio-capture-v1' as const;
+
 import type { Clock } from '../../platform/clock/clock.ts';
 import type { IdGenerator } from '../../platform/ids/ids.ts';
 import type { Db } from '../../platform/db/contract.ts';
+import type { ObjectStore } from '../../platform/objects/contract.ts';
 
 // ---------------------------------------------------------------------------
 // The frozen vocabularies (the closed sets the migration CHECK-fences)
@@ -568,6 +605,86 @@ export type ContentStudioAnswerKind = (typeof CONTENT_STUDIO_ANSWER_KINDS)[numbe
 export const CONTENT_STUDIO_CHOOSER_KINDS = ['interviewer', 'human'] as const;
 export type ContentStudioChooserKind = (typeof CONTENT_STUDIO_CHOOSER_KINDS)[number];
 
+/**
+ * §9 (the capture records — STUDIO-007) — the CLOSED capture-session
+ * mode vocabulary: a 'graph_walk' capture session is
+ * ADAPTIVE-INTERVIEWER-AWARE (the STUDIO-003 declared question/branch
+ * graph drives the capture steps; the capture session pins the walked
+ * graph version exactly like a conversation pins its first step); a
+ * 'session_direct' capture session records against the session itself
+ * (the reaction / supplied-script shapes with no walked graph).
+ */
+export const CONTENT_STUDIO_CAPTURE_SESSION_MODES = ['graph_walk', 'session_direct'] as const;
+export type ContentStudioCaptureSessionMode = (typeof CONTENT_STUDIO_CAPTURE_SESSION_MODES)[number];
+
+/**
+ * §9 (the capture records — STUDIO-007) — the CLOSED take-modality
+ * vocabulary: the single-media capture kinds of "The runtime may
+ * capture: audio; video; screen/source material" ('participant
+ * streams' and 'alternate takes' are STRUCTURAL requirements a format
+ * declares, not the modality of one take — multiple streams are
+ * multiple takes; alternates are the alternate chain). A closed
+ * SUBSET of CONTENT_STUDIO_CAPTURE_MODALITIES (the format
+ * declaration vocabulary); which modalities a format APPROVES is
+ * fenced by its captureRequirements.modalities declaration
+ * (module-guarded against the migration-068 registry).
+ */
+export const CONTENT_STUDIO_TAKE_MODALITIES = ['audio', 'video', 'screen'] as const;
+export type ContentStudioTakeModality = (typeof CONTENT_STUDIO_TAKE_MODALITIES)[number];
+
+/**
+ * §9 (the capture records — STUDIO-007) — the CLOSED take ingest-state
+ * vocabulary: every take is BORN 'processing' (the async-ingest
+ * contract — the durable landing is synchronous, any post-landing
+ * analysis is the separate completion); 'stored' and 'failed' are the
+ * guarded terminal advances (the honest retry is a NEW take row, the
+ * alternate chain).
+ */
+export const CONTENT_STUDIO_TAKE_INGEST_STATES = ['processing', 'stored', 'failed'] as const;
+export type ContentStudioTakeIngestState = (typeof CONTENT_STUDIO_TAKE_INGEST_STATES)[number];
+
+/**
+ * §9 (the capture records — STUDIO-007) — the CLOSED source
+ * device/input-kind vocabulary: the recording-input surfaces the
+ * client declares per take (microphone / camera / both / screen
+ * capture / an uploaded file) — the browser-capture surfaces the
+ * console contract reports, DECLARED DATA only (no provider SDK, no
+ * browser API surface inside this module).
+ */
+export const CONTENT_STUDIO_CAPTURE_INPUT_KINDS = [
+  'microphone',
+  'camera',
+  'microphone_and_camera',
+  'screen_capture',
+  'uploaded_file',
+] as const;
+export type ContentStudioCaptureInputKind = (typeof CONTENT_STUDIO_CAPTURE_INPUT_KINDS)[number];
+
+/**
+ * The bounded inline take-payload ceiling (the platform
+ * /content-assets MAX_OBJECT_BYTES mirror — the bounded inline-object
+ * contract of the capture surface; heavier media arrives in chunks
+ * through a future streaming seam, never an unbounded HTTP body).
+ */
+export const CONTENT_STUDIO_MAX_TAKE_BYTES = 8 * 1024 * 1024;
+
+// ---------------------------------------------------------------------------
+// The opaque take-reference grammar (the capture-artifact seam)
+// ---------------------------------------------------------------------------
+
+/** The OPAQUE TAKE REFERENCE grammar: 'studio-take:' + the canonical take uuid. */
+export const CONTENT_STUDIO_TAKE_REF_PATTERN = /^studio-take:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Mints the opaque take reference from the canonical take id (the 'ca:' precedent). */
+export function mintContentStudioTakeReference(takeId: string): string {
+  return `studio-take:${takeId}`;
+}
+
+/** Parses an opaque take reference back to its canonical take id (null when malformed). */
+export function parseContentStudioTakeReference(reference: string): string | null {
+  return CONTENT_STUDIO_TAKE_REF_PATTERN.test(reference) ? reference.slice('studio-take:'.length) : null;
+}
+
 // ---------------------------------------------------------------------------
 // The scope + the platform ports (the composition-root wiring point)
 // ---------------------------------------------------------------------------
@@ -610,6 +727,20 @@ export interface ContentStudioModuleDeps {
    * (STUDIO-002 made this seam the full framework).
    */
   readonly formats: ReadonlyArray<ContentStudioFormatDeclaration>;
+  /**
+   * The platform object-storage port (§9 "Capture implementations
+   * must use approved storage/access ports" — STUDIO-007): the
+   * content-addressed durable landing of every raw take's bytes. The
+   * composition root wires the SAME platform ObjectStore instance
+   * /content-assets uses (the existing /content-assets storage
+   * discipline — content-addressed platform-anchored references);
+   * this module NEVER builds module-local blob storage and NEVER
+   * registers raw takes as /content-assets versions (a raw take is an
+   * INTERMEDIATE production artifact — lock v1.7 #36; the /content-
+   * assets evidence-anchored registration is the acquired-source
+   * surface, a different discipline for different material).
+   */
+  readonly objects: ObjectStore;
 }
 
 // ---------------------------------------------------------------------------
@@ -1737,6 +1868,179 @@ export interface RecordContentStudioConversationStepInput {
 }
 
 // ---------------------------------------------------------------------------
+// §9 — THE CAPTURE RECORDS (STUDIO-007 — the audio/video capture layer)
+// ---------------------------------------------------------------------------
+
+/**
+ * The public record view of one CAPTURE SESSION (the migration-073
+ * studio_capture_sessions row): the recording context opened against
+ * one studio session revision while it is in the 'recording' state.
+ * Immutable after creation (a changed recording context — a corrected
+ * graph, a different interviewer representation — opens a NEW capture
+ * session; takes never re-aim).
+ */
+export interface ContentStudioCaptureSessionRecord {
+  readonly captureSessionId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  /** The capture mode: 'graph_walk' (the walked-graph pin below) | 'session_direct'. */
+  readonly captureMode: ContentStudioCaptureSessionMode;
+  /** The WALKED-GRAPH PIN (non-null exactly for graph_walk captures): the declared question-graph version this capture session walks. */
+  readonly graphId: string | null;
+  readonly graphVersion: number | null;
+  /** The interviewer representation of the recording context (§6; null exactly for interviewer-less formats such as reaction). */
+  readonly interviewerRepresentation: ContentStudioInterviewerRepresentation | null;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+}
+
+/**
+ * The public record view of one RAW TAKE (the migration-073
+ * studio_capture_takes row): the append-only durable raw-capture
+ * record. The identity/provenance/artifact-reference columns are
+ * immutable after insert; ONLY the ingest columns advance along the
+ * guarded edges (processing → stored | failed).
+ */
+export interface ContentStudioCaptureTakeRecord {
+  readonly takeId: string;
+  /** The OPAQUE take reference ('studio-take:' + uuid) — the reference conversation-step answers and processing outputs cite. */
+  readonly takeReference: string;
+  readonly captureSessionId: string;
+  readonly sessionId: string;
+  readonly revision: number;
+  readonly agencyId: string;
+  readonly clientId: string;
+  readonly workspaceId: string | null;
+  /** The WALKED-GRAPH NODE PIN (non-null exactly for graph_walk takes): the walked graph version + the declared question node this take answers. */
+  readonly graphId: string | null;
+  readonly graphVersion: number | null;
+  readonly questionId: string | null;
+  /** The take modality (the closed §9 media-capture subset, fenced by the format's declared capture requirements). */
+  readonly modality: ContentStudioTakeModality;
+  /** The ALTERNATE chain: the take this one alternates (a retake is a NEW take, never an overwrite). */
+  readonly alternateOfTakeId: string | null;
+  /** The source device/input metadata (the recording provenance). */
+  readonly inputKind: ContentStudioCaptureInputKind;
+  readonly deviceLabel: string;
+  readonly sourceMetadata: Readonly<Record<string, unknown>>;
+  /** The participant provenance (§7 — structural, never optional). */
+  readonly participantReference: string;
+  readonly participantGrantReference: string | null;
+  readonly consentReferences: ReadonlyArray<string>;
+  /** The interviewer representation of the recording context (recorded per-take — every take carries its recording context). */
+  readonly interviewerRepresentation: ContentStudioInterviewerRepresentation | null;
+  /** The DURABLE ARTIFACT REFERENCE (the platform ObjectStore landing): the content-addressed key + digest + exact size + content type. */
+  readonly objectKey: string;
+  readonly objectDigest: string;
+  readonly objectSize: number;
+  readonly contentType: string;
+  /** The async ingest state machine (born 'processing'; 'stored' | 'failed' are the guarded terminal advances). */
+  readonly ingestState: ContentStudioTakeIngestState;
+  readonly ingestAnalysis: Readonly<Record<string, unknown>> | null;
+  readonly ingestFailureReason: ContentStudioStepFailureReason | null;
+  readonly ingestFailureDetail: string | null;
+  readonly ingestDurationMs: number | null;
+  readonly ingestCompletedAt: string | null;
+  readonly contractVersion: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** Opens one CAPTURE SESSION against the session's current revision (which must be in the 'recording' state). */
+export interface OpenContentStudioCaptureSessionInput {
+  readonly scope: ContentStudioScope;
+  readonly sessionId: string;
+  /**
+   * The capture mode: 'graph_walk' pins the walked declared
+   * question-graph version bound to the session's request version (it
+   * must EXIST — the adaptive-interviewer capture); 'session_direct'
+   * records against the session itself.
+   */
+  readonly captureMode: ContentStudioCaptureSessionMode;
+  /**
+   * The interviewer representation of the recording context: REQUIRED
+   * (and one of the format's declared representations) when the
+   * session's format declares an interviewer; MUST be null when the
+   * format declares interviewer 'none' (reaction).
+   */
+  readonly interviewerRepresentation?: ContentStudioInterviewerRepresentation;
+}
+
+/**
+ * Records one RAW TAKE: validates the format-approved modality + the
+ * participant-grant requirement, lands the bytes through the platform
+ * ObjectStore port (content-addressed — the durable artifact reference
+ * recorded on the take row) and inserts the append-only take row BORN
+ * 'processing' — the ingest returns after the durable landing, any
+ * post-landing analysis is the separate async completion
+ * (completeCaptureTakeIngest / failCaptureTakeIngest), NEVER
+ * synchronous processing work.
+ */
+export interface RecordContentStudioCaptureTakeInput {
+  readonly scope: ContentStudioScope;
+  /** The capture session this take belongs to (its session revision must still be 'recording'). */
+  readonly captureSessionId: string;
+  readonly modality: ContentStudioTakeModality;
+  /**
+   * The walked-graph NODE PIN (REQUIRED exactly for graph_walk capture
+   * sessions): the declared question node this take answers. MUST be
+   * omitted for session_direct captures.
+   */
+  readonly questionId?: string;
+  /** The take this one alternates (the retake chain — a NEW take, never an overwrite); omitted for a first take. */
+  readonly alternateOfTakeId?: string;
+  /** The raw take bytes (non-empty, bounded by CONTENT_STUDIO_MAX_TAKE_BYTES — the inline-object contract). */
+  readonly bytes: Uint8Array;
+  /** The declared content type of the take payload (a bounded MIME-type-shaped string). */
+  readonly contentType: string;
+  /** The source device/input metadata (the recording provenance). */
+  readonly inputKind: ContentStudioCaptureInputKind;
+  readonly deviceLabel: string;
+  readonly sourceMetadata: Readonly<Record<string, unknown>>;
+  /** The participant provenance (§7 — structural, never optional). */
+  readonly participantReference: string;
+  /** The §7 participation-grant reference (REQUIRED exactly when the session's format declares explicit per-participant grants). */
+  readonly participantGrantReference?: string;
+  /** The consent references backing the recording (1-16 opaque references — REQUIRED, never empty). */
+  readonly consentReferences: ReadonlyArray<string>;
+}
+
+/** Completes one take's async ingest (processing → stored) with the bounded analysis payload + the honest duration. */
+export interface CompleteContentStudioCaptureTakeIngestInput {
+  readonly scope: ContentStudioScope;
+  readonly sessionId: string;
+  readonly takeId: string;
+  /** The bounded post-landing analysis payload (declared data — probe results, normalization notes; omitted when none). */
+  readonly analysis?: Readonly<Record<string, unknown>>;
+  /** The honest ingest duration (the §17 cost/delay disclosure). */
+  readonly durationMs?: number;
+}
+
+/** Fails one take's async ingest (processing → failed) with the §17 closed-vocabulary reason. */
+export interface FailContentStudioCaptureTakeIngestInput {
+  readonly scope: ContentStudioScope;
+  readonly sessionId: string;
+  readonly takeId: string;
+  readonly failureReason: ContentStudioStepFailureReason;
+  /** The bounded failure detail (the honest §17 failure record). */
+  readonly failureDetail?: string;
+  readonly durationMs?: number;
+}
+
+/** The bounded capture-take query: one session's takes, optionally narrowed to a capture session, a walked-graph node, a modality or an alternate chain. */
+export interface ListContentStudioCaptureTakesInput {
+  readonly scope: ContentStudioScope;
+  readonly sessionId: string;
+  readonly captureSessionId?: string;
+  readonly questionId?: string;
+  readonly modality?: ContentStudioTakeModality;
+  readonly alternateOfTakeId?: string;
+}
+
+// ---------------------------------------------------------------------------
 // The module API
 // ---------------------------------------------------------------------------
 
@@ -1890,6 +2194,63 @@ export interface ContentStudioModuleApi {
   recordConversationStep(input: RecordContentStudioConversationStepInput): Promise<ContentStudioConversationStepRecord>;
   /** Lists the session's conversation steps (every conversation, ordered by conversation + seq — the resulting conversation graph as data). */
   listConversationSteps(scope: ContentStudioScope, sessionId: string): Promise<ReadonlyArray<ContentStudioConversationStepRecord>>;
+
+  // --- The §9 CAPTURE RECORDS (STUDIO-007 — the audio/video capture layer) ---
+
+  /**
+   * Opens one CAPTURE SESSION against the session's current revision
+   * (which must be in the 'recording' state — the §5 capture state): a
+   * 'graph_walk' capture session pins the walked declared
+   * question-graph version bound to the session's request version (the
+   * STUDIO-003 adaptive-interviewer graph drives the capture steps —
+   * the exact conversation-walk binding); a 'session_direct' capture
+   * session records against the session itself. The interviewer
+   * representation of the recording context is REQUIRED (and declared
+   * by the format) for interviewer formats; NULL for interviewer-less
+   * formats (reaction). The recording context is immutable — a changed
+   * context (a corrected graph, a different representation) opens a
+   * NEW capture session.
+   */
+  openCaptureSession(input: OpenContentStudioCaptureSessionInput): Promise<ContentStudioCaptureSessionRecord>;
+  /** Resolves one capture session (the uniform NotFound for foreign/unknown scope — no existence oracle). */
+  getCaptureSession(scope: ContentStudioScope, sessionId: string, captureSessionId: string): Promise<ContentStudioCaptureSessionRecord>;
+  /** Lists the session's capture sessions (ordered by creation). */
+  listCaptureSessions(scope: ContentStudioScope, sessionId: string): Promise<ReadonlyArray<ContentStudioCaptureSessionRecord>>;
+  /**
+   * Records one RAW TAKE: validates the format-approved modality (the
+   * session's format captureRequirements) + the participant-grant
+   * requirement (the format's participation model), lands the bytes
+   * through the platform ObjectStore port (the content-addressed
+   * durable artifact reference recorded on the take row — NEVER
+   * module-local storage, NEVER a /content-assets registration) and
+   * inserts the append-only take row BORN 'processing' with the full
+   * participant/source provenance. The ingest RETURNS after the
+   * durable landing — no post-landing processing happens in this call
+   * (§9 "Long-running processing is asynchronous/durable"); the
+   * analysis completes separately through
+   * completeCaptureTakeIngest/failCaptureTakeIngest.
+   */
+  recordCaptureTake(input: RecordContentStudioCaptureTakeInput): Promise<ContentStudioCaptureTakeRecord>;
+  /**
+   * Completes one take's async ingest (processing → stored): records
+   * the bounded post-landing analysis payload + the honest duration.
+   * 'stored' is terminal — the honest retry is a NEW take row (the
+   * alternate chain).
+   */
+  completeCaptureTakeIngest(input: CompleteContentStudioCaptureTakeIngestInput): Promise<ContentStudioCaptureTakeRecord>;
+  /**
+   * Fails one take's async ingest (processing → failed) with the §17
+   * closed-vocabulary reason + the bounded detail. 'failed' is
+   * terminal — the honest retry is a NEW take row (optionally the
+   * alternate of the failed one).
+   */
+  failCaptureTakeIngest(input: FailContentStudioCaptureTakeIngestInput): Promise<ContentStudioCaptureTakeRecord>;
+  /** Resolves one take by id (the uniform NotFound for foreign/unknown scope — no existence oracle). */
+  getCaptureTake(scope: ContentStudioScope, sessionId: string, takeId: string): Promise<ContentStudioCaptureTakeRecord>;
+  /** Resolves one take by its OPAQUE take reference ('studio-take:…' — the answer_reference/step-output resolution seam). */
+  getCaptureTakeByReference(scope: ContentStudioScope, reference: string): Promise<ContentStudioCaptureTakeRecord>;
+  /** Lists the session's takes (the bounded query — the raw-capture + alternates + provenance retrieval surface). */
+  listCaptureTakes(input: ListContentStudioCaptureTakesInput): Promise<ReadonlyArray<ContentStudioCaptureTakeRecord>>;
 }
 
 export { createContentStudioModule } from './internal/content-studio-module.ts';
@@ -1918,4 +2279,9 @@ export {
   assertValidContentStudioReviewDecision,
   assertValidContentStudioConversationChoice,
   deriveLinearQuestionGraph,
+  assertValidContentStudioCaptureSessionInput,
+  assertValidContentStudioCaptureTakeInput,
+  assertValidContentStudioCaptureIngestCompletion,
+  assertValidContentStudioCaptureIngestFailure,
+  assertValidContentStudioCaptureTakesQuery,
 } from './internal/validation.ts';

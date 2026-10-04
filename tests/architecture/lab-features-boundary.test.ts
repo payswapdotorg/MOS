@@ -238,10 +238,10 @@ test('LAB-003 AC: the migration tail — 065_lab_features.sql after the merged S
     .filter((name) => name.endsWith('.sql'))
     .sort();
   assert.ok(migrations.includes('065_lab_features.sql'));
-  assert.equal(migrations[migrations.length - 6], '065_lab_features.sql');
-  assert.equal(migrations[migrations.length - 5], '066_lab_ideas.sql');
-  assert.equal(migrations[migrations.length - 8], '063_lab_agent_body.sql');
-  assert.equal(migrations[migrations.length - 10], '061_lab_corpus.sql');
+  assert.equal(migrations[migrations.length - 7], '065_lab_features.sql');
+  assert.equal(migrations[migrations.length - 6], '066_lab_ideas.sql');
+  assert.equal(migrations[migrations.length - 9], '063_lab_agent_body.sql');
+  assert.equal(migrations[migrations.length - 11], '061_lab_corpus.sql');
   assert.ok(migrations.includes('062_commerce_discovery.sql'), '062 is taken by the merged MKT-072 sibling delivery (the merged-tree truth — the TL reconciles numbering at merge)');
   assert.ok(migrations.some((name) => name.startsWith('064_')), '064 is taken by the merged STUDIO-001 sibling delivery (the disclosed re-pin precedent — the merged-tree truth)');
   // The module boundary is complete.
