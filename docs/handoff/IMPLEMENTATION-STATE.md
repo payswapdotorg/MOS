@@ -2,7 +2,7 @@
 
 Repository: payswapdotorg/MOS
 v1.6: FROZEN implementation layer
-v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-005 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + STUDIO-003 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
+v1.7: Marketing Engineering Lab + Content Studio implementation IN PROGRESS — LAB-001 + LAB-002 + LAB-003 + LAB-004 + LAB-005 + LAB-011 + LAB-013 + STUDIO-001 + STUDIO-002 + STUDIO-003 + STUDIO-007 + MKT-072 + UX-010 delivered; CR-007 Content Studio architecture frozen
 Maximum active workers: 3
 
 ## Historical architecture base
@@ -445,6 +445,46 @@ lint 0 / unit 1403/1403 / architecture 773/773 / integration
 un-started-turn plague (nudges staged in DOM but never committed
 server-side); voided + re-dispatched fresh per the waiting-costs-hours
 doctrine — the r2 session delivered in ONE pass.
+
+✅ STUDIO-007 — Audio/Video Capture (external Worker
+delivery, PR #82 merged, main 55371ec): the /content-studio
+audio/video capture extension — the §9 record surfaces over the
+STUDIO-001 runtime + the STUDIO-002 format framework + the
+STUDIO-003 question/branch graph: capture sessions as immutable
+recording contexts; APPEND-ONLY RAW TAKES with alternates and
+structural participant/source provenance preserved (no long-running
+media processing — the born-'processing' async ingest state machine
+advances to stored/failed through guarded terminal transitions,
+fenced at the DB); the take modalities are the closed §9 subset
+['audio','video','screen'] gated by the format's STUDIO-002
+captureRequirements; the take↔conversation binding is one-directional
+from the frozen STUDIO-003 answerReference side; raw take bytes land
+content-addressed through the PLATFORM OBJECTSTORE PORT wired at the
+composition root (the disclosed judgment call — the /content-assets
+registerAssetVersion path is the acquired-source evidence surface and
+would be a cross-authority write for original in-session production
+material); the interviewer representation inherited from the capture
+session; zero drift on the three frozen initial format declarations
+(format execution is STUDIO-011/012/013). Migration 073
+(073_studio_av_capture.sql — the new tail; 069 held by the in-flight
+MKT-073 seed, 072 held by the in-flight LAB-006 worker; 2 own tables,
+7 guard triggers, IMMUTABLE helper, ZERO cross-table DDL), 36 files
++3,908/−464: module delta (public.ts with the 4th sub-contract
+identity content-studio-capture-v1 + validation.ts + store.ts +
+module.ts), the sanctioned ONE-SENTENCE spec/architecture.md
+extension, the 25-file migration-tail re-pin pass, +21 unit / +12
+architecture / +10 integration tests, the runbook
+docs/runbooks/STUDIO-007.md (STUDIO-003 format, 8 honest disclosures).
+Station battery re-run at harvest (third consecutive zero-conflict
+merge — based on the fully-reconciled main 2921320): typecheck 0 /
+lint 0 / arch:check 0 violations (59 enforced, 691 files) / unit
+1424/1424 / architecture 785/785 / integration 1308/1308 (six
+foreground chunks, all 113 files, 0 cancelled) ZERO flakes — every
+number matching the worker report exactly. Recovery saga: the lane
+rode the account-level completion-queue drought ~4h (turn admitted
+03:48, frozen empty; stall_recovery + queue_watch lesson-185 patience
+held the lane), then streamed 1.43M chars of work log + report in a
+window ~05:13–05:27 — ONE pass, zero voids at the end.
 
 New frozen Work Items:
 ☐ LAB-019 Transform Definitions + Transform Graph

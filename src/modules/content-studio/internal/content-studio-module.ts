@@ -52,6 +52,28 @@
  * THE SCOPE DISCIPLINE (§29): every read resolves foreign/unknown
  * scope to the uniform NotFound (no existence oracle) — the /lab and
  * /lab-agent-body house pattern.
+ *
+ * THE CAPTURE DISCIPLINE (§9 — STUDIO-007): capture happens inside the
+ * 'recording' state. openCaptureSession opens the RECORDING CONTEXT
+ * (a graph_walk capture session pins the walked declared question-graph
+ * version bound to the session's request version — the STUDIO-003
+ * adaptive-interviewer graph drives the capture steps; a session_direct
+ * capture session records against the session itself), immutable after
+ * creation. recordCaptureTake lands EVERY take's bytes through the
+ * platform ObjectStore port (content-addressed platform-anchored
+ * references — the durable artifact recorded on the append-only take
+ * row with the full participant/source provenance: the participant
+ * identity, the §7 grant when the format declares explicit grants, the
+ * REQUIRED consent references, the device/input metadata, the
+ * interviewer representation) and is BORN 'processing' — the ingest
+ * performs the durable landing and RETURNS (§9 "Long-running processing
+ * is asynchronous/durable rather than a synchronous web request"; the
+ * born-processing DB fence is the structural backstop); the
+ * post-landing analysis completes separately through the guarded
+ * processing→stored|failed advances. Retakes are NEW takes citing the
+ * take they alternate (never overwrites). No /content-assets
+ * registration ever happens here — a raw take is an INTERMEDIATE
+ * production artifact (lock v1.7 #36).
  */
 
 import { InvalidRequestError, NotFoundError } from '../../../platform/errors/errors.ts';
@@ -61,8 +83,11 @@ import type {
   AppendContentStudioSuppliedQuestionGraphVersionInput,
   AppendContentStudioSuppliedScriptVersionInput,
   ClaimContentStudioProcessingStepsInput,
+  CompleteContentStudioCaptureTakeIngestInput,
   CompleteContentStudioProcessingStepInput,
   ContentStudioAgentBodyResolution,
+  ContentStudioCaptureSessionRecord,
+  ContentStudioCaptureTakeRecord,
   ContentStudioConversationStepRecord,
   ContentStudioDeclaredQuestionGraph,
   ContentStudioFormatDeclaration,
@@ -88,8 +113,12 @@ import type {
   ContentStudioTerminalReason,
   ContentStudioTreatmentResult,
   CreateContentStudioProductionRequestInput,
+  FailContentStudioCaptureTakeIngestInput,
   FailContentStudioProcessingStepInput,
+  ListContentStudioCaptureTakesInput,
+  OpenContentStudioCaptureSessionInput,
   OpenContentStudioSessionInput,
+  RecordContentStudioCaptureTakeInput,
   RecordContentStudioConversationStepInput,
   RecordContentStudioGeneratedQuestionGraphInput,
   RecordContentStudioGeneratedScriptInput,
@@ -105,6 +134,11 @@ import type {
 import {
   assertLegalContentStudioSessionTransition,
   assertTerminalReasonForAdvance,
+  assertValidContentStudioCaptureIngestCompletion,
+  assertValidContentStudioCaptureIngestFailure,
+  assertValidContentStudioCaptureSessionInput,
+  assertValidContentStudioCaptureTakeInput,
+  assertValidContentStudioCaptureTakesQuery,
   assertValidContentStudioDeclaredQuestionGraph,
   assertValidContentStudioGeneratorProvenance,
   assertValidContentStudioConversationChoice,
@@ -116,8 +150,11 @@ import {
   deriveLinearQuestionGraph,
   isTerminalContentStudioSessionState,
 } from './validation.ts';
+import { mintContentStudioTakeReference } from '../public.ts';
 import {
   ContentStudioStore,
+  mapCaptureSessionRow,
+  mapCaptureTakeRow,
   mapConversationEdgeRow,
   mapEventRow,
   mapFormatRow,
@@ -1995,6 +2032,341 @@ export function createContentStudioModule(deps: ContentStudioModuleDeps): Conten
       await requireLatestSession(scope, sessionId);
       const rows = await store.listSessionConversationEdges(scope.clientId, sessionId);
       return rows.map(mapConversationEdgeRow);
+    },
+
+    // --- The §9 CAPTURE RECORDS (STUDIO-007 — the audio/video capture layer) ---
+
+    async openCaptureSession(input: OpenContentStudioCaptureSessionInput): Promise<ContentStudioCaptureSessionRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioCaptureSessionInput(input);
+      assertUuidShape('studio session', input.sessionId);
+      const session = await requireLatestSession(input.scope, input.sessionId);
+      if (session.state !== 'recording') {
+        throw new InvalidRequestError(
+          `studio session ${input.sessionId}#r${session.revision} is ${session.state} — a capture session opens only inside the 'recording' state (§5: the capture state)`,
+        );
+      }
+      const format = await requireSessionFormat(input.scope, session.formatId, session.formatVersion);
+
+      // The interviewer representation of the recording context: the
+      // format's declared interviewer requirements decide (§6 — the
+      // reaction shape has none; the podcast shapes declare their
+      // representation set).
+      const representation = input.interviewerRepresentation ?? null;
+      if (format.interviewerRequirements.interviewer === 'none') {
+        if (representation !== null) {
+          throw new InvalidRequestError(
+            `studio session ${input.sessionId}#r${session.revision} runs format '${format.formatId}@v${format.formatVersion}' which declares interviewer 'none' — the recording context carries no interviewer representation`,
+          );
+        }
+      } else {
+        const declaredRepresentations = format.interviewerRequirements.representations ?? [];
+        if (representation === null) {
+          throw new InvalidRequestError(
+            `studio session ${input.sessionId}#r${session.revision} runs format '${format.formatId}@v${format.formatVersion}' which requires an interviewer representation — the recording context declares one of: ${declaredRepresentations.join(', ')}`,
+          );
+        }
+        if (!declaredRepresentations.includes(representation)) {
+          throw new InvalidRequestError(
+            `interviewer representation '${representation}' is not declared by format '${format.formatId}@v${format.formatVersion}' (declared: ${declaredRepresentations.join(', ')}) — the recording context stays inside the format's declaration`,
+          );
+        }
+      }
+
+      // The walked-graph pin: a graph_walk capture session pins the
+      // declared question-graph version bound to the session's EXACT
+      // request version (the conversation-walk binding — the STUDIO-003
+      // adaptive-interviewer graph drives the capture steps).
+      let graphId: string | null = null;
+      let graphVersion: number | null = null;
+      if (input.captureMode === 'graph_walk') {
+        const graphRow = await store.findLatestQuestionGraphForRequest(input.scope.clientId, session.requestId, session.requestVersion);
+        if (graphRow === null) {
+          throw new InvalidRequestError(
+            `studio session ${input.sessionId}#r${session.revision} has no declared question graph for request ${session.requestId}#v${session.requestVersion} — a graph_walk capture session pins the walked question/branch graph`,
+          );
+        }
+        graphId = graphRow.graph_id;
+        graphVersion = Number(graphRow.graph_version);
+      }
+
+      const row = await store.insertCaptureSession({
+        captureSessionId: store.newId(),
+        sessionId: session.sessionId,
+        revision: session.revision,
+        scope: input.scope,
+        captureMode: input.captureMode,
+        graphId,
+        graphVersion,
+        interviewerRepresentation: representation,
+      });
+      return mapCaptureSessionRow(row);
+    },
+
+    async getCaptureSession(scope, sessionId, captureSessionId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio session', sessionId);
+      await requireLatestSession(scope, sessionId);
+      assertUuidShape('studio capture session', captureSessionId);
+      const row = await store.findCaptureSession(scope.clientId, captureSessionId);
+      if (row === null || row.session_id !== sessionId) {
+        throw new NotFoundError('studio capture session', captureSessionId);
+      }
+      return mapCaptureSessionRow(row);
+    },
+
+    async listCaptureSessions(scope, sessionId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio session', sessionId);
+      await requireLatestSession(scope, sessionId);
+      const rows = await store.listCaptureSessions(scope.clientId, sessionId);
+      return rows.map(mapCaptureSessionRow);
+    },
+
+    async recordCaptureTake(input: RecordContentStudioCaptureTakeInput): Promise<ContentStudioCaptureTakeRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioCaptureTakeInput(input);
+      assertUuidShape('studio capture session', input.captureSessionId);
+      const captureRow = await store.findCaptureSession(input.scope.clientId, input.captureSessionId);
+      if (captureRow === null) {
+        throw new NotFoundError('studio capture session', input.captureSessionId);
+      }
+      const session = await requireLatestSession(input.scope, captureRow.session_id);
+      if (Number(captureRow.revision) !== session.revision) {
+        throw new InvalidRequestError(
+          `studio capture session ${input.captureSessionId} belongs to revision ${Number(captureRow.revision)} of session ${captureRow.session_id} (the current revision is ${session.revision}) — takes are recorded against the CURRENT revision's capture sessions (open a NEW capture session)`,
+        );
+      }
+      if (session.state !== 'recording') {
+        throw new InvalidRequestError(
+          `studio session ${session.sessionId}#r${session.revision} is ${session.state} — raw takes are recorded only inside the 'recording' state (§5: the capture state)`,
+        );
+      }
+      const format = await requireSessionFormat(input.scope, session.formatId, session.formatVersion);
+
+      // THE APPROVED-CAPTURE FENCE (§2): the take's modality must be one
+      // the session's format DECLARED in its capture requirements.
+      if (!format.captureRequirements.modalities.includes(input.modality)) {
+        throw new InvalidRequestError(
+          `take modality '${input.modality}' is not declared by format '${format.formatId}@v${format.formatVersion}' (declared: ${format.captureRequirements.modalities.join(', ')}) — capture lands only inside the format's approved modalities`,
+        );
+      }
+
+      // THE PARTICIPANT-GRANT FENCE (§7): a format declaring explicit
+      // per-participant grants requires every take to carry its grant
+      // reference (the single-scope formats carry the session scope
+      // instead — the grant stays optional data).
+      const grantReference =
+        input.participantGrantReference !== undefined && input.participantGrantReference !== null ? input.participantGrantReference : null;
+      if (format.participantModel.participationGrants === 'explicit_grant_per_participant' && grantReference === null) {
+        throw new InvalidRequestError(
+          `studio session ${session.sessionId}#r${session.revision} runs format '${format.formatId}@v${format.formatVersion}' which declares explicit per-participant grants — every take carries its §7 participation-grant reference`,
+        );
+      }
+
+      // The walked-graph NODE PIN: a graph_walk take pins a declared
+      // node of its capture session's walked graph version (§9 capture
+      // is adaptive-interviewer-aware — the STUDIO-003 graph drives the
+      // capture steps); a session_direct take carries no pin.
+      let questionId: string | null = null;
+      let graphId: string | null = null;
+      let graphVersion: number | null = null;
+      if (captureRow.capture_mode === 'graph_walk') {
+        if (input.questionId === undefined || input.questionId === null) {
+          throw new InvalidRequestError(
+            `studio capture session ${input.captureSessionId} walks a declared question graph — every take carries its walked-graph node pin (questionId)`,
+          );
+        }
+        const graphRow = await store.findQuestionGraphVersion(input.scope.clientId, captureRow.graph_id!, Number(captureRow.graph_version));
+        if (graphRow === null) {
+          throw new NotFoundError('studio question graph', captureRow.graph_id!);
+        }
+        const declaredGraph = graphRow.declared_graph as ContentStudioDeclaredQuestionGraph;
+        if (!declaredGraph.nodes.some((node) => node.questionId === input.questionId)) {
+          throw new InvalidRequestError(
+            `studio capture take question '${input.questionId}' is not a declared node of the walked graph ${graphRow.graph_id}#v${Number(graphRow.graph_version)}`,
+          );
+        }
+        questionId = input.questionId;
+        graphId = graphRow.graph_id;
+        graphVersion = Number(graphRow.graph_version);
+      } else if (input.questionId !== undefined && input.questionId !== null) {
+        throw new InvalidRequestError(
+          `studio capture session ${input.captureSessionId} is session_direct — its takes carry no walked-graph node pin (found questionId '${input.questionId}')`,
+        );
+      }
+
+      // The ALTERNATE fence: an alternate cites a take of the SAME
+      // capture session, node pin and modality (a retake of the same
+      // capture moment — never a repurposed citation, never an
+      // overwrite).
+      if (input.alternateOfTakeId !== undefined && input.alternateOfTakeId !== null) {
+        const alternateRow = await store.findCaptureTake(input.scope.clientId, input.alternateOfTakeId);
+        if (alternateRow === null) {
+          throw new NotFoundError('studio capture take', input.alternateOfTakeId);
+        }
+        if (
+          alternateRow.capture_session_id !== input.captureSessionId ||
+          alternateRow.graph_id !== graphId ||
+          (alternateRow.graph_version === null ? null : Number(alternateRow.graph_version)) !== graphVersion ||
+          alternateRow.question_id !== questionId ||
+          alternateRow.modality !== input.modality
+        ) {
+          throw new InvalidRequestError(
+            `studio capture take alternate ${input.alternateOfTakeId} must share the capture session, the node pin and the modality — alternates are retakes of the SAME capture moment (a NEW take, never an overwrite)`,
+          );
+        }
+      }
+
+      // THE DURABLE LANDING (§9 "approved storage/access ports"): the
+      // bytes go through the platform ObjectStore port — content-
+      // addressed, idempotent, the SAME platform store /content-assets
+      // lands its objects into. This is the ONLY synchronous work of
+      // the ingest (§9 "Long-running processing is asynchronous/durable
+      // rather than a synchronous web request"): the take row is born
+      // 'processing' and the post-landing analysis completes separately.
+      const stored = await deps.objects.put(input.bytes, { contentType: input.contentType });
+
+      const row = await store.insertCaptureTake({
+        takeId: store.newId(),
+        takeReference: mintContentStudioTakeReference(store.newId()),
+        captureSessionId: input.captureSessionId,
+        sessionId: session.sessionId,
+        revision: session.revision,
+        scope: input.scope,
+        graphId,
+        graphVersion,
+        questionId,
+        modality: input.modality,
+        alternateOfTakeId: input.alternateOfTakeId ?? null,
+        inputKind: input.inputKind,
+        deviceLabel: input.deviceLabel,
+        sourceMetadata: input.sourceMetadata,
+        participantReference: input.participantReference,
+        participantGrantReference: grantReference,
+        consentReferences: input.consentReferences,
+        interviewerRepresentation: captureRow.interviewer_representation,
+        objectKey: stored.key,
+        objectDigest: stored.digest,
+        objectSize: stored.size,
+        contentType: input.contentType,
+      });
+      return mapCaptureTakeRow(row);
+    },
+
+    async completeCaptureTakeIngest(input: CompleteContentStudioCaptureTakeIngestInput): Promise<ContentStudioCaptureTakeRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioCaptureIngestCompletion({
+        ...(input.analysis === undefined ? {} : { analysis: input.analysis }),
+        ...(input.durationMs === undefined ? {} : { durationMs: input.durationMs }),
+      });
+      assertUuidShape('studio session', input.sessionId);
+      assertUuidShape('studio capture take', input.takeId);
+      await requireLatestSession(input.scope, input.sessionId);
+      const existing = await store.findCaptureTake(input.scope.clientId, input.takeId);
+      if (existing === null || existing.session_id !== input.sessionId) {
+        throw new NotFoundError('studio capture take', input.takeId);
+      }
+      if (existing.ingest_state !== 'processing') {
+        throw new InvalidRequestError(
+          `studio capture take ${input.takeId} ingest is already ${existing.ingest_state} — the terminal ingest states are frozen (the honest retry is a NEW take row)`,
+        );
+      }
+      const advanced = await store.advanceCaptureTakeIngest({
+        clientId: input.scope.clientId,
+        takeId: input.takeId,
+        to: 'stored',
+        analysis: input.analysis ?? null,
+        failureReason: null,
+        failureDetail: null,
+        durationMs: input.durationMs ?? null,
+      });
+      if (advanced === null) {
+        throw new InvalidRequestError(
+          `studio capture take ${input.takeId} ingest no longer 'processing' — the completion lost the race (re-read the take; the terminal ingest states are frozen)`,
+        );
+      }
+      return mapCaptureTakeRow(advanced);
+    },
+
+    async failCaptureTakeIngest(input: FailContentStudioCaptureTakeIngestInput): Promise<ContentStudioCaptureTakeRecord> {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioCaptureIngestFailure({
+        failureReason: input.failureReason,
+        ...(input.failureDetail === undefined ? {} : { failureDetail: input.failureDetail }),
+        ...(input.durationMs === undefined ? {} : { durationMs: input.durationMs }),
+      });
+      assertUuidShape('studio session', input.sessionId);
+      assertUuidShape('studio capture take', input.takeId);
+      await requireLatestSession(input.scope, input.sessionId);
+      const existing = await store.findCaptureTake(input.scope.clientId, input.takeId);
+      if (existing === null || existing.session_id !== input.sessionId) {
+        throw new NotFoundError('studio capture take', input.takeId);
+      }
+      if (existing.ingest_state !== 'processing') {
+        throw new InvalidRequestError(
+          `studio capture take ${input.takeId} ingest is already ${existing.ingest_state} — the terminal ingest states are frozen (the honest retry is a NEW take row)`,
+        );
+      }
+      const advanced = await store.advanceCaptureTakeIngest({
+        clientId: input.scope.clientId,
+        takeId: input.takeId,
+        to: 'failed',
+        analysis: null,
+        failureReason: input.failureReason,
+        failureDetail: input.failureDetail ?? null,
+        durationMs: input.durationMs ?? null,
+      });
+      if (advanced === null) {
+        throw new InvalidRequestError(
+          `studio capture take ${input.takeId} ingest no longer 'processing' — the failure lost the race (re-read the take; the terminal ingest states are frozen)`,
+        );
+      }
+      return mapCaptureTakeRow(advanced);
+    },
+
+    async getCaptureTake(scope, sessionId, takeId) {
+      assertValidContentStudioScope(scope);
+      assertUuidShape('studio session', sessionId);
+      await requireLatestSession(scope, sessionId);
+      assertUuidShape('studio capture take', takeId);
+      const row = await store.findCaptureTake(scope.clientId, takeId);
+      if (row === null || row.session_id !== sessionId) {
+        throw new NotFoundError('studio capture take', takeId);
+      }
+      return mapCaptureTakeRow(row);
+    },
+
+    async getCaptureTakeByReference(scope, reference) {
+      assertValidContentStudioScope(scope);
+      if (typeof reference !== 'string' || !reference.startsWith('studio-take:') || reference.length !== 'studio-take:'.length + 36) {
+        throw new NotFoundError('studio capture take reference', String(reference));
+      }
+      const row = await store.findCaptureTakeByReference(scope.clientId, reference);
+      if (row === null) {
+        throw new NotFoundError('studio capture take reference', reference);
+      }
+      return mapCaptureTakeRow(row);
+    },
+
+    async listCaptureTakes(input: ListContentStudioCaptureTakesInput) {
+      assertValidContentStudioScope(input.scope);
+      assertValidContentStudioCaptureTakesQuery({
+        ...(input.captureSessionId === undefined ? {} : { captureSessionId: input.captureSessionId }),
+        ...(input.questionId === undefined ? {} : { questionId: input.questionId }),
+        ...(input.modality === undefined ? {} : { modality: input.modality }),
+        ...(input.alternateOfTakeId === undefined ? {} : { alternateOfTakeId: input.alternateOfTakeId }),
+      });
+      assertUuidShape('studio session', input.sessionId);
+      await requireLatestSession(input.scope, input.sessionId);
+      const rows = await store.listCaptureTakes(input.scope.clientId, {
+        sessionId: input.sessionId,
+        captureSessionId: input.captureSessionId ?? null,
+        questionId: input.questionId ?? null,
+        modality: input.modality ?? null,
+        alternateOfTakeId: input.alternateOfTakeId ?? null,
+      });
+      return rows.map(mapCaptureTakeRow);
     },
   };
 }

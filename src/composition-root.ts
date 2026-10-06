@@ -2198,10 +2198,19 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
   // the compatibility failure stays explicit); (2) the §2 format
   // seam carrying the initial registry content (the three initial
   // format declarations as DATA — the pluggable seam STUDIO-002
-  // owns). The module resolves its own tenant fences; zero
-  // cross-module imports exist inside src/modules/content-studio
-  // (the /lab family discipline — the empty-allowance strictest
-  // posture).
+  // owns). STUDIO-007 (the audio/video capture layer) adds the THIRD
+  // structural consumption surface: (3) the platform ObjectStore port
+  // `objects` — the content-addressed durable landing of every raw
+  // take's bytes, wired with the SAME platform objects instance
+  // /content-assets uses (the existing /content-assets storage
+  // discipline — content-addressed platform-anchored references; NEVER
+  // module-local blob storage; NEVER a /content-assets registration of
+  // raw takes — a raw take is an INTERMEDIATE production artifact,
+  // lock v1.7 #36; the /content-assets evidence-anchored registration
+  // is the acquired-source surface, a different discipline). The
+  // module resolves its own tenant fences; zero cross-module imports
+  // exist inside src/modules/content-studio (the /lab family
+  // discipline — the empty-allowance strictest posture).
   const contentStudioAgentBodies: ContentStudioAgentBodyPort = {
     async resolveAgentBody(scope, bodyVersionReference) {
       try {
@@ -2230,6 +2239,7 @@ function buildCore(config: AppConfig, options: AppOptions): Core {
     ids,
     agentBodies: contentStudioAgentBodies,
     formats: CONTENT_STUDIO_INITIAL_FORMATS,
+    objects,
   });
 
   // LAB-003: /lab-features — platform ports + the module's two
