@@ -913,9 +913,30 @@ export interface SocialCommerceAttributionModuleDeps {
 
 export { createSocialCommerceAttributionModule } from './internal/attribution-module.ts';
 export { SocialCommerceAttributionStore } from './internal/attribution-store.ts';
+/**
+ * The pure deterministic cores (the sca-contract-v1 identity derivation,
+ * the sca-link-v1 formula set + its deterministic derivations and
+ * digests, the sca-match-v1 co-occurrence matcher) and the pure input
+ * guards of validation.ts — exported for unit tests and future
+ * server-side callers so the attribution semantics are part of the
+ * module contract (the commerce-discovery pure-core precedent). Pure
+ * functions: no clock, no randomness, no network, no I/O.
+ */
 export {
   buildAttributionLink,
   deriveAttributionIdentity,
+  deriveCampaignIdentifier,
+  deriveConstructionInputDigest,
+  deriveLandingRoute,
+  matchAttributionLinks,
 } from './internal/link-core.ts';
-export { matchAttributionLinks } from './internal/link-core.ts';
 export { canonicalSocialAttributionJson } from './internal/validation.ts';
+export {
+  assertValidReferenceCreation,
+  assertValidLinkConstruction,
+  assertValidAttachment,
+  assertValidCrossingRecording,
+  assertValidCrossingAdvance,
+  assertValidFirstPartyConversion,
+  assertValidObservedFields,
+} from './internal/validation.ts';
